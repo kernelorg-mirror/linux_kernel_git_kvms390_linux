@@ -69,6 +69,7 @@ endif
 #
 # Use 'make D=1' to enable checking
 # Use 'make D=2' to create the message catalog
+# Use 'make D=3' to create the dita message catalog
 
 ifdef D
   ifeq ("$(origin D)", "command line")

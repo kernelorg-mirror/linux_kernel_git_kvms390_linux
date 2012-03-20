@@ -436,13 +436,19 @@ targets += $(multi-used-y) $(multi-used-m)
 
 # kmsg check tool
 ifneq ($(KBUILD_KMSG_CHECK),0)
-  ifeq ($(KBUILD_KMSG_CHECK),2)
-    kmsg_cmd := print
-    quiet_cmd_force_check_kmsg = KMSG_PRINT $<
-    $(shell [ -d $(objtree)/man ] || mkdir -p $(objtree)/man)
+  ifeq ($(KBUILD_KMSG_CHECK),3)
+    kmsg_cmd := dita
+    quiet_cmd_force_check_kmsg = KMSG_DITA $<
+    $(shell [ -d $(objtree)/dita ] || mkdir -p $(objtree)/dita)
   else
-    kmsg_cmd := check
-    quiet_cmd_force_check_kmsg = KMSG_CHECK $<
+    ifeq ($(KBUILD_KMSG_CHECK),2)
+      kmsg_cmd := print
+      quiet_cmd_force_check_kmsg = KMSG_PRINT $<
+      $(shell [ -d $(objtree)/man ] || mkdir -p $(objtree)/man)
+    else
+      kmsg_cmd := check
+      quiet_cmd_force_check_kmsg = KMSG_CHECK $<
+    endif
   endif
   cmd_force_check_kmsg = $(KMSG_CHECK) $(kmsg_cmd) $(CC) $(c_flags) $< ;
 endif
