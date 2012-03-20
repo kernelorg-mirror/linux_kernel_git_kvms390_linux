@@ -1,0 +1,30 @@
+/*?
+ * Text: "entry %i: %s (addr=0x%lx size=%lu)\n"
+ * Severity: Informational
+ * Parameter:
+ *   @1: ID of the OS info entry
+ *   @2: Entry state (e.g "copied" or "not available")
+ *   @3: Address of the entry
+ *   @4: Size of the entry
+ * Description:
+ * Linux is running in kdump mode and reports information on OS info entries
+ * defined by the old kernel. Possible values for "entry state" are:
+ * - copied: The entry has been found, verified, and copied
+ * - not available: The old kernel has not defined the entry
+ * - checksum failed: The entry is corrupt
+ * User action:
+ * If kdump fails, send the messages to your service organization.
+ */
+
+/*?
+ * Text: "crashkernel: addr=0x%lx size=%lu\n"
+ * Severity: Informational
+ * Parameter:
+ *   @1: Crashkernel address
+ *   @2: Crashkernel size
+ * Description:
+ * Linux is running in kdump mode and reports the address and size of
+ * the crashkernel memory that the old kernel has defined.
+ * User action:
+ * None.
+ */
