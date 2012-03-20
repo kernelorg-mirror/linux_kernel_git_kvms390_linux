@@ -303,12 +303,17 @@ EXPORT_SYMBOL_GPL(user_mode);
 
 static int set_amode_primary(void)
 {
+	unsigned long cr3 = 0x00000000ffff0000ul; /* psw key mask bits */
+
 	psw_kernel_bits = (psw_kernel_bits & ~PSW_MASK_ASC) | PSW_ASC_HOME;
 	psw_user_bits = (psw_user_bits & ~PSW_MASK_ASC) | PSW_ASC_PRIMARY;
 #ifdef CONFIG_COMPAT
 	psw32_user_bits =
 		(psw32_user_bits & ~PSW32_MASK_ASC) | PSW32_ASC_PRIMARY;
 #endif
+
+	/* enable keys. this is safe because user cannot access home space */
+	__ctl_load(cr3, 3, 3);
 
 	if (MACHINE_HAS_MVCOS) {
 		memcpy(&uaccess, &uaccess_mvcos_switch, sizeof(uaccess));
