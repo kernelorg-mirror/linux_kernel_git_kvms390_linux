@@ -706,7 +706,6 @@ static int iucv_sock_bind(struct socket *sock, struct sockaddr *addr,
 		goto done_unlock;
 
 	/* Bind the socket */
-
 	if (pr_iucv)
 		if (!memcmp(sa->siucv_user_id, iucv_userid, 8))
 			goto vm_bind; /* VM IUCV transport */
