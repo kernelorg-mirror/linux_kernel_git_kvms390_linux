@@ -76,13 +76,13 @@ static void hpte_flush_range(struct mm_struct *mm, unsigned long addr,
 	if (pmd_none(*pmd))
 		return;
 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-	arch_enter_lazy_mmu_mode();
+	arch_enter_lazy_mmu_mode(mm);
 	for (; npages > 0; --npages) {
 		pte_update(mm, addr, pte, 0, 0);
 		addr += PAGE_SIZE;
 		++pte;
 	}
-	arch_leave_lazy_mmu_mode();
+	arch_leave_lazy_mmu_mode(mm);
 	pte_unmap_unlock(pte - 1, ptl);
 }
 
