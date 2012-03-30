@@ -119,9 +119,10 @@ asmlinkage void do_softirq(void)
 				         "a" (__do_softirq)
 				     : "0", "1", "2", "3", "4", "5", "14",
 				       "cc", "memory" );
-		} else
+		} else {
 			/* We are already on the async stack. */
 			__do_softirq();
+		}
 	}
 
 	local_irq_restore(flags);
@@ -200,11 +201,12 @@ int unregister_external_interrupt(u16 code, ext_int_handler_t handler)
 	int index = ext_hash(code);
 
 	spin_lock_irqsave(&ext_int_hash_lock, flags);
-	list_for_each_entry_rcu(p, &ext_int_hash[index], entry)
+	list_for_each_entry_rcu(p, &ext_int_hash[index], entry) {
 		if (p->code == code && p->handler == handler) {
 			list_del_rcu(&p->entry);
 			call_rcu(&p->rcu, ext_int_hash_update);
 		}
+	}
 	spin_unlock_irqrestore(&ext_int_hash_lock, flags);
 	return 0;
 }
@@ -219,9 +221,10 @@ void __irq_entry do_extint(struct pt_regs *regs, struct ext_code ext_code,
 
 	old_regs = set_irq_regs(regs);
 	irq_enter();
-	if (S390_lowcore.int_clock >= S390_lowcore.clock_comparator)
+	if (S390_lowcore.int_clock >= S390_lowcore.clock_comparator) {
 		/* Serve timer interrupts first. */
 		clock_comparator_work();
+	}
 	kstat_cpu(smp_processor_id()).irqs[EXTERNAL_INTERRUPT]++;
 	if (ext_code.code != 0x1004)
 		__get_cpu_var(s390_idle).nohz_delay = 1;
