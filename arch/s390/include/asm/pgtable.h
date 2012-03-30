@@ -945,7 +945,7 @@ static inline void ptep_flush_lazy(struct mm_struct *mm,
 				   unsigned long address, pte_t *ptep)
 {
 	if (mm != current->active_mm ||
-	    (atomic_read(&mm->context.attach_count) & 0xffff) > 2)
+	    (atomic_read(&mm->context.attach_count) & 0xffff) > 1)
 		__ptep_ipte(address, ptep);
 	else
 		mm->context.flush_mm = 1;

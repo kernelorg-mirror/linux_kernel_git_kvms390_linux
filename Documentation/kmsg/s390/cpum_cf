@@ -1,5 +1,5 @@
 /*?
- * Text: "Enabling the performance measuring unit failed with rc=%lx\n"
+ * Text: "Enabling the performance measuring unit failed with rc=%x\n"
  * Severity: Error
  * Parameter:
  *   @1: error condition
@@ -13,7 +13,7 @@
  */
 
 /*?
- * Text: "Disabling the performance measuring unit failed with rc=%lx\n"
+ * Text: "Disabling the performance measuring unit failed with rc=%x\n"
  * Severity: Error
  * Parameter:
  *   @1: error condition

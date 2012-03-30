@@ -124,7 +124,7 @@ static inline void arch_leave_lazy_mmu_mode(struct mm_struct *mm)
 	batch->active = 0;
 }
 
-#define arch_flush_lazy_mmu_mode(mm)      do {} while (0)
+#define arch_flush_lazy_mmu_mode(mm)	  do {} while (0)
 
 
 extern void flush_hash_page(unsigned long va, real_pte_t pte, int psize,
