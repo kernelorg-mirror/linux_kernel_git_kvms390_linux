@@ -2034,9 +2034,9 @@ u32 dump_prefix_page;
 
 void s390_reset_system(void (*func)(void *), void *data)
 {
-	struct lowcore *lc;
+	struct _lowcore *lc;
 
-	lc = (struct lowcore *)(unsigned long) store_prefix();
+	lc = (struct _lowcore *)(unsigned long) store_prefix();
 
 	/* Stack for interrupt/machine check handler */
 	lc->panic_stack = S390_lowcore.panic_stack;

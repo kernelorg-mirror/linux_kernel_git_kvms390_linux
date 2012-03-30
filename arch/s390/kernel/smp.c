@@ -84,7 +84,7 @@ enum {
 struct pcpu {
 	struct cpu cpu;
 	struct task_struct *idle;	/* idle process for the cpu */
-	struct lowcore *lowcore;	/* lowcore page(s) for the cpu */
+	struct _lowcore *lowcore;	/* lowcore page(s) for the cpu */
 	unsigned long async_stack;	/* async stack for the cpu */
 	unsigned long panic_stack;	/* panic stack for the cpu */
 	unsigned long ec_mask;		/* bit mask for ec_xxx functions */
@@ -186,10 +186,10 @@ static void pcpu_ec_call(struct pcpu *pcpu, int ec_bit)
 
 static int __cpuinit pcpu_alloc_lowcore(struct pcpu *pcpu, int cpu)
 {
-	struct lowcore *lc;
+	struct _lowcore *lc;
 
 	if (pcpu != &pcpu_devices[0]) {
-		pcpu->lowcore =	(struct lowcore *)
+		pcpu->lowcore =	(struct _lowcore *)
 			__get_free_pages(GFP_KERNEL | GFP_DMA, LC_ORDER);
 		pcpu->async_stack = __get_free_pages(GFP_KERNEL, ASYNC_ORDER);
 		pcpu->panic_stack = __get_free_page(GFP_KERNEL);
@@ -230,7 +230,7 @@ static void pcpu_free_lowcore(struct pcpu *pcpu)
 	lowcore_ptr[pcpu - pcpu_devices] = NULL;
 #ifndef CONFIG_64BIT
 	if (MACHINE_HAS_IEEE) {
-		struct lowcore *lc = pcpu->lowcore;
+		struct _lowcore *lc = pcpu->lowcore;
 
 		free_page((unsigned long) lc->extended_save_area_addr);
 		lc->extended_save_area_addr = 0;
@@ -247,7 +247,7 @@ static void pcpu_free_lowcore(struct pcpu *pcpu)
 
 static void pcpu_prepare_secondary(struct pcpu *pcpu, int cpu)
 {
-	struct lowcore *lc = pcpu->lowcore;
+	struct _lowcore *lc = pcpu->lowcore;
 
 	atomic_inc(&init_mm.context.attach_count);
 	lc->cpu_nr = cpu;
@@ -264,7 +264,7 @@ static void pcpu_prepare_secondary(struct pcpu *pcpu, int cpu)
 
 static void pcpu_attach_task(struct pcpu *pcpu, struct task_struct *tsk)
 {
-	struct lowcore *lc = pcpu->lowcore;
+	struct _lowcore *lc = pcpu->lowcore;
 	struct thread_info *ti = task_thread_info(tsk);
 
 	lc->kernel_stack = (unsigned long) task_stack_page(tsk) + THREAD_SIZE;
@@ -277,7 +277,7 @@ static void pcpu_attach_task(struct pcpu *pcpu, struct task_struct *tsk)
 
 static void pcpu_start_fn(struct pcpu *pcpu, void (*func)(void *), void *data)
 {
-	struct lowcore *lc = pcpu->lowcore;
+	struct _lowcore *lc = pcpu->lowcore;
 
 	lc->restart_stack = lc->kernel_stack;
 	lc->restart_fn = (unsigned long) func;
@@ -292,7 +292,7 @@ static void pcpu_start_fn(struct pcpu *pcpu, void (*func)(void *), void *data)
 static void pcpu_delegate(struct pcpu *pcpu, void (*func)(void *),
 			  void *data, unsigned long stack)
 {
-	struct lowcore *lc = pcpu->lowcore;
+	struct _lowcore *lc = pcpu->lowcore;
 	unsigned short this_cpu;
 
 	__load_psw_mask(psw_kernel_bits);
@@ -859,7 +859,7 @@ void __init smp_prepare_boot_cpu(void)
 	pcpu->idle = current;
 	pcpu->state = CPU_STATE_CONFIGURED;
 	pcpu->address = boot_cpu_address;
-	pcpu->lowcore = (struct lowcore *)(unsigned long) store_prefix();
+	pcpu->lowcore = (struct _lowcore *)(unsigned long) store_prefix();
 	pcpu->async_stack = S390_lowcore.async_stack - ASYNC_SIZE;
 	pcpu->panic_stack = S390_lowcore.panic_stack - PAGE_SIZE;
 	S390_lowcore.percpu_offset = __per_cpu_offset[0];

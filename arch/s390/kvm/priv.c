@@ -161,7 +161,7 @@ static int handle_stfl(struct kvm_vcpu *vcpu)
 	/* only pass the facility bits, which we can handle */
 	facility_list = S390_lowcore.stfl_fac_list & 0xff00fff3;
 
-	rc = copy_to_guest(vcpu, offsetof(struct lowcore, stfl_fac_list),
+	rc = copy_to_guest(vcpu, offsetof(struct _lowcore, stfl_fac_list),
 			   &facility_list, sizeof(facility_list));
 	if (rc == -EFAULT)
 		kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);

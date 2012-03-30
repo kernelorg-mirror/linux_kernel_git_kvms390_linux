@@ -31,7 +31,7 @@ struct save_area {
 	u32	ctrl_regs[16];
 } __packed;
 
-struct lowcore {
+struct _lowcore {
 	psw_t	restart_psw;			/* 0x0000 */
 	psw_t	restart_old_psw;		/* 0x0008 */
 	__u8	pad_0x0010[0x0014-0x0010];	/* 0x0010 */
@@ -183,7 +183,7 @@ struct save_area {
 	u64	ctrl_regs[16];
 } __packed;
 
-struct lowcore {
+struct _lowcore {
 	__u8	pad_0x0000[0x0014-0x0000];	/* 0x0000 */
 	__u32	ipl_parmblock_ptr;		/* 0x0014 */
 	__u8	pad_0x0018[0x0080-0x0018];	/* 0x0018 */
@@ -341,9 +341,9 @@ struct lowcore {
 
 #endif /* CONFIG_32BIT */
 
-#define S390_lowcore (*((struct lowcore *) 0))
+#define S390_lowcore (*((struct _lowcore *) 0))
 
-extern struct lowcore *lowcore_ptr[];
+extern struct _lowcore *lowcore_ptr[];
 
 static inline void set_prefix(__u32 address)
 {

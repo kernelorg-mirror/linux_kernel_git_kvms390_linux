@@ -243,13 +243,13 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
 	case KVM_S390_RESTART:
 		VCPU_EVENT(vcpu, 4, "%s", "interrupt: cpu restart");
 		vcpu->stat.deliver_restart_signal++;
-		rc = copy_to_guest(vcpu, offsetof(struct lowcore,
+		rc = copy_to_guest(vcpu, offsetof(struct _lowcore,
 		  restart_old_psw), &vcpu->arch.sie_block->gpsw, sizeof(psw_t));
 		if (rc == -EFAULT)
 			exception = 1;
 
 		rc = copy_from_guest(vcpu, &vcpu->arch.sie_block->gpsw,
-			offsetof(struct lowcore, restart_psw), sizeof(psw_t));
+			offsetof(struct _lowcore, restart_psw), sizeof(psw_t));
 		if (rc == -EFAULT)
 			exception = 1;
 		atomic_clear_mask(CPUSTAT_STOPPED, &vcpu->arch.sie_block->cpuflags);
