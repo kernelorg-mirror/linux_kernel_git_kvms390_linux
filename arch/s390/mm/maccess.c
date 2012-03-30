@@ -106,7 +106,7 @@ void copy_to_absolute_zero(void *dest, void *src, size_t count)
 {
 	unsigned long cr0;
 
-	BUG_ON((unsigned long) dest + count >= sizeof(struct _lowcore));
+	BUG_ON((unsigned long) dest + count >= sizeof(struct lowcore));
 	preempt_disable();
 	__ctl_store(cr0, 0, 0);
 	__ctl_clear_bit(0, 28); /* disable lowcore protection */
