@@ -33,6 +33,7 @@ enum interruption_class {
 	IOINT_APB,
 	IOINT_ADM,
 	IOINT_CSC,
+	IOINT_VIR,
 	NMI_NMI,
 	NR_IRQS,
 };
