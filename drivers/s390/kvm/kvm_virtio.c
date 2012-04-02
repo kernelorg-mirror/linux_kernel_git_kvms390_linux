@@ -17,7 +17,6 @@
 #include <linux/virtio.h>
 #include <linux/virtio_config.h>
 #include <linux/slab.h>
-#include <linux/virtio_console.h>
 #include <linux/interrupt.h>
 #include <linux/virtio_ring.h>
 #include <linux/export.h>
@@ -25,9 +24,9 @@
 #include <asm/io.h>
 #include <asm/kvm_para.h>
 #include <asm/kvm_virtio.h>
-#include <asm/sclp.h>
 #include <asm/setup.h>
 #include <asm/irq.h>
+#include <asm/sclp.h>
 
 #define VIRTIO_SUBCODE_64 0x0D00
 
@@ -451,8 +450,7 @@ static int __init kvm_devices_init(void)
 		return -ENODEV;
 
 	if (test_devices_support(total_memory_size) < 0)
-		/* No error. */
-		return 0;
+		return -ENODEV;
 
 	rc = vmem_add_mapping(total_memory_size, PAGE_SIZE);
 	if (rc)
@@ -476,29 +474,6 @@ static int __init kvm_devices_init(void)
 	scan_devices();
 	return 0;
 }
-
-/* code for early console output with virtio_console */
-static __init int early_put_chars(u32 vtermno, const char *buf, int count)
-{
-	char scratch[17];
-	unsigned int len = count;
-
-	if (len > sizeof(scratch) - 1)
-		len = sizeof(scratch) - 1;
-	scratch[len] = '\0';
-	memcpy(scratch, buf, len);
-	kvm_hypercall1(KVM_S390_VIRTIO_NOTIFY, __pa(scratch));
-	return len;
-}
-
-static int __init s390_virtio_console_init(void)
-{
-	if (sclp_has_vt220() || sclp_has_linemode())
-		return -ENODEV;
-	return virtio_cons_early_init(early_put_chars);
-}
-console_initcall(s390_virtio_console_init);
-
 
 /*
  * We do this after core stuff, but before the drivers.
