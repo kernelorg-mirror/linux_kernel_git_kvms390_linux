@@ -26,7 +26,7 @@ static cputime64_t get_idle_time(int cpu)
 	cputime64_t idle;
 
 	idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-	if (!nr_iowait_cpu(cpu))
+	if (cpu_online(cpu) && !nr_iowait_cpu(cpu))
 		idle += arch_idle_time(cpu);
 	return idle;
 }
@@ -36,7 +36,7 @@ static cputime64_t get_iowait_time(int cpu)
 	cputime64_t iowait;
 
 	iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
-	if (nr_iowait_cpu(cpu))
+	if (cpu_online(cpu) && nr_iowait_cpu(cpu))
 		iowait += arch_idle_time(cpu);
 	return iowait;
 }
