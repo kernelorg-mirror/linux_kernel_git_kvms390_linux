@@ -138,6 +138,13 @@ source "kernel/time/Kconfig"
 
 config 64BIT
 	def_bool y
+	prompt "64 bit kernel"
+	help
+	  Select this option if you have an IBM z/Architecture machine
+	  and want to use the 64 bit addressing mode.
+
+config 32BIT
+	def_bool y if !64BIT
 
 config KTIME_SCALAR
 	def_bool 32BIT
