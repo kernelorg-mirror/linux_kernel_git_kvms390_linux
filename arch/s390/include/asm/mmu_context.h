@@ -81,7 +81,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	WARN_ON(atomic_read(&prev->context.attach_count) < 0);
 	do {
 		v = atomic_read(&next->context.attach_count);
-		if (v & 0xffff0000)
+		if (v == 0x00010001)
 			continue;
 	} while (atomic_cmpxchg(&next->context.attach_count, v, v + 1) != v);
 	/* Check for TLBs not flushed yet */
