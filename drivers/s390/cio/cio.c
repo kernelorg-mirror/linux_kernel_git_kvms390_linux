@@ -659,33 +659,16 @@ static int console_subchannel_in_use;
  * Use cio_tpi to get a pending interrupt and call the interrupt handler.
  * Return non-zero if an interrupt was processed, zero otherwise.
  */
-static int cio_tpi(void)
+static int cio_tsch(struct subchannel *sch)
 {
-	struct tpi_info *tpi_info;
-	struct subchannel *sch;
 	struct irb *irb;
 	int irq_context;
 
-	tpi_info = (struct tpi_info *)&S390_lowcore.subchannel_id;
-	if (tpi(NULL) != 1)
-		return 0;
-	kstat_cpu(smp_processor_id()).irqs[IO_INTERRUPT]++;
-	if (tpi_info->adapter_IO) {
-		do_adapter_IO(tpi_info->isc);
-		return 1;
-	}
 	irb = (struct irb *)&S390_lowcore.irb;
 	/* Store interrupt response block to lowcore. */
-	if (tsch(tpi_info->schid, irb) != 0) {
+	if (tsch(sch->schid, irb) != 0)
 		/* Not status pending or not operational. */
-		kstat_cpu(smp_processor_id()).irqs[IOINT_CIO]++;
 		return 1;
-	}
-	sch = (struct subchannel *)(unsigned long)tpi_info->intparm;
-	if (!sch) {
-		kstat_cpu(smp_processor_id()).irqs[IOINT_CIO]++;
-		return 1;
-	}
 	irq_context = in_interrupt();
 	if (!irq_context)
 		local_bh_disable();
@@ -732,7 +715,7 @@ void wait_cons_dev(void)
 
 	do {
 		spin_unlock(console_subchannel.lock);
-		if (!cio_tpi())
+		if (!cio_tsch(&console_subchannel))
 			cpu_relax();
 		spin_lock(console_subchannel.lock);
 	} while (console_subchannel.schib.scsw.cmd.actl != 0);
