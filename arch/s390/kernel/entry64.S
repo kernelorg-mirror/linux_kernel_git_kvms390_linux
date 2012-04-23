@@ -160,21 +160,15 @@ _TIF_EXIT_SIE = (_TIF_SIGPENDING | _TIF_NEED_RESCHED | _TIF_MCCK_PENDING)
 ENTRY(__switch_to)
 	lg	%r4,__THREAD_info(%r2)		# get thread_info of prev
 	lg	%r5,__THREAD_info(%r3)		# get thread_info of next
-	stctg	%c9,%c11,__SF_EMPTY(%r15)	# store ftrace PER registers
 	tm	__TI_flags+7(%r4),_TIF_MCCK_PENDING # machine check pending?
 	jz	0f
 	ni	__TI_flags+7(%r4),255-_TIF_MCCK_PENDING	# clear flag in prev
 	oi	__TI_flags+7(%r5),_TIF_MCCK_PENDING	# set it in next
 0:	stmg	%r6,%r15,__SF_GPRS(%r15)	# store gprs of prev task
 	stg	%r15,__THREAD_ksp(%r2)		# store kernel stack of prev
-	lg	%r6,__THREAD_ksp(%r3)		# load kernel stack of next
+	lg	%r15,__THREAD_ksp(%r3)		# load kernel stack of next
 	lctl	%c4,%c4,__TASK_pid(%r3)		# load pid to control reg. 4
-	icm	%r8,15,__TI_ftrace_per_flag(%r5)
-	jz	0f
-	clc	0(24,%r6),__SF_EMPTY(%r15)
-	je	0f
-	lctlg	%c9,%c11,__SF_EMPTY(%r6)	# load ftrace PER registers
-0:	lmg	%r6,%r15,__SF_GPRS(%r6)		# load gprs of next task
+	lmg	%r6,%r15,__SF_GPRS(%r15)	# load gprs of next task
 	stg	%r3,__LC_CURRENT		# store task struct of next
 	mvc	__LC_CURRENT_PID+4(4,%r0),__TASK_pid(%r3) # store pid of next
 	stg	%r5,__LC_THREAD_INFO		# store thread info of next
@@ -411,11 +405,6 @@ ENTRY(pgm_check_handler)
 1:	UPDATE_VTIME %r14,__LC_SYNC_ENTER_TIMER
 	LAST_BREAK %r14
 	lg	%r15,__LC_KERNEL_STACK
-	lg	%r14,__TI_task(%r12)
-	lghi	%r13,__LC_PGM_TDB
-	tm	__LC_PGM_ILC+2,0x02	# check for transaction abort
-	jz	2f
-	mvc	__THREAD_trap_tdb(256,%r14),0(%r13)
 2:	aghi	%r15,-(STACK_FRAME_OVERHEAD + __PT_SIZE)
 	la	%r11,STACK_FRAME_OVERHEAD(%r15)
 	stmg	%r0,%r7,__PT_R0(%r11)
@@ -425,15 +414,15 @@ ENTRY(pgm_check_handler)
 	mvc	__PT_INT_PARM_LONG(8,%r11),__LC_TRANS_EXC_CODE
 	stg	%r10,__PT_ARGS(%r11)
 	tm	__LC_PGM_ILC+3,0x80	# check for per exception
-	jz	pgm_trap
+	jz	0f
+	lg	%r1,__TI_task(%r12)
 	tmhh	%r8,0x0001		# kernel per event ?
 	jz	pgm_kprobe
 	oi	__TI_flags+7(%r12),_TIF_PER_TRAP
-	mvc	__THREAD_per_address(8,%r14),__LC_PER_ADDRESS
-	mvc	__THREAD_per_cause(2,%r14),__LC_PER_CAUSE
-	mvc	__THREAD_per_paid(1,%r14),__LC_PER_PAID
-pgm_trap:
-	REENABLE_IRQS
+	mvc	__THREAD_per_address(8,%r1),__LC_PER_ADDRESS
+	mvc	__THREAD_per_cause(2,%r1),__LC_PER_CAUSE
+	mvc	__THREAD_per_paid(1,%r1),__LC_PER_PAID
+0:	REENABLE_IRQS
 	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
 	larl	%r1,pgm_check_table
 	llgh	%r10,__PT_INT_CODE+2(%r11)
@@ -452,22 +441,8 @@ pgm_kprobe:
 	REENABLE_IRQS
 	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
 	lgr	%r2,%r11		# pass pointer to pt_regs
-	larl	%r14,sysc_return	# return address
-#ifdef CONFIG_FUNCTION_GRAPH_INSN
-#
-# Note: the check to distinguish between ftrace and kprobes uses the
-# fact that kprobes sets up single step tracing for a single instruction
-# while ftrace uses the full address range.
-#
-	stctg	%c10,%c11,__SF_EMPTY(%r15)
-	clc	__SF_EMPTY(8,%r15),__SF_EMPTY+8(%r15)
-	jge	do_per_trap		# for kprobes %c10 == %c11
-	tm	__LC_PGM_INT_CODE+1,0x3f
-	jnz	pgm_trap
-	jg	ftrace_single_step	# for ftrace %c10 != %c11
-#else
-	jg	do_per_trap		# for kprobes %c10 == %c11
-#endif
+	brasl	%r14,do_per_trap
+	j	sysc_return
 
 #
 # single stepped system call
@@ -647,7 +622,6 @@ ext_skip:
 	mvc	__PT_R8(64,%r11),__LC_SAVE_AREA_ASYNC
 	stmg	%r8,%r9,__PT_PSW(%r11)
 	TRACE_IRQS_OFF
-	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
 	lghi	%r1,4096
 	lgr	%r2,%r11		# pass pointer to pt_regs
 	llgf	%r3,__LC_EXT_CPU_ADDR	# get cpu address + interruption code
