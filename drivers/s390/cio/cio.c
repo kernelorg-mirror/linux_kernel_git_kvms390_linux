@@ -696,10 +696,6 @@ void *cio_get_console_priv(void)
  */
 void wait_cons_dev(void)
 {
-	/* 
-	 * before entering the spinlock we may already have
-	 * processed the interrupt on a different CPU...
-	 */
 	if (!console_subchannel_in_use)
 		return;
 
