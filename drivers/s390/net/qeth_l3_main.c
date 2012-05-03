@@ -3679,7 +3679,6 @@ static int qeth_l3_ip_event(struct notifier_block *this,
 	struct qeth_ipaddr *addr;
 	struct qeth_card *card;
 
-QETH_DBF_TEXT(SETUP, 3, "ipevent");
 	if (dev_net(dev) != &init_net)
 		return NOTIFY_DONE;
 
