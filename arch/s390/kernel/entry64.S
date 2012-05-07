@@ -150,9 +150,9 @@ _TIF_EXIT_SIE = (_TIF_SIGPENDING | _TIF_NEED_RESCHED | _TIF_MCCK_PENDING)
 
 	.macro STCK savearea
 #if defined(CONFIG_64BIT) && !defined(CONFIG_MARCH_Z900) && !defined(CONFIG_MARCH_Z990)
-	.insn	s,0xb27c0000,\savearea 		# store clock fast
+	.insn	s,0xb27c0000,\savearea		# store clock fast
 #else
-	.insn	s,0xb2050000,\savearea 		# store clock
+	.insn	s,0xb2050000,\savearea		# store clock
 #endif
 	.endm
 
