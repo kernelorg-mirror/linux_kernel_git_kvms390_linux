@@ -396,18 +396,18 @@ sub write_dita_files()
 	}
 	if ($kmsg_desc{$tag}->{'DESC'} eq "") {
 		next;
-	}	
+	}
 	$file = $objtree . "dita/" . $kmsg_prefix . $tag . ".dita";
 	if (!open(WR, ">$file")) {
 		warn "Error: Cannot open file $file\n";
 		$errors++;
 		return;
-	}	
+	}
 	@kmsg_elements = (
-		"$kmsg_desc{$tag}->{'TEXT'}", 
+		"$kmsg_desc{$tag}->{'TEXT'}",
 		"$kmsg_desc{$tag}->{'DESC'}",
-		"$kmsg_desc{$tag}->{'USER'}",						
-		"$kmsg_desc{$tag}->{'ARGV'}");						
+		"$kmsg_desc{$tag}->{'USER'}",
+		"$kmsg_desc{$tag}->{'ARGV'}");
 	map{s/&/&amp;/g} @kmsg_elements;
 	map{s/</&lt;/g} @kmsg_elements;
 	map{s/>/&gt;/g} @kmsg_elements;
@@ -417,7 +417,7 @@ sub write_dita_files()
 	$user = shift @kmsg_elements;
 	if ($user eq "") {
 		$user = "None.";
-	}	
+	}
 	$argv = shift @kmsg_elements;
 	if ($argv ne "") {
 		@parms = split(/\s*\n\s*/,$argv);
@@ -427,21 +427,21 @@ sub write_dita_files()
 		if (!($parm eq "")) {
 			$text =~ s/%\.?\w+/<varname>&lt;$parm&gt;<\/varname>/;
 		}
-		}	
-	}	
+		}
+	}
 	print WR "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
 	print WR "<!DOCTYPE msg PUBLIC \"-//IBM//DTD DITA Message Reference";
-	print WR "//EN\" \"msgRef.dtd\">\n";	
+	print WR "//EN\" \"msgRef.dtd\">\n";
 	print WR "<msg id=\"$kmsg_prefix$tag\" xml:lang=\"en-us\">\n";
 	print WR "<msgId><msgNumber>$tag</msgNumber></msgId>\n";
-	print WR "<msgText>$text</msgText>\n";	
-	print WR "<msgBody>\n";	
+	print WR "<msgText>$text</msgText>\n";
+	print WR "<msgBody>\n";
 	print WR "<msgExplanation>$desc</msgExplanation>\n";
-	print WR "<msgUserResponse>$user</msgUserResponse>\n";	
-	print WR "<msgOther><title>Severity</title>";	
-	print WR "$kmsg_desc{$tag}->{'SEV'}</msgOther>\n";		
-	print WR "</msgBody>\n";	
-	print WR "</msg>\n";	
+	print WR "<msgUserResponse>$user</msgUserResponse>\n";
+	print WR "<msgOther><title>Severity</title>";
+	print WR "$kmsg_desc{$tag}->{'SEV'}</msgOther>\n";
+	print WR "</msgBody>\n";
+	print WR "</msg>\n";
 	}
 }
 
