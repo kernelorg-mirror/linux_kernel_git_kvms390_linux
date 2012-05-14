@@ -130,17 +130,15 @@ extern int copy_from_user_real(void *dest, void __user *src, size_t count);
  * Force strict CPU ordering.
  * And yes, this is required on UP too when we're talking
  * to devices.
- *
- * This is very similar to the ppc eieio/sync instruction in that is
- * does a checkpoint syncronisation & makes sure that 
- * all memory ops have completed wrt other CPU's ( see 7-15 POP  DJB ).
  */
 
-#define eieio()	asm volatile("bcr 15,0" : : : "memory")
-#define SYNC_OTHER_CORES(x)   eieio()
-#define mb()    eieio()
-#define rmb()   eieio()
-#define wmb()   eieio()
+static inline void mb(void)
+{
+	asm volatile("bcr 15,0" : : : "memory");
+}
+
+#define rmb()	mb()
+#define wmb()	mb()
 #define read_barrier_depends() do { } while(0)
 #define smp_mb()       mb()
 #define smp_rmb()      rmb()
