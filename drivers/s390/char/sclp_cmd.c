@@ -351,7 +351,17 @@ out:
 
 static int sclp_assign_storage(u16 rn)
 {
-	return do_assign_storage(0x000d0001, rn);
+	unsigned long long start, address;
+	int rc;
+
+	rc = do_assign_storage(0x000d0001, rn);
+	if (rc)
+		goto out;
+	start = address = rn2addr(rn);
+	for (; address < start + rzm; address += PAGE_SIZE)
+		page_set_storage_key(address, PAGE_DEFAULT_KEY, 0);
+out:
+	return rc;
 }
 
 static int sclp_unassign_storage(u16 rn)
@@ -432,7 +442,7 @@ static int sclp_mem_change_state(unsigned long start, unsigned long size,
 static int sclp_mem_notifier(struct notifier_block *nb,
 			     unsigned long action, void *data)
 {
-	unsigned long start, size, address;
+	unsigned long start, size;
 	struct memory_notify *arg;
 	unsigned char id;
 	int rc = 0;
@@ -451,11 +461,6 @@ static int sclp_mem_notifier(struct notifier_block *nb,
 		break;
 	case MEM_GOING_ONLINE:
 		rc = sclp_mem_change_state(start, size, 1);
-		if (rc)
-			break;
-		address = start;
-		for (; address < start + size; address += PAGE_SIZE)
-			page_set_storage_key(address, PAGE_DEFAULT_KEY, 0);
 		break;
 	case MEM_CANCEL_ONLINE:
 		sclp_mem_change_state(start, size, 0);
