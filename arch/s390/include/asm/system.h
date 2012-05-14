@@ -134,7 +134,12 @@ extern int copy_from_user_real(void *dest, void __user *src, size_t count);
 
 static inline void mb(void)
 {
+#ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
+	/* Fast-BCR without checkpoint synchronization */
+	asm volatile("bcr 14,0" : : : "memory");
+#else
 	asm volatile("bcr 15,0" : : : "memory");
+#endif
 }
 
 #define rmb()	mb()
