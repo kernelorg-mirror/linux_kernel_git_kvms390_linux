@@ -262,7 +262,7 @@ static struct ccwgroup_driver claw_group_driver = {
 		.owner	= THIS_MODULE,
 		.name	= "claw",
 	},
-	.setup       = claw_probe,
+	.setup	     = claw_probe,
 	.remove      = claw_remove_device,
 	.set_online  = claw_new_device,
 	.set_offline = claw_shutdown_device,
@@ -3276,8 +3276,8 @@ static const struct device_type claw_devtype = {
 };
 
 /*----------------------------------------------------------------*
- *   claw_probe                                                   *
- *      this function is called for each CLAW device.             *
+ *   claw_probe 						  *
+ *	this function is called for each CLAW device.		  *
  *----------------------------------------------------------------*/
 static int claw_probe(struct ccwgroup_device *cgdev)
 {
