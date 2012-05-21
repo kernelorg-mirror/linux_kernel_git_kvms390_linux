@@ -1,5 +1,3 @@
-/*? Text: "" */
-/*? Text: "%s() alloc_percpu failed\n" */
 /*? Text: "%s(): NULL arg\n" */
 /*? Text: "%s(): NULL scheduler_name\n" */
 /*? Text: "%s(): [%s] pe already existed in the system\n" */
@@ -8,17 +6,13 @@
 /*? Text: "%s(): [%s] scheduler already existed in the system\n" */
 /*? Text: "%s(): [%s] scheduler already linked\n" */
 /*? Text: "%s(): [%s] scheduler is not in the list. failed\n" */
-/*? Text: "%s(): alloc_percpu.\n" */
 /*? Text: "%s(): done error\n" */
 /*? Text: "%s(): init error\n" */
 /*? Text: "%s(): lower threshold is higher than upper threshold\n" */
 /*? Text: "%s(): no memory\n" */
 /*? Text: "%s(): request for already hashed, called from %pF\n" */
 /*? Text: "%s(): request for unhash flagged, called from %pF\n" */
-/*? Text: "%s(): scheduler arg NULL\n" */
 /*? Text: "%s(): server weight less than zero\n" */
-/*? Text: "%s(): svc arg NULL\n" */
-/*? Text: "%s(): svc isn't bound\n" */
 /*? Text: "%s: %s %pI4:%d - %s\n" */
 /*? Text: "%s: %s [%pI6]:%d - %s\n" */
 /*? Text: "%s: FWM %u 0x%08X - %s\n" */
@@ -41,42 +35,24 @@
 /*? Text: "Error setting outbound mcast interface\n" */
 /*? Text: "Failed to stop Backup Daemon\n" */
 /*? Text: "Failed to stop Master Daemon\n" */
-/*? Text: "LBLC: no destination available\n" */
-/*? Text: "LBLCR: no destination available\n" */
-/*? Text: "LC: no destination available\n" */
-/*? Text: "NQ: no destination available\n" */
-/*? Text: "RR: no destination available\n" */
 /*? Text: "Registered protocols (%s)\n" */
-/*? Text: "SED: no destination available\n" */
-/*? Text: "SH: no destination available\n" */
 /*? Text: "SYNC, connection pe_data invalid\n" */
 /*? Text: "Schedule: port zero only supported in persistent services, check your ipvs configuration\n" */
 /*? Text: "Scheduler module ip_vs_%s not found\n" */
 /*? Text: "There is no net ptr to find in the skb in %s() line:%d\n" */
 /*? Text: "UDP no ns data\n" */
-/*? Text: "Unsupported protocol %u in sync msg\n" */
-/*? Text: "WLC: no destination available\n" */
-/*? Text: "WRR: no destination available: all destinations are overloaded\n" */
-/*? Text: "WRR: no destination available: no destinations present\n" */
-/*? Text: "WRR: no destination available\n" */
 /*? Text: "You probably need to specify IP address on multicast interface.\n" */
 /*? Text: "[%s] pe registered.\n" */
 /*? Text: "[%s] pe unregistered.\n" */
 /*? Text: "[%s] scheduler registered.\n" */
 /*? Text: "[%s] scheduler unregistered.\n" */
-/*? Text: "bogus conn in sync message\n" */
-/*? Text: "bogus conn options in sync message\n" */
-/*? Text: "bogus sync message size\n" */
 /*? Text: "can't register hooks.\n" */
-/*? Text: "can't setup application helper.\n" */
+/*? Text: "can't register netlink/ioctl.\n" */
 /*? Text: "can't setup connection table.\n" */
 /*? Text: "can't setup control.\n" */
-/*? Text: "can't setup sync data.\n" */
 /*? Text: "cannot register Generic Netlink interface.\n" */
-/*? Text: "cannot register namespace.\n" */
 /*? Text: "cannot register sockopt.\n" */
 /*? Text: "get_ctl: len %u < %u\n" */
-/*? Text: "ip_vs_conn_new failed\n" */
 /*? Text: "ip_vs_send_async error\n" */
 /*? Text: "ip_vs_sync_buff_create failed.\n" */
 /*? Text: "ipvs loaded.\n" */
@@ -93,8 +69,6 @@
 /*? Text: "shouldn't reach here, because the box is on the half connection in the tun/dr module.\n" */
 /*? Text: "stopping backup sync thread %d ...\n" */
 /*? Text: "stopping master sync thread %d ...\n" */
-/*? Text: "sync message header too short\n" */
 /*? Text: "sync thread started: state = BACKUP, mcast_ifn = %s, syncid = %d\n" */
 /*? Text: "sync thread started: state = MASTER, mcast_ifn = %s, syncid = %d\n" */
 /*? Text: "unknown Generic Netlink command\n" */
-/*? Text: "%s(): no memory.\n" */

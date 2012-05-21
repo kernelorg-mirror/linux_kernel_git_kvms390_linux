@@ -6,8 +6,6 @@
  *	      Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
  */
 
-#define PERF_EVENT_INDEX_OFFSET 0
-
 #include <asm/cpu_mf.h>
 
 /* CPU-measurement counter facility */
