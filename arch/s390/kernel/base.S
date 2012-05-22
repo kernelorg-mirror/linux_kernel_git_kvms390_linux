@@ -107,7 +107,7 @@ ENTRY(diag308_reset)
 	larl	%r4,.Lfpctl		# Restore floating point ctl register
 	lfpc	0(%r4)
 	larl	%r4,.Lcontinue_psw	# Restore PSW flags
-	lpswe   0(%r4)
+	lpswe	0(%r4)
 .Lcontinue:
 	br	%r14
 .align 16
