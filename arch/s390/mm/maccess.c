@@ -105,10 +105,9 @@ int memcpy_real(void *dest, void *src, size_t count)
  */
 void memcpy_absolute(void *dest, void *src, size_t count)
 {
-	static DEFINE_SPINLOCK(memcpy_absolute_lock);
 	unsigned long cr0, flags, prefix;
 
-	spin_lock_irqsave(&memcpy_absolute_lock, flags);
+	flags = arch_local_irq_save();
 	__ctl_store(cr0, 0, 0);
 	__ctl_clear_bit(0, 28); /* disable lowcore protection */
 	prefix = store_prefix();
@@ -122,7 +121,7 @@ void memcpy_absolute(void *dest, void *src, size_t count)
 		memcpy(dest, src, count);
 	}
 	__ctl_load(cr0, 0, 0);
-	spin_unlock_irqrestore(&memcpy_absolute_lock, flags);
+	arch_local_irq_restore(flags);
 }
 
 /*
