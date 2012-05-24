@@ -134,6 +134,10 @@ extern char vmpoff_cmd[];
 #define SET_CONSOLE_3215	do { console_mode = 2; } while (0)
 #define SET_CONSOLE_3270	do { console_mode = 3; } while (0)
 
+extern u8 sclp_consoles;
+#define SCLP_HAS_LINEMODE	1
+#define SCLP_HAS_VT220		2
+
 #define NSS_NAME_SIZE	8
 extern char kernel_nss_name[];
 

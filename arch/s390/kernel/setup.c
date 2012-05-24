@@ -136,11 +136,26 @@ static int __init condev_setup(char *str)
 
 __setup("condev=", condev_setup);
 
+static inline bool sclp_has_linemode(void)
+{
+	return sclp_consoles & SCLP_HAS_LINEMODE;
+}
+
+static inline bool sclp_has_vt220(void)
+{
+	return sclp_consoles & SCLP_HAS_VT220;
+}
+
 static void __init set_preferred_console(void)
 {
-	if (MACHINE_IS_KVM)
-		add_preferred_console("hvc", 0, NULL);
-	else if (CONSOLE_IS_3215 || CONSOLE_IS_SCLP)
+	if (MACHINE_IS_KVM) {
+		if (sclp_has_vt220())
+			add_preferred_console("ttyS", 1, NULL);
+		else if (sclp_has_linemode())
+			add_preferred_console("ttyS", 0, NULL);
+		else
+			add_preferred_console("hvc", 0, NULL);
+	} else if (CONSOLE_IS_3215 || CONSOLE_IS_SCLP)
 		add_preferred_console("ttyS", 0, NULL);
 	else if (CONSOLE_IS_3270)
 		add_preferred_console("tty3270", 0, NULL);
