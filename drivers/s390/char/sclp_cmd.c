@@ -46,24 +46,10 @@ struct read_info_sccb {
 	u8	_reserved5[4096 - 112];	/* 112-4095 */
 } __attribute__((packed, aligned(PAGE_SIZE)));
 
-struct mask_sccb {
-    struct sccb_header header;
-    u16 _reserved;
-    u16 mask_length;
-    sccb_mask_t receive_mask;
-    sccb_mask_t send_mask;
-    sccb_mask_t sclp_receive_mask;
-    sccb_mask_t sclp_send_mask;
-    u8  _reserved5[4096 - 28]; /* 28-4095 */
-} __attribute__((packed, aligned(PAGE_SIZE)));
-
 static struct read_info_sccb __initdata early_read_info_sccb;
 static int __initdata early_read_info_sccb_valid;
-static struct mask_sccb __initdata early_mask_sccb;
-static int __initdata early_mask_sccb_valid;
 
 u64 sclp_facilities;
-u8 sclp_consoles;
 static u8 sclp_fac84;
 static unsigned long long rzm;
 static unsigned long long rnmax;
@@ -115,39 +101,9 @@ static void __init sclp_read_info_early(void)
 	}
 }
 
-static void __init sclp_get_masks_early(void)
-{
-	int rc;
-	int i;
-	struct mask_sccb *sccb;
-	sclp_cmdw_t commands[] = {SCLP_CMDW_WRITE_EVENT_MASK};
-
-	sccb = &early_mask_sccb;
-	for (i = 0; i < ARRAY_SIZE(commands); i++) {
-		do {
-			memset(sccb, 0, sizeof(*sccb));
-			sccb->header.length = sizeof(*sccb);
-			sccb->mask_length = sizeof(sccb_mask_t);
-			sccb->sclp_receive_mask = 0;
-			sccb->sclp_send_mask = 0;
-			rc = sclp_cmd_sync_early(commands[i], sccb);
-		} while (rc == -EBUSY);
-
-		if (rc)
-			break;
-		if (sccb->header.response_code == 0x20) {
-			early_mask_sccb_valid = 1;
-			break;
-		}
-		if (sccb->header.response_code != 0x1f0)
-			break;
-	}
-}
-
 void __init sclp_facilities_detect(void)
 {
 	struct read_info_sccb *sccb;
-	struct mask_sccb *sccb2;
 
 	sclp_read_info_early();
 	if (!early_read_info_sccb_valid)
@@ -159,17 +115,6 @@ void __init sclp_facilities_detect(void)
 	rnmax = sccb->rnmax ? sccb->rnmax : sccb->rnmax2;
 	rzm = sccb->rnsize ? sccb->rnsize : sccb->rnsize2;
 	rzm <<= 20;
-
-	sclp_consoles = 0;
-	sclp_get_masks_early();
-	if (!early_mask_sccb_valid)
-		return;
-
-	sccb2 = &early_mask_sccb;
-	if (sccb2->sclp_send_mask && EVTYP_MSG_MASK)
-		sclp_consoles |= 0x0001;
-	if (sccb2->sclp_send_mask && EVTYP_VT220MSG_MASK)
-		sclp_consoles |= 0x0002;
 }
 
 unsigned long long sclp_get_rnmax(void)
