@@ -46,14 +46,9 @@ struct read_info_sccb {
 	u8	_reserved5[4096 - 112];	/* 112-4095 */
 } __attribute__((packed, aligned(PAGE_SIZE)));
 
-struct event_mask_sccb {
-	struct init_sccb sccb;
-} __attribute__((packed, aligned(PAGE_SIZE)));
-
+static struct init_sccb __initdata early_event_mask_sccb __aligned(PAGE_SIZE);
 static struct read_info_sccb __initdata early_read_info_sccb;
 static int __initdata early_read_info_sccb_valid;
-
-static struct event_mask_sccb __initdata early_event_mask_sccb;
 
 u64 sclp_facilities;
 static u8 sclp_fac84;
@@ -109,15 +104,14 @@ static void __init sclp_read_info_early(void)
 
 static void __init sclp_event_mask_early(void)
 {
+	struct init_sccb *sccb = &early_event_mask_sccb;
 	int rc;
-	struct event_mask_sccb *em;
 
-	em = &early_event_mask_sccb;
 	do {
-		memset(em, 0, sizeof(struct event_mask_sccb));
-		em->sccb.header.length = sizeof(struct init_sccb);
-		em->sccb.mask_length = sizeof(sccb_mask_t);
-		rc = sclp_cmd_sync_early(SCLP_CMDW_WRITE_EVENT_MASK, &em->sccb);
+		memset(sccb, 0, sizeof(*sccb));
+		sccb->header.length = sizeof(*sccb);
+		sccb->mask_length = sizeof(sccb_mask_t);
+		rc = sclp_cmd_sync_early(SCLP_CMDW_WRITE_EVENT_MASK, sccb);
 	} while (rc == -EBUSY);
 }
 
@@ -141,7 +135,7 @@ void __init sclp_facilities_detect(void)
 
 bool __init sclp_has_linemode(void)
 {
-	struct init_sccb *sccb = &early_event_mask_sccb.sccb;
+	struct init_sccb *sccb = &early_event_mask_sccb;
 
 	if (sccb->header.response_code != 0x20)
 		return 0;
@@ -152,7 +146,7 @@ bool __init sclp_has_linemode(void)
 
 bool __init sclp_has_vt220(void)
 {
-	struct init_sccb *sccb = &early_event_mask_sccb.sccb;
+	struct init_sccb *sccb = &early_event_mask_sccb;
 
 	if (sccb->header.response_code != 0x20)
 		return 0;
