@@ -435,14 +435,14 @@ static void __init setup_lowcore(void)
 	 * restart data to the absolute zero lowcore. This is necesary if
 	 * PSW restart is done on an offline CPU that has lowcore zero.
 	 */
-	lc->restart_stack = (unsigned long) restart_stack;
-	lc->restart_fn = (unsigned long) do_restart;
-	lc->restart_data = 0;
-	lc->restart_source = -1UL;
+	lc->restart.stack = (unsigned long) restart_stack;
+	lc->restart.fn = (unsigned long) do_restart;
+	lc->restart.data = 0;
+	lc->restart.source = -1UL;
 
 	/* Setup absolute zero lowcore */
-	memcpy_absolute(&S390_lowcore.restart_stack, &lc->restart_stack,
-			4 * sizeof(unsigned long));
+	memcpy_absolute(&S390_lowcore.restart, &lc->restart,
+			sizeof(S390_lowcore.restart));
 	memcpy_absolute(&S390_lowcore.restart_psw, &lc->restart_psw,
 			sizeof(lc->restart_psw));
 

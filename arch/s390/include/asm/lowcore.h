@@ -17,6 +17,13 @@ struct lowcore_ipib {
 	unsigned int csum;
 } __packed;
 
+struct lowcore_restart {
+	unsigned long stack;	/* restart stack */
+	unsigned long fn;	/* restart function */
+	unsigned long data;	/* restart function parameter */
+	unsigned long source;	/* source cpu */
+};
+
 #ifdef CONFIG_32BIT
 
 #define LC_ORDER 0
@@ -123,15 +130,12 @@ struct _lowcore {
 	__u32	thread_info;			/* 0x02bc */
 	__u32	kernel_stack;			/* 0x02c0 */
 
-	/* Interrupt, panic and restart stack. */
+	/* Interrupt and panic stack. */
 	__u32	async_stack;			/* 0x02c4 */
 	__u32	panic_stack;			/* 0x02c8 */
-	__u32	restart_stack;			/* 0x02cc */
 
-	/* Restart function and parameter. */
-	__u32	restart_fn;			/* 0x02d0 */
-	__u32	restart_data;			/* 0x02d4 */
-	__u32	restart_source;			/* 0x02d8 */
+	/* CPU restart parameters. */
+	struct lowcore_restart restart;		/* 0x02cc */
 
 	/* Address space pointer. */
 	__u32	kernel_asce;			/* 0x02dc */
@@ -266,15 +270,12 @@ struct _lowcore {
 	__u64	thread_info;			/* 0x0318 */
 	__u64	kernel_stack;			/* 0x0320 */
 
-	/* Interrupt, panic and restart stack. */
+	/* Interrupt and panic stack. */
 	__u64	async_stack;			/* 0x0328 */
 	__u64	panic_stack;			/* 0x0330 */
-	__u64	restart_stack;			/* 0x0338 */
 
-	/* Restart function and parameter. */
-	__u64	restart_fn;			/* 0x0340 */
-	__u64	restart_data;			/* 0x0348 */
-	__u64	restart_source;			/* 0x0350 */
+	/* CPU restart parameters. */
+	struct lowcore_restart restart;		/* 0x0338 */
 
 	/* Address space pointer. */
 	__u64	kernel_asce;			/* 0x0358 */

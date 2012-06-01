@@ -285,10 +285,10 @@ static void pcpu_start_fn(struct pcpu *pcpu, void (*func)(void *), void *data)
 {
 	struct _lowcore *lc = pcpu->lowcore;
 
-	lc->restart_stack = lc->kernel_stack;
-	lc->restart_fn = (unsigned long) func;
-	lc->restart_data = (unsigned long) data;
-	lc->restart_source = -1UL;
+	lc->restart.stack = lc->kernel_stack;
+	lc->restart.fn = (unsigned long) func;
+	lc->restart.data = (unsigned long) data;
+	lc->restart.source = -1UL;
 	pcpu_sigp_retry(pcpu, sigp_restart, 0);
 }
 
@@ -299,12 +299,12 @@ static void pcpu_delegate(struct pcpu *pcpu, void (*func)(void *),
 			  void *data, unsigned long stack)
 {
 	struct _lowcore *lc = lowcore_ptr[pcpu - pcpu_devices];
-	struct {
-		unsigned long	stack;
-		void		*func;
-		void		*data;
-		unsigned long	source;
-	} restart = { stack, func, data, stap() };
+	struct lowcore_restart restart = {
+		.stack = stack,
+		.fn = (unsigned long) func,
+		.data = (unsigned long) data,
+		.source = stap(),
+	};
 
 	__load_psw_mask(psw_kernel_bits);
 	if (pcpu->address == restart.source)
@@ -312,7 +312,7 @@ static void pcpu_delegate(struct pcpu *pcpu, void (*func)(void *),
 	/* Stop target cpu (if func returns this stops the current cpu). */
 	pcpu_sigp_retry(pcpu, sigp_stop, 0);
 	/* Restart func on the target cpu and stop the current cpu. */
-	memcpy_absolute(&lc->restart_stack, &restart, sizeof(restart));
+	memcpy_absolute(&lc->restart, &restart, sizeof(restart));
 	asm volatile(
 		"0:	sigp	0,%0,6	# sigp restart to target cpu\n"
 		"	brc	2,0b	# busy, try again\n"
@@ -705,10 +705,10 @@ static void __init smp_detect_cpus(void)
 static void __cpuinit smp_start_secondary(void *cpuvoid)
 {
 	S390_lowcore.last_update_clock = get_clock();
-	S390_lowcore.restart_stack = (unsigned long) restart_stack;
-	S390_lowcore.restart_fn = (unsigned long) do_restart;
-	S390_lowcore.restart_data = 0;
-	S390_lowcore.restart_source = -1UL;
+	S390_lowcore.restart.stack = (unsigned long) restart_stack;
+	S390_lowcore.restart.fn = (unsigned long) do_restart;
+	S390_lowcore.restart.data = 0;
+	S390_lowcore.restart.source = -1UL;
 	restore_access_regs(S390_lowcore.access_regs_save_area);
 	__ctl_load(S390_lowcore.cregs_save_area, 0, 15);
 	__load_psw_mask(psw_kernel_bits | PSW_MASK_DAT);
