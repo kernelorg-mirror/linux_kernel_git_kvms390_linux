@@ -50,11 +50,6 @@ struct sys_info {
 	struct save_area lc_mask;
 };
 
-struct ipib_info {
-	unsigned long	ipib;
-	u32		checksum;
-}  __attribute__((packed));
-
 static struct sys_info sys_info;
 static struct debug_info *zcore_dbf;
 static int hsa_available;
@@ -609,23 +604,23 @@ static int __init zcore_header_init(int arch, struct zcore_header *hdr)
  */
 static int __init zcore_reipl_init(void)
 {
-	struct ipib_info ipib_info;
+	struct lowcore_ipib ipib_info;
 	int rc;
 
 	rc = memcpy_hsa_kernel(&ipib_info, __LC_DUMP_REIPL, sizeof(ipib_info));
 	if (rc)
 		return rc;
-	if (ipib_info.ipib == 0)
+	if (ipib_info.addr == 0)
 		return 0;
 	ipl_block = (void *) __get_free_page(GFP_KERNEL);
 	if (!ipl_block)
 		return -ENOMEM;
-	if (ipib_info.ipib < ZFCPDUMP_HSA_SIZE)
-		rc = memcpy_hsa_kernel(ipl_block, ipib_info.ipib, PAGE_SIZE);
+	if (ipib_info.addr < ZFCPDUMP_HSA_SIZE)
+		rc = memcpy_hsa_kernel(ipl_block, ipib_info.addr, PAGE_SIZE);
 	else
-		rc = memcpy_real(ipl_block, (void *) ipib_info.ipib, PAGE_SIZE);
+		rc = memcpy_real(ipl_block, (void *) ipib_info.addr, PAGE_SIZE);
 	if (rc || csum_partial(ipl_block, ipl_block->hdr.len, 0) !=
-	    ipib_info.checksum) {
+	    ipib_info.csum) {
 		TRACE("Checksum does not match\n");
 		free_page((unsigned long) ipl_block);
 		ipl_block = NULL;
