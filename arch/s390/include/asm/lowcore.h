@@ -12,11 +12,6 @@
 #include <asm/ptrace.h>
 #include <asm/cpu.h>
 
-struct lowcore_ipib {
-	unsigned long addr;
-	unsigned int csum;
-} __packed;
-
 #ifdef CONFIG_32BIT
 
 #define LC_ORDER 0
@@ -156,7 +151,8 @@ struct _lowcore {
 	 * block. Dump tools need IPIB for IPL after dump.
 	 * Note: do not change the position of any fields in 0x0e00-0x0f00
 	 */
-	struct lowcore_ipib ipib;		/* 0x0e00 */
+	__u32	ipib;				/* 0x0e00 */
+	__u32	ipib_checksum;			/* 0x0e04 */
 	__u32	vmcore_info;			/* 0x0e08 */
 	__u8	pad_0x0e0c[0x0e18-0x0e0c];	/* 0x0e0c */
 	__u32	os_info;			/* 0x0e18 */
@@ -304,7 +300,8 @@ struct _lowcore {
 	 * block. Dump tools need IPIB for IPL after dump.
 	 * Note: do not change the position of any fields in 0x0e00-0x0f00
 	 */
-	struct lowcore_ipib ipib;		/* 0x0e00 */
+	__u64	ipib;				/* 0x0e00 */
+	__u32	ipib_checksum;			/* 0x0e08 */
 	/*
 	 * Because the vmcore_info pointer is not 8 byte aligned it never
 	 * should not be accessed directly. For accessing the pointer, first

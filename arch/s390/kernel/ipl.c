@@ -1528,11 +1528,14 @@ static struct shutdown_action __refdata dump_action = {
 
 static void dump_reipl_run(struct shutdown_trigger *trigger)
 {
-	struct lowcore_ipib ipib;
+	struct {
+		void	*addr;
+		__u32	csum;
+	} __packed ipib;
 
 	ipib.csum = csum_partial(reipl_block_actual,
 				 reipl_block_actual->hdr.len, 0);
-	ipib.addr = (unsigned long) reipl_block_actual;
+	ipib.addr = reipl_block_actual;
 	memcpy_absolute(&S390_lowcore.ipib, &ipib, sizeof(ipib));
 	dump_run(trigger);
 }
