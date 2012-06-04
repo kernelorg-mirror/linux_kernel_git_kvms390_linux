@@ -155,9 +155,9 @@ extern void zfcp_scsi_set_prot(struct zfcp_adapter *);
 extern void zfcp_scsi_dif_sense_error(struct scsi_cmnd *, int);
 
 /* zfcp_sysfs.c */
-extern struct attribute_group zfcp_sysfs_unit_attrs;
 extern struct attribute_group zfcp_sysfs_adapter_attrs;
 extern const struct attribute_group *zfcp_port_attr_groups[];
+extern const struct attribute_group *zfcp_unit_attr_groups[];
 extern struct device_attribute *zfcp_sysfs_sdev_attrs[];
 extern struct device_attribute *zfcp_sysfs_shost_attrs[];
 

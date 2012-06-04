@@ -134,6 +134,7 @@ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
 	unit->fcp_lun = fcp_lun;
 	unit->dev.parent = &port->dev;
 	unit->dev.release = zfcp_unit_release;
+	unit->dev.groups = zfcp_unit_attr_groups;
 	INIT_WORK(&unit->scsi_work, zfcp_unit_scsi_scan_work);
 
 	if (dev_set_name(&unit->dev, "0x%016llx",
@@ -147,11 +148,6 @@ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
 	if (device_register(&unit->dev)) {
 		put_device(&unit->dev);
 		return -ENOMEM;
-	}
-
-	if (sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs)) {
-		device_unregister(&unit->dev);
-		return -EINVAL;
 	}
 
 	write_lock_irq(&port->unit_list_lock);
@@ -238,7 +234,7 @@ int zfcp_unit_remove(struct zfcp_port *port, u64 fcp_lun)
 
 	put_device(&unit->dev);
 
-	zfcp_device_unregister(&unit->dev, &zfcp_sysfs_unit_attrs);
+	device_unregister(&unit->dev);
 
 	return 0;
 }
