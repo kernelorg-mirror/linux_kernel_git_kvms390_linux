@@ -3922,7 +3922,6 @@ F:	arch/ia64/include/asm/kvm*
 F:	arch/ia64/kvm/
 
 KERNEL VIRTUAL MACHINE for s390 (KVM/s390)
-M:	Carsten Otte <cotte@de.ibm.com>
 M:	Christian Borntraeger <borntraeger@de.ibm.com>
 M:	Cornelia Huck <cornelia.huck@de.ibm.com>
 M:	linux390@de.ibm.com
