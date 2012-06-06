@@ -80,11 +80,12 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	update_mm(next, tsk);
 	atomic_dec(&prev->context.attach_count);
 	WARN_ON(atomic_read(&prev->context.attach_count) < 0);
-	do {
+	while (1) {
 		v = atomic_read(&next->context.attach_count);
-		if (v == 0x00010001)
-			continue;
-	} while (atomic_cmpxchg(&next->context.attach_count, v, v + 1) != v);
+		if (v != 0x00010001 &&
+		    atomic_cmpxchg(&next->context.attach_count, v, v + 1) == v)
+			break;
+	}
 	/* Check for TLBs not flushed yet */
 	__tlb_flush_mm_lazy(next);
 }
