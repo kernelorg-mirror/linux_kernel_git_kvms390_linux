@@ -243,7 +243,7 @@ static void virt_timer_forward(__u64 elapsed)
 		(event->function)(event->data);
 		if (event->interval) {
 			/* Recharge interval timer */
-			event->expires = event->interval + 
+			event->expires = event->interval +
 				atomic64_read(&virt_timer_elapsed);
 			spin_lock(&virt_timer_lock);
 			list_add_sorted(event, &virt_timer_list);
