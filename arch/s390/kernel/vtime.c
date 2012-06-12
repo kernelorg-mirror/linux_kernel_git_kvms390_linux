@@ -28,7 +28,7 @@
 #include <asm/irq.h>
 #include "entry.h"
 
-static void virt_timer_forward(__u64 elapsed);
+static void virt_timer_forward(u64 elapsed);
 
 DEFINE_PER_CPU(struct s390_idle_data, s390_idle);
 
@@ -37,17 +37,17 @@ static DEFINE_SPINLOCK(virt_timer_lock);
 static atomic64_t virt_timer_current;
 static atomic64_t virt_timer_elapsed;
 
-static inline __u64 get_vtimer(void)
+static inline u64 get_vtimer(void)
 {
-	__u64 timer;
+	u64 timer;
 
 	asm volatile("STPT %0" : "=m" (timer));
 	return timer;
 }
 
-static inline void set_vtimer(__u64 expires)
+static inline void set_vtimer(u64 expires)
 {
-	__u64 timer;
+	u64 timer;
 
 	asm volatile ("  STPT %0\n"  /* Store current cpu timer value */
 		      "  SPT %1"     /* Set new value immediately afterwards */
@@ -63,7 +63,7 @@ static inline void set_vtimer(__u64 expires)
 static void do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 {
 	struct thread_info *ti = task_thread_info(tsk);
-	__u64 timer, clock, user, system, steal;
+	u64 timer, clock, user, system, steal;
 
 	timer = S390_lowcore.last_update_timer;
 	clock = S390_lowcore.last_update_clock;
@@ -118,7 +118,7 @@ void account_process_tick(struct task_struct *tsk, int user_tick)
 void account_system_vtime(struct task_struct *tsk)
 {
 	struct thread_info *ti = task_thread_info(tsk);
-	__u64 timer, system;
+	u64 timer, system;
 
 	timer = S390_lowcore.last_update_timer;
 	S390_lowcore.last_update_timer = get_vtimer();
@@ -201,7 +201,7 @@ static void list_add_sorted(struct vtimer_list *timer, struct list_head *head)
 /*
  * Handler for the virtual CPU timer.
  */
-static void virt_timer_forward(__u64 elapsed)
+static void virt_timer_forward(u64 elapsed)
 {
 	struct vtimer_list *event, *tmp;
 	struct list_head cb_list;	/* the callback queue */
@@ -311,7 +311,7 @@ void add_virt_timer_periodic(struct vtimer_list *timer)
 }
 EXPORT_SYMBOL(add_virt_timer_periodic);
 
-static int __mod_vtimer(struct vtimer_list *timer, __u64 expires, int periodic)
+static int __mod_vtimer(struct vtimer_list *timer, u64 expires, int periodic)
 {
 	unsigned long flags;
 	int rc;
@@ -346,7 +346,7 @@ static int __mod_vtimer(struct vtimer_list *timer, __u64 expires, int periodic)
  *
  * returns whether it has modified a pending timer (1) or not (0)
  */
-int mod_virt_timer(struct vtimer_list *timer, __u64 expires)
+int mod_virt_timer(struct vtimer_list *timer, u64 expires)
 {
 	return __mod_vtimer(timer, expires, 0);
 }
@@ -358,7 +358,7 @@ EXPORT_SYMBOL(mod_virt_timer);
  *
  * returns whether it has modified a pending timer (1) or not (0)
  */
-int mod_virt_timer_periodic(struct vtimer_list *timer, __u64 expires)
+int mod_virt_timer_periodic(struct vtimer_list *timer, u64 expires)
 {
 	return __mod_vtimer(timer, expires, 1);
 }

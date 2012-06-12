@@ -17,8 +17,8 @@
 struct vtimer_list {
 	struct list_head entry;
 
-	__u64 expires;
-	__u64 interval;
+	u64 expires;
+	u64 interval;
 
 	void (*function)(unsigned long);
 	unsigned long data;
@@ -27,8 +27,8 @@ struct vtimer_list {
 extern void init_virt_timer(struct vtimer_list *timer);
 extern void add_virt_timer(struct vtimer_list *timer);
 extern void add_virt_timer_periodic(struct vtimer_list *timer);
-extern int mod_virt_timer(struct vtimer_list *timer, __u64 expires);
-extern int mod_virt_timer_periodic(struct vtimer_list *timer, __u64 expires);
+extern int mod_virt_timer(struct vtimer_list *timer, u64 expires);
+extern int mod_virt_timer_periodic(struct vtimer_list *timer, u64 expires);
 extern int del_virt_timer(struct vtimer_list *timer);
 
 extern void init_cpu_vtimer(void);
