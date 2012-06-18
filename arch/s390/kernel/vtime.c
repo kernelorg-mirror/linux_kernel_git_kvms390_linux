@@ -28,7 +28,7 @@
 #include <asm/irq.h>
 #include "entry.h"
 
-static void virt_timer_forward(u64 elapsed);
+static void virt_timer_expire(void);
 
 DEFINE_PER_CPU(struct s390_idle_data, s390_idle);
 
@@ -56,11 +56,22 @@ static inline void set_vtimer(u64 expires)
 	S390_lowcore.last_update_timer = expires;
 }
 
+static inline int virt_timer_forward(u64 elapsed)
+{
+	BUG_ON(!irqs_disabled());
+
+	if (list_empty(&virt_timer_list))
+		return 0;
+
+	elapsed = atomic64_add_return(elapsed, &virt_timer_elapsed);
+	return elapsed >= atomic64_read(&virt_timer_current);
+}
+
 /*
  * Update process times based on virtual cpu times stored by entry.S
  * to the lowcore fields user_timer, system_timer & steal_clock.
  */
-static void do_account_vtime(struct task_struct *tsk, int hardirq_offset)
+static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 {
 	struct thread_info *ti = task_thread_info(tsk);
 	u64 timer, clock, user, system, steal;
@@ -90,7 +101,7 @@ static void do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 		account_steal_time(steal);
 	}
 
-	virt_timer_forward(user + system);
+	return virt_timer_forward(user + system);
 }
 
 void account_vtime(struct task_struct *prev, struct task_struct *next)
@@ -108,7 +119,8 @@ void account_vtime(struct task_struct *prev, struct task_struct *next)
 
 void account_process_tick(struct task_struct *tsk, int user_tick)
 {
-	do_account_vtime(tsk, HARDIRQ_OFFSET);
+	if (do_account_vtime(tsk, HARDIRQ_OFFSET))
+		virt_timer_expire();
 }
 
 /*
@@ -199,26 +211,17 @@ static void list_add_sorted(struct vtimer_list *timer, struct list_head *head)
 }
 
 /*
- * Handler for the virtual CPU timer.
+ * Handler for expired virtual CPU timer.
  */
-static void virt_timer_forward(u64 elapsed)
+static void virt_timer_expire(void)
 {
 	struct vtimer_list *event, *tmp;
-	struct list_head cb_list;	/* the callback queue */
-
-	BUG_ON(!irqs_disabled());
-
-	if (list_empty(&virt_timer_list))
-		return;
-
-	elapsed = atomic64_add_return(elapsed, &virt_timer_elapsed);
-	if (elapsed < atomic64_read(&virt_timer_current))
-		return;
-
-	INIT_LIST_HEAD(&cb_list);
+	unsigned long elapsed;
+	LIST_HEAD(cb_list);
 
 	/* walk timer list, fire all expired events */
 	spin_lock(&virt_timer_lock);
+	elapsed = atomic64_read(&virt_timer_elapsed);
 	list_for_each_entry_safe(event, tmp, &virt_timer_list, entry) {
 		if (event->expires < elapsed)
 			/* move expired timer to the callback queue */
@@ -233,9 +236,6 @@ static void virt_timer_forward(u64 elapsed)
 	}
 	atomic64_sub(elapsed, &virt_timer_elapsed);
 	spin_unlock(&virt_timer_lock);
-
-	if (list_empty(&cb_list))
-		return;
 
 	/* Do callbacks and recharge periodic timer */
 	list_for_each_entry_safe(event, tmp, &cb_list, entry) {
