@@ -944,8 +944,9 @@ static inline void arch_leave_lazy_mmu_mode(struct mm_struct *mm)
 static inline void ptep_flush_lazy(struct mm_struct *mm,
 				   unsigned long address, pte_t *ptep)
 {
-	if (mm != current->active_mm ||
-	    (atomic_read(&mm->context.attach_count) & 0xffff) > 1)
+	int active = (mm == current->active_mm) ? 1 : 0;
+
+	if ((atomic_read(&mm->context.attach_count) & 0xffff) > active)
 		__ptep_ipte(address, ptep);
 	else
 		mm->context.flush_mm = 1;
