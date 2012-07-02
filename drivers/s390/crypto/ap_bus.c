@@ -340,7 +340,8 @@ static int ap_queue_enable_interruption(ap_qid_t qid, void *ind)
 		case AP_RESPONSE_BUSY:
 			if (i < AP_MAX_RESET - 1) {
 				udelay(5);
-				status = ap_queue_interruption_control(qid, ind);
+				status = ap_queue_interruption_control(qid,
+								       ind);
 				continue;
 			}
 			break;
