@@ -19,7 +19,6 @@
 #include <asm/uaccess.h>
 #include "kvm-s390.h"
 #include "gaccess.h"
-#include "trace.h"
 
 static int psw_extint_disabled(struct kvm_vcpu *vcpu)
 {
@@ -126,15 +125,10 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
 {
 	const unsigned short table[] = { 2, 4, 4, 6 };
 	int rc, exception = 0;
-	int ilc;
 
 	switch (inti->type) {
 	case KVM_S390_INT_EMERGENCY:
 		VCPU_EVENT(vcpu, 4, "%s", "interrupt: sigp emerg");
-		trace_kvm_s390_int(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr,
-				   inti->type);
 		vcpu->stat.deliver_emergency_signal++;
 		rc = put_guest_u16(vcpu, __LC_EXT_INT_CODE, 0x1201);
 		if (rc == -EFAULT)
@@ -157,10 +151,6 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
 
 	case KVM_S390_INT_EXTERNAL_CALL:
 		VCPU_EVENT(vcpu, 4, "%s", "interrupt: sigp ext call");
-		trace_kvm_s390_int(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr,
-				   inti->type);
 		vcpu->stat.deliver_external_call++;
 		rc = put_guest_u16(vcpu, __LC_EXT_INT_CODE, 0x1202);
 		if (rc == -EFAULT)
@@ -184,11 +174,6 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
 	case KVM_S390_INT_SERVICE:
 		VCPU_EVENT(vcpu, 4, "interrupt: sclp parm:%x",
 			   inti->ext.ext_params);
-		trace_kvm_s390_int_parm(vcpu->vcpu_id,
-					vcpu->arch.sie_block->gpsw.mask,
-					vcpu->arch.sie_block->gpsw.addr,
-					inti->type,
-					inti->ext.ext_params);
 		vcpu->stat.deliver_service_signal++;
 		rc = put_guest_u16(vcpu, __LC_EXT_INT_CODE, 0x2401);
 		if (rc == -EFAULT)
@@ -212,12 +197,6 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
 	case KVM_S390_INT_VIRTIO:
 		VCPU_EVENT(vcpu, 4, "interrupt: virtio parm:%x,parm64:%llx",
 			   inti->ext.ext_params, inti->ext.ext_params2);
-		trace_kvm_s390_virtio_int(vcpu->vcpu_id,
-					  vcpu->arch.sie_block->gpsw.mask,
-					  vcpu->arch.sie_block->gpsw.addr,
-					  inti->type,
-					  inti->ext.ext_params,
-					  inti->ext.ext_params2);
 		vcpu->stat.deliver_virtio_interrupt++;
 		rc = put_guest_u16(vcpu, __LC_EXT_INT_CODE, 0x2603);
 		if (rc == -EFAULT)
@@ -249,10 +228,6 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
 
 	case KVM_S390_SIGP_STOP:
 		VCPU_EVENT(vcpu, 4, "%s", "interrupt: cpu stop");
-		trace_kvm_s390_int(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr,
-				   inti->type);
 		vcpu->stat.deliver_stop_signal++;
 		__set_intercept_indicator(vcpu, inti);
 		break;
@@ -260,21 +235,12 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
 	case KVM_S390_SIGP_SET_PREFIX:
 		VCPU_EVENT(vcpu, 4, "interrupt: set prefix to %x",
 			   inti->prefix.address);
-		trace_kvm_s390_int_parm(vcpu->vcpu_id,
-					vcpu->arch.sie_block->gpsw.mask,
-					vcpu->arch.sie_block->gpsw.addr,
-					inti->type,
-					inti->prefix.address);
 		vcpu->stat.deliver_prefix_signal++;
 		kvm_s390_set_prefix(vcpu, inti->prefix.address);
 		break;
 
 	case KVM_S390_RESTART:
 		VCPU_EVENT(vcpu, 4, "%s", "interrupt: cpu restart");
-		trace_kvm_s390_int(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr,
-				   inti->type);
 		vcpu->stat.deliver_restart_signal++;
 		rc = copy_to_guest(vcpu, offsetof(struct _lowcore,
 		  restart_old_psw), &vcpu->arch.sie_block->gpsw, sizeof(psw_t));
@@ -289,15 +255,9 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
 		break;
 
 	case KVM_S390_PROGRAM_INT:
-		ilc = table[vcpu->arch.sie_block->ipa >> 14];
 		VCPU_EVENT(vcpu, 4, "interrupt: pgm check code:%x, ilc:%x",
-			   inti->pgm.code, ilc);
-		trace_kvm_s390_program_int(vcpu->vcpu_id,
-					   vcpu->arch.sie_block->gpsw.mask,
-					   vcpu->arch.sie_block->gpsw.addr,
-					   inti->type,
-					   inti->pgm.code,
-					   ilc);
+			   inti->pgm.code,
+			   table[vcpu->arch.sie_block->ipa >> 14]);
 		vcpu->stat.deliver_program_int++;
 		rc = put_guest_u16(vcpu, __LC_PGM_INT_CODE, inti->pgm.code);
 		if (rc == -EFAULT)
@@ -414,10 +374,6 @@ int kvm_s390_handle_wait(struct kvm_vcpu *vcpu)
 
 	if (psw_interrupts_disabled(vcpu)) {
 		VCPU_EVENT(vcpu, 3, "%s", "disabled wait");
-		trace_kvm_s390_wait_state(vcpu->vcpu_id,
-					  vcpu->arch.sie_block->gpsw.mask,
-					  vcpu->arch.sie_block->gpsw.addr,
-					  0, 0);
 		__unset_cpu_idle(vcpu);
 		return -EOPNOTSUPP; /* disabled wait */
 	}
@@ -425,10 +381,6 @@ int kvm_s390_handle_wait(struct kvm_vcpu *vcpu)
 	if (psw_extint_disabled(vcpu) ||
 	    (!(vcpu->arch.sie_block->gcr[0] & 0x800ul))) {
 		VCPU_EVENT(vcpu, 3, "%s", "enabled wait w/o timer");
-		trace_kvm_s390_wait_state(vcpu->vcpu_id,
-					  vcpu->arch.sie_block->gpsw.mask,
-					  vcpu->arch.sie_block->gpsw.addr,
-					  1, 0);
 		goto no_timer;
 	}
 
@@ -442,10 +394,6 @@ int kvm_s390_handle_wait(struct kvm_vcpu *vcpu)
 
 	hrtimer_start(&vcpu->arch.ckc_timer, ktime_set (0, sltime) , HRTIMER_MODE_REL);
 	VCPU_EVENT(vcpu, 5, "enabled wait via clock comparator: %llx ns", sltime);
-	trace_kvm_s390_wait_state(vcpu->vcpu_id,
-				  vcpu->arch.sie_block->gpsw.mask,
-				  vcpu->arch.sie_block->gpsw.addr,
-				  1, sltime);
 no_timer:
 	spin_lock(&vcpu->arch.local_int.float_int->lock);
 	spin_lock_bh(&vcpu->arch.local_int.lock);
@@ -567,10 +515,6 @@ int kvm_s390_inject_program_int(struct kvm_vcpu *vcpu, u16 code)
 	inti->pgm.code = code;
 
 	VCPU_EVENT(vcpu, 3, "inject: program check %d (from kernel)", code);
-	trace_kvm_s390_inject_int(vcpu->vcpu_id,
-				  vcpu->arch.sie_block->gpsw.mask,
-				  vcpu->arch.sie_block->gpsw.addr,
-				  inti->type, 1, code);
 	spin_lock_bh(&li->lock);
 	list_add(&inti->list, &li->list);
 	atomic_set(&li->active, 1);
@@ -595,15 +539,12 @@ int kvm_s390_inject_vm(struct kvm *kvm,
 	case KVM_S390_INT_VIRTIO:
 		VM_EVENT(kvm, 5, "inject: virtio parm:%x,parm64:%llx",
 			 s390int->parm, s390int->parm64);
-		trace_kvm_s390_inject_virtio_int(s390int->parm,
-						 s390int->parm64);
 		inti->type = s390int->type;
 		inti->ext.ext_params = s390int->parm;
 		inti->ext.ext_params2 = s390int->parm64;
 		break;
 	case KVM_S390_INT_SERVICE:
 		VM_EVENT(kvm, 5, "inject: sclp parm:%x", s390int->parm);
-		trace_kvm_s390_inject_sclp_int(s390int->parm);
 		inti->type = s390int->type;
 		inti->ext.ext_params = s390int->parm;
 		break;
@@ -660,30 +601,18 @@ int kvm_s390_inject_vcpu(struct kvm_vcpu *vcpu,
 		inti->pgm.code = s390int->parm;
 		VCPU_EVENT(vcpu, 3, "inject: program check %d (from user)",
 			   s390int->parm);
-		trace_kvm_s390_inject_int(vcpu->vcpu_id,
-					  vcpu->arch.sie_block->gpsw.mask,
-					  vcpu->arch.sie_block->gpsw.addr,
-					  s390int->type, 2, s390int->parm);
 		break;
 	case KVM_S390_SIGP_SET_PREFIX:
 		inti->prefix.address = s390int->parm;
 		inti->type = s390int->type;
 		VCPU_EVENT(vcpu, 3, "inject: set prefix to %x (from user)",
 			   s390int->parm);
-		trace_kvm_s390_inject_int(vcpu->vcpu_id,
-					  vcpu->arch.sie_block->gpsw.mask,
-					  vcpu->arch.sie_block->gpsw.addr,
-					  s390int->type, 2, s390int->parm);
 		break;
 	case KVM_S390_SIGP_STOP:
 	case KVM_S390_RESTART:
 	case KVM_S390_INT_EXTERNAL_CALL:
 	case KVM_S390_INT_EMERGENCY:
 		VCPU_EVENT(vcpu, 3, "inject: type %x", s390int->type);
-		trace_kvm_s390_inject_int(vcpu->vcpu_id,
-					  vcpu->arch.sie_block->gpsw.mask,
-					  vcpu->arch.sie_block->gpsw.addr,
-					  s390int->type, 0, 0);
 		inti->type = s390int->type;
 		break;
 	case KVM_S390_INT_VIRTIO:

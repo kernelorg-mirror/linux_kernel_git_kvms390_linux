@@ -20,7 +20,6 @@
 #include <asm/sysinfo.h>
 #include "gaccess.h"
 #include "kvm-s390.h"
-#include "trace.h"
 
 static int handle_set_prefix(struct kvm_vcpu *vcpu)
 {
@@ -60,10 +59,6 @@ static int handle_set_prefix(struct kvm_vcpu *vcpu)
 	kvm_s390_set_prefix(vcpu, address);
 
 	VCPU_EVENT(vcpu, 5, "setting prefix to %x", address);
-	trace_kvm_s390_priv_prefix(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr,
-				   1, address);
 out:
 	return 0;
 }
@@ -96,10 +91,6 @@ static int handle_store_prefix(struct kvm_vcpu *vcpu)
 	}
 
 	VCPU_EVENT(vcpu, 5, "storing prefix to %x", address);
-	trace_kvm_s390_priv_prefix(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr,
-				   0, address);
 out:
 	return 0;
 }
@@ -128,10 +119,6 @@ static int handle_store_cpu_address(struct kvm_vcpu *vcpu)
 	}
 
 	VCPU_EVENT(vcpu, 5, "storing cpu address to %llx", useraddr);
-	trace_kvm_s390_priv_stap(vcpu->vcpu_id,
-				 vcpu->arch.sie_block->gpsw.mask,
-				 vcpu->arch.sie_block->gpsw.addr,
-				 useraddr);
 out:
 	return 0;
 }
@@ -141,9 +128,6 @@ static int handle_skey(struct kvm_vcpu *vcpu)
 	vcpu->stat.instruction_storage_key++;
 	vcpu->arch.sie_block->gpsw.addr -= 4;
 	VCPU_EVENT(vcpu, 4, "%s", "retrying storage key operation");
-	trace_kvm_s390_priv_skey(vcpu->vcpu_id,
-				 vcpu->arch.sie_block->gpsw.mask,
-				 vcpu->arch.sie_block->gpsw.addr);
 	return 0;
 }
 
@@ -151,10 +135,6 @@ static int handle_stsch(struct kvm_vcpu *vcpu)
 {
 	vcpu->stat.instruction_stsch++;
 	VCPU_EVENT(vcpu, 4, "%s", "store subchannel - CC3");
-	trace_kvm_s390_priv_ioinst(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr,
-				   vcpu->arch.sie_block->ipa);
 	/* condition code 3 */
 	vcpu->arch.sie_block->gpsw.mask &= ~(3ul << 44);
 	vcpu->arch.sie_block->gpsw.mask |= (3 & 3ul) << 44;
@@ -165,10 +145,6 @@ static int handle_chsc(struct kvm_vcpu *vcpu)
 {
 	vcpu->stat.instruction_chsc++;
 	VCPU_EVENT(vcpu, 4, "%s", "channel subsystem call - CC3");
-	trace_kvm_s390_priv_ioinst(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr,
-				   vcpu->arch.sie_block->ipa);
 	/* condition code 3 */
 	vcpu->arch.sie_block->gpsw.mask &= ~(3ul << 44);
 	vcpu->arch.sie_block->gpsw.mask |= (3 & 3ul) << 44;
@@ -188,14 +164,9 @@ static int handle_stfl(struct kvm_vcpu *vcpu)
 			   &facility_list, sizeof(facility_list));
 	if (rc == -EFAULT)
 		kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
-	else {
+	else
 		VCPU_EVENT(vcpu, 5, "store facility list value %x",
 			   facility_list);
-		trace_kvm_s390_priv_stfl(vcpu->vcpu_id,
-					 vcpu->arch.sie_block->gpsw.mask,
-					 vcpu->arch.sie_block->gpsw.addr,
-					 facility_list);
-	}
 	return 0;
 }
 
@@ -223,9 +194,6 @@ static int handle_stidp(struct kvm_vcpu *vcpu)
 	}
 
 	VCPU_EVENT(vcpu, 5, "%s", "store cpu id");
-	trace_kvm_s390_priv_stidp(vcpu->vcpu_id,
-				  vcpu->arch.sie_block->gpsw.mask,
-				  vcpu->arch.sie_block->gpsw.addr);
 out:
 	return 0;
 }
@@ -273,10 +241,6 @@ static int handle_stsi(struct kvm_vcpu *vcpu)
 
 	vcpu->stat.instruction_stsi++;
 	VCPU_EVENT(vcpu, 4, "stsi: fc: %x sel1: %x sel2: %x", fc, sel1, sel2);
-	trace_kvm_s390_priv_stsi(vcpu->vcpu_id,
-				 vcpu->arch.sie_block->gpsw.mask,
-				 vcpu->arch.sie_block->gpsw.addr,
-				 fc, sel1, sel2);
 
 	operand2 = disp2;
 	if (base2)

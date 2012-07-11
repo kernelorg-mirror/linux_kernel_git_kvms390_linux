@@ -31,9 +31,6 @@
 #include "kvm-s390.h"
 #include "gaccess.h"
 
-#define CREATE_TRACE_POINTS
-#include "trace.h"
-
 #define VCPU_STAT(x) offsetof(struct kvm_vcpu, stat.x), KVM_STAT_VCPU
 
 struct kvm_stats_debugfs_item debugfs_entries[] = {
@@ -215,7 +212,6 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
 
 	debug_register_view(kvm->arch.dbf, &debug_sprintf_view);
 	VM_EVENT(kvm, 3, "%s", "vm created");
-	trace_kvm_s390_create_vm(kvm);
 
 	if (type & KVM_VM_S390_UCONTROL) {
 		kvm->arch.gmap = NULL;
@@ -236,9 +232,6 @@ out_err:
 void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 {
 	VCPU_EVENT(vcpu, 3, "%s", "free cpu");
-	trace_kvm_s390_destroy_cpu(vcpu->vcpu_id,
-				   vcpu->arch.sie_block->gpsw.mask,
-				   vcpu->arch.sie_block->gpsw.addr);
 	if (!kvm_is_ucontrol(vcpu->kvm)) {
 		clear_bit(63 - vcpu->vcpu_id,
 			  (unsigned long *) &vcpu->kvm->arch.sca->mcn);
@@ -414,7 +407,6 @@ struct kvm_vcpu *kvm_arch_vcpu_create(struct kvm *kvm,
 		goto out_free_sie_block;
 	VM_EVENT(kvm, 3, "create cpu %d at %p, sie block at %p", id, vcpu,
 		 vcpu->arch.sie_block);
-	trace_kvm_s390_create_vcpu(id, vcpu, vcpu->arch.sie_block);
 
 	return vcpu;
 out_free_sie_block:
@@ -540,29 +532,18 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
 	local_irq_enable();
 	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
 		   atomic_read(&vcpu->arch.sie_block->cpuflags));
-	trace_kvm_s390_enter_sie(vcpu->vcpu_id,
-				 vcpu->arch.sie_block->gpsw.mask,
-				 vcpu->arch.sie_block->gpsw.addr,
-				 atomic_read(&vcpu->arch.sie_block->cpuflags));
 	rc = sie64a(vcpu->arch.sie_block, vcpu->run->s.regs.gprs);
 	if (rc) {
 		if (kvm_is_ucontrol(vcpu->kvm)) {
 			rc = SIE_INTERCEPT_UCONTROL;
 		} else {
 			VCPU_EVENT(vcpu, 3, "%s", "fault in sie instruction");
-			trace_kvm_s390_sie_fault(vcpu->vcpu_id,
-						 vcpu->arch.sie_block->gpsw.mask,
-						 vcpu->arch.sie_block->gpsw.addr);
 			kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
 			rc = 0;
 		}
 	}
 	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
 		   vcpu->arch.sie_block->icptcode);
-	trace_kvm_s390_exit_sie(vcpu->vcpu_id,
-				vcpu->arch.sie_block->gpsw.mask,
-				vcpu->arch.sie_block->gpsw.addr,
-				vcpu->arch.sie_block->icptcode);
 	local_irq_disable();
 	kvm_guest_exit();
 	local_irq_enable();

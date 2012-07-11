@@ -19,7 +19,6 @@
 
 #include "kvm-s390.h"
 #include "gaccess.h"
-#include "trace.h"
 
 static int handle_lctlg(struct kvm_vcpu *vcpu)
 {
@@ -46,10 +45,6 @@ static int handle_lctlg(struct kvm_vcpu *vcpu)
 
 	VCPU_EVENT(vcpu, 5, "lctlg r1:%x, r3:%x,b2:%x,d2:%x", reg1, reg3, base2,
 		   disp2);
-	trace_kvm_s390_load_ctl(vcpu->vcpu_id,
-				vcpu->arch.sie_block->gpsw.mask,
-				vcpu->arch.sie_block->gpsw.addr,
-				1, reg1, reg3, base2, disp2);
 
 	do {
 		rc = get_guest_u64(vcpu, useraddr,
@@ -87,10 +82,6 @@ static int handle_lctl(struct kvm_vcpu *vcpu)
 
 	VCPU_EVENT(vcpu, 5, "lctl r1:%x, r3:%x,b2:%x,d2:%x", reg1, reg3, base2,
 		   disp2);
-	trace_kvm_s390_load_ctl(vcpu->vcpu_id,
-				vcpu->arch.sie_block->gpsw.mask,
-				vcpu->arch.sie_block->gpsw.addr,
-				0, reg1, reg3, base2, disp2);
 
 	reg = reg1;
 	do {
@@ -154,9 +145,6 @@ static int handle_stop(struct kvm_vcpu *vcpu)
 				&vcpu->arch.sie_block->cpuflags);
 		vcpu->arch.local_int.action_bits &= ~ACTION_STOP_ON_STOP;
 		VCPU_EVENT(vcpu, 3, "%s", "cpu stopped");
-		trace_kvm_s390_cpu_stopped(vcpu->vcpu_id,
-					   vcpu->arch.sie_block->gpsw.mask,
-					   vcpu->arch.sie_block->gpsw.addr);
 		rc = -EOPNOTSUPP;
 	}
 
@@ -213,14 +201,9 @@ static int handle_validity(struct kvm_vcpu *vcpu)
 		rc = -EOPNOTSUPP;
 
 out:
-	if (rc) {
+	if (rc)
 		VCPU_EVENT(vcpu, 2, "unhandled validity intercept code %d",
 			   viwhy);
-		trace_kvm_s390_validity_icpt(vcpu->vcpu_id,
-					     vcpu->arch.sie_block->gpsw.mask,
-					     vcpu->arch.sie_block->gpsw.addr,
-					     viwhy);
-	}
 	return rc;
 }
 

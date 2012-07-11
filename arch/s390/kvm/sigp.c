@@ -18,7 +18,6 @@
 #include <asm/sigp.h>
 #include "gaccess.h"
 #include "kvm-s390.h"
-#include "trace.h"
 
 static int __sigp_sense(struct kvm_vcpu *vcpu, u16 cpu_addr,
 			u64 *reg)
@@ -48,12 +47,6 @@ static int __sigp_sense(struct kvm_vcpu *vcpu, u16 cpu_addr,
 	spin_unlock(&fi->lock);
 
 	VCPU_EVENT(vcpu, 4, "sensed status of cpu %x rc %x", cpu_addr, rc);
-	trace_kvm_s390_sigp_parm(vcpu->vcpu_id,
-				 vcpu->arch.sie_block->gpsw.mask,
-				 vcpu->arch.sie_block->gpsw.addr,
-				 0xfffe0004,
-				 cpu_addr,
-				 rc);
 	return rc;
 }
 
@@ -90,11 +83,6 @@ static int __sigp_emergency(struct kvm_vcpu *vcpu, u16 cpu_addr)
 	spin_unlock_bh(&li->lock);
 	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
 	VCPU_EVENT(vcpu, 4, "sent sigp emerg to cpu %x", cpu_addr);
-	trace_kvm_s390_sigp(vcpu->vcpu_id,
-			    vcpu->arch.sie_block->gpsw.mask,
-			    vcpu->arch.sie_block->gpsw.addr,
-			    inti->type,
-			    cpu_addr);
 unlock:
 	spin_unlock(&fi->lock);
 	return rc;
@@ -133,11 +121,6 @@ static int __sigp_external_call(struct kvm_vcpu *vcpu, u16 cpu_addr)
 	spin_unlock_bh(&li->lock);
 	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
 	VCPU_EVENT(vcpu, 4, "sent sigp ext call to cpu %x", cpu_addr);
-	trace_kvm_s390_sigp(vcpu->vcpu_id,
-			    vcpu->arch.sie_block->gpsw.mask,
-			    vcpu->arch.sie_block->gpsw.addr,
-			    inti->type,
-			    cpu_addr);
 unlock:
 	spin_unlock(&fi->lock);
 	return rc;
@@ -188,11 +171,6 @@ static int __sigp_stop(struct kvm_vcpu *vcpu, u16 cpu_addr, int action)
 unlock:
 	spin_unlock(&fi->lock);
 	VCPU_EVENT(vcpu, 4, "sent sigp stop to cpu %x", cpu_addr);
-	trace_kvm_s390_sigp(vcpu->vcpu_id,
-			    vcpu->arch.sie_block->gpsw.mask,
-			    vcpu->arch.sie_block->gpsw.addr,
-			    KVM_S390_SIGP_STOP,
-			    cpu_addr);
 	return rc;
 }
 
@@ -274,12 +252,6 @@ static int __sigp_set_prefix(struct kvm_vcpu *vcpu, u16 cpu_addr, u32 address,
 	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
 
 	VCPU_EVENT(vcpu, 4, "set prefix of cpu %02x to %x", cpu_addr, address);
-	trace_kvm_s390_sigp_parm(vcpu->vcpu_id,
-				 vcpu->arch.sie_block->gpsw.mask,
-				 vcpu->arch.sie_block->gpsw.addr,
-				 inti->type,
-				 cpu_addr,
-				 address);
 out_li:
 	spin_unlock_bh(&li->lock);
 out_fi:
@@ -315,12 +287,6 @@ static int __sigp_sense_running(struct kvm_vcpu *vcpu, u16 cpu_addr,
 
 	VCPU_EVENT(vcpu, 4, "sensed running status of cpu %x rc %x", cpu_addr,
 		   rc);
-	trace_kvm_s390_sigp_parm(vcpu->vcpu_id,
-				 vcpu->arch.sie_block->gpsw.mask,
-				 vcpu->arch.sie_block->gpsw.addr,
-				 0xfffe0005u,
-				 cpu_addr,
-				 rc);
 
 	return rc;
 }
@@ -344,15 +310,9 @@ static int __sigp_restart(struct kvm_vcpu *vcpu, u16 cpu_addr)
 	spin_lock_bh(&li->lock);
 	if (li->action_bits & ACTION_STOP_ON_STOP)
 		rc = SIGP_CC_BUSY;
-	else {
+	else
 		VCPU_EVENT(vcpu, 4, "sigp restart %x to handle userspace",
 			cpu_addr);
-		trace_kvm_s390_sigp(vcpu->vcpu_id,
-				    vcpu->arch.sie_block->gpsw.mask,
-				    vcpu->arch.sie_block->gpsw.addr,
-				    0xfffe0006u,
-				    cpu_addr);
-	}
 	spin_unlock_bh(&li->lock);
 out:
 	spin_unlock(&fi->lock);

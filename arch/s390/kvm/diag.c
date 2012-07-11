@@ -14,7 +14,6 @@
 #include <linux/kvm.h>
 #include <linux/kvm_host.h>
 #include "kvm-s390.h"
-#include "trace.h"
 
 static int diag_release_pages(struct kvm_vcpu *vcpu)
 {
@@ -29,10 +28,6 @@ static int diag_release_pages(struct kvm_vcpu *vcpu)
 		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
 
 	VCPU_EVENT(vcpu, 5, "diag release pages %lX %lX", start, end);
-	trace_kvm_s390_diag_10(vcpu->vcpu_id,
-			       vcpu->arch.sie_block->gpsw.mask,
-			       vcpu->arch.sie_block->gpsw.addr,
-			       start, end);
 	vcpu->stat.diagnose_10++;
 
 	/* we checked for start > end above */
@@ -51,9 +46,6 @@ static int diag_release_pages(struct kvm_vcpu *vcpu)
 static int __diag_time_slice_end(struct kvm_vcpu *vcpu)
 {
 	VCPU_EVENT(vcpu, 5, "%s", "diag time slice end");
-	trace_kvm_s390_diag_44(vcpu->vcpu_id,
-			       vcpu->arch.sie_block->gpsw.mask,
-			       vcpu->arch.sie_block->gpsw.addr);
 	vcpu->stat.diagnose_44++;
 	vcpu_put(vcpu);
 	yield();
@@ -67,10 +59,6 @@ static int __diag_ipl_functions(struct kvm_vcpu *vcpu)
 	unsigned long subcode = vcpu->run->s.regs.gprs[reg] & 0xffff;
 
 	VCPU_EVENT(vcpu, 5, "diag ipl functions, subcode %lx", subcode);
-	trace_kvm_s390_diag_308(vcpu->vcpu_id,
-				vcpu->arch.sie_block->gpsw.mask,
-				vcpu->arch.sie_block->gpsw.addr,
-				subcode);
 	switch (subcode) {
 	case 3:
 		vcpu->run->s390_reset_flags = KVM_S390_RESET_CLEAR;
@@ -89,10 +77,6 @@ static int __diag_ipl_functions(struct kvm_vcpu *vcpu)
 	vcpu->run->exit_reason = KVM_EXIT_S390_RESET;
 	VCPU_EVENT(vcpu, 3, "requesting userspace resets %llx",
 	  vcpu->run->s390_reset_flags);
-	trace_kvm_s390_request_resets(vcpu->vcpu_id,
-				      vcpu->arch.sie_block->gpsw.mask,
-				      vcpu->arch.sie_block->gpsw.addr,
-				      vcpu->run->s390_reset_flags);
 	return -EREMOTE;
 }
 
