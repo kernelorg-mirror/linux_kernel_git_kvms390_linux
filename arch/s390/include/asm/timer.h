@@ -12,7 +12,7 @@
 
 #include <linux/timer.h>
 
-#define VTIMER_MAX_SLICE (0x7ffffffffffff000LL)
+#define VTIMER_MAX_SLICE (0x7fffffffffffffffULL)
 
 struct vtimer_list {
 	struct list_head entry;

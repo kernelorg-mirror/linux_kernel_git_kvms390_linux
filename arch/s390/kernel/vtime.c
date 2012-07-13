@@ -2,25 +2,20 @@
  *  arch/s390/kernel/vtime.c
  *    Virtual cpu timer based timer functions.
  *
- *  S390 version
- *    Copyright (C) 2004 IBM Deutschland Entwicklung GmbH, IBM Corporation
+ *    Copyright IBM Corp. 2004,2012
  *    Author(s): Jan Glauber <jan.glauber@de.ibm.com>
  */
 
-#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/time.h>
-#include <linux/delay.h>
-#include <linux/init.h>
 #include <linux/smp.h>
 #include <linux/types.h>
 #include <linux/timex.h>
 #include <linux/notifier.h>
 #include <linux/kernel_stat.h>
-#include <linux/rcupdate.h>
-#include <linux/posix-timers.h>
 #include <linux/cpu.h>
 #include <linux/kprobes.h>
+#include <linux/export.h>
 
 #include <asm/timer.h>
 #include <asm/irq_regs.h>
@@ -283,17 +278,22 @@ static void internal_add_vtimer(struct vtimer_list *timer)
 	}
 }
 
+void __add_vtimer(struct vtimer_list *timer, int periodic)
+{
+	unsigned long flags;
+
+	timer->interval = periodic ? timer->expires : 0;
+	spin_lock_irqsave(&virt_timer_lock, flags);
+	internal_add_vtimer(timer);
+	spin_unlock_irqrestore(&virt_timer_lock, flags);
+}
+
 /*
  * add_virt_timer - add an oneshot virtual CPU timer
  */
 void add_virt_timer(struct vtimer_list *timer)
 {
-	unsigned long flags;
-
-	timer->interval = 0;
-	spin_lock_irqsave(&virt_timer_lock, flags);
-	internal_add_vtimer(timer);
-	spin_unlock_irqrestore(&virt_timer_lock, flags);
+	__add_vtimer(timer, 0);
 }
 EXPORT_SYMBOL(add_virt_timer);
 
@@ -302,12 +302,7 @@ EXPORT_SYMBOL(add_virt_timer);
  */
 void add_virt_timer_periodic(struct vtimer_list *timer)
 {
-	unsigned long flags;
-
-	timer->interval = timer->expires;
-	spin_lock_irqsave(&virt_timer_lock, flags);
-	internal_add_vtimer(timer);
-	spin_unlock_irqrestore(&virt_timer_lock, flags);
+	__add_vtimer(timer, 1);
 }
 EXPORT_SYMBOL(add_virt_timer_periodic);
 
@@ -317,7 +312,6 @@ static int __mod_vtimer(struct vtimer_list *timer, u64 expires, int periodic)
 	int rc;
 
 	BUG_ON(!timer->function);
-	BUG_ON(!expires || expires > VTIMER_MAX_SLICE);
 
 	if (timer->expires == expires && vtimer_pending(timer))
 		return 1;
@@ -341,9 +335,6 @@ static int __mod_vtimer(struct vtimer_list *timer, u64 expires, int periodic)
 }
 
 /*
- * If we change a pending timer the function must be called on the CPU
- * where the timer is running on.
- *
  * returns whether it has modified a pending timer (1) or not (0)
  */
 int mod_virt_timer(struct vtimer_list *timer, u64 expires)
@@ -353,9 +344,6 @@ int mod_virt_timer(struct vtimer_list *timer, u64 expires)
 EXPORT_SYMBOL(mod_virt_timer);
 
 /*
- * If we change a pending timer the function must be called on the CPU
- * where the timer is running on.
- *
  * returns whether it has modified a pending timer (1) or not (0)
  */
 int mod_virt_timer_periodic(struct vtimer_list *timer, u64 expires)
@@ -390,10 +378,10 @@ EXPORT_SYMBOL(del_virt_timer);
 /*
  * Start the virtual CPU timer on the current CPU.
  */
-void init_cpu_vtimer(void)
+void __cpuinit init_cpu_vtimer(void)
 {
 	/* set initial cpu timer */
-	set_vtimer(0x7fffffffffffffffULL);
+	set_vtimer(VTIMER_MAX_SLICE);
 }
 
 static int __cpuinit s390_nohz_notify(struct notifier_block *self,
