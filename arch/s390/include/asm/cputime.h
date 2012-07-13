@@ -167,6 +167,7 @@ static inline clock_t cputime64_to_clock_t(cputime64_t cputime)
 }
 
 struct s390_idle_data {
+	int nohz_delay;
 	unsigned int sequence;
 	unsigned long long idle_count;
 	unsigned long long idle_time;
@@ -174,7 +175,6 @@ struct s390_idle_data {
 	unsigned long long clock_idle_exit;
 	unsigned long long timer_idle_enter;
 	unsigned long long timer_idle_exit;
-	int nohz_delay;
 };
 
 DECLARE_PER_CPU(struct s390_idle_data, s390_idle);
