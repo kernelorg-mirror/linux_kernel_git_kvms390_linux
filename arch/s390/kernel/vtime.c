@@ -278,7 +278,7 @@ static void internal_add_vtimer(struct vtimer_list *timer)
 	}
 }
 
-void __add_vtimer(struct vtimer_list *timer, int periodic)
+static void __add_vtimer(struct vtimer_list *timer, int periodic)
 {
 	unsigned long flags;
 
