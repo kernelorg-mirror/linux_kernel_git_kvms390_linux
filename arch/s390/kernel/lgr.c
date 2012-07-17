@@ -49,6 +49,7 @@ static void *lgr_page;
 static struct lgr_info lgr_info_last;
 static struct lgr_info lgr_info_cur;
 static struct debug_info *lgr_dbf;
+static int lgr_initialized;
 
 /*
  * Return number of valid stsi levels
@@ -145,6 +146,8 @@ void lgr_info_log(void)
 	static DEFINE_SPINLOCK(lgr_info_lock);
 	unsigned long flags;
 
+	if (!lgr_initialized)
+		return;
 	if (!spin_trylock_irqsave(&lgr_info_lock, flags))
 		return;
 	lgr_info_get(&lgr_info_cur);
@@ -195,6 +198,7 @@ static int __init lgr_init(void)
 	lgr_info_get(&lgr_info_last);
 	debug_event(lgr_dbf, 1, &lgr_info_last, sizeof(lgr_info_last));
 	lgr_timer_set();
+	lgr_initialized = 1;
 	return 0;
 }
 module_init(lgr_init);
