@@ -18,7 +18,7 @@
 
 #include <asm/irq_regs.h>
 #include <asm/cputime.h>
-#include <asm/timer.h>
+#include <asm/vtimer.h>
 #include <asm/irq.h>
 #include "entry.h"
 

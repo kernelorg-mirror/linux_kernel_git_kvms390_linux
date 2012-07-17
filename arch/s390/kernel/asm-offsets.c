@@ -9,7 +9,6 @@
 #include <linux/kbuild.h>
 #include <linux/sched.h>
 #include <asm/cputime.h>
-#include <asm/timer.h>
 #include <asm/vdso.h>
 #include <asm/pgtable.h>
 

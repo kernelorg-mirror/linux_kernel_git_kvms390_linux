@@ -8,8 +8,6 @@
 #ifndef _ASM_S390_TIMER_H
 #define _ASM_S390_TIMER_H
 
-#include <linux/timer.h>
-
 #define VTIMER_MAX_SLICE (0x7fffffffffffffffULL)
 
 struct vtimer_list {

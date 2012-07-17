@@ -38,7 +38,7 @@
 #include <asm/setup.h>
 #include <asm/irq.h>
 #include <asm/tlbflush.h>
-#include <asm/timer.h>
+#include <asm/vtimer.h>
 #include <asm/lowcore.h>
 #include <asm/sclp.h>
 #include <asm/vdso.h>

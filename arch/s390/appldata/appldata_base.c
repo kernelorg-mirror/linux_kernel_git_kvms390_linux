@@ -29,7 +29,7 @@
 #include <linux/suspend.h>
 #include <linux/platform_device.h>
 #include <asm/appldata.h>
-#include <asm/timer.h>
+#include <asm/vtimer.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <asm/smp.h>

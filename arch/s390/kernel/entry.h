@@ -5,7 +5,6 @@
 #include <linux/signal.h>
 #include <asm/ptrace.h>
 #include <asm/cputime.h>
-#include <asm/timer.h>
 
 extern void (*pgm_check_table[128])(struct pt_regs *);
 extern void *restart_stack;
