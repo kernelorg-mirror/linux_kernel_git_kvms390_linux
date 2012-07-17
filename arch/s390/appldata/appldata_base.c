@@ -172,16 +172,14 @@ int appldata_diag(char record_nr, u16 function, unsigned long buffer,
  * Add, delete or modify virtual timers on all online cpus.
  * The caller needs to get the appldata_timer_lock spinlock.
  */
-static void
-__appldata_vtimer_setup(int cmd)
+static void __appldata_vtimer_setup(int cmd)
 {
-	u64 timer_interval;
+	u64 timer_interval = (u64) appldata_interval * 1000 * TOD_MICRO;
 
 	switch (cmd) {
 	case APPLDATA_ADD_TIMER:
 		if (appldata_timer_active)
 			break;
-		timer_interval = (u64) appldata_interval * 1000 * TOD_MICRO;
 		appldata_timer.expires = timer_interval;
 		add_virt_timer_periodic(&appldata_timer);
 		appldata_timer_active = 1;
@@ -193,7 +191,6 @@ __appldata_vtimer_setup(int cmd)
 		appldata_timer_active = 0;
 		break;
 	case APPLDATA_MOD_TIMER:
-		timer_interval = (u64) appldata_interval * 1000 * TOD_MICRO;
 		if (!appldata_timer_active)
 			break;
 		mod_virt_timer_periodic(&appldata_timer, timer_interval);

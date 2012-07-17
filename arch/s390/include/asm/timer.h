@@ -1,10 +1,8 @@
 /*
- *  include/asm-s390/timer.h
- *
- *  (C) Copyright IBM Corp. 2003,2006
+ *  Copyright IBM Corp. 2003, 2012
  *  Virtual CPU timer
  *
- *  Author: Jan Glauber (jang@de.ibm.com)
+ *  Author(s): Jan Glauber <jan.glauber@de.ibm.com>
  */
 
 #ifndef _ASM_S390_TIMER_H
@@ -16,10 +14,8 @@
 
 struct vtimer_list {
 	struct list_head entry;
-
 	u64 expires;
 	u64 interval;
-
 	void (*function)(unsigned long);
 	unsigned long data;
 };
@@ -35,6 +31,5 @@ extern void init_cpu_vtimer(void);
 extern void vtime_init(void);
 
 extern void vtime_stop_cpu(void);
-extern void vtime_start_leave(void);
 
 #endif /* _ASM_S390_TIMER_H */
