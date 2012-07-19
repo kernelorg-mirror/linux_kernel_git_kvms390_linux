@@ -1,6 +1,4 @@
 /*
- *  arch/s390/kernel/init_task.c
- *
  *  S390 version
  *
  *  Derived from "arch/i386/kernel/init_task.c"
