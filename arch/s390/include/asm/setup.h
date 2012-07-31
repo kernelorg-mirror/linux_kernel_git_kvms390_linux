@@ -99,7 +99,7 @@ extern unsigned int addressing_mode;
 #define MACHINE_HAS_PFMF	(0)
 #define MACHINE_HAS_SPP		(0)
 #define MACHINE_HAS_TOPOLOGY	(0)
-#define MACHINE_HAS_TE                (0)
+#define MACHINE_HAS_TE		      (0)
 #else /* CONFIG_64BIT */
 #define MACHINE_HAS_IEEE	(1)
 #define MACHINE_HAS_CSP		(1)
