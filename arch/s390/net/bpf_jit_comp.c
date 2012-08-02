@@ -1,7 +1,7 @@
 /*
  * BPF Jit compiler for s390.
  *
- * Copyright IBM Corp. 2011
+ * Copyright IBM Corp. 2012
  *
  * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
  */
@@ -9,6 +9,7 @@
 #include <linux/netdevice.h>
 #include <linux/filter.h>
 #include <asm/cacheflush.h>
+#include <asm/processor.h>
 
 /*
  * Conventions:
@@ -22,7 +23,7 @@
  *   %r11 = skb->len - skb->data_len (headlen)
  *   %r12 = BPF X accumulator
  *   %r13 = literal pool pointer
- *   0(%r15) - 64(%r15) mem array
+ *   0(%r15) - 63(%r15) scratch memory array with BPF_MEMWORDS
  */
 int bpf_jit_enable __read_mostly;
 
@@ -137,7 +138,7 @@ struct bpf_jit {
 	ret;						\
 })
 
-static int bpf_jit_prolog(struct bpf_jit *jit)
+static void bpf_jit_prologue(struct bpf_jit *jit)
 {
 	/* Save registers and create stack frame if necessary */
 	if (jit->seen & SEEN_DATAREF) {
@@ -151,7 +152,7 @@ static int bpf_jit_prolog(struct bpf_jit *jit)
 		EMIT6(0xe3e0f098, 0x0024);
 	} else if ((jit->seen & SEEN_XREG) && (jit->seen & SEEN_LITERAL))
 		/* stmg %r12,%r13,120(%r15) */
-		EMIT6(0xebcff078, 0x0024);
+		EMIT6(0xebcdf078, 0x0024);
 	else if (jit->seen & SEEN_XREG)
 		/* stg %r12,120(%r15) */
 		EMIT6(0xe3c0f078, 0x0024);
@@ -183,14 +184,14 @@ static int bpf_jit_prolog(struct bpf_jit *jit)
 		EMIT6_DISP(0xe3a02000, 0x0004,
 			   offsetof(struct sk_buff, data));
 	}
-	return 0;
 }
 
-static int bpf_jit_epilog(struct bpf_jit *jit)
+static void bpf_jit_epilogue(struct bpf_jit *jit)
 {
 	/* Return 0 */
 	if (jit->seen & SEEN_RET0) {
 		jit->ret0_ip = jit->prg;
+		/* lghi %r2,0 */
 		EMIT4(0xa7290000);
 	}
 	jit->exit_ip = jit->prg;
@@ -201,7 +202,7 @@ static int bpf_jit_epilog(struct bpf_jit *jit)
 			   (jit->seen & SEEN_MEM) ? 200 : 168);
 	else if ((jit->seen & SEEN_XREG) && (jit->seen & SEEN_LITERAL))
 		/* lmg %r12,%r13,120(%r15) */
-		EMIT6(0xebcff078, 0x0004);
+		EMIT6(0xebcdf078, 0x0004);
 	else if (jit->seen & SEEN_XREG)
 		/* lg %r12,120(%r15) */
 		EMIT6(0xe3c0f078, 0x0004);
@@ -210,15 +211,14 @@ static int bpf_jit_epilog(struct bpf_jit *jit)
 		EMIT6(0xe3d0f080, 0x0004);
 	/* br %r14 */
 	EMIT2(0x07fe);
-	return 0;
 }
 
 /*
  * make sure we dont leak kernel information to user
  */
-static int bpf_jit_noleaks(struct bpf_jit *jit, struct sock_filter *filter)
+static void bpf_jit_noleaks(struct bpf_jit *jit, struct sock_filter *filter)
 {
-	/* Clear temporary memory if (seen & SEEN_XREG) */
+	/* Clear temporary memory if (seen & SEEN_MEM) */
 	if (jit->seen & SEEN_MEM)
 		/* xc 0(64,%r15),0(%r15) */
 		EMIT6(0xd73ff000, 0xf000);
@@ -254,7 +254,6 @@ static int bpf_jit_noleaks(struct bpf_jit *jit, struct sock_filter *filter)
 		/* lhi %r5,0 */
 		EMIT4(0xa7580000);
 	}
-	return 0;
 }
 
 static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
@@ -276,7 +275,7 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
 			break;
 		if (K <= 16383)
 			/* ahi %r5,<K> */
-			EMIT4_IMM(0xa7680000, K);
+			EMIT4_IMM(0xa75a0000, K);
 		else
 			/* a %r5,<d(K)>(%r13) */
 			EMIT4_DISP(0x5a50d000, EMIT_CONST(K));
@@ -291,7 +290,7 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
 			break;
 		if (K <= 16384)
 			/* ahi %r5,-K */
-			EMIT4_IMM(0xa7680000, -K);
+			EMIT4_IMM(0xa75a0000, -K);
 		else
 			/* s %r5,<d(K)>(%r13) */
 			EMIT4_DISP(0x5b50d000, EMIT_CONST(K));
@@ -357,7 +356,7 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
 		break;
 	case BPF_S_ALU_RSH_X: /* A >>= X; */
 		jit->seen |= SEEN_XREG;
-		/* srl %r5,0(%r6) */
+		/* srl %r5,0(%r12) */
 		EMIT4(0x8850c000);
 		break;
 	case BPF_S_ALU_RSH_K: /* A >>= K; */
@@ -465,7 +464,7 @@ load_abs:	if ((int) K < 0)
 			goto out;
 call_fn:	/* lg %r1,<d(function)>(%r13) */
 		EMIT6_DISP(0xe310d000, 0x0004, offset);
-		/* l %r0,<d(K)>(%r13) */
+		/* l %r3,<d(K)>(%r13) */
 		EMIT4_DISP(0x5830d000, EMIT_CONST(K));
 		/* basr %r8,%r1 */
 		EMIT2(0x0d81);
@@ -565,8 +564,8 @@ call_fn:	/* lg %r1,<d(function)>(%r13) */
 		}
 		break;
 	case BPF_S_RET_A:
-		/* lgfr %r2,%r5 */
-		EMIT4(0xb9140025);
+		/* llgfr %r2,%r5 */
+		EMIT4(0xb9160025);
 		/* j <exit> */
 		EMIT4_PCREL(0xa7f40000, jit->exit_ip - jit->prg);
 		break;
@@ -593,7 +592,7 @@ call_fn:	/* lg %r1,<d(function)>(%r13) */
 				 * A = skb->dev->ifindex */
 		BUILD_BUG_ON(FIELD_SIZEOF(struct net_device, ifindex) != 4);
 		jit->seen |= SEEN_RET0;
-		/* lg %r1,%0(%r2) */
+		/* lg %r1,<d(dev)>(%r2) */
 		EMIT6_DISP(0xe3102000, 0x0004, offsetof(struct sk_buff, dev));
 		/* ltgr %r1,%r1 */
 		EMIT4(0xb9020011);
@@ -618,7 +617,7 @@ call_fn:	/* lg %r1,<d(function)>(%r13) */
 				 * A = skb->dev->type */
 		BUILD_BUG_ON(FIELD_SIZEOF(struct net_device, type) != 2);
 		jit->seen |= SEEN_RET0;
-		/* lg %r1,%0(%r2) */
+		/* lg %r1,<d(dev)>(%r2) */
 		EMIT6_DISP(0xe3102000, 0x0004, offsetof(struct sk_buff, dev));
 		/* ltgr %r1,%r1 */
 		EMIT4(0xb9020011);
@@ -652,18 +651,15 @@ out:
 	return -1;
 }
 
-void print_fn_code(unsigned char *code, unsigned long len);
-
 void bpf_jit_compile(struct sk_filter *fp)
 {
+	unsigned long size, prg_len, lit_len;
 	struct bpf_jit jit, cjit;
 	unsigned int *addrs;
-	unsigned long size, prg_len, lit_len;
 	int pass, i;
 
 	if (!bpf_jit_enable)
 		return;
-
 	addrs = kmalloc(fp->len * sizeof(*addrs), GFP_KERNEL);
 	if (addrs == NULL)
 		return;
@@ -675,15 +671,14 @@ void bpf_jit_compile(struct sk_filter *fp)
 		jit.prg = jit.start;
 		jit.lit = jit.mid;
 
-		if (bpf_jit_prolog(&jit) || bpf_jit_noleaks(&jit, fp->insns))
-			goto out;
-
-		for (i = 0; i < fp->len; i++)
+		bpf_jit_prologue(&jit);
+		bpf_jit_noleaks(&jit, fp->insns);
+		for (i = 0; i < fp->len; i++) {
 			if (bpf_jit_insn(&jit, fp->insns + i, addrs, i,
 					 i == fp->len - 1))
 				goto out;
-		if (bpf_jit_epilog(&jit))
-			goto out;
+		}
+		bpf_jit_epilogue(&jit);
 		if (jit.start) {
 			WARN_ON(jit.prg > cjit.prg || jit.lit > cjit.lit);
 			if (memcmp(&jit, &cjit, sizeof(jit)) == 0)
@@ -704,7 +699,7 @@ void bpf_jit_compile(struct sk_filter *fp)
 			jit.exit_ip += (unsigned long) jit.start;
 			jit.ret0_ip += (unsigned long) jit.start;
 		}
-		memcpy(&cjit, &jit, sizeof(jit));
+		cjit = jit;
 	}
 	if (bpf_jit_enable > 1) {
 		pr_err("flen=%d proglen=%lu pass=%d image=%p\n",
@@ -717,7 +712,6 @@ void bpf_jit_compile(struct sk_filter *fp)
 				       jit.mid, jit.end - jit.mid, false);
 		}
 	}
-
 	if (jit.start)
 		fp->bpf_func = (void *) jit.start;
 out:

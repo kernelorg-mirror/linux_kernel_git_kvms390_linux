@@ -1,7 +1,7 @@
 /*
  * BPF Jit compiler for s390, help functions.
  *
- * Copyright IBM Corp. 2011
+ * Copyright IBM Corp. 2012
  *
  * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
  */
@@ -14,7 +14,7 @@
  *   %r3: offset parameter
  *   %r5: result in BPF A accumulator
  *   %r8: return address
- *   %r9: save register fo skb pointer
+ *   %r9: save register for skb pointer
  *   %r10: skb->data
  *   %r11: skb->len - skb->data_len (headlen)
  *   %r12: BPF X accumulator
@@ -28,13 +28,12 @@
 #define SKBDATA	%r8
 
 	/* A = *(u32 *) (skb->data+K+X) */
-sk_load_word_ind:
-	.globl	sk_load_word_ind
+ENTRY(sk_load_word_ind)
 	ar	%r3,%r12		# offset += X
 	bmr	%r8			# < 0 -> return with cc
 
 	/* A = *(u32 *) (skb->data+K) */
-sk_load_word:
+ENTRY(sk_load_word)
 	.globl	sk_load_word
 	llgfr	%r1,%r3			# extend offset
 	ahi	%r3,4			# offset + 4
@@ -55,14 +54,12 @@ sk_load_word_slow:
 	br	%r8
 
 	/* A = *(u16 *) (skb->data+K+X) */
-sk_load_half_ind:
-	.globl	sk_load_half_ind
+ENTRY(sk_load_half_ind)
 	ar	%r3,%r12		# offset += X
 	bmr	%r8			# < 0 -> return with cc
 
 	/* A = *(u16 *) (skb->data+K) */
-sk_load_half:
-	.globl	sk_load_half
+ENTRY(sk_load_half)
 	llgfr	%r1,%r3			# extend offset
 	ahi	%r3,2			# offset + 2
 	clr	%r11,%r3		# hlen <= offset + 2 ?
@@ -83,14 +80,12 @@ sk_load_half_slow:
 	br	%r8
 
 	/* A = *(u8 *) (skb->data+K+X) */
-sk_load_byte_ind:
-	.globl	sk_load_byte_ind
+ENTRY(sk_load_byte_ind)
 	ar	%r3,%r12		# offset += X
 	bmr	%r8			# < 0 -> return with cc
 
 	/* A = *(u8 *) (skb->data+K) */
-sk_load_byte:
-	.globl	sk_load_byte
+ENTRY(sk_load_byte)
 	llgfr	%r1,%r3			# extend offset
 	clr	%r11,%r3		# hlen < offset ?
 	jle	sk_load_byte_slow
@@ -111,8 +106,7 @@ sk_load_byte_slow:
 	br	%r8
 
 	/* A = (*(u8 *)(skb->data+K) & 0xf) << 2 */
-sk_load_byte_msh:
-	.globl	sk_load_byte_msh
+ENTRY(sk_load_byte_msh)
 	llgfr	%r1,%r3			# extend offset
 	clr	%r11,%r3		# hlen < offset ?
 	jle	sk_load_byte_slow
