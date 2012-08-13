@@ -34,7 +34,6 @@ ENTRY(sk_load_word_ind)
 
 	/* A = *(u32 *) (skb->data+K) */
 ENTRY(sk_load_word)
-	.globl	sk_load_word
 	llgfr	%r1,%r3			# extend offset
 	ahi	%r3,4			# offset + 4
 	clr	%r11,%r3		# hlen <= offset + 4 ?
