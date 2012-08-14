@@ -399,12 +399,12 @@ branch:		if (filter->jt == filter->jf) {
 			break;
 		}
 		if (filter->jt != 0) {
-			/* brc  <mask>,<jt> */
+			/* brc	<mask>,<jt> */
 			offset = addrs[i + filter->jt] + jit->start - jit->prg;
 			EMIT4_PCREL(0xa7040000 | mask, offset);
 		}
 		if (filter->jf != 0) {
-			/* brc  <mask^15>,<jf> */
+			/* brc	<mask^15>,<jf> */
 			offset = addrs[i + filter->jf] + jit->start - jit->prg;
 			EMIT4_PCREL(0xa7040000 | (mask ^ 0xf00000), offset);
 		}
@@ -585,7 +585,7 @@ call_fn:	/* lg %r1,<d(function)>(%r13) */
 		BUILD_BUG_ON(FIELD_SIZEOF(struct sk_buff, protocol) != 2);
 		/* lhi %r5,0 */
 		EMIT4(0xa7580000);
-		/* icm  %r5,3,<d(protocol)>(%r2) */
+		/* icm	%r5,3,<d(protocol)>(%r2) */
 		EMIT4_DISP(0xbf532000, offsetof(struct sk_buff, protocol));
 		break;
 	case BPF_S_ANC_IFINDEX:	/* if (!skb->dev) return 0;
@@ -610,7 +610,7 @@ call_fn:	/* lg %r1,<d(function)>(%r13) */
 		BUILD_BUG_ON(FIELD_SIZEOF(struct sk_buff, queue_mapping) != 2);
 		/* lhi %r5,0 */
 		EMIT4(0xa7580000);
-		/* icm  %r5,3,<d(queue_mapping)>(%r2) */
+		/* icm	%r5,3,<d(queue_mapping)>(%r2) */
 		EMIT4_DISP(0xbf532000, offsetof(struct sk_buff, queue_mapping));
 		break;
 	case BPF_S_ANC_HATYPE:	/* if (!skb->dev) return 0;
@@ -625,7 +625,7 @@ call_fn:	/* lg %r1,<d(function)>(%r13) */
 		EMIT4_PCREL(0xa7840000, jit->ret0_ip - jit->prg);
 		/* lhi %r5,0 */
 		EMIT4(0xa7580000);
-		/* icm  %r5,3,<d(type)>(%r1) */
+		/* icm	%r5,3,<d(type)>(%r1) */
 		EMIT4_DISP(0xbf531000, offsetof(struct net_device, type));
 		break;
 	case BPF_S_ANC_RXHASH: /* A = skb->rxhash */
