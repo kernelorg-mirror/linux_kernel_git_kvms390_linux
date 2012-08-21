@@ -9,10 +9,10 @@
 
 /*
  * Calling convention:
- * registers %r2, %r3, %r6-%r15 are call saved
+ * registers %r2, %r6-%r8, %r10-%r11, %r13, %r15 are call saved
  *   %r2: skb pointer
  *   %r3: offset parameter
- *   %r5: result in BPF A accumulator
+ *   %r5: BPF A accumulator
  *   %r8: return address
  *   %r9: save register for skb pointer
  *   %r10: skb->data
