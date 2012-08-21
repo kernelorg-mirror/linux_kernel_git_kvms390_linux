@@ -13,7 +13,7 @@
  */
 
 typedef unsigned long   __kernel_size_t;
-typedef long            __kernel_ssize_t;
+typedef long		__kernel_ssize_t;
 #define __kernel_size_t __kernel_size_t
 
 typedef unsigned short	__kernel_old_dev_t;

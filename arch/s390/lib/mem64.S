@@ -17,8 +17,8 @@
  * void *memset(void *s, int c, size_t n)
  * {
  *	if (likely(c == 0))
- *		return __builtin_memset(s, 0, n);
- *	return __builtin_memset(s, c, n);
+ *		return __builtin_memset(s, 0, n) ;
+ *	return __builtin_memset(s, c, n)	 ;
  * }
  */
 ENTRY(memset)
