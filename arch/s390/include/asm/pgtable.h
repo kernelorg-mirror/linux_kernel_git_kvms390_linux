@@ -931,12 +931,14 @@ static inline void __ptep_ipte(unsigned long address, pte_t *ptep)
 
 static inline void arch_enter_lazy_mmu_mode(struct mm_struct *mm)
 {
+	local_bh_disable();
 	atomic_add(0x10000, &mm->context.attach_count);
 }
 
 static inline void arch_leave_lazy_mmu_mode(struct mm_struct *mm)
 {
 	atomic_sub(0x10000, &mm->context.attach_count);
+	local_bh_enable();
 }
 
 static inline void ptep_flush_lazy(struct mm_struct *mm,
