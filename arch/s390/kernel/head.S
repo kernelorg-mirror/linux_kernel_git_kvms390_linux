@@ -375,6 +375,7 @@ ENTRY(startup)
 ENTRY(startup_kdump)
 	j	.Lep_startup_kdump
 .Lep_startup_normal:
+	bas	%r14,.Lsetmode		# Immediately switch to 64 bit mode
 	basr	%r13,0			# get base
 .LPG0:
 	xc	0x200(256),0x200	# partially clear lowcore
