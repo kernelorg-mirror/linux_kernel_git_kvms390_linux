@@ -435,7 +435,7 @@ menu "Dump support"
 
 config CRASH_DUMP
 	bool "kernel crash dumps"
-	depends on 64BIT
+	depends on 64BIT && SMP
 	select KEXEC
 	help
 	  Generate crash dump after being started by kexec.
