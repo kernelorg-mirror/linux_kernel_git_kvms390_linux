@@ -4,7 +4,7 @@
 #include <linux/device.h>
 #include <linux/timer.h>
 #include <linux/list.h>
-#include <asm/orb.h>
+#include "orb.h"
 
 struct eadm_private {
 	union orb orb;
