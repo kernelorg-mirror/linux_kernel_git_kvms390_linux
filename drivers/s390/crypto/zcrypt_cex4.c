@@ -15,6 +15,7 @@
 #include "zcrypt_msgtype6.h"
 #include "zcrypt_msgtype50.h"
 #include "zcrypt_error.h"
+#include "zcrypt_cex4.h"
 
 #define CEX4A_MIN_MOD_SIZE	  1	/*    8 bits	*/
 #define CEX4A_MAX_MOD_SIZE_2K	256	/* 2048 bits	*/
