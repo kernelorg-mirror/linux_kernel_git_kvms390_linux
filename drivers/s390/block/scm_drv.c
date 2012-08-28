@@ -18,7 +18,7 @@ static void notify(struct scm_device *scmdev)
 {
 	pr_info("%lu: The capabilities of the SCM increment changed\n",
 		(unsigned long) scmdev->address);
-	SCM_LOG(level, "State changed");
+	SCM_LOG(2, "State changed");
 	SCM_LOG_STATE(2, scmdev);
 }
 
