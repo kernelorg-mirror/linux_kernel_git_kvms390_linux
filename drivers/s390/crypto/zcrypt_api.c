@@ -323,7 +323,7 @@ struct zcrypt_ops *zcrypt_msgtype_request(unsigned char *name, int variant)
 		request_module(name);
 		zops = __ops_lookup(name, variant);
 	}
-	if ((!zops) ||  (!try_module_get(zops->owner)))
+	if ((!zops) || (!try_module_get(zops->owner)))
 		return NULL;
 	return zops;
 }

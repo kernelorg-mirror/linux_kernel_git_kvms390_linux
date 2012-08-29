@@ -670,4 +670,3 @@ config KMSG_IDS
 	  Select this option if you want to include a message number to the
 	  prefix for kernel messages issued by the s390 architecture and
 	  driver code. See "Documentation/s390/kmsg.txt" for more details.
-

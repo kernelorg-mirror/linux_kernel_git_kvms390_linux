@@ -1064,8 +1064,8 @@ static inline int ap_test_config(unsigned int *field, unsigned int nr)
  * @id AP card ID
  *
  * Returns 0 if the card is not configured
- *         1 if the card is configured or
- *           if the configuration information is not available
+ *	   1 if the card is configured or
+ *	     if the configuration information is not available
  */
 static inline int ap_test_config_card_id(unsigned int id)
 {
@@ -1079,8 +1079,8 @@ static inline int ap_test_config_card_id(unsigned int id)
  * @domain AP usage domain ID
  *
  * Returns 0 if the usage domain is not configured
- *         1 if the usage domain is configured or
- *           if the configuration information is not available
+ *	   1 if the usage domain is configured or
+ *	     if the configuration information is not available
  */
 static inline int ap_test_config_domain(unsigned int domain)
 {
