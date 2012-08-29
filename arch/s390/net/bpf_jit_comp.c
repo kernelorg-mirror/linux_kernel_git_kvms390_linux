@@ -302,7 +302,7 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
 			/* ahi %r5,-K */
 			EMIT4_IMM(0xa75a0000, -K);
 		else if (test_facility(21))
-			/* alfi %r5,<K> */
+			/* alfi %r5,-K */
 			EMIT6_IMM(0xc25b0000, -K);
 		else
 			/* s %r5,<d(K)>(%r13) */
