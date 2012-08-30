@@ -123,7 +123,7 @@ static inline pmd_t *vmalloc_sync_one(pgd_t *pgd, unsigned long address)
 		return NULL;
 	if (!pmd_present(*pmd)) {
 		set_pmd(pmd, *pmd_k);
-		arch_flush_lazy_mmu_mode(&init_mm);
+		arch_flush_lazy_mmu_mode();
 	} else
 		BUG_ON(pmd_ptfn(*pmd) != pmd_ptfn(*pmd_k));
 	return pmd_k;

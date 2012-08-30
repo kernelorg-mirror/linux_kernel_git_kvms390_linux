@@ -88,12 +88,14 @@ static inline void __tlb_flush_mm(struct mm_struct * mm)
 		__tlb_flush_full(mm);
 }
 
-static inline void __tlb_flush_mm_lazy(struct mm_struct * mm)
+static inline void __tlb_flush_mm_cond(struct mm_struct * mm)
 {
+	spin_lock(&mm->page_table_lock);
 	if (mm->context.flush_mm) {
 		__tlb_flush_mm(mm);
 		mm->context.flush_mm = 0;
 	}
+	spin_unlock(&mm->page_table_lock);
 }
 
 /*
@@ -120,13 +122,13 @@ static inline void __tlb_flush_mm_lazy(struct mm_struct * mm)
 
 static inline void flush_tlb_mm(struct mm_struct *mm)
 {
-	__tlb_flush_mm_lazy(mm);
+	__tlb_flush_mm_cond(mm);
 }
 
 static inline void flush_tlb_range(struct vm_area_struct *vma,
 				   unsigned long start, unsigned long end)
 {
-	__tlb_flush_mm_lazy(vma->vm_mm);
+	__tlb_flush_mm_cond(vma->vm_mm);
 }
 
 static inline void flush_tlb_kernel_range(unsigned long start,

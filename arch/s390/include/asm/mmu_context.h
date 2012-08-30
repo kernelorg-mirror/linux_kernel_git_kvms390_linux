@@ -71,21 +71,14 @@ static inline void update_mm(struct mm_struct *mm, struct task_struct *tsk)
 static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 			     struct task_struct *tsk)
 {
-	int v;
-
 	cpumask_set_cpu(smp_processor_id(), mm_cpumask(next));
 	update_mm(next, tsk);
 	atomic_dec(&prev->context.attach_count);
 	WARN_ON(atomic_read(&prev->context.attach_count) < 0);
-	while (1) {
-		v = atomic_read(&next->context.attach_count);
-		if ((v & 0xffff0000) && (v & 0xffff) <= 1)
-			continue;
-		if (atomic_cmpxchg(&next->context.attach_count, v, v + 1) == v)
-			break;
-	}
+	atomic_inc(&next->context.attach_count);
 	/* Check for TLBs not flushed yet */
-	__tlb_flush_mm_lazy(next);
+	if (next->context.flush_mm)
+		__tlb_flush_mm(next);
 }
 
 #define enter_lazy_tlb(mm,tsk)	do { } while (0)
