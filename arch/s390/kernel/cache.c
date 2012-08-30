@@ -322,6 +322,8 @@ static int __cpuinit cache_add_cpu(int cpu)
 	if (!cache_dir)
 		return -ENOMEM;
 	list_for_each_entry(cache, &cache_list, list) {
+		if (!cache->private)
+			break;
 		rc = cache_create_index_dir(cache_dir, cache, index, cpu);
 		if (rc)
 			return rc;
