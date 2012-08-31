@@ -439,12 +439,12 @@ long arch_ptrace(struct task_struct *child, long request,
 		return 0;
 	case PTRACE_ENABLE_TE:
 		if (!MACHINE_HAS_TE)
-			return -ENOSYS;
+			return -EIO;
 		child->thread.per_flags &= ~PER_FLAG_NO_TE;
 		return 0;
 	case PTRACE_DISABLE_TE:
 		if (!MACHINE_HAS_TE)
-			return -ENOSYS;
+			return -EIO;
 		child->thread.per_flags |= PER_FLAG_NO_TE;
 		return 0;
 	default:

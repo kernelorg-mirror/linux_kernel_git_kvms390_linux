@@ -370,6 +370,8 @@ static __init void detect_machine_facilities(void)
 		S390_lowcore.machine_flags |= MACHINE_FLAG_MVCOS;
 	if (test_facility(40))
 		S390_lowcore.machine_flags |= MACHINE_FLAG_SPP;
+	if (test_facility(50) && test_facility(73))
+		S390_lowcore.machine_flags |= MACHINE_FLAG_TE;
 #endif
 }
 
@@ -439,16 +441,6 @@ static void __init setup_boot_command_line(void)
 	append_to_cmdline(append_ipl_scpdata);
 }
 
-static __init void setup_transactional_execution(void)
-{
-#ifdef CONFIG_64BIT
-	if (!test_facility(50) || !test_facility(73))
-		return;
-	S390_lowcore.machine_flags |= MACHINE_FLAG_TE;
-#endif
-}
-
-
 /*
  * Save ipl parameters, clear bss memory, initialize storage keys
  * and create a kernel NSS at startup if the SAVESYS= parm is defined
@@ -475,7 +467,6 @@ void __init startup_init(void)
 	detect_diag44();
 	detect_machine_facilities();
 	setup_hpage();
-	setup_transactional_execution();
 	sclp_facilities_detect();
 	detect_memory_layout(memory_chunk);
 #ifdef CONFIG_DYNAMIC_FTRACE
