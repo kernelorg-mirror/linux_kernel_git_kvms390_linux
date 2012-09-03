@@ -305,7 +305,7 @@ early_param("vmalloc", parse_vmalloc);
 unsigned int s390_user_mode = PRIMARY_SPACE_MODE;
 EXPORT_SYMBOL_GPL(s390_user_mode);
 
-static int set_amode_primary(void)
+static void __init set_user_mode_primary(void)
 {
 	unsigned long cr3 = 0x00000000ffff0000ul; /* psw key mask bits */
 
@@ -315,17 +315,9 @@ static int set_amode_primary(void)
 	psw32_user_bits =
 		(psw32_user_bits & ~PSW32_MASK_ASC) | PSW32_ASC_PRIMARY;
 #endif
-
 	/* enable keys. this is safe because user cannot access home space */
 	__ctl_load(cr3, 3, 3);
-
-	if (MACHINE_HAS_MVCOS) {
-		memcpy(&uaccess, &uaccess_mvcos_switch, sizeof(uaccess));
-		return 1;
-	} else {
-		memcpy(&uaccess, &uaccess_pt, sizeof(uaccess));
-		return 0;
-	}
+	uaccess = MACHINE_HAS_MVCOS ? uaccess_mvcos_switch : uaccess_pt;
 }
 
 static int __init early_parse_user_mode(char *p)
@@ -340,16 +332,15 @@ static int __init early_parse_user_mode(char *p)
 }
 early_param("user_mode", early_parse_user_mode);
 
-static void setup_addressing_mode(void)
+static void __init setup_addressing_mode(void)
 {
-	if (s390_user_mode == PRIMARY_SPACE_MODE) {
-		if (set_amode_primary())
-			pr_info("Address spaces switched, "
-				"mvcos available\n");
-		else
-			pr_info("Address spaces switched, "
-				"mvcos not available\n");
-	}
+	if (s390_user_mode != PRIMARY_SPACE_MODE)
+		return;
+	set_user_mode_primary();
+	if (MACHINE_HAS_MVCOS)
+		pr_info("Address spaces switched, mvcos available\n");
+	else
+		pr_info("Address spaces switched, mvcos not available\n");
 }
 
 void *restart_stack __attribute__((__section__(".data")));
