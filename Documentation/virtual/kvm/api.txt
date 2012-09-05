@@ -1946,6 +1946,39 @@ the guest using the specified gsi pin.  The irqfd is removed using
 the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
 and kvm_irqfd.gsi.
 
+4.76 KVM_S390_INTERRUPT
+
+Capability: basic
+Archtectures: s390
+Type: vm ioctl, vcpu ioctl
+Parameters: struct kvm_s390_interrupt (in)
+Returns: 0 on success, -1 on error
+
+Allows to inject an interrupt to the guest. Interrupts can be floating
+(vm ioctl) or per cpu (vcpu ioctl), depending on the interrupt type.
+
+Interrupt parameters are passed via kvm_s390_interrupt:
+
+struct kvm_s390_interrupt {
+	__u32 type;
+	__u32 parm;
+	__u64 parm64;
+};
+
+type can be one of the following:
+
+KVM_S390_SIGP_STOP (vcpu) - sigp restart
+KVM_S390_PROGRAM_INT (vcpu) - program check; code in parm
+KVM_S390_SIGP_SET_PREFIX (vcpu) - sigp set prefix; prefix address in parm
+KVM_S390_RESTART (vcpu) - restart
+KVM_S390_INT_VIRTIO (vm) - virtio external interrupt; external interrupt
+                           parameters in parm and parm64
+KVM_S390_INT_SERVICE (vm) - sclp external interrupt; sclp parameter in parm
+KVM_S390_INT_EMERGENCY (vcpu) - sigp emergency; source cpu in parm
+KVM_S390_INT_EXTERNAL_CALL (vcpu) - sigp external call; source cpu in parm
+
+Note that the vcpu ioctl is asynchronous to vpcu execution.
+
 
 5. The kvm_run structure
 ------------------------
