@@ -66,15 +66,6 @@ static inline pte_t huge_ptep_get(pte_t *ptep)
 	return pte;
 }
 
-static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
-					    unsigned long addr, pte_t *ptep)
-{
-	pte_t pte = huge_ptep_get(ptep);
-
-	huge_ptep_invalidate(mm, addr, ptep);
-	return pte;
-}
-
 static inline void __pmd_csp(pmd_t *pmdp)
 {
 	register unsigned long reg2 asm("2") = pmd_val(*pmdp);
@@ -114,6 +105,15 @@ static inline void huge_ptep_invalidate(struct mm_struct *mm,
 		__pmd_idte(address, pmdp);
 	else
 		__pmd_csp(pmdp);
+}
+
+static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
+					    unsigned long addr, pte_t *ptep)
+{
+	pte_t pte = huge_ptep_get(ptep);
+
+	huge_ptep_invalidate(mm, addr, ptep);
+	return pte;
 }
 
 #define huge_ptep_set_access_flags(__vma, __addr, __ptep, __entry, __dirty) \
