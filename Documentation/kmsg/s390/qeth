@@ -643,6 +643,7 @@
 /*? Text: "%s: TSO does not permit QDIO data connection isolation\n" */
 /*? Text: "%s: HW TX Checksumming enabled\n" */
 /*? Text: "netif_stop_queue() cannot be called before register_netdev()\n" */
+/*? Text: "qeth_l3: ignoring TR device\n" */
 
 /*?
  * Text: "%s: Failed to create completion queue\n"
