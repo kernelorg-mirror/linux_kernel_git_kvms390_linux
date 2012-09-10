@@ -53,7 +53,7 @@
 /*? Text: "cannot register Generic Netlink interface.\n" */
 /*? Text: "cannot register sockopt.\n" */
 /*? Text: "get_ctl: len %u < %u\n" */
-/*? Text: "ip_vs_send_async error\n" */
+/*? Text: "ip_vs_send_async error %d\n" */
 /*? Text: "ip_vs_sync_buff_create failed.\n" */
 /*? Text: "ipvs loaded.\n" */
 /*? Text: "ipvs unloaded.\n" */
@@ -72,3 +72,5 @@
 /*? Text: "sync thread started: state = BACKUP, mcast_ifn = %s, syncid = %d\n" */
 /*? Text: "sync thread started: state = MASTER, mcast_ifn = %s, syncid = %d\n" */
 /*? Text: "unknown Generic Netlink command\n" */
+/*? Text: "sync thread started: state = MASTER, mcast_ifn = %s, syncid = %d, id = %d\n" */
+/*? Text: "sync thread started: state = BACKUP, mcast_ifn = %s, syncid = %d, id = %d\n" */
