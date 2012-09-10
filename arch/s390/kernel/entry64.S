@@ -41,9 +41,9 @@ STACK_SHIFT = PAGE_SHIFT + THREAD_ORDER
 STACK_SIZE  = 1 << STACK_SHIFT
 
 _TIF_WORK_SVC = (_TIF_SIGPENDING | _TIF_NOTIFY_RESUME | _TIF_NEED_RESCHED | \
-		 _TIF_MCCK_PENDING | _TIF_PER_TRAP )
+		 _TIF_TLB_WAIT | _TIF_MCCK_PENDING | _TIF_PER_TRAP )
 _TIF_WORK_INT = (_TIF_SIGPENDING | _TIF_NOTIFY_RESUME | _TIF_NEED_RESCHED | \
-		 _TIF_MCCK_PENDING)
+		 _TIF_TLB_WAIT | _TIF_MCCK_PENDING)
 _TIF_TRACE    = (_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SECCOMP | \
 		 _TIF_SYSCALL_TRACEPOINT)
 _TIF_EXIT_SIE = (_TIF_SIGPENDING | _TIF_NEED_RESCHED | _TIF_MCCK_PENDING)
@@ -262,6 +262,8 @@ sysc_work:
 	jo	sysc_mcck_pending
 	tm	__TI_flags+7(%r12),_TIF_NEED_RESCHED
 	jo	sysc_reschedule
+	tm	__TI_flags+7(%r12),_TIF_TLB_WAIT
+	jo	sysc_tlb_wait
 	tm	__TI_flags+7(%r12),_TIF_SIGPENDING
 	jo	sysc_sigpending
 	tm	__TI_flags+7(%r12),_TIF_NOTIFY_RESUME
@@ -276,6 +278,13 @@ sysc_work:
 sysc_reschedule:
 	larl	%r14,sysc_return
 	jg	schedule
+
+#
+# _TIF_TLB_WAIT is set, call TLB wait function
+#
+sysc_tlb_wait:
+	larl	%r14,sysc_return
+	jg	tlb_flush_wait
 
 #
 # _TIF_MCCK_PENDING is set, call handler
@@ -562,6 +571,8 @@ io_work_tif:
 	jo	io_mcck_pending
 	tm	__TI_flags+7(%r12),_TIF_NEED_RESCHED
 	jo	io_reschedule
+	tm	__TI_flags+7(%r12),_TIF_TLB_WAIT
+	jo	io_tlb_wait
 	tm	__TI_flags+7(%r12),_TIF_SIGPENDING
 	jo	io_sigpending
 	tm	__TI_flags+7(%r12),_TIF_NOTIFY_RESUME
@@ -587,6 +598,13 @@ io_reschedule:
 	ssm	__LC_PGM_NEW_PSW	# disable I/O and ext. interrupts
 	TRACE_IRQS_OFF
 	j	io_return
+
+#
+# _TIF_TLB_WAIT is set, call TLB wait function
+#
+io_tlb_wait:
+	larl	%r14,io_return
+	jg	tlb_flush_wait
 
 #
 # _TIF_SIGPENDING or is set, call do_signal

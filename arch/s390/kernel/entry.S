@@ -37,9 +37,9 @@ __PT_R14     =	__PT_GPRS + 56
 __PT_R15     =	__PT_GPRS + 60
 
 _TIF_WORK_SVC = (_TIF_SIGPENDING | _TIF_NOTIFY_RESUME | _TIF_NEED_RESCHED | \
-		 _TIF_MCCK_PENDING | _TIF_PER_TRAP )
+		 _TIF_TLB_WAIT | _TIF_MCCK_PENDING | _TIF_PER_TRAP )
 _TIF_WORK_INT = (_TIF_SIGPENDING | _TIF_NOTIFY_RESUME | _TIF_NEED_RESCHED | \
-		 _TIF_MCCK_PENDING)
+		 _TIF_TLB_WAIT | _TIF_MCCK_PENDING)
 _TIF_TRACE    = (_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SECCOMP | \
 		 _TIF_SYSCALL_TRACEPOINT)
 
@@ -231,6 +231,8 @@ sysc_work:
 	jo	sysc_mcck_pending
 	tm	__TI_flags+3(%r12),_TIF_NEED_RESCHED
 	jo	sysc_reschedule
+	tm	__TI_flags+3(%r12),_TIF_TLB_WAIT
+	jo	sysc_tlb_wait
 	tm	__TI_flags+3(%r12),_TIF_SIGPENDING
 	jo	sysc_sigpending
 	tm	__TI_flags+3(%r12),_TIF_NOTIFY_RESUME
@@ -246,6 +248,14 @@ sysc_reschedule:
 	l	%r1,BASED(.Lschedule)
 	la	%r14,BASED(sysc_return)
 	br	%r1			# call schedule
+
+#
+# _TIF_TLB_WAIT is set, call TLB wait function
+#
+sysc_tlb_wait:
+	l	%r1,BASED(.Ltlb_wait)
+	la	%r14,BASED(sysc_return)
+	br	%r1			# call tlb_flush_wait
 
 #
 # _TIF_MCCK_PENDING is set, call handler
@@ -531,6 +541,8 @@ io_work_tif:
 	jo	io_mcck_pending
 	tm	__TI_flags+3(%r12),_TIF_NEED_RESCHED
 	jo	io_reschedule
+	tm	__TI_flags+3(%r12),_TIF_TLB_WAIT
+	jo	io_tlb_wait
 	tm	__TI_flags+3(%r12),_TIF_SIGPENDING
 	jo	io_sigpending
 	tm	__TI_flags+3(%r12),_TIF_NOTIFY_RESUME
@@ -558,6 +570,14 @@ io_reschedule:
 	ssm	__LC_PGM_NEW_PSW	# disable I/O and ext. interrupts
 	TRACE_IRQS_OFF
 	j	io_return
+
+#
+# _TIF_TLB_WAIT is set, call TLB wait function
+#
+io_tlb_wait:
+	l	%r1,BASED(.Ltlb_wait)
+	la	%r14,BASED(io_return)
+	br	%r1			# call tlb_flush_wait
 
 #
 # _TIF_SIGPENDING is set, call do_signal
@@ -935,6 +955,7 @@ cleanup_idle_wait:
 .Lexecve_tail:		.long	execve_tail
 .Ljump_table:		.long	pgm_check_table
 .Lschedule:		.long	schedule
+.Ltlb_wait:		.long	tlb_flush_wait
 #ifdef CONFIG_PREEMPT
 .Lpreempt_irq:		.long	preempt_schedule_irq
 #endif
