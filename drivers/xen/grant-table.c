@@ -840,7 +840,7 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
 		return ret;
 
 	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-		arch_enter_lazy_mmu_mode();
+		arch_enter_lazy_mmu_mode(current->mm);
 		lazy = true;
 	}
 
@@ -863,7 +863,7 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
 	}
 
 	if (lazy)
-		arch_leave_lazy_mmu_mode();
+		arch_leave_lazy_mmu_mode(current->mm);
 
 	return ret;
 }
@@ -883,7 +883,7 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
 		return ret;
 
 	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-		arch_enter_lazy_mmu_mode();
+		arch_enter_lazy_mmu_mode(current->mm);
 		lazy = true;
 	}
 
@@ -894,7 +894,7 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
 	}
 
 	if (lazy)
-		arch_leave_lazy_mmu_mode();
+		arch_leave_lazy_mmu_mode(current->mm);
 
 	return ret;
 }
