@@ -295,6 +295,8 @@ config SCHED_BOOK
 	  Book scheduler support improves the CPU scheduler's decision making
 	  when dealing with machines that have several books.
 
+source kernel/Kconfig.preempt
+
 config MATHEMU
 	def_bool y
 	prompt "IEEE FPU emulation"
