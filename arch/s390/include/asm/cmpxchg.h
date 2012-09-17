@@ -213,11 +213,12 @@ static inline unsigned long long __cmpxchg64(void *ptr,
 	register __typeof__(*(p2)) __new2 asm("5") = (n2);		\
 	int cc;								\
 	asm volatile(							\
-			insn   " %1,%3,%5\n"				\
-		"	ipm	%0\n"					\
-		"	srl	%0,28"					\
-		: "=d" (cc), "+d" (__old1), "+d" (__old2)		\
-		: "d" (__new1), "d" (__new2), "Q" (*(p1)), "Q" (*(p2))	\
+			insn   " %[old],%[new],%[ptr]\n"		\
+		"	ipm	%[cc]\n"				\
+		"	srl	%[cc],28"				\
+		: [cc] "=d" (cc), [old] "+d" (__old1), "+d" (__old2)	\
+		: [new] "d" (__new1), "d" (__new2),			\
+		  [ptr] "Q" (*(p1)), "Q" (*(p2))			\
 		: "memory", "cc");					\
 	!cc;								\
 })
