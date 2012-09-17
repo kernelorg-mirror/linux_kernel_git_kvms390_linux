@@ -67,7 +67,7 @@
 #define this_cpu_xor_4(pcp, val) arch_this_cpu_to_op(pcp, val, ^)
 #define this_cpu_xor_8(pcp, val) arch_this_cpu_to_op(pcp, val, ^)
 
-#define arch_this_cpu_cmpxchg(pcp, oval, nval)			\
+#define arch_this_cpu_cmpxchg(pcp, oval, nval)				\
 ({									\
 	typedef typeof(pcp) pcp_op_T__;					\
 	pcp_op_T__ ret__;						\
