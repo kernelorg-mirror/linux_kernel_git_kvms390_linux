@@ -774,17 +774,30 @@ static void __init reserve_crashkernel(void)
 
 static void __init init_storage_keys(unsigned long start, unsigned long end)
 {
-	unsigned long boundary, function;
+	unsigned long boundary, function, size;
 
 	while (start < end) {
-		if (MACHINE_HAS_EDAT1) {
-			/* set storage keys for a 1MB frame */
-			function = 0x21000 | PAGE_DEFAULT_KEY;
-			boundary = (start + HPAGE_SIZE) & HPAGE_MASK;
+		if (MACHINE_HAS_EDAT2) {
+			/* set storage keys for a 2GB frame */
+			function = 0x22000 | PAGE_DEFAULT_KEY;
+			size = 1UL << 31;
+			boundary = (start + size) & ~(size - 1);
 			if (boundary <= end) {
 				do {
 					start = pfmf(function, start);
-				} while (start & ~HPAGE_MASK);
+				} while (start < boundary);
+				continue;
+			}
+		}
+		if (MACHINE_HAS_EDAT1) {
+			/* set storage keys for a 1MB frame */
+			function = 0x21000 | PAGE_DEFAULT_KEY;
+			size = 1UL << 20;
+			boundary = (start + size) & ~(size - 1);
+			if (boundary <= end) {
+				do {
+					start = pfmf(function, start);
+				} while (start < boundary);
 				continue;
 			}
 		}
