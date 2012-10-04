@@ -214,7 +214,7 @@ static int pt_dump_init(void)
 #endif
 	address_markers[VMEMMAP_NR].start_address = (unsigned long) vmemmap;
 	address_markers[VMALLOC_NR].start_address = VMALLOC_START;
-	debugfs_create_file("kernel_page_tables", 0600, NULL, NULL, &ptdump_fops);
+	debugfs_create_file("kernel_page_tables", 0400, NULL, NULL, &ptdump_fops);
 	return 0;
 }
 device_initcall(pt_dump_init);
