@@ -163,7 +163,6 @@ static void walk_pgd_level(struct seq_file *m)
 {
 	unsigned long addr = 0;
 	struct pg_state st;
-	unsigned int prot;
 	pgd_t *pgd;
 	int i;
 
@@ -171,10 +170,9 @@ static void walk_pgd_level(struct seq_file *m)
 	for (i = 0; i < PTRS_PER_PGD && addr < max_addr; i++) {
 		st.current_address = addr;
 		pgd = pgd_offset_k(addr);
-		if (!pgd_none(*pgd)) {
-			prot = pgd_val(*pgd) & _PAGE_RO;
+		if (!pgd_none(*pgd))
 			walk_pud_level(m, &st, pgd, addr);
-		} else
+		else
 			note_page(m, &st, _PAGE_INVALID, 1);
 		addr += PGDIR_SIZE;
 	}
