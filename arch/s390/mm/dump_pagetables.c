@@ -3,7 +3,6 @@
 #include <linux/module.h>
 #include <linux/mm.h>
 #include <asm/sections.h>
-
 #include <asm/pgtable.h>
 
 static unsigned long max_addr;
@@ -127,7 +126,7 @@ static void walk_pmd_level(struct seq_file *m, struct pg_state *st,
 	pmd_t *pmd;
 	int i;
 
-	for (i = 0; i < PTRS_PER_PUD && addr < max_addr; i++) {
+	for (i = 0; i < PTRS_PER_PMD && addr < max_addr; i++) {
 		st->current_address = addr;
 		pmd = pmd_offset(pud, addr);
 		if (!pmd_none(*pmd)) {
