@@ -248,6 +248,9 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
 			if (!pt_dir)
 				goto out;
 			pmd_populate(&init_mm, pm_dir, pt_dir);
+		} else if (pmd_large(*pm_dir)) {
+			address = (address + PMD_SIZE) & PMD_MASK;
+			continue;
 		}
 
 		pt_dir = pte_offset_kernel(pm_dir, address);
