@@ -225,9 +225,9 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
 		pm_dir = pmd_offset(pu_dir, address);
 		if (pmd_none(*pm_dir)) {
 #ifdef CONFIG_64BIT
-			/* Use 1MB frames for vmemmap if available. We use
-			 * large frames even if they are only partially used,
-			 * so we that the vmemmap has only large frames.
+			/* Use 1MB frames for vmemmap if available. We always
+			 * use large frames even if they are only partially
+			 * used.
 			 * Otherwise we would have also page tables since
 			 * vmemmap_populate gets called for each section
 			 * separately. */
