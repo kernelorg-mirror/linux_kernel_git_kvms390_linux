@@ -626,10 +626,13 @@ static int qeth_l2_request_initial_mac(struct qeth_card *card)
 	QETH_DBF_TEXT(SETUP, 2, "doL2init");
 	QETH_DBF_TEXT_(SETUP, 2, "doL2%s", CARD_BUS_ID(card));
 
-	rc = qeth_query_setadapterparms(card);
-	if (rc) {
-		QETH_DBF_MESSAGE(2, "could not query adapter parameters on "
-			"device %s: x%x\n", CARD_BUS_ID(card), rc);
+	if (qeth_is_supported(card, IPA_SETADAPTERPARMS)) {
+		rc = qeth_query_setadapterparms(card);
+		if (rc) {
+			QETH_DBF_MESSAGE(2, "could not query adapter "
+				"parameters on device %s: x%x\n",
+				CARD_BUS_ID(card), rc);
+		}
 	}
 
 	if (card->info.type == QETH_CARD_TYPE_IQD ||
@@ -1141,12 +1144,11 @@ static int qeth_l2_recover(void *ptr)
 		dev_info(&card->gdev->dev,
 			"Device successfully recovered!\n");
 	else {
-		if (rtnl_trylock()) {
-			dev_close(card->dev);
-			rtnl_unlock();
-			dev_warn(&card->gdev->dev, "The qeth device driver "
-				"failed to recover an error on the device\n");
-		}
+		rtnl_lock();
+		dev_close(card->dev);
+		rtnl_unlock();
+		dev_warn(&card->gdev->dev, "The qeth device driver "
+			"failed to recover an error on the device\n");
 	}
 	qeth_clear_thread_start_bit(card, QETH_RECOVER_THREAD);
 	qeth_clear_thread_running_bit(card, QETH_RECOVER_THREAD);
