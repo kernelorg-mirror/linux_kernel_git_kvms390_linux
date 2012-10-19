@@ -16,7 +16,7 @@
 #define PGM_CHECK_DEFAULT	PGM_CHECK(default_trap_handler)
 
 /*
- * The program check table contains exactly 128 (0x7f) entries. Each
+ * The program check table contains exactly 128 (0x00-0x7f) entries. Each
  * line defines the 31 and/or 64 bit function to be called corresponding
  * to the program check interruption code.
  */
