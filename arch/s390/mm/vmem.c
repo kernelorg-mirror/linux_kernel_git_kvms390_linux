@@ -231,7 +231,7 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
 			 * Otherwise we would have also page tables since
 			 * vmemmap_populate gets called for each section
 			 * separately. */
-			if (MACHINE_HAS_EDAT1 && !(address & ~PMD_MASK)) {
+			if (MACHINE_HAS_EDAT1) {
 				void *new_page;
 
 				new_page = vmemmap_alloc_block(PMD_SIZE, node);
@@ -240,7 +240,7 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
 				pte = mk_pte_phys(__pa(new_page), PAGE_RW);
 				pte_val(pte) |= _SEGMENT_ENTRY_LARGE;
 				pmd_val(*pm_dir) = pte_val(pte);
-				address += PMD_SIZE;
+				address = (address + PMD_SIZE) & PMD_MASK;
 				continue;
 			}
 #endif
