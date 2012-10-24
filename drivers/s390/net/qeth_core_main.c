@@ -4738,7 +4738,6 @@ void qeth_trace_features(struct qeth_card *card)
 	QETH_CARD_TEXT_(card, 2, "%x", card->options.adp.enabled_funcs);
 	QETH_CARD_TEXT_(card, 2, "%x", card->info.diagass_support);
 }
-
 EXPORT_SYMBOL_GPL(qeth_trace_features);
 
 static struct ccw_device_id qeth_ids[] = {
