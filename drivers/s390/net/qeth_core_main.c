@@ -4739,6 +4739,8 @@ void qeth_trace_features(struct qeth_card *card)
 	QETH_CARD_TEXT_(card, 2, "%x", card->info.diagass_support);
 }
 
+EXPORT_SYMBOL_GPL(qeth_trace_features);
+
 static struct ccw_device_id qeth_ids[] = {
 	{CCW_DEVICE_DEVTYPE(0x1731, 0x01, 0x1732, 0x01),
 					.driver_info = QETH_CARD_TYPE_OSD},
