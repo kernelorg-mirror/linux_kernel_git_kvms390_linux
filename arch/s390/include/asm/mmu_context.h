@@ -81,6 +81,15 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	__tlb_flush_mm_lazy(next);
 }
 
+#define finish_switch_mm finish_switch_mm
+static inline void finish_switch_mm(struct mm_struct *mm,
+				    struct task_struct *tsk)
+{
+	if (test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
+		while (atomic_read(&mm->context.attach_count) >> 16)
+			cpu_relax();
+}
+
 #define enter_lazy_tlb(mm,tsk)	do { } while (0)
 #define deactivate_mm(tsk,mm)	do { } while (0)
 

@@ -787,18 +787,6 @@ void tlb_remove_table(struct mmu_gather *tlb, void *table)
 		tlb_flush_mmu(tlb);
 }
 
-/*
- * Wait for completion of the TLB flush operation on current->mm
- */
-void tlb_flush_wait(void)
-{
-	struct mm_struct *mm = current->mm;
-
-	while (atomic_read(&mm->context.attach_count) >> 16)
-		barrier();
-	clear_thread_flag(TIF_TLB_WAIT);
-}
-
 #ifdef CONFIG_TRANSPARENT_HUGEPAGE
 void thp_split_vma(struct vm_area_struct *vma)
 {
