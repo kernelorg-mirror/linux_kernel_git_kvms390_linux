@@ -1296,7 +1296,9 @@ static inline pmd_t pmd_mkhuge(pmd_t pmd)
 
 static inline pmd_t pmd_mkwrite(pmd_t pmd)
 {
-	pmd_val(pmd) &= ~_SEGMENT_ENTRY_RO;
+	/* Do not clobber _HPAGE_TYPE_NONE pages! */
+	if (!(pmd_val(pmd) & _SEGMENT_ENTRY_INV))
+		pmd_val(pmd) &= ~_SEGMENT_ENTRY_RO;
 	return pmd;
 }
 
