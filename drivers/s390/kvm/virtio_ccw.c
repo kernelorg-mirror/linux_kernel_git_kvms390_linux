@@ -25,8 +25,8 @@
 #include <linux/list.h>
 #include <linux/bitops.h>
 #include <linux/module.h>
-#include <asm/io.h>
-#include <asm/kvm_para.h>
+#include <linux/io.h>
+#include <linux/kvm_para.h>
 #include <asm/setup.h>
 #include <asm/irq.h>
 #include <asm/cio.h>
@@ -40,7 +40,7 @@
 struct vq_config_block {
 	__u16 index;
 	__u16 num;
-} __attribute__ ((packed));
+} __packed;
 
 #define VIRTIO_CCW_CONFIG_SIZE 0x100
 /* same as PCI config space size, should be enough for all drivers */
@@ -67,12 +67,12 @@ struct vq_info_block {
 	__u32 align;
 	__u16 index;
 	__u16 num;
-} __attribute__ ((packed));
+} __packed;
 
 struct virtio_feature_desc {
 	__u32 features;
 	__u8 index;
-} __attribute__ ((packed));
+} __packed;
 
 struct virtio_ccw_vq_info {
 	struct virtqueue *vq;
@@ -84,6 +84,8 @@ struct virtio_ccw_vq_info {
 };
 
 #define KVM_VIRTIO_CCW_RING_ALIGN 4096
+
+#define KVM_S390_VIRTIO_CCW_NOTIFY 3
 
 #define CCW_CMD_SET_VQ 0x13
 #define CCW_CMD_VDEV_RESET 0x33
@@ -152,7 +154,7 @@ static void virtio_ccw_kvm_notify(struct virtqueue *vq)
 	vcdev = to_vc_device(info->vq->vdev);
 	ccw_device_get_schid(vcdev->cdev, &schid);
 	reg2 = *(__u32 *)&schid;
-	kvm_hypercall2(3 /* CCW_NOTIFY */, reg2, info->queue_index);
+	kvm_hypercall2(KVM_S390_VIRTIO_CCW_NOTIFY, reg2, info->queue_index);
 }
 
 static int virtio_ccw_read_vq_conf(struct virtio_ccw_device *vcdev, int index)
