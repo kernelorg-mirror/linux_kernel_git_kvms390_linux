@@ -15,7 +15,7 @@
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/virtio_console.h>
-#include <asm/kvm_para.h>
+#include <linux/kvm_para.h>
 #include <asm/kvm_virtio.h>
 #include <asm/setup.h>
 #include <asm/sclp.h>
