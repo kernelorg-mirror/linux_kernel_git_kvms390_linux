@@ -971,11 +971,8 @@ int page_mkclean(struct page *page)
 
 	if (page_mapped(page)) {
 		struct address_space *mapping = page_mapping(page);
-		if (mapping) {
+		if (mapping)
 			ret = page_mkclean_file(mapping, page);
-			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
-				ret = 1;
-		}
 	}
 
 	return ret;
@@ -1177,16 +1174,6 @@ void page_remove_rmap(struct page *page)
 	if (!atomic_add_negative(-1, &page->_mapcount))
 		goto out;
 
-	/*
-	 * Now that the last pte has gone, s390 must transfer dirty
-	 * flag from storage key to struct page.  We can usually skip
-	 * this if the page is anon, so about to be freed; but perhaps
-	 * not if it's in swapcache - there might be another pte slot
-	 * containing the swap entry, but page not yet written to swap.
-	 */
-	if ((!anon || PageSwapCache(page)) &&
-	    page_test_and_clear_dirty(page_to_pfn(page), 1))
-		set_page_dirty(page);
 	/*
 	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
 	 * and not charged by memcg for now.
