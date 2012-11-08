@@ -332,6 +332,7 @@ extern unsigned long MODULES_END;
 
 /* Bits in the region table entry */
 #define _REGION_ENTRY_ORIGIN	~0xfffUL/* region/segment table origin	    */
+#define _REGION_ENTRY_RO	0x200	/* region protection bit	    */
 #define _REGION_ENTRY_INV	0x20	/* invalid region table entry	    */
 #define _REGION_ENTRY_TYPE_MASK	0x0c	/* region/segment table type mask   */
 #define _REGION_ENTRY_TYPE_R1	0x0c	/* region first table type	    */

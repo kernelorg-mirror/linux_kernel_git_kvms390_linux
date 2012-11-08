@@ -85,7 +85,6 @@ static int vmem_add_mem(unsigned long start, unsigned long size, int ro)
 	pud_t *pu_dir;
 	pmd_t *pm_dir;
 	pte_t *pt_dir;
-	pte_t  pte;
 	int ret = -ENOMEM;
 
 	while (address < end) {
@@ -101,7 +100,8 @@ static int vmem_add_mem(unsigned long start, unsigned long size, int ro)
 		if (MACHINE_HAS_EDAT2 && pud_none(*pu_dir) && address &&
 		    !(address & ~PUD_MASK) && (address + PUD_SIZE <= end)) {
 			pud_val(*pu_dir) = __pa(address) |
-				_REGION_ENTRY_TYPE_R3 | _REGION3_ENTRY_LARGE;
+				_REGION_ENTRY_TYPE_R3 | _REGION3_ENTRY_LARGE |
+				(ro ? _REGION_ENTRY_RO : 0);
 			address += PUD_SIZE;
 			continue;
 		}
@@ -118,7 +118,8 @@ static int vmem_add_mem(unsigned long start, unsigned long size, int ro)
 		    !(address & ~PMD_MASK) && (address + PMD_SIZE <= end)) {
 			pmd_val(*pm_dir) = pte_val(pte);
 			pmd_val(*pm_dir) = __pa(address) |
-				_SEGMENT_ENTRY | _SEGMENT_ENTRY_LARGE;
+				_SEGMENT_ENTRY | _SEGMENT_ENTRY_LARGE |
+				(ro ? _SEGMENT_ENTRY_RO : 0);
 			address += PMD_SIZE;
 			continue;
 		}
