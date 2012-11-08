@@ -116,7 +116,6 @@ static int vmem_add_mem(unsigned long start, unsigned long size, int ro)
 #if defined(CONFIG_64BIT) && !defined(CONFIG_DEBUG_PAGEALLOC)
 		if (MACHINE_HAS_EDAT1 && pmd_none(*pm_dir) && address &&
 		    !(address & ~PMD_MASK) && (address + PMD_SIZE <= end)) {
-			pmd_val(*pm_dir) = pte_val(pte);
 			pmd_val(*pm_dir) = __pa(address) |
 				_SEGMENT_ENTRY | _SEGMENT_ENTRY_LARGE |
 				(ro ? _SEGMENT_ENTRY_RO : 0);
