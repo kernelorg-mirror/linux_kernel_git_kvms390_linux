@@ -147,7 +147,7 @@ int kvm_dev_ioctl_check_extension(long ext)
 		r = KVM_MAX_VCPUS;
 		break;
 	case KVM_CAP_S390_COW:
-		r = MACHINE_HAS_FAC85;
+		r = MACHINE_HAS_ESOP;
 		break;
 	default:
 		r = 0;
