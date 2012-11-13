@@ -1010,6 +1010,9 @@ static void __init setup_hwcaps(void)
 	case 0x2818:
 		strcpy(elf_platform, "z196");
 		break;
+	case 0x2827:
+		strcpy(elf_platform, "zEC12");
+		break;
 	}
 }
 
