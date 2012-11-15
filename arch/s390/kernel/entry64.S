@@ -93,6 +93,24 @@ _TIF_EXIT_SIE = (_TIF_SIGPENDING | _TIF_NEED_RESCHED | _TIF_MCCK_PENDING)
 #endif
 	.endm
 
+# some program interrupts are suppressing (e.g. protection). we must also
+# check the instruction after SIE in that case.
+# If we hit that insn, the interrupted instruction was actually SIE (or we
+# have a kernel bug anyway) so lets go to sie_loop
+	.macro	HANDLE_SIE_INTERCEPT_SUPPRESSED scratch
+#if defined(CONFIG_KVM) || defined(CONFIG_KVM_MODULE)
+	larl	\scratch,sie_done
+	cgr	\scratch,%r9
+	jne	.+32
+	larl	%r9,sie_loop
+	# do_protection_exception will rewind the psw by ILC, so compensate.
+	# We know that we are running in 64bit mode here, no masking etc.
+	llgh	\scratch,__LC_PGM_ILC
+	algr	%r9,\scratch
+	SPP	BASED(.Lhost_id)	# set host id
+#endif
+	.endm
+
 	.macro	CHECK_STACK stacksize,savearea
 #ifdef CONFIG_CHECK_STACK
 	tml	%r15,\stacksize - CONFIG_STACK_GUARD
@@ -404,6 +422,7 @@ ENTRY(pgm_check_handler)
 	HANDLE_SIE_INTERCEPT %r14
 	tmhh	%r8,0x0001		# test problem state bit
 	jnz	1f			# -> fault in user space
+	HANDLE_SIE_INTERCEPT_SUPPRESSED %r14
 	tmhh	%r8,0x4000		# PER bit set in old PSW ?
 	jnz	0f			# -> enabled, can't be a double fault
 	tm	__LC_PGM_ILC+3,0x80	# check for per exception
