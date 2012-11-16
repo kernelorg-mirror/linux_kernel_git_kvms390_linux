@@ -978,12 +978,12 @@ ENTRY(sie64a)
 	xc	__SF_EMPTY+16(8,%r15),__SF_EMPTY+16(%r15) # host id == 0
 	lmg	%r0,%r13,0(%r3)			# load guest gprs 0-13
 # some program checks are suppressing. C code (e.g. do_protection_exception)
-# will rewind the PSW by the ILC, which is 4 bytes in case of SIE. Other 
+# will rewind the PSW by the ILC, which is 4 bytes in case of SIE. Other
 # instructions in the sie_loop should not cause program interrupts. So
 # lets use a nop (47 00 00 00) as a landing pad.
 # See also HANDLE_SIE_INTERCEPT
 rewind_pad:
-	nop
+	nop	0
 sie_loop:
 	lg	%r14,__LC_THREAD_INFO		# pointer thread_info struct
 	tm	__TI_flags+7(%r14),_TIF_EXIT_SIE
