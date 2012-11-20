@@ -118,7 +118,6 @@ enum {
 	INSTR_E,
 	INSTR_IE_UU,
 	INSTR_MII_UPI,
-	INSTR_RIL_0P,
 	INSTR_RIE_R0IU, INSTR_RIE_R0UU, INSTR_RIE_RRP, INSTR_RIE_RRPU,
 	INSTR_RIE_RRUUU, INSTR_RIE_RUPI, INSTR_RIE_RUPU, INSTR_RIE_RRI0,
 	INSTR_RIL_RI, INSTR_RIL_RP, INSTR_RIL_RU, INSTR_RIL_UP,
@@ -240,7 +239,6 @@ static const unsigned char formats[][7] = {
 	[INSTR_RIE_RRUUU] = { 0xff, R_8,R_12,U8_16,U8_24,U8_32,0 },
 	[INSTR_RIE_RUPI]  = { 0xff, R_8,I8_32,U4_12,J16_16,0,0 },
 	[INSTR_RIE_RUPU]  = { 0xff, R_8,U8_32,U4_12,J16_16,0,0 },
-	[INSTR_RIL_0P]    = { 0x0f, J32_16,0,0,0,0 },
 	[INSTR_RIL_RI]	  = { 0x0f, R_8,I32_16,0,0,0,0 },
 	[INSTR_RIL_RP]	  = { 0x0f, R_8,J32_16,0,0,0,0 },
 	[INSTR_RIL_RU]	  = { 0x0f, R_8,U32_16,0,0,0,0 },
@@ -1176,7 +1174,6 @@ static struct insn opcode_c0[] = {
 	{ "larl", 0x00, INSTR_RIL_RP },
 	{ "brcl", 0x04, INSTR_RIL_UP },
 	{ "brasl", 0x05, INSTR_RIL_RP },
-	{ "jg", 0xf4, INSTR_RIL_0P },
 	{ "", 0, INSTR_INVALID }
 };
 
