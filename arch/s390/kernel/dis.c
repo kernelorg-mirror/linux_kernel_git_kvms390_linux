@@ -83,8 +83,8 @@ enum {
 	U4_12,	/* 4 bit unsigned value starting at 12 */
 	U4_16,	/* 4 bit unsigned value starting at 16 */
 	U4_20,	/* 4 bit unsigned value starting at 20 */
-	U4_24,  /* 4 bit unsigned value starting at 24 */
-	U4_28,  /* 4 bit unsigned value starting at 28 */
+	U4_24,	/* 4 bit unsigned value starting at 24 */
+	U4_28,	/* 4 bit unsigned value starting at 28 */
 	U4_32,	/* 4 bit unsigned value starting at 32 */
 	U4_36,	/* 4 bit unsigned value starting at 36 */
 	U8_8,	/* 8 bit unsigned value starting at 8 */
