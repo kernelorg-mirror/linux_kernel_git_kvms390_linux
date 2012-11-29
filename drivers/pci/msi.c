@@ -207,6 +207,8 @@ static void msix_mask_irq(struct msi_desc *desc, u32 flag)
 	desc->masked = __msix_mask_irq(desc, flag);
 }
 
+#ifdef CONFIG_GENERIC_HARDIRQS
+
 static void msi_set_mask_bit(struct irq_data *data, u32 flag)
 {
 	struct msi_desc *desc = irq_data_get_msi(data);
@@ -229,6 +231,8 @@ void unmask_msi_irq(struct irq_data *data)
 {
 	msi_set_mask_bit(data, 0);
 }
+
+#endif /* CONFIG_GENERIC_HARDIRQS */
 
 void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
 {
@@ -333,12 +337,14 @@ static void free_msi_irqs(struct pci_dev *dev)
 	struct msi_desc *entry, *tmp;
 
 	list_for_each_entry(entry, &dev->msi_list, list) {
-		int i, nvec;
+		int nvec;
 		if (!entry->irq)
 			continue;
 		nvec = 1 << entry->msi_attrib.multiple;
-		for (i = 0; i < nvec; i++)
+#ifdef CONFIG_GENERIC_HARDIRQS
+		for (int i = 0; i < nvec; i++)
 			BUG_ON(irq_has_action(entry->irq + i));
+#endif
 	}
 
 	arch_teardown_msi_irqs(dev);
