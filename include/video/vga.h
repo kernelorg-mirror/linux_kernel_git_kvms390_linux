@@ -19,9 +19,7 @@
 
 #include <linux/types.h>
 #include <asm/io.h>
-#ifndef __s390x__
 #include <asm/vga.h>
-#endif
 #include <asm/byteorder.h>
 
 
