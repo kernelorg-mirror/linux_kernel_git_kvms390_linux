@@ -1857,7 +1857,6 @@ static void __dasd_device_check_expire(struct dasd_device *device)
 			 * run out of retries
 			 */
 			cqr->retries++;
-			return;
 		}
 		if (device->discipline->term_IO(cqr) != 0) {
 			/* Hmpf, try again in 5 sec */
