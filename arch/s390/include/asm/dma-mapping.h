@@ -9,7 +9,7 @@
 #include <linux/dma-debug.h>
 #include <linux/io.h>
 
-#define DMA_ERROR_CODE          (~(dma_addr_t) 0x0)
+#define DMA_ERROR_CODE		(~(dma_addr_t) 0x0)
 
 extern struct dma_map_ops s390_dma_ops;
 

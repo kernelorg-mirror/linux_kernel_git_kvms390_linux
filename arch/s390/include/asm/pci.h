@@ -59,7 +59,7 @@ struct zpci_bar_struct {
 /* Private data per function */
 struct zpci_dev {
 	struct pci_dev	*pdev;
-	struct pci_bus  *bus;
+	struct pci_bus	*bus;
 	struct list_head entry;		/* list of all zpci_devices, needed for hotplug, etc. */
 
 	enum zpci_state state;

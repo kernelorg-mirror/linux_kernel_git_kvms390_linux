@@ -431,11 +431,11 @@ config QDIO
 	  If unsure, say Y.
 
 menuconfig PCI
-	bool "PCI support" 
+	bool "PCI support"
 	default n
-	depends on 64BIT 
- 	select ARCH_SUPPORTS_MSI
- 	select PCI_MSI
+	depends on 64BIT
+	select ARCH_SUPPORTS_MSI
+	select PCI_MSI
 	help
 	  Enable PCI support.
 

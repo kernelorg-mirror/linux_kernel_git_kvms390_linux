@@ -29,8 +29,8 @@ struct clp_fh_list_entry {
 #define CLP_RC_SETPCIFN_ERR	0x0106	/* Fn in permanent error state */
 #define CLP_RC_SETPCIFN_RECPND	0x0107	/* Error recovery pending */
 #define CLP_RC_SETPCIFN_BUSY	0x0108	/* Fn busy */
-#define CLP_RC_LISTPCI_BADRT	0x010a  /* Resume token not recognized */
-#define CLP_RC_QUERYPCIFG_PFGID	0x010b  /* Unrecognized PFGID */
+#define CLP_RC_LISTPCI_BADRT	0x010a	/* Resume token not recognized */
+#define CLP_RC_QUERYPCIFG_PFGID	0x010b	/* Unrecognized PFGID */
 
 /* request or response block header length */
 #define LIST_PCI_HDR_LEN	32

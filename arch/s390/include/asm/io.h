@@ -51,7 +51,7 @@ void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
 #define ioremap_wc			ioremap_nocache
 
 /* TODO: s390 cannot support io_remap_pfn_range... */
-#define io_remap_pfn_range(vma, vaddr, pfn, size, prot)                \
+#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
 	remap_pfn_range(vma, vaddr, pfn, size, prot)
 
 static inline void __iomem *ioremap(unsigned long offset, unsigned long size)

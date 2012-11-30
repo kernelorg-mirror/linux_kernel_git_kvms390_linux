@@ -67,7 +67,7 @@ static int disable_slot(struct hotplug_slot *hotplug_slot)
 		return -EIO;
 
 	/* TODO: we rely on the user to unbind/remove the device, is that plausible
-	 *       or do we need to trigger that here?
+	 *	 or do we need to trigger that here?
 	 */
 	rc = sclp_pci_deconfigure(slot->zdev->fid);
 	if (!rc) {

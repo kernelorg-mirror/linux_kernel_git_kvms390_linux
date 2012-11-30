@@ -13,7 +13,7 @@ enum zpci_ioat_dtype {
 };
 
 #define ZPCI_IOTA_IOT_ENABLED		0x800UL
-#define ZPCI_IOTA_DT_ST			(ZPCI_IOTA_STO  << 2)
+#define ZPCI_IOTA_DT_ST			(ZPCI_IOTA_STO	<< 2)
 #define ZPCI_IOTA_DT_RT			(ZPCI_IOTA_RTTO << 2)
 #define ZPCI_IOTA_DT_RS			(ZPCI_IOTA_RSTO << 2)
 #define ZPCI_IOTA_DT_RF			(ZPCI_IOTA_RFTO << 2)
