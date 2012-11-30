@@ -337,12 +337,12 @@ static void free_msi_irqs(struct pci_dev *dev)
 	struct msi_desc *entry, *tmp;
 
 	list_for_each_entry(entry, &dev->msi_list, list) {
-		int nvec;
+		int i, nvec;
 		if (!entry->irq)
 			continue;
 		nvec = 1 << entry->msi_attrib.multiple;
 #ifdef CONFIG_GENERIC_HARDIRQS
-		for (int i = 0; i < nvec; i++)
+		for (i = 0; i < nvec; i++)
 			BUG_ON(irq_has_action(entry->irq + i));
 #endif
 	}
