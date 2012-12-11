@@ -161,6 +161,7 @@ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
 		goto out;
 	}
 
+
 	atomic_inc(&port->units); /* under zfcp_sysfs_port_units_mutex ! */
 
 	write_lock_irq(&port->unit_list_lock);

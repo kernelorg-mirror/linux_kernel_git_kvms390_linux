@@ -249,7 +249,7 @@ static struct virtqueue *virtio_ccw_setup_vq(struct virtio_device *vdev,
 		goto out_err;
 	}
 
-	vq = vring_new_virtqueue(info->num, KVM_VIRTIO_CCW_RING_ALIGN, vdev,
+	vq = vring_new_virtqueue(i, info->num, KVM_VIRTIO_CCW_RING_ALIGN, vdev,
 				 true, info->queue, virtio_ccw_kvm_notify,
 				 callback, name);
 	if (!vq) {
