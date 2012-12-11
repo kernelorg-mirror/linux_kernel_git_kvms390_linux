@@ -17,7 +17,6 @@
 #include <linux/virtio.h>
 #include <linux/virtio_config.h>
 #include <linux/slab.h>
-#include <linux/virtio_console.h>
 #include <linux/interrupt.h>
 #include <linux/virtio_ring.h>
 #include <linux/pfn.h>
