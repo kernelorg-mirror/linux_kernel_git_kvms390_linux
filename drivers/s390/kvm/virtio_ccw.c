@@ -144,17 +144,29 @@ static int ccw_io_helper(struct virtio_ccw_device *vcdev, __u32 intparm)
 	return ret ? ret : vcdev->err;
 }
 
+static inline long do_kvm_notify(struct subchannel_id schid,
+				 unsigned long queue_index)
+{
+	register unsigned long __nr asm("1") = KVM_S390_VIRTIO_CCW_NOTIFY;
+	register struct subchannel_id __schid asm("2") = schid;
+	register unsigned long __index asm("3") = queue_index;
+	register long __rc asm("2");
+
+	asm volatile ("diag 2,4,0x500\n"
+		      : "=d" (__rc) : "d" (__nr), "d" (__schid), "d" (__index)
+		      : "memory", "cc");
+	return __rc;
+}
+
 static void virtio_ccw_kvm_notify(struct virtqueue *vq)
 {
 	struct virtio_ccw_vq_info *info = vq->priv;
 	struct virtio_ccw_device *vcdev;
 	struct subchannel_id schid;
-	__u32 reg2;
 
 	vcdev = to_vc_device(info->vq->vdev);
 	ccw_device_get_schid(vcdev->cdev, &schid);
-	reg2 = *(__u32 *)&schid;
-	kvm_hypercall2(KVM_S390_VIRTIO_CCW_NOTIFY, reg2, info->queue_index);
+	do_kvm_notify(schid, info->queue_index);
 }
 
 static int virtio_ccw_read_vq_conf(struct virtio_ccw_device *vcdev, int index)
