@@ -30,7 +30,7 @@ static inline void zpci_err_hex(void *addr, int len)
 		debug_event(pci_debug_err_id, 0, (void *) addr, len);
 		len -= pci_debug_err_id->buf_size;
 		addr += pci_debug_err_id->buf_size;
-        }
+	}
 }
 
 #endif
