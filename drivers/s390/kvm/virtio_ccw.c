@@ -31,7 +31,6 @@
 #include <asm/irq.h>
 #include <asm/cio.h>
 #include <asm/ccwdev.h>
-#include <asm/schid.h>
 
 /*
  * virtio related functions
