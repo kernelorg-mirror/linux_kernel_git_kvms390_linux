@@ -7,4 +7,3 @@ obj-$(CONFIG_APPLDATA_BASE)	+= appldata/
 obj-$(CONFIG_MATHEMU)		+= math-emu/
 obj-y				+= net/
 obj-$(CONFIG_PCI)		+= pci/
-drivers-$(CONFIG_OPROFILE)	+= oprofile/
