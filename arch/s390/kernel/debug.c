@@ -736,26 +736,6 @@ debug_info_t *debug_register(const char *name, int pages_per_area,
 EXPORT_SYMBOL(debug_register);
 
 /*
- * debug_find:
- * - searches for a debug area by the given name
- * - returns handle for debug area or NULL if not found
- */
-
-debug_info_t *debug_find(const char *name)
-{
-	debug_info_t *rc = NULL;
-
-	mutex_lock(&debug_mutex);
-	for (rc = debug_area_first; rc != NULL; rc = rc->next) {
-		if (strcmp(rc->name, name) == 0)
-			break;
-	}
-	mutex_unlock(&debug_mutex);
-	return rc;
-}
-EXPORT_SYMBOL(debug_find);
-
-/*
  * debug_unregister:
  * - give back debug area
  */

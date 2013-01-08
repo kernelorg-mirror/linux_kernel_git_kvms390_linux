@@ -137,17 +137,6 @@ Description:  Allocates memory for a debug log
 	      Must not be called within an interrupt handler
 
 ---------------------------------------------------------------------------
-debug_info_t *debug_find(const char *name);
-
-Parameter:     name:   Name of debug log to search for
-
-Return Value:  Handle for debug area if exists
-               NULL otherwise
-
-Description:   Searches for a debug log by the given name
-               Must not be called within an interrupt handler
-
----------------------------------------------------------------------------
 void debug_unregister (debug_info_t * id);
 
 Parameter:     id:   handle for debug log  
@@ -235,6 +224,7 @@ Description:   writes debug entry with format string and varargs (longs) to
                floats and long long datatypes cannot be used as varargs.
 
 ---------------------------------------------------------------------------
+
 debug_entry_t* debug_exception (debug_info_t* id, int level, void* data, 
                                 int length);
 
@@ -294,6 +284,7 @@ Description:   writes debug entry with format string and varargs (longs) to
                floats and long long datatypes cannot be used as varargs.
 
 ---------------------------------------------------------------------------
+
 int debug_register_view (debug_info_t * id, struct debug_view *view);
 
 Parameter:     id:    handle for debug log  

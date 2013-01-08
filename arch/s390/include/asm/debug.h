@@ -96,8 +96,6 @@ debug_entry_t* debug_exception_common(debug_info_t* id, int level,
 debug_info_t *debug_register(const char *name, int pages, int nr_areas,
                              int buf_size);
 
-debug_info_t *debug_find(const char *name);
-
 debug_info_t *debug_register_mode(const char *name, int pages, int nr_areas,
 				  int buf_size, umode_t mode, uid_t uid,
 				  gid_t gid);
