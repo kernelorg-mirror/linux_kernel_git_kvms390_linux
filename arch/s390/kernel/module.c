@@ -195,7 +195,7 @@ static int apply_rela_bits(Elf_Addr loc, Elf_Addr val,
 		val >>= shift;
 		umax = ((1UL << (bits - 1)) << 1) - 1;
 		if ((unsigned long) val > umax)
-		        return -ENOEXEC;
+			return -ENOEXEC;
 	}
 
 	if (bits == 8)
@@ -216,7 +216,7 @@ static int apply_rela_bits(Elf_Addr loc, Elf_Addr val,
 	return 0;
 }
 
-static int apply_rela(Elf_Rela *rela, Elf_Addr base, Elf_Sym *symtab, 
+static int apply_rela(Elf_Rela *rela, Elf_Addr base, Elf_Sym *symtab,
 		      const char *strtab, struct module *me)
 {
 	struct mod_arch_syminfo *info;
