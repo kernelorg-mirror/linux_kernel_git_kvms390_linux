@@ -5130,7 +5130,7 @@ struct qeth_dbf_entry {
 	struct list_head dbf_list;
 };
 
-LIST_HEAD(qeth_dbf_list);
+static LIST_HEAD(qeth_dbf_list);
 static DEFINE_MUTEX(qeth_dbf_list_mutex);
 
 static debug_info_t *qeth_get_dbf_entry(char *name)
