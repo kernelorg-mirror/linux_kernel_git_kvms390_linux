@@ -394,7 +394,7 @@ static int apply_rela(Elf_Rela *rela, Elf_Addr base, Elf_Sym *symtab,
 	case R_390_RELATIVE:	/* Adjust by program base.  */
 		/* Only needed if we want to support loading of 
 		   modules linked with -shared. */
-		break;
+		return -ENOEXEC;
 	default:
 		printk(KERN_ERR "module %s: unknown relocation: %u\n",
 		       me->name, r_type);
