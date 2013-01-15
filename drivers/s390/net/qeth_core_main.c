@@ -5156,13 +5156,13 @@ static int qeth_add_dbf_entry(struct qeth_card *card, char *name)
 	card->debug = debug_register(name, 2, 1, 8);
 	if (!card->debug) {
 		QETH_DBF_TEXT_(SETUP, 2, "%s", "qcdbf");
-		goto err_dbg;
+		goto err;
 	}
 	if (debug_register_view(card->debug, &debug_hex_ascii_view))
-		goto err_view;
+		goto err_dbg;
 	new_entry = kzalloc(sizeof(struct qeth_dbf_entry), GFP_KERNEL);
 	if (!new_entry)
-		goto err_alloc;
+		goto err_dbg;
 	strncpy(new_entry->dbf_name, name, DBF_NAME_LEN);
 	new_entry->dbf_info = card->debug;
 	mutex_lock(&qeth_dbf_list_mutex);
@@ -5171,11 +5171,9 @@ static int qeth_add_dbf_entry(struct qeth_card *card, char *name)
 
 	return 0;
 
-err_alloc:
-	debug_unregister_view(card->debug, &debug_hex_ascii_view);
-err_view:
-	debug_unregister(card->debug);
 err_dbg:
+	debug_unregister(card->debug);
+err:
 	return -ENOMEM;
 }
 
@@ -5186,7 +5184,6 @@ static void qeth_clear_dbf_list(void)
 	mutex_lock(&qeth_dbf_list_mutex);
 	list_for_each_entry_safe(entry, tmp, &qeth_dbf_list, dbf_list) {
 		list_del(&entry->dbf_list);
-		debug_unregister_view(entry->dbf_info, &debug_hex_ascii_view);
 		debug_unregister(entry->dbf_info);
 		kfree(entry);
 	}
