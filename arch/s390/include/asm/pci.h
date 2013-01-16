@@ -165,8 +165,8 @@ void zpci_msihash_exit(void);
 void zpci_event_error(void *);
 void zpci_event_availability(void *);
 #else /* CONFIG_PCI */
-#define zpci_event_error(e) {}
-#define zpci_event_availability(e) {}
+static inline void zpci_event_error(void *e) {}
+static inline void zpci_event_availability(void *e) {}
 #endif /* CONFIG_PCI */
 
 /* Helpers */
