@@ -235,6 +235,7 @@ static int apply_rela(Elf_Rela *rela, Elf_Addr base, Elf_Sym *symtab,
 
 	switch (r_type) {
 	case R_390_NONE:	/* No relocation.  */
+		rc = 0;
 		break;
 	case R_390_8:		/* Direct 8 bit.   */
 	case R_390_12:		/* Direct 12 bit.  */
