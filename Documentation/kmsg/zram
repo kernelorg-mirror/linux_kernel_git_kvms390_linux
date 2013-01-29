@@ -17,3 +17,4 @@
 /*? Text: "Error allocating disk structure for device %d\n" */
 /*? Text: "Invalid value for num_devices: %u\n" */
 /*? Text: "Error allocating temp memory!\n" */
+/*? Text: "Unable to allocate temp memory\n" */
