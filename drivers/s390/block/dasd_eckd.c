@@ -1679,6 +1679,9 @@ dasd_eckd_check_characteristics(struct dasd_device *device)
 
 	/* set default timeout */
 	device->default_expires = DASD_EXPIRES;
+	/* set default retry count */
+	device->default_retries = DASD_RETRIES;
+
 	if (private->gneq) {
 		value = 1;
 		for (i = 0; i < private->gneq->timeout.value; i++)
@@ -2529,7 +2532,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_cmd_single(
 	cqr->block = block;
 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
 	cqr->lpm = startdev->path_data.ppm;
-	cqr->retries = 256;
+	cqr->retries = startdev->default_retries;
 	cqr->buildclk = get_tod_clock();
 	cqr->status = DASD_CQR_FILLED;
 	return cqr;
@@ -2704,7 +2707,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_cmd_track(
 	cqr->block = block;
 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
 	cqr->lpm = startdev->path_data.ppm;
-	cqr->retries = 256;
+	cqr->retries = startdev->default_retries;
 	cqr->buildclk = get_tod_clock();
 	cqr->status = DASD_CQR_FILLED;
 	return cqr;
@@ -2997,7 +3000,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_tpm_track(
 	cqr->block = block;
 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
 	cqr->lpm = startdev->path_data.ppm;
-	cqr->retries = 256;
+	cqr->retries = startdev->default_retries;
 	cqr->buildclk = get_tod_clock();
 	cqr->status = DASD_CQR_FILLED;
 	return cqr;
@@ -3200,7 +3203,7 @@ static struct dasd_ccw_req *dasd_raw_build_cp(struct dasd_device *startdev,
 	cqr->block = block;
 	cqr->expires = startdev->default_expires * HZ;
 	cqr->lpm = startdev->path_data.ppm;
-	cqr->retries = 256;
+	cqr->retries = startdev->default_retries;
 	cqr->buildclk = get_tod_clock();
 	cqr->status = DASD_CQR_FILLED;
 
