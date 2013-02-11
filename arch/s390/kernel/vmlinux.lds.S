@@ -77,7 +77,7 @@ SECTIONS
 
 	.exit.data : {
 		EXIT_DATA
-	}	      
+	}
 
 	/* early.c uses stsi, which requires page aligned data. */
 	. = ALIGN(PAGE_SIZE);
