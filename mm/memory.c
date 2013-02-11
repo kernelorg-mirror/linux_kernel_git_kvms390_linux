@@ -3333,6 +3333,18 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 				dirty_page = page;
 				get_page(dirty_page);
 			}
+#ifdef __ARCH_WANT_PTE_WRITE_DIRTY
+			/*
+			 * Architectures that use software dirty bits may
+			 * want to set the dirty bit in the pte if the pte
+			 * is writable and the PageDirty bit is set for the
+			 * page. This avoids unnecessary protection faults
+			 * for writable mappings which do not use
+			 * mapping_cap_account_dirty, e.g. tmpfs and shmem.
+			 */
+			else if (pte_write(entry) && PageDirty(page))
+				entry = pte_mkdirty(entry);
+#endif
 		}
 		set_pte_at(mm, address, page_table, entry);
 
