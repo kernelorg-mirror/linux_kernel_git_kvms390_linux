@@ -150,7 +150,7 @@ static int dasd_ioctl_abortio(struct dasd_block *block)
 	struct dasd_ccw_req *cqr, *n;
 
 	base = block->base;
-	if (!capable (CAP_SYS_ADMIN))
+	if (!capable(CAP_SYS_ADMIN))
 		return -EACCES;
 
 	if (test_and_set_bit(DASD_FLAG_ABORTALL, &base->flags))
@@ -163,7 +163,7 @@ static int dasd_ioctl_abortio(struct dasd_block *block)
 		if (test_bit(DASD_CQR_FLAGS_FAILFAST, &cqr->flags) &&
 		    cqr->callback_data &&
 		    cqr->callback_data != DASD_SLEEPON_START_TAG &&
-		    cqr->callback_data != DASD_SLEEPON_END_TAG ) {
+		    cqr->callback_data != DASD_SLEEPON_END_TAG) {
 			spin_unlock(&block->queue_lock);
 			blk_abort_request(cqr->callback_data);
 			spin_lock(&block->queue_lock);
@@ -184,7 +184,7 @@ static int dasd_ioctl_allowio(struct dasd_block *block)
 	struct dasd_device *base;
 
 	base = block->base;
-	if (!capable (CAP_SYS_ADMIN))
+	if (!capable(CAP_SYS_ADMIN))
 		return -EACCES;
 
 	if (test_and_clear_bit(DASD_FLAG_ABORTALL, &base->flags))
