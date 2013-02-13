@@ -2779,7 +2779,7 @@ static void do_dasd_request(struct request_queue *queue)
  * Return values:
  * BLK_EH_RESET_TIMER if the request should be left running
  * BLK_EH_NOT_HANDLED if the request is handled or terminated
- *                    by the driver.
+ *		      by the driver.
  */
 enum blk_eh_timer_return dasd_times_out(struct request *req)
 {

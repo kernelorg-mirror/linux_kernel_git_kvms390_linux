@@ -264,7 +264,7 @@ struct dasd_snid_ioctl_data {
 /* Abort all I/O on a device */
 #define BIODASDABORTIO _IO(DASD_IOCTL_LETTER,240)
 /* Allow I/O on a device */
-#define BIODASDALLOWIO  _IO(DASD_IOCTL_LETTER,241)
+#define BIODASDALLOWIO _IO(DASD_IOCTL_LETTER,241)
 
 
 /* retrieve API version number */
