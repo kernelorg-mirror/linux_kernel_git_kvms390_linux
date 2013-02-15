@@ -160,7 +160,7 @@ static int handle_tpi(struct kvm_vcpu *vcpu)
 		put_guest(vcpu, inti->io.subchannel_id, (u16 __user *) __LC_SUBCHANNEL_ID);
 		put_guest(vcpu, inti->io.subchannel_nr, (u16 __user *) __LC_SUBCHANNEL_NR);
 		put_guest(vcpu, inti->io.io_int_parm, (u32 __user *) __LC_IO_INT_PARM);
-		put_guest(vcpu, inti->io.io_int_word, (u32 __user*) __LC_IO_INT_WORD);
+		put_guest(vcpu, inti->io.io_int_word, (u32 __user *) __LC_IO_INT_WORD);
 	}
 	kfree(inti);
 no_interrupt:
