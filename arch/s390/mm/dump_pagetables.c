@@ -128,6 +128,12 @@ static void walk_pte_level(struct seq_file *m, struct pg_state *st,
 	}
 }
 
+#ifdef CONFIG_64BIT
+#define _PMD_PROT_MASK (_SEGMENT_ENTRY_RO | _SEGMENT_ENTRY_CO)
+#else
+#define _PMD_PROT_MASK (_SEGMENT_ENTRY_RO)
+#endif
+
 static void walk_pmd_level(struct seq_file *m, struct pg_state *st,
 			   pud_t *pud, unsigned long addr)
 {
@@ -140,8 +146,7 @@ static void walk_pmd_level(struct seq_file *m, struct pg_state *st,
 		pmd = pmd_offset(pud, addr);
 		if (!pmd_none(*pmd)) {
 			if (pmd_large(*pmd)) {
-				prot = pmd_val(*pmd);
-				prot &= (_SEGMENT_ENTRY_RO | _SEGMENT_ENTRY_CO);
+				prot = pmd_val(*pmd) & _PMD_PROT_MASK;
 				note_page(m, st, prot, 3);
 			} else
 				walk_pte_level(m, st, pmd, addr);
@@ -150,6 +155,12 @@ static void walk_pmd_level(struct seq_file *m, struct pg_state *st,
 		addr += PMD_SIZE;
 	}
 }
+
+#ifdef CONFIG_64BIT
+#define _PUD_PROT_MASK (_REGION3_ENTRY_RO | _REGION3_ENTRY_CO)
+#else
+#define _PUD_PROT_MASK (_REGION3_ENTRY_RO)
+#endif
 
 static void walk_pud_level(struct seq_file *m, struct pg_state *st,
 			   pgd_t *pgd, unsigned long addr)
@@ -163,8 +174,7 @@ static void walk_pud_level(struct seq_file *m, struct pg_state *st,
 		pud = pud_offset(pgd, addr);
 		if (!pud_none(*pud))
 			if (pud_large(*pud)) {
-				prot = pud_val(*pud);
-				prot &= (_REGION3_ENTRY_RO | _REGION3_ENTRY_CO);
+				prot = pud_val(*pud) & _PUD_PROT_MASK;
 				note_page(m, st, prot, 2);
 			} else
 				walk_pmd_level(m, st, pud, addr);
