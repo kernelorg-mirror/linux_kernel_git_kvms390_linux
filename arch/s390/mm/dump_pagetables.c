@@ -131,7 +131,7 @@ static void walk_pte_level(struct seq_file *m, struct pg_state *st,
 #ifdef CONFIG_64BIT
 #define _PMD_PROT_MASK (_SEGMENT_ENTRY_RO | _SEGMENT_ENTRY_CO)
 #else
-#define _PMD_PROT_MASK (_SEGMENT_ENTRY_RO)
+#define _PMD_PROT_MASK 0
 #endif
 
 static void walk_pmd_level(struct seq_file *m, struct pg_state *st,
@@ -159,7 +159,7 @@ static void walk_pmd_level(struct seq_file *m, struct pg_state *st,
 #ifdef CONFIG_64BIT
 #define _PUD_PROT_MASK (_REGION3_ENTRY_RO | _REGION3_ENTRY_CO)
 #else
-#define _PUD_PROT_MASK (_REGION3_ENTRY_RO)
+#define _PUD_PROT_MASK 0
 #endif
 
 static void walk_pud_level(struct seq_file *m, struct pg_state *st,
