@@ -53,9 +53,6 @@ int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
 {
 	int err;
 
-	if (!access_ok (VERIFY_WRITE, to, sizeof(compat_siginfo_t)))
-		return -EFAULT;
-
 	/* If you change siginfo_t structure, please be sure
 	   this code is fixed accordingly.
 	   It should never copy any pad contained in the structure
@@ -109,9 +106,6 @@ int copy_siginfo_from_user32(siginfo_t *to, compat_siginfo_t __user *from)
 {
 	int err;
 	u32 tmp;
-
-	if (!access_ok (VERIFY_READ, from, sizeof(compat_siginfo_t)))
-		return -EFAULT;
 
 	err = __get_user(to->si_signo, &from->si_signo);
 	err |= __get_user(to->si_errno, &from->si_errno);
@@ -167,8 +161,7 @@ sys32_sigaction(int sig, const struct old_sigaction32 __user *act,
 
         if (act) {
 		compat_old_sigset_t mask;
-		if (!access_ok(VERIFY_READ, act, sizeof(*act)) ||
-		    __get_user(sa_handler, &act->sa_handler) ||
+		if (__get_user(sa_handler, &act->sa_handler) ||
 		    __get_user(sa_restorer, &act->sa_restorer) ||
 		    __get_user(new_ka.sa.sa_flags, &act->sa_flags) ||
 		    __get_user(mask, &act->sa_mask))
@@ -183,8 +176,7 @@ sys32_sigaction(int sig, const struct old_sigaction32 __user *act,
 	if (!ret && oact) {
 		sa_handler = (unsigned long) old_ka.sa.sa_handler;
 		sa_restorer = (unsigned long) old_ka.sa.sa_restorer;
-		if (!access_ok(VERIFY_WRITE, oact, sizeof(*oact)) ||
-		    __put_user(sa_handler, &oact->sa_handler) ||
+		if (__put_user(sa_handler, &oact->sa_handler) ||
 		    __put_user(sa_restorer, &oact->sa_restorer) ||
 		    __put_user(old_ka.sa.sa_flags, &oact->sa_flags) ||
 		    __put_user(old_ka.sa.sa_mask.sig[0], &oact->sa_mask))
@@ -244,8 +236,6 @@ sys32_sigaltstack(const stack_t32 __user *uss, stack_t32 __user *uoss)
 	mm_segment_t old_fs = get_fs();
 
 	if (uss) {
-		if (!access_ok(VERIFY_READ, uss, sizeof(*uss)))
-			return -EFAULT;
 		err |= __get_user(ss_sp, &uss->ss_sp);
 		err |= __get_user(kss.ss_size, &uss->ss_size);
 		err |= __get_user(kss.ss_flags, &uss->ss_flags);
@@ -261,8 +251,6 @@ sys32_sigaltstack(const stack_t32 __user *uss, stack_t32 __user *uoss)
 	set_fs (old_fs);
 
 	if (!ret && uoss) {
-		if (!access_ok(VERIFY_WRITE, uoss, sizeof(*uoss)))
-			return -EFAULT;
 		ss_sp = (unsigned long) koss.ss_sp;
 		err |= __put_user(ss_sp, &uoss->ss_sp);
 		err |= __put_user(koss.ss_size, &uoss->ss_size);
@@ -360,8 +348,6 @@ asmlinkage long sys32_sigreturn(void)
 	sigframe32 __user *frame = (sigframe32 __user *)regs->gprs[15];
 	sigset_t set;
 
-	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
-		goto badframe;
 	if (__copy_from_user(&set.sig, &frame->sc.oldmask, _SIGMASK_COPY_SIZE32))
 		goto badframe;
 	set_current_blocked(&set);
@@ -385,8 +371,6 @@ asmlinkage long sys32_rt_sigreturn(void)
 	int err;
 	mm_segment_t old_fs = get_fs();
 
-	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
-		goto badframe;
 	if (__copy_from_user(&set, &frame->uc.uc_sigmask, sizeof(set)))
 		goto badframe;
 	set_current_blocked(&set);
@@ -452,8 +436,6 @@ static int setup_frame32(int sig, struct k_sigaction *ka,
 			sigset_t *set, struct pt_regs * regs)
 {
 	sigframe32 __user *frame = get_sigframe(ka, regs, sizeof(sigframe32));
-	if (!access_ok(VERIFY_WRITE, frame, sizeof(sigframe32)))
-		goto give_sigsegv;
 
 	if (frame == (void __user *) -1UL)
 		goto give_sigsegv;
@@ -518,8 +500,6 @@ static int setup_rt_frame32(int sig, struct k_sigaction *ka, siginfo_t *info,
 {
 	int err = 0;
 	rt_sigframe32 __user *frame = get_sigframe(ka, regs, sizeof(rt_sigframe32));
-	if (!access_ok(VERIFY_WRITE, frame, sizeof(rt_sigframe32)))
-		goto give_sigsegv;
 
 	if (frame == (void __user *) -1UL)
 		goto give_sigsegv;
