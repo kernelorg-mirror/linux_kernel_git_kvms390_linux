@@ -187,6 +187,8 @@ static size_t strncpy_from_user_mvcos(size_t count, const char __user *src,
 	size_t done, len, offset, len_str;
 	int rc;
 
+	if (unlikely(!count))
+		return 0;
 	done = 0;
 	do {
 		offset = (size_t)src & ~PAGE_MASK;
