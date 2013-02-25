@@ -185,7 +185,6 @@ static size_t strncpy_from_user_mvcos(size_t count, const char __user *src,
 				      char *dst)
 {
 	size_t done, len, offset, len_str;
-	int rc;
 
 	if (unlikely(!count))
 		return 0;
@@ -193,10 +192,8 @@ static size_t strncpy_from_user_mvcos(size_t count, const char __user *src,
 	do {
 		offset = (size_t)src & ~PAGE_MASK;
 		len = min(count - done, PAGE_SIZE - offset);
-		rc = uaccess.copy_from_user(len, src, dst);
-		if (unlikely(rc == len))
+		if (uaccess.copy_from_user(len, src, dst))
 			return -EFAULT;
-		len -= rc;
 		len_str = strnlen(dst, len);
 		done += len_str;
 		src += len_str;
