@@ -79,9 +79,9 @@ static const struct irq_class irqclass_sub_desc[NR_ARCH_IRQS] = {
 	[IRQIO_APB]  = {.name = "APB", .desc = "[I/O] AP Bus"},
 	[IRQIO_ADM]  = {.name = "ADM", .desc = "[I/O] EADM Subchannel"},
 	[IRQIO_CSC]  = {.name = "CSC", .desc = "[I/O] CHSC Subchannel"},
-	[IRQIO_VIR]  = {.name = "VIR", .desc = "[I/O] Virtual I/O Devices"},
 	[IRQIO_PCI]  = {.name = "PCI", .desc = "[I/O] PCI Interrupt" },
 	[IRQIO_MSI]  = {.name = "MSI", .desc = "[I/O] MSI Interrupt" },
+	[IRQIO_VIR]  = {.name = "VIR", .desc = "[I/O] Virtual I/O Devices"},
 	[NMI_NMI]    = {.name = "NMI", .desc = "[NMI] Machine Check"},
 	[CPU_RST]    = {.name = "RST", .desc = "[CPU] CPU Restart"},
 };

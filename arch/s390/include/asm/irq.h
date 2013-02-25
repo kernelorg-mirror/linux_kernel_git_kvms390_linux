@@ -39,9 +39,9 @@ enum interruption_class {
 	IRQIO_APB,
 	IRQIO_ADM,
 	IRQIO_CSC,
-	IRQIO_VIR,
 	IRQIO_PCI,
 	IRQIO_MSI,
+	IRQIO_VIR,
 	NMI_NMI,
 	CPU_RST,
 	NR_ARCH_IRQS
