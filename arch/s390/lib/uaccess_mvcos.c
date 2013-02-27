@@ -164,16 +164,14 @@ static size_t strnlen_user_mvcos(size_t count, const char __user *src)
 {
 	size_t done, len, offset, len_str;
 	char buf[256];
-	int rc;
 
 	done = 0;
 	do {
 		offset = (size_t)src & ~PAGE_MASK;
-		len = min(count - done, min(256UL, PAGE_SIZE - offset));
-		rc = uaccess.copy_from_user(len, src, buf);
-		if (unlikely(rc == len))
+		len = min(256UL, PAGE_SIZE - offset);
+		len = min(count - done, len);
+		if (copy_from_user_mvcos(len, src, buf))
 			return 0;
-		len -= rc;
 		len_str = strnlen(buf, len);
 		done += len_str;
 		src += len_str;
@@ -192,7 +190,7 @@ static size_t strncpy_from_user_mvcos(size_t count, const char __user *src,
 	do {
 		offset = (size_t)src & ~PAGE_MASK;
 		len = min(count - done, PAGE_SIZE - offset);
-		if (uaccess.copy_from_user(len, src, dst))
+		if (copy_from_user_mvcos(len, src, dst))
 			return -EFAULT;
 		len_str = strnlen(dst, len);
 		done += len_str;
