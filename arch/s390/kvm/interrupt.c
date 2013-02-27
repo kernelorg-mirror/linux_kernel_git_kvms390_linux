@@ -545,7 +545,7 @@ void kvm_s390_deliver_pending_machine_checks(struct kvm_vcpu *vcpu)
 {
 	struct kvm_s390_local_interrupt *li = &vcpu->arch.local_int;
 	struct kvm_s390_float_interrupt *fi = vcpu->arch.local_int.float_int;
-	struct kvm_s390_interrupt_info	*n, *inti = NULL;
+	struct kvm_s390_interrupt_info  *n, *inti = NULL;
 	int deliver;
 
 	__reset_intercept_indicators(vcpu);
