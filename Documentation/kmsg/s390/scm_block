@@ -23,3 +23,28 @@
  * User action:
  * Contact your support organization.
  */
+
+/*?
+ * Text: "%lu: Write access to the SCM increment is suspended\n"
+ * Severity: Informational
+ * Parameter:
+ *   @1: start address of the SCM increment
+ * Description:
+ * A concurrent firmware upgrade is in progress. For the duration of the
+ * upgrade, write access to the storage class memory (SCM) increment has been
+ * suspended.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "%lu: Write access to the SCM increment is restored\n"
+ * Severity: Informational
+ * Parameter:
+ *   @1: start address of the SCM increment
+ * Description:
+ * Write access to the storage class memory (SCM) increment was restored
+ * after a temporary suspension during a concurrent firmware upgrade.
+ * User action:
+ * None.
+ */
