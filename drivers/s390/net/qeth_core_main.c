@@ -5213,7 +5213,7 @@ static int qeth_core_probe_device(struct ccwgroup_device *gdev)
 		goto err_dev;
 	}
 
-	snprintf(dbf_name, sizeof(dbf_name), "qeth_%s",
+	snprintf(dbf_name, sizeof(dbf_name), "qeth_card_%s",
 		dev_name(&gdev->dev));
 	card->debug = qeth_get_dbf_entry(dbf_name);
 	if (!card->debug) {
