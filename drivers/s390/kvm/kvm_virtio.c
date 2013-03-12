@@ -454,8 +454,7 @@ static int __init kvm_devices_init(void)
 		return -ENODEV;
 
 	if (test_devices_support(total_memory_size) < 0)
-		/* No error. */
-		return 0;
+		return -ENODEV;
 
 	rc = vmem_add_mapping(total_memory_size, PAGE_SIZE);
 	if (rc)

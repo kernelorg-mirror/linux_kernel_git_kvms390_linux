@@ -74,7 +74,6 @@ struct virtio_feature_desc {
 struct virtio_ccw_vq_info {
 	struct virtqueue *vq;
 	int num;
-	int queue_index;
 	void *queue;
 	struct vq_info_block *info_block;
 	struct list_head node;
@@ -167,7 +166,7 @@ static void virtio_ccw_kvm_notify(struct virtqueue *vq)
 
 	vcdev = to_vc_device(info->vq->vdev);
 	ccw_device_get_schid(vcdev->cdev, &schid);
-	do_kvm_notify(schid, info->queue_index);
+	do_kvm_notify(schid, virtqueue_get_queue_index(vq));
 }
 
 static int virtio_ccw_read_vq_conf(struct virtio_ccw_device *vcdev,
@@ -189,6 +188,7 @@ static void virtio_ccw_del_vq(struct virtqueue *vq, struct ccw1 *ccw)
 	unsigned long flags;
 	unsigned long size;
 	int ret;
+	unsigned int index = virtqueue_get_queue_index(vq);
 
 	/* Remove from our list. */
 	spin_lock_irqsave(&vcdev->lock, flags);
@@ -198,21 +198,21 @@ static void virtio_ccw_del_vq(struct virtqueue *vq, struct ccw1 *ccw)
 	/* Release from host. */
 	info->info_block->queue = 0;
 	info->info_block->align = 0;
-	info->info_block->index = info->queue_index;
+	info->info_block->index = index;
 	info->info_block->num = 0;
 	ccw->cmd_code = CCW_CMD_SET_VQ;
 	ccw->flags = 0;
 	ccw->count = sizeof(*info->info_block);
 	ccw->cda = (__u32)(unsigned long)(info->info_block);
 	ret = ccw_io_helper(vcdev, ccw,
-			    VIRTIO_CCW_DOING_SET_VQ | info->queue_index);
+			    VIRTIO_CCW_DOING_SET_VQ | index);
 	/*
 	 * -ENODEV isn't considered an error: The device is gone anyway.
 	 * This may happen on device detach.
 	 */
 	if (ret && (ret != -ENODEV))
 		dev_warn(&vq->vdev->dev, "Error %d while deleting queue %d",
-			 ret, info->queue_index);
+			 ret, index);
 
 	vring_del_virtqueue(vq);
 	size = PAGE_ALIGN(vring_size(info->num, KVM_VIRTIO_CCW_RING_ALIGN));
@@ -263,7 +263,6 @@ static struct virtqueue *virtio_ccw_setup_vq(struct virtio_device *vdev,
 		err = -ENOMEM;
 		goto out_err;
 	}
-	info->queue_index = i;
 	info->num = virtio_ccw_read_vq_conf(vcdev, ccw, i);
 	size = PAGE_ALIGN(vring_size(info->num, KVM_VIRTIO_CCW_RING_ALIGN));
 	info->queue = alloc_pages_exact(size, GFP_KERNEL | __GFP_ZERO);
@@ -286,14 +285,13 @@ static struct virtqueue *virtio_ccw_setup_vq(struct virtio_device *vdev,
 	/* Register it with the host. */
 	info->info_block->queue = (__u64)info->queue;
 	info->info_block->align = KVM_VIRTIO_CCW_RING_ALIGN;
-	info->info_block->index = info->queue_index;
+	info->info_block->index = i;
 	info->info_block->num = info->num;
 	ccw->cmd_code = CCW_CMD_SET_VQ;
 	ccw->flags = 0;
 	ccw->count = sizeof(*info->info_block);
 	ccw->cda = (__u32)(unsigned long)(info->info_block);
-	err = ccw_io_helper(vcdev, ccw,
-			    VIRTIO_CCW_DOING_SET_VQ | info->queue_index);
+	err = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_SET_VQ | i);
 	if (err) {
 		dev_warn(&vcdev->cdev->dev, "SET_VQ failed\n");
 		goto out_err;
@@ -612,7 +610,7 @@ static struct virtqueue *virtio_ccw_vq_by_ind(struct virtio_ccw_device *vcdev,
 	vq = NULL;
 	spin_lock_irqsave(&vcdev->lock, flags);
 	list_for_each_entry(info, &vcdev->virtqueues, node) {
-		if (info->queue_index == index) {
+		if (virtqueue_get_queue_index(info->vq) == index) {
 			vq = info->vq;
 			break;
 		}
