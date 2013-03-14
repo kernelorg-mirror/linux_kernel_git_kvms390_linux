@@ -2898,23 +2898,12 @@ static void qeth_tso_fill_header(struct qeth_card *card,
 
 static inline int qeth_l3_tso_elements(struct sk_buff *skb)
 {
-	int cnt, length, e;
-	struct skb_frag_struct *frag;
-	char *data;
 	unsigned long tcpd = (unsigned long)tcp_hdr(skb) +
 		tcp_hdr(skb)->doff * 4;
 	int tcpd_len = skb->len - (tcpd - (unsigned long)skb->data);
 	int elements = PFN_UP(tcpd + tcpd_len - 1) - PFN_DOWN(tcpd);
 
-	for (cnt = 0; cnt < skb_shinfo(skb)->nr_frags; cnt++) {
-		frag = &skb_shinfo(skb)->frags[cnt];
-		data = (char *)page_to_phys(skb_frag_page(frag)) +
-			frag->page_offset;
-		length = frag->size;
-		e = PFN_UP((unsigned long)data + length - 1) -
-			PFN_DOWN((unsigned long)data);
-		elements += e;
-	}
+	elements += qeth_get_elements_for_frags(skb);
 
 	return elements;
 }
