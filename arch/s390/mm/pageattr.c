@@ -9,10 +9,8 @@
 #include <asm/pgtable.h>
 #include <asm/page.h>
 
-static inline unsigned long set_storage_key_frame(unsigned long addr,
-						  unsigned char skey)
+static inline unsigned long sske_frame(unsigned long addr, unsigned char skey)
 {
-	/* Set storage keys for a whole 1MB frame. */
 	asm volatile(".insn rrf,0xb22b0000,%[skey],%[addr],9,0"
 		     : [addr] "+a" (addr) : [skey] "d" (skey));
 	return addr;
@@ -29,7 +27,7 @@ void storage_key_init_range(unsigned long start, unsigned long end)
 			boundary = (start + size) & ~(size - 1);
 			if (boundary <= end) {
 				do {
-					start = set_storage_key_frame(start, 0);
+					start = sske_frame(start, PAGE_DEFAULT_KEY);
 				} while (start < boundary);
 				continue;
 			}
