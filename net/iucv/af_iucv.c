@@ -1385,7 +1385,10 @@ static int iucv_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
 
 		/* SOCK_STREAM: re-queue skb if it contains unreceived data */
 		if (sk->sk_type == SOCK_STREAM) {
-			skb_pull(skb, copied);
+			if (skb_is_nonlinear(skb))
+				pskb_pull(skb, copied);
+			else
+				skb_pull(skb, copied);
 			if (skb->len) {
 				skb_queue_head(&sk->sk_receive_queue, skb);
 				goto done;
