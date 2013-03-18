@@ -1,5 +1,5 @@
 /*?
- * Text: "%lu: The capabilities of the SCM increment changed\n"
+ * Text: "%lx: The capabilities of the SCM increment changed\n"
  * Severity: Informational
  * Parameter:
  *   @1: start address of the SCM increment
@@ -25,7 +25,7 @@
  */
 
 /*?
- * Text: "%lu: Write access to the SCM increment is suspended\n"
+ * Text: "%lx: Write access to the SCM increment is suspended\n"
  * Severity: Informational
  * Parameter:
  *   @1: start address of the SCM increment
@@ -38,7 +38,7 @@
  */
 
 /*?
- * Text: "%lu: Write access to the SCM increment is restored\n"
+ * Text: "%lx: Write access to the SCM increment is restored\n"
  * Severity: Informational
  * Parameter:
  *   @1: start address of the SCM increment
