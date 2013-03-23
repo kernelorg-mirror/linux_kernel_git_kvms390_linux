@@ -1540,7 +1540,8 @@ extern int s390_enable_sie(void);
 /*
  * No page table caches to initialise
  */
-#define pgtable_cache_init()	do { } while (0)
+static inline void pgtable_cache_init(void) { }
+static inline void check_pgt_cache(void) { }
 
 #define __ARCH_WANT_PTE_WRITE_DIRTY
 
