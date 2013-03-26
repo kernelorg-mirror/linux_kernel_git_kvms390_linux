@@ -255,14 +255,13 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
 		if (pte_none(*pt_dir)) {
 			unsigned long new_page;
 
-			new_page =__pa(vmem_alloc_pages(0));
+			new_page = __pa(vmemmap_alloc_block(PAGE_SIZE, node));
 			if (!new_page)
 				goto out;
 			pte_val(*pt_dir) = __pa(new_page);
 		}
 		address += PAGE_SIZE;
 	}
-	memset(start, 0, nr * sizeof(struct page));
 	ret = 0;
 out:
 	flush_tlb_kernel_range(start_addr, end_addr);
