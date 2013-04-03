@@ -189,9 +189,9 @@ void qeth_clear_recovery_task(struct qeth_card *card)
 }
 EXPORT_SYMBOL_GPL(qeth_clear_recovery_task);
 
-static bool qeth_is_recovery_task(struct qeth_card *card)
+static bool qeth_is_recovery_task(const struct qeth_card *card)
 {
-	return (card->recovery_task == current);
+	return card->recovery_task == current;
 }
 
 void qeth_set_allowed_threads(struct qeth_card *card, unsigned long threads,
