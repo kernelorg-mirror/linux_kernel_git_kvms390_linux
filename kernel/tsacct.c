@@ -123,16 +123,13 @@ void acct_update_integrals(struct task_struct *tsk)
 {
 	if (likely(tsk->mm)) {
 		cputime_t time, dtime;
-		struct timeval value;
 		unsigned long flags;
 		u64 delta;
 
 		local_irq_save(flags);
 		time = tsk->stime + tsk->utime;
 		dtime = time - tsk->acct_timexpd;
-		jiffies_to_timeval(cputime_to_jiffies(dtime), &value);
-		delta = value.tv_sec;
-		delta = delta * USEC_PER_SEC + value.tv_usec;
+		delta = cputime_to_usecs(dtime);
 
 		if (delta == 0)
 			goto out;
