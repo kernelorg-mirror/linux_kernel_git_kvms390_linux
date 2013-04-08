@@ -3625,13 +3625,13 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
  * but allow concurrent faults), and pte mapped but not yet locked.
  * We return with mmap_sem still held, but pte unmapped and unlocked.
  */
-int handle_pte_fault(struct mm_struct *mm,
-		     struct vm_area_struct *vma, unsigned long address,
-		     pte_t *pte, pmd_t *pmd, unsigned int flags)
+int handle_pte_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+		     unsigned long address, pmd_t *pmd, unsigned int flags)
 {
-	pte_t entry;
+	pte_t *pte, entry;
 	spinlock_t *ptl;
 
+	pte = pte_offset_map(pmd, address);
 	entry = *pte;
 	if (!pte_present(entry)) {
 		if (pte_none(entry)) {
@@ -3690,7 +3690,6 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	pgd_t *pgd;
 	pud_t *pud;
 	pmd_t *pmd;
-	pte_t *pte;
 
 	__set_current_state(TASK_RUNNING);
 
@@ -3773,11 +3772,9 @@ retry:
 	 * A regular pmd is established and it can't morph into a huge pmd
 	 * from under us anymore at this point because we hold the mmap_sem
 	 * read mode and khugepaged takes it in write mode. So now it's
-	 * safe to run pte_offset_map().
+	 * safe to call handle_pte_fault.
 	 */
-	pte = pte_offset_map(pmd, address);
-
-	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
+	return handle_pte_fault(mm, vma, address, pmd, flags);
 }
 
 #ifndef __PAGETABLE_PUD_FOLDED
