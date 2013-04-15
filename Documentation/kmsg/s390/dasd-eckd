@@ -52,7 +52,19 @@
  */
 
 /*?
- * Text: "%s: Start track number %d used in formatting is too big\n"
+ * Text: "%s: Start track number %u used in formatting is too big\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: track number
+ * Description:
+ * The DASD format I/O control was used incorrectly by a formatting tool.
+ * User action:
+ * Contact the owner of the formatting tool.
+ */
+
+/*?
+ * Text: "%s: Stop track number %u used in formatting is too big\n"
  * Severity: Warning
  * Parameter:
  *   @1: bus ID of the DASD
@@ -150,7 +162,7 @@
  */
 
 /*?
- * Text: "%s: Start track %d used in formatting exceeds end track\n"
+ * Text: "%s: Start track %u used in formatting exceeds end track\n"
  * Severity: Warning
  * Parameter:
  *   @1: bus ID of the DASD
@@ -176,7 +188,7 @@
  */
 
 /*?
- * Text: "%s: The DASD cannot be formatted with block size %d\n"
+ * Text: "%s: The DASD cannot be formatted with block size %u\n"
  * Severity: Warning
  * Parameter:
  *   @1: bus ID of the DASD
