@@ -2271,7 +2271,7 @@ dasd_eckd_build_format(struct dasd_device *base,
 	return fcp;
 }
 
-int
+static int
 dasd_eckd_format_device(struct dasd_device *base,
 			struct format_data_t *fdata)
 {
