@@ -132,7 +132,7 @@ extern void cio_register_early_subchannels(void);
 extern void cio_tsch(struct subchannel *sch);
 #else
 #define cio_is_console(schid) 0
-extern cio_register_early_subchannels do {} while (0)
+static inline void cio_register_early_subchannels(void) {}
 #endif
 
 #endif
