@@ -2278,10 +2278,10 @@ dasd_eckd_format_device(struct dasd_device *base,
 	struct dasd_ccw_req *cqr, *n;
 	struct dasd_block *block;
 	struct dasd_eckd_private *private;
-	int step;
-	int old_stop, format_step;
 	struct list_head format_queue;
 	struct dasd_device *device;
+	int old_stop, format_step;
+	int step, rc = 0;
 
 	block = base->block;
 	private = (struct dasd_eckd_private *) base->private;
@@ -2362,6 +2362,8 @@ sleep:
 	list_for_each_entry_safe(cqr, n, &format_queue, blocklist) {
 		device = cqr->startdev;
 		private = (struct dasd_eckd_private *) device->private;
+		if (cqr->status == DASD_CQR_FAILED)
+			rc = -EIO;
 		list_del_init(&cqr->blocklist);
 		dasd_sfree_request(cqr, device);
 		private->count--;
@@ -2374,7 +2376,7 @@ sleep:
 	if (fdata->start_unit <= fdata->stop_unit)
 		goto retry;
 
-	return 0;
+	return rc;
 }
 
 static void dasd_eckd_handle_terminated_request(struct dasd_ccw_req *cqr)
