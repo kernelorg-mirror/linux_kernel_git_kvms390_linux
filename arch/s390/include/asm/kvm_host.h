@@ -92,7 +92,8 @@ struct kvm_s390_sie_block {
 	__u32	scaoh;			/* 0x005c */
 	__u8	reserved60;		/* 0x0060 */
 	__u8	ecb;			/* 0x0061 */
-	__u8	reserved62[2];		/* 0x0062 */
+	__u8	ecb2;			/* 0x0062 */
+	__u8	reserved63[1];		/* 0x0063 */
 	__u32	scaol;			/* 0x0064 */
 	__u8	reserved68[4];		/* 0x0068 */
 	__u32	todpr;			/* 0x006c */
@@ -107,7 +108,9 @@ struct kvm_s390_sie_block {
 	__u64	gbea;			/* 0x0180 */
 	__u8	reserved188[24];	/* 0x0188 */
 	__u32	fac;			/* 0x01a0 */
-	__u8	reserved1a4[92];	/* 0x01a4 */
+	__u8	reserved1a4[20];	/* 0x01a4 */
+	__u64	cbrlo;			/* 0x01b8 */
+	__u8	reserved1c0[64];	/* 0x01c0 */
 } __attribute__((packed));
 
 struct kvm_vcpu_stat {
@@ -142,6 +145,7 @@ struct kvm_vcpu_stat {
 	u32 instruction_stsi;
 	u32 instruction_stfl;
 	u32 instruction_tprot;
+	u32 instruction_essa;
 	u32 instruction_sigp_sense;
 	u32 instruction_sigp_sense_running;
 	u32 instruction_sigp_external_call;
