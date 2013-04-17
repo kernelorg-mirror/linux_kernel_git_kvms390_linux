@@ -303,6 +303,7 @@ extern unsigned long MODULES_END;
 #define RCP_HC_BIT	0x00200000UL
 #define RCP_GR_BIT	0x00040000UL
 #define RCP_GC_BIT	0x00020000UL
+#define RCP_IN_BIT	0x00010000UL	/* IPTE notify bit */
 
 /* User dirty / referenced bit for KVM's migration feature */
 #define KVM_UR_BIT	0x00008000UL
@@ -370,6 +371,7 @@ extern unsigned long MODULES_END;
 #define RCP_HC_BIT	0x0020000000000000UL
 #define RCP_GR_BIT	0x0004000000000000UL
 #define RCP_GC_BIT	0x0002000000000000UL
+#define RCP_IN_BIT	0x0001000000000000UL	/* IPTE notify bit */
 
 /* Guest Page State used for virtualization */
 #define _PGSTE_GPS_ZERO 	0x0000000080000000UL
@@ -742,22 +744,34 @@ struct gmap {
 
 /**
  * struct gmap_rmap - reverse mapping for segment table entries
- * @next: pointer to the next gmap_rmap structure in the list
+ * @gmap: pointer to the gmap_struct
  * @entry: pointer to a segment table entry
+ * @vmaddr: virtual address in the guest address space
  */
 struct gmap_rmap {
 	struct list_head list;
+	struct gmap *gmap;
 	unsigned long *entry;
+	unsigned long vmaddr;
 };
 
 /**
  * struct gmap_pgtable - gmap information attached to a page table
  * @vmaddr: address of the 1MB segment in the process virtual memory
- * @mapper: list of segment table entries maping a page table
+ * @mapper: list of segment table entries mapping a page table
  */
 struct gmap_pgtable {
 	unsigned long vmaddr;
 	struct list_head mapper;
+};
+
+/**
+ * struct gmap_notifier - notify function block for page invalidation
+ * @notifier_call: address of callback function
+ */
+struct gmap_notifier {
+	struct list_head list;
+	void (*notifier_call)(struct gmap *gmap, unsigned long address);
 };
 
 struct gmap *gmap_alloc(struct mm_struct *mm);
@@ -765,7 +779,7 @@ void gmap_free(struct gmap *gmap);
 void gmap_enable(struct gmap *gmap);
 void gmap_disable(struct gmap *gmap);
 int gmap_map_segment(struct gmap *gmap, unsigned long from,
-		     unsigned long to, unsigned long length);
+		     unsigned long to, unsigned long len);
 int gmap_unmap_segment(struct gmap *gmap, unsigned long to, unsigned long len);
 unsigned long __gmap_translate(unsigned long address, struct gmap *);
 unsigned long gmap_translate(unsigned long address, struct gmap *);
@@ -773,6 +787,24 @@ unsigned long __gmap_fault(unsigned long address, struct gmap *);
 unsigned long gmap_fault(unsigned long address, struct gmap *);
 void gmap_discard(unsigned long from, unsigned long to, struct gmap *);
 void __gmap_zap(unsigned long address, struct gmap *);
+
+void gmap_register_ipte_notifier(struct gmap_notifier *);
+void gmap_unregister_ipte_notifier(struct gmap_notifier *);
+int gmap_ipte_notify(struct gmap *, unsigned long start, unsigned long len);
+void gmap_do_ipte_notify(struct mm_struct *, unsigned long addr, pte_t *);
+
+static inline pgste_t pgste_ipte_notify(struct mm_struct *mm,
+					unsigned long addr,
+					pte_t *ptep, pgste_t pgste)
+{
+#ifdef CONFIG_PGSTE
+	if (pgste_val(pgste) & RCP_IN_BIT) {
+		pgste_val(pgste) &= ~RCP_IN_BIT;
+		gmap_do_ipte_notify(mm, addr, ptep);
+	}
+#endif
+	return pgste;
+}
 
 /*
  * Certain architectures need to do special things when PTEs
@@ -1078,8 +1110,10 @@ static inline pte_t ptep_get_and_clear(struct mm_struct *mm,
 	pgste_t pgste;
 	pte_t pte;
 
-	if (mm_has_pgste(mm))
+	if (mm_has_pgste(mm)) {
 		pgste = pgste_get_lock(ptep);
+		pgste = pgste_ipte_notify(mm, address, ptep, pgste);
+	}
 
 	pte = *ptep;
 	ptep_flush_lazy(mm, address, ptep);
@@ -1097,10 +1131,13 @@ static inline pte_t ptep_modify_prot_start(struct mm_struct *mm,
 					   unsigned long address,
 					   pte_t *ptep)
 {
+	pgste_t pgste;
 	pte_t pte;
 
-	if (mm_has_pgste(mm))
-		pgste_get_lock(ptep);
+	if (mm_has_pgste(mm)) {
+		pgste = pgste_get_lock(ptep);
+		pgste_ipte_notify(mm, address, ptep, pgste);
+	}
 
 	pte = *ptep;
 	ptep_flush_lazy(mm, address, ptep);
@@ -1125,8 +1162,10 @@ static inline pte_t ptep_clear_flush(struct vm_area_struct *vma,
 	pgste_t pgste;
 	pte_t pte;
 
-	if (mm_has_pgste(vma->vm_mm))
+	if (mm_has_pgste(vma->vm_mm)) {
 		pgste = pgste_get_lock(ptep);
+		pgste = pgste_ipte_notify(vma->vm_mm, address, ptep, pgste);
+	}
 
 	pte = *ptep;
 	__ptep_ipte(address, ptep);
@@ -1157,8 +1196,11 @@ static inline pte_t ptep_get_and_clear_full(struct mm_struct *mm,
 	pgste_t pgste;
 	pte_t pte;
 
-	if (mm_has_pgste(mm))
+	if (mm_has_pgste(mm)) {
 		pgste = pgste_get_lock(ptep);
+		if (!full)
+			pgste = pgste_ipte_notify(mm, address, ptep, pgste);
+	}
 
 	pte = *ptep;
 	if (!full)
@@ -1180,8 +1222,10 @@ static inline pte_t ptep_set_wrprotect(struct mm_struct *mm,
 	pte_t pte = *ptep;
 
 	if (pte_write(pte)) {
-		if (mm_has_pgste(mm))
+		if (mm_has_pgste(mm)) {
 			pgste = pgste_get_lock(ptep);
+			pgste = pgste_ipte_notify(mm, address, ptep, pgste);
+		}
 
 		ptep_flush_lazy(mm, address, ptep);
 		pte = pte_wrprotect(pte);
@@ -1204,8 +1248,10 @@ static inline int ptep_set_access_flags(struct vm_area_struct *vma,
 
 	if (pte_same(*ptep, entry))
 		return 0;
-	if (mm_has_pgste(vma->vm_mm))
+	if (mm_has_pgste(vma->vm_mm)) {
 		pgste = pgste_get_lock(ptep);
+		pgste = pgste_ipte_notify(vma->vm_mm, address, ptep, pgste);
+	}
 
 	__ptep_ipte(address, ptep);
 
