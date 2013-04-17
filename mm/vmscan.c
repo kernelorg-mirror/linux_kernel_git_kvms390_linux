@@ -799,6 +799,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
 				goto keep_locked;
 			case SWAP_MLOCK:
 				goto cull_mlocked;
+			case SWAP_FREE:
+				if (PageSwapCache(page))
+					try_to_free_swap(page);
 			case SWAP_SUCCESS:
 				; /* try to free the page below */
 			}
