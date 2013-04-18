@@ -98,11 +98,6 @@ static int ap_config_time = AP_CONFIG_TIME;
 static DECLARE_WORK(ap_config_work, ap_scan_bus);
 
 /*
- * Mutex for ap_scan_bus
- */
-static DEFINE_MUTEX (ap_scan_bus_mutex);
-
-/*
  * Tasklet & timer for AP request polling and interrupts
  */
 static DECLARE_TASKLET(ap_tasklet, ap_poll_all, 0);
@@ -959,10 +954,11 @@ EXPORT_SYMBOL(ap_driver_unregister);
 
 void ap_bus_force_rescan(void)
 {
-	/* reset the AP bus rescan timer. */
-	mod_timer(&ap_config_timer,jiffies + ap_config_time * HZ);
-	/* processing a synchonuous bus rescan */
-	ap_scan_bus(NULL);
+	/* reconfigure the AP bus rescan timer. */
+	mod_timer(&ap_config_timer, jiffies + ap_config_time * HZ);
+	/* processing a asynchonuous bus rescan */
+	queue_work(ap_work_queue, &ap_config_work);
+	flush_work(&ap_config_work);
 }
 EXPORT_SYMBOL(ap_bus_force_rescan);
 
@@ -1303,11 +1299,9 @@ static void ap_scan_bus(struct work_struct *unused)
 	int queue_depth, device_type;
 	unsigned int device_functions;
 	int rc, i;
-	mutex_lock(&ap_scan_bus_mutex);
 
 	ap_query_configuration();
 	if (ap_select_domain() != 0) {
-		 mutex_unlock(&ap_scan_bus_mutex);
 		return;
 	}
 	for (i = 0; i < AP_DEVICES; i++) {
@@ -1399,7 +1393,6 @@ static void ap_scan_bus(struct work_struct *unused)
 		else
 			device_unregister(&ap_dev->device);
 	}
-mutex_unlock(&ap_scan_bus_mutex);
 }
 
 static void
