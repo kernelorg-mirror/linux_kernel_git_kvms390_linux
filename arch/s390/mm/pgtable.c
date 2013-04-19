@@ -501,8 +501,7 @@ static int gmap_connect_pgtable(unsigned long segment,
 		rmap = NULL;
 	}
 	spin_unlock(&mm->page_table_lock);
-	if (rmap)
-		kfree(rmap);
+	kfree(rmap);
 	return 0;
 }
 
