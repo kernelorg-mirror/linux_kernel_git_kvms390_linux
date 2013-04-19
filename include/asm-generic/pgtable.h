@@ -189,7 +189,7 @@ static inline int pte_same(pte_t pte_a, pte_t pte_b)
  * host to transparently reclaim unused pages. This function returns
  * whether the pte's page is unused.
  */
-static inline int pte_unused(struct mm_struct *mm, pte_t pte)
+static inline int pte_unused(pte_t pte)
 {
 	return 0;
 }
