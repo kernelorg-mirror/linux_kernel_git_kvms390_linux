@@ -480,7 +480,7 @@ static int handle_essa(struct kvm_vcpu *vcpu)
 	VCPU_EVENT(vcpu, 5, "cmma release %d pages", entries);
 	gmap = vcpu->arch.gmap;
 	vcpu->stat.instruction_essa++;
-	vcpu->arch.sie_block->cbrlo &= PAGE_MASK;       /* reset nceo */
+	vcpu->arch.sie_block->cbrlo &= PAGE_MASK;	/* reset nceo */
 	cbrlo = phys_to_virt(vcpu->arch.sie_block->cbrlo);
 	down_read(&gmap->mm->mmap_sem);
 	for (i = 0; i < entries; ++i) {

@@ -1495,7 +1495,7 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
 			ret = SWAP_AGAIN;
 		else
 			used = 1;
-		
+
 		if (ret != SWAP_AGAIN || !page_mapped(page))
 			break;
 	}
