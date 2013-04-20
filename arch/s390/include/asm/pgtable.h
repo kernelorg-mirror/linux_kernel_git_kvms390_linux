@@ -373,17 +373,17 @@ extern unsigned long MODULES_END;
 #define RCP_GC_BIT	0x0002000000000000UL
 #define RCP_IN_BIT	0x0001000000000000UL	/* IPTE notify bit */
 
-/* Guest Page State used for virtualization */
-#define _PGSTE_GPS_ZERO 	0x0000000080000000UL
-#define _PGSTE_GPS_USAGE_MASK	0x0000000003000000UL
-#define _PGSTE_GPS_USAGE_STABLE 0x0000000000000000UL
-#define _PGSTE_GPS_USAGE_UNUSED 0x0000000001000000UL
-
 /* User dirty / referenced bit for KVM's migration feature */
 #define KVM_UR_BIT	0x0000800000000000UL
 #define KVM_UC_BIT	0x0000400000000000UL
 
 #endif /* CONFIG_64BIT */
+
+/* Guest Page State used for virtualization */
+#define _PGSTE_GPS_ZERO 	0x0000000080000000UL
+#define _PGSTE_GPS_USAGE_MASK	0x0000000003000000UL
+#define _PGSTE_GPS_USAGE_STABLE 0x0000000000000000UL
+#define _PGSTE_GPS_USAGE_UNUSED 0x0000000001000000UL
 
 /*
  * A user page table pointer has the space-switch-event bit, the
