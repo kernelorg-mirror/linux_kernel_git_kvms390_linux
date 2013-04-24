@@ -120,6 +120,7 @@
 
 #include <asm/ptrace.h>
 #include <asm/compat.h>
+#include <asm/syscall.h>
 #include <asm/user.h>
 
 typedef s390_fp_regs elf_fpregset_t;
@@ -183,17 +184,27 @@ extern char elf_platform[];
 
 #ifndef CONFIG_64BIT
 #define SET_PERSONALITY(ex) \
-	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
+do {								\
+	set_personality(PER_LINUX | 				\
+		(current->personality & (~PER_MASK)));		\
+	current_thread_info()->sys_call_table = 		\
+		(unsigned long) &sys_call_table;		\
+} while (0)
 #else /* CONFIG_64BIT */
 #define SET_PERSONALITY(ex)					\
 do {								\
 	if (personality(current->personality) != PER_LINUX32)	\
 		set_personality(PER_LINUX |			\
 			(current->personality & ~PER_MASK));	\
-	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)		\
+	if ((ex).e_ident[EI_CLASS] == ELFCLASS32) {		\
 		set_thread_flag(TIF_31BIT);			\
-	else							\
+		current_thread_info()->sys_call_table = 	\
+			(unsigned long)	&sys_call_table_emu;	\
+	} else {						\
 		clear_thread_flag(TIF_31BIT);			\
+		current_thread_info()->sys_call_table = 	\
+			(unsigned long) &sys_call_table;	\
+	}							\
 } while (0)
 #endif /* CONFIG_64BIT */
 
