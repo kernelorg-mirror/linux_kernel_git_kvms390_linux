@@ -182,7 +182,7 @@ extern unsigned long elf_hwcap;
 extern char elf_platform[];
 #define ELF_PLATFORM (elf_platform)
 
-#if !defined(CONFIG_64BIT) || !defined(CONFIG_COMPAT)
+#ifndef CONFIG_COMPAT
 #define SET_PERSONALITY(ex) \
 do {								\
 	set_personality(PER_LINUX |				\
@@ -190,7 +190,7 @@ do {								\
 	current_thread_info()->sys_call_table = 		\
 		(unsigned long) &sys_call_table;		\
 } while (0)
-#else /* CONFIG_64BIT */
+#else /* CONFIG_COMPAT */
 #define SET_PERSONALITY(ex)					\
 do {								\
 	if (personality(current->personality) != PER_LINUX32)	\
@@ -206,7 +206,7 @@ do {								\
 			(unsigned long) &sys_call_table;	\
 	}							\
 } while (0)
-#endif /* CONFIG_64BIT */
+#endif /* CONFIG_COMPAT */
 
 #define STACK_RND_MASK	0x7ffUL
 
