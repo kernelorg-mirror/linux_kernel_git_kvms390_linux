@@ -182,7 +182,7 @@ extern unsigned long elf_hwcap;
 extern char elf_platform[];
 #define ELF_PLATFORM (elf_platform)
 
-#ifndef CONFIG_64BIT
+#if !defined(CONFIG_64BIT) || !defined(CONFIG_COMPAT)
 #define SET_PERSONALITY(ex) \
 do {								\
 	set_personality(PER_LINUX |				\
