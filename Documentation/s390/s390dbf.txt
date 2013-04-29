@@ -144,7 +144,7 @@ Parameter:     id:   handle for debug log
 Return Value:  none 
 
 Description:   frees memory for a debug log and removes all registered debug
-               views.
+	       views.
                Must not be called within an interrupt handler 
 
 ---------------------------------------------------------------------------

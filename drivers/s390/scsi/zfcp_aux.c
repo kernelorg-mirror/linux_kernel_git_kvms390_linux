@@ -23,7 +23,7 @@
  *            Christof Schmitt
  *            Martin Petermann
  *            Sven Schuetz
- *            Steffen Maier
+ *	      Steffen Maier
  */
 
 #define KMSG_COMPONENT "zfcp"
