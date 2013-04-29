@@ -703,7 +703,10 @@ static inline void arch_leave_lazy_mmu_mode(struct mm_struct *mm)
 	PVOP_VCALL1(pv_mmu_ops.lazy_mode.leave, mm);
 }
 
-void arch_flush_lazy_mmu_mode(struct mm_struct *mm);
+static inline void arch_flush_lazy_mmu_mode(struct mm_struct *mm)
+{
+	PVOP_VCALL1(pv_mmu_ops.lazy_mode.flush, mm);
+}
 
 static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
 				phys_addr_t phys, pgprot_t flags)
