@@ -481,6 +481,10 @@ static int __init hypfs_init(void)
 		rc = -ENODATA;
 		goto fail_hypfs_diag_exit;
 	}
+	if (hypfs_sprp_init()) {
+		rc = -ENODATA;
+		goto fail_hypfs_sprp_exit;
+	}
 	s390_kobj = kobject_create_and_add("s390", hypervisor_kobj);
 	if (!s390_kobj) {
 		rc = -ENOMEM;
@@ -494,6 +498,8 @@ static int __init hypfs_init(void)
 fail_filesystem:
 	kobject_put(s390_kobj);
 fail_hypfs_vm_exit:
+	hypfs_sprp_exit();
+fail_hypfs_sprp_exit:
 	hypfs_vm_exit();
 fail_hypfs_diag_exit:
 	hypfs_diag_exit();
