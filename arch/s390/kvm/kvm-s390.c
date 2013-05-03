@@ -391,7 +391,7 @@ int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
 	vcpu->arch.sie_block->ecb   = 6;
 	vcpu->arch.sie_block->eca   = 0xC1002001U;
 	vcpu->arch.sie_block->fac   = (int) (long) facilities;
-	cbrl = alloc_page(GFP_KERNEL);
+	cbrl = alloc_page(GFP_KERNEL | __GFP_ZERO);
 	if (cbrl) {
 		vcpu->arch.sie_block->ecb2 = 0x80;
 		vcpu->arch.sie_block->cbrlo = page_to_phys(cbrl);
