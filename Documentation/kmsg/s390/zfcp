@@ -15,21 +15,6 @@
  */
 
 /*?
- * Text: "Registering the misc device zfcp_cfdc failed\n"
- * Severity: Error
- * Description:
- * The zfcp device driver failed to register the device that provides access to
- * the adapter access control file (ACL tables). The device driver
- * initialization failed. A possible cause for this problem is memory
- * constraints.
- * User action:
- * Free some memory and try again to load the zfcp device driver. If the zfcp
- * device driver has been compiled into the kernel, reboot Linux. Consider
- * assigning more memory to your LPAR or z/VM guest virtual machine. If the
- * problem persists, contact your support organization.
- */
-
-/*?
  * Text: "The zfcp device driver could not register with the common I/O layer\n"
  * Severity: Error
  * Description:
@@ -300,21 +285,6 @@
  */
 
 /*?
- * Text: "%s: Access denied to LUN 0x%016Lx on port 0x%016Lx\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the zfcp device
- *   @2: LUN
- *   @3: WWPN
- * Description:
- * The Linux system is not allowed to access the SCSI device at the indicated
- * LUN.
- * User action:
- * Update the access control table of the FCP device to grant the Linux
- * system access to the LUN or remove the LUN from the Linux system.
- */
-
-/*?
  * Text: "%s: FCP device not operational because of an unsupported FC class\n"
  * Severity: Error
  * Parameter:
@@ -414,20 +384,6 @@
  */
 
 /*?
- * Text: "%s: Access denied to port 0x%016Lx\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the zfcp device
- *   @2: WWPN
- * Description:
- * The Linux system is not allowed to access the remote port with the specified
- * WWPN.
- * User action:
- * Update the access control table of the FCP device to grant the Linux
- * system access to the WWPN or remove the WWPN from the Linux system.
- */
-
-/*?
  * Text: "%s: The QTCB type is not supported by the FCP adapter\n"
  * Severity: Error
  * Parameter:
@@ -467,21 +423,6 @@
  * available again.
  * User action:
  * None.
- */
-
-/*?
- * Text: "%s: Access denied according to ACT rule type %s, rule %d\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the zfcp device
- *   @2: access rule type
- *   @3: access rule
- * Description:
- * A rule in the access control table (ACT) for the FCP device denies access
- * to a remote port or a LUN.
- * User action:
- * Examine the access control tables for the FCP device to see if the
- * specified rule is correct.
  */
 
 /*?
@@ -726,52 +667,6 @@
  * workaround, disable the automatic LUN scanning by setting the
  * zfcp.allow_lun_scan kernel parameter or the allow_lun_scan module
  * parameter to 0.
- */
-
-/*?
- * Text: "%s: SCSI device at LUN 0x%016Lx on port 0x%016Lx opened read-only\n"
- * Severity: Informational
- * Parameter:
- *   @1: bus ID of the zfcp device
- *   @2: LUN
- *   @3: WWPN
- * Description:
- * The access control tables in the FCP adapter allow read-only access for the
- * LUN. Write access is not permitted for your Linux instance. The SCSI
- * device has been opened successfully in read-only access mode.
- * User action:
- * None if read-only access is sufficient. If you require write access, change
- * the access control tables in the FCP adapter.
- */
-
-/*?
- * Text: "%s: Exclusive read-only access not supported (LUN 0x%016Lx, port 0x%016Lx)\n"
- * Severity: Error
- * Parameter:
- *   @1: bus ID of the zfcp device
- *   @2: LUN
- *   @3: WWPN
- * Description:
- * The access configuration specified in the access control tables of the FCP
- * adapter is not valid. The SCSI device at the indicated LUN cannot be
- * accessed.
- * User action:
- * Change the access control tables in the FCP adapter.
- */
-
-/*?
- * Text: "%s: Shared read-write access not supported (LUN 0x%016Lx, port 0x%016Lx)\n"
- * Severity: Error
- * Parameter:
- *   @1: bus ID of the zfcp device
- *   @2: LUN
- *   @3: WWPN
- * Description:
- * The access configuration specified in the access control tables of the FCP
- * adapter is not valid. The SCSI device at the indicated LUN cannot be
- * accessed.
- * User action:
- * Change the access control tables in the FCP adapter.
  */
 
 /*?
