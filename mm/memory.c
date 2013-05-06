@@ -3715,7 +3715,7 @@ int handle_pte_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	spinlock_t *ptl;
 
 	pte = pte_offset_map(pmd, address);
-	entry = *pte;
+	entry = ACCESS_ONCE(*pte);
 	if (!pte_present(entry)) {
 		if (pte_none(entry)) {
 			if (vma->vm_ops) {
