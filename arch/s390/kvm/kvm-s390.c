@@ -669,7 +669,7 @@ int kvm_arch_vcpu_ioctl_set_mpstate(struct kvm_vcpu *vcpu,
 	return -EINVAL; /* not implemented yet */
 }
 
-static void kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
+static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
 {
 	/*
 	 * We use MMU_RELOAD just to re-arm the ipte notifier for the
@@ -678,11 +678,15 @@ static void kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
 	 * already finished.
 	 */
 	if (kvm_check_request(KVM_REQ_MMU_RELOAD, vcpu)) {
-		gmap_ipte_notify(vcpu->arch.gmap,
-				 vcpu->arch.sie_block->prefix,
-				 PAGE_SIZE * 2);
+		int rc;
+		rc = gmap_ipte_notify(vcpu->arch.gmap,
+				      vcpu->arch.sie_block->prefix,
+				      PAGE_SIZE * 2);
+		if (rc) 
+			return rc;
 		s390_vcpu_unblock(vcpu);
 	}
+	return 0;
 }
 
 static int __vcpu_run(struct kvm_vcpu *vcpu)
@@ -700,7 +704,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
 	if (!kvm_is_ucontrol(vcpu->kvm))
 		kvm_s390_deliver_pending_interrupts(vcpu);
 
-	kvm_s390_handle_requests(vcpu);
+	rc = kvm_s390_handle_requests(vcpu);
+	if (rc)
+		return rc;
 
 	vcpu->arch.sie_block->icptcode = 0;
 	preempt_disable();
