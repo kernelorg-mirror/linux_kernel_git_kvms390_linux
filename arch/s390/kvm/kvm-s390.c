@@ -391,10 +391,12 @@ int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
 	vcpu->arch.sie_block->ecb   = 6;
 	vcpu->arch.sie_block->eca   = 0xC1002001U;
 	vcpu->arch.sie_block->fac   = (int) (long) facilities;
-	cbrl = alloc_page(GFP_KERNEL | __GFP_ZERO);
-	if (cbrl) {
-		vcpu->arch.sie_block->ecb2 = 0x80;
-		vcpu->arch.sie_block->cbrlo = page_to_phys(cbrl);
+	if (kvm_enabled_cmma()) {
+		cbrl = alloc_page(GFP_KERNEL | __GFP_ZERO);
+		if (cbrl) {
+			vcpu->arch.sie_block->ecb2 = 0x80;
+			vcpu->arch.sie_block->cbrlo = page_to_phys(cbrl);
+		}
 	}
 	hrtimer_init(&vcpu->arch.ckc_timer, CLOCK_REALTIME, HRTIMER_MODE_ABS);
 	tasklet_init(&vcpu->arch.tasklet, kvm_s390_tasklet,
@@ -667,6 +669,16 @@ int kvm_arch_vcpu_ioctl_set_mpstate(struct kvm_vcpu *vcpu,
 				    struct kvm_mp_state *mp_state)
 {
 	return -EINVAL; /* not implemented yet */
+}
+
+bool kvm_enabled_cmma(void)
+{
+	if (!MACHINE_IS_LPAR)
+		return false;
+	/* only enable for z10 and later */
+	if (!MACHINE_HAS_EDAT1)
+		return false;
+	return true;
 }
 
 static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)

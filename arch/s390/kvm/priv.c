@@ -481,6 +481,9 @@ static int handle_essa(struct kvm_vcpu *vcpu)
 	VCPU_EVENT(vcpu, 5, "cmma release %d pages", entries);
 	gmap = vcpu->arch.gmap;
 	vcpu->stat.instruction_essa++;
+	if (!kvm_enabled_cmma() || !vcpu->arch.sie_block->cbrlo)
+		return kvm_s390_inject_program_int(vcpu, PGM_OPERATION);
+
 	/* Rewind PSW to repeat the ESSA instruction */
 	vcpu->arch.sie_block->gpsw.addr =
 		__rewind_psw(vcpu->arch.sie_block->gpsw, 4);
