@@ -675,9 +675,10 @@ static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
 	 * We use MMU_RELOAD just to re-arm the ipte notifier for the
 	 * guest prefix page. gmap_ipte_notify will wait on the ptl lock.
 	 * This ensures that the ipte instruction for this request has
-	 * already finished.
+	 * already finished. We might race against a second unmapper that
+	 * wants to set the blocking bit. Lets just retry the request loop.
 	 */
-	if (kvm_check_request(KVM_REQ_MMU_RELOAD, vcpu)) {
+	while (kvm_check_request(KVM_REQ_MMU_RELOAD, vcpu)) {
 		int rc;
 		rc = gmap_ipte_notify(vcpu->arch.gmap,
 				      vcpu->arch.sie_block->prefix,
