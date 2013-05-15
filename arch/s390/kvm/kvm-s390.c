@@ -695,7 +695,7 @@ static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
 		rc = gmap_ipte_notify(vcpu->arch.gmap,
 				      vcpu->arch.sie_block->prefix,
 				      PAGE_SIZE * 2);
-		if (rc) 
+		if (rc)
 			return rc;
 		s390_vcpu_unblock(vcpu);
 	}
