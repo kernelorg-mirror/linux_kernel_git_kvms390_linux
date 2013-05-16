@@ -1233,7 +1233,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
 		}
 		set_pte_at(mm, address, pte,
 			   swp_entry_to_pte(make_hwpoison_entry(page)));
-	} else if (pte_unused(pteval) && PageAnon(page)) {
+	} else if (pte_unused(pteval) && PageSwapCache(page) && PageAnon(page)) {
 		pte_clear(mm, address, pte);
 		dec_mm_counter(mm, MM_ANONPAGES);
 		ret = SWAP_FREE;
