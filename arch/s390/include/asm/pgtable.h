@@ -307,11 +307,9 @@ extern unsigned long MODULES_END;
 #define PGSTE_HC_BIT	0x00200000UL
 #define PGSTE_GR_BIT	0x00040000UL
 #define PGSTE_GC_BIT	0x00020000UL
+#define PGSTE_UR_BIT	0x00008000UL
+#define PGSTE_UC_BIT	0x00004000UL	/* user dirty (migration) */
 #define PGSTE_IN_BIT	0x00002000UL	/* IPTE notify bit */
-
-/* User dirty / referenced bit for KVM's migration feature */
-#define KVM_UR_BIT	0x00008000UL
-#define KVM_UC_BIT	0x00004000UL
 
 #else /* CONFIG_64BIT */
 
@@ -375,11 +373,9 @@ extern unsigned long MODULES_END;
 #define PGSTE_HC_BIT	0x0020000000000000UL
 #define PGSTE_GR_BIT	0x0004000000000000UL
 #define PGSTE_GC_BIT	0x0002000000000000UL
+#define PGSTE_UR_BIT	0x0000800000000000UL
+#define PGSTE_UC_BIT	0x0000400000000000UL	/* user dirty (migration) */
 #define PGSTE_IN_BIT	0x0000200000000000UL	/* IPTE notify bit */
-
-/* User dirty / referenced bit for KVM's migration feature */
-#define KVM_UR_BIT	0x0000800000000000UL
-#define KVM_UC_BIT	0x0000400000000000UL
 
 #endif /* CONFIG_64BIT */
 
@@ -661,7 +657,7 @@ static inline pgste_t pgste_update_all(pte_t *ptep, pgste_t pgste)
 	/* Get host changed & referenced bits from pgste */
 	bits |= (pgste_val(pgste) & (PGSTE_HR_BIT | PGSTE_HC_BIT)) >> 52;
 	/* Transfer page changed & referenced bit to kvm user bits */
-	pgste_val(pgste) |= bits << 45;		/* KVM_UR_BIT & KVM_UC_BIT */
+	pgste_val(pgste) |= bits << 45;		/* PGSTE_UR_BIT & PGSTE_UC_BIT */
 	/* Clear relevant host bits in pgste. */
 	pgste_val(pgste) &= ~(PGSTE_HR_BIT | PGSTE_HC_BIT);
 	pgste_val(pgste) &= ~(PGSTE_ACC_BITS | PGSTE_FP_BIT);
@@ -693,7 +689,7 @@ static inline pgste_t pgste_update_young(pte_t *ptep, pgste_t pgste)
 	}
 	/* Transfer referenced bit to kvm user bits and pte */
 	if (young) {
-		pgste_val(pgste) |= KVM_UR_BIT;
+		pgste_val(pgste) |= PGSTE_UR_BIT;
 		pte_val(*ptep) |= _PAGE_SWR;
 	}
 #endif
@@ -999,8 +995,8 @@ static inline int ptep_test_and_clear_user_dirty(struct mm_struct *mm,
 	if (mm_has_pgste(mm)) {
 		pgste = pgste_get_lock(ptep);
 		pgste = pgste_update_all(ptep, pgste);
-		dirty = !!(pgste_val(pgste) & KVM_UC_BIT);
-		pgste_val(pgste) &= ~KVM_UC_BIT;
+		dirty = !!(pgste_val(pgste) & PGSTE_UC_BIT);
+		pgste_val(pgste) &= ~PGSTE_UC_BIT;
 		pgste_set_unlock(ptep, pgste);
 		return dirty;
 	}
@@ -1019,8 +1015,8 @@ static inline int ptep_test_and_clear_user_young(struct mm_struct *mm,
 	if (mm_has_pgste(mm)) {
 		pgste = pgste_get_lock(ptep);
 		pgste = pgste_update_young(ptep, pgste);
-		young = !!(pgste_val(pgste) & KVM_UR_BIT);
-		pgste_val(pgste) &= ~KVM_UR_BIT;
+		young = !!(pgste_val(pgste) & PGSTE_UR_BIT);
+		pgste_val(pgste) &= ~PGSTE_UR_BIT;
 		pgste_set_unlock(ptep, pgste);
 	}
 	return young;
