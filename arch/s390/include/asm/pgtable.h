@@ -1351,6 +1351,17 @@ static inline void __pmd_idte(unsigned long address, pmd_t *pmdp)
 	}
 }
 
+static inline void pmdp_flush_lazy(struct mm_struct *mm,
+				   unsigned long address, pmd_t *pmdp)
+{
+	int active = (mm == current->active_mm) ? 1 : 0;
+
+	if ((atomic_read(&mm->context.attach_count) & 0xffff) > active)
+		__pmd_idte(address, pmdp);
+	else
+		mm->context.flush_mm = 1;
+}
+
 #ifdef CONFIG_TRANSPARENT_HUGEPAGE
 
 #define SEGMENT_NONE	__pgprot(_HPAGE_TYPE_NONE)
