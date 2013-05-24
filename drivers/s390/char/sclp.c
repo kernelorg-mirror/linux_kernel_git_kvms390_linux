@@ -55,12 +55,12 @@ int sclp_console_pages = SCLP_CONSOLE_PAGES;
 
 static int __init sclp_setup_console_pages(char *str)
 {
-        int pages;
+	int pages;
 
-        pages = simple_strtoul(str, &str, 0);
-        if (pages >= 6)
+	pages = simple_strtoul(str, &str, 0);
+	if (pages >= 6)
 		sclp_console_pages = pages;
-        return 1;
+	return 1;
 }
 
 __setup("sclp_console_pages=", sclp_setup_console_pages);
