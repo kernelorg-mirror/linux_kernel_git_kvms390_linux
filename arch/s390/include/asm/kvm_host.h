@@ -62,6 +62,7 @@ struct sca_block {
 #define CPUSTAT_MCDS       0x00000100
 #define CPUSTAT_SM         0x00000080
 #define CPUSTAT_G          0x00000008
+#define CPUSTAT_GED        0x00000004
 #define CPUSTAT_J          0x00000002
 #define CPUSTAT_P          0x00000001
 
@@ -139,6 +140,7 @@ struct kvm_vcpu_stat {
 	u32 deliver_program_int;
 	u32 deliver_io_int;
 	u32 exit_wait_state;
+	u32 instruction_pfmf;
 	u32 instruction_stidp;
 	u32 instruction_spx;
 	u32 instruction_stpx;
