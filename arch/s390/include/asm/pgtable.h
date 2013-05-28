@@ -1142,6 +1142,9 @@ static inline pte_t ptep_modify_prot_start(struct mm_struct *mm,
 
 	pte = *ptep;
 	ptep_flush_lazy(mm, address, ptep);
+
+	if (mm_has_pgste(mm))
+		pgste = pgste_update_all(&pte, pgste);
 	return pte;
 }
 
@@ -1149,9 +1152,13 @@ static inline void ptep_modify_prot_commit(struct mm_struct *mm,
 					   unsigned long address,
 					   pte_t *ptep, pte_t pte)
 {
+	pgste_t pgste;
+
 	if (mm_has_pgste(mm)) {
+		pgste = *(pgste_t *)(ptep + PTRS_PER_PTE);
+		pgste_set_key(ptep, pgste, pte);
 		pgste_set_pte(ptep, pte);
-		pgste_set_unlock(ptep, *(pgste_t *)(ptep + PTRS_PER_PTE));
+		pgste_set_unlock(ptep, pgste);
 	} else
 		*ptep = pte;
 }
