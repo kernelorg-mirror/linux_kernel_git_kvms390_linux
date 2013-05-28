@@ -484,6 +484,27 @@
  */
 
 /*?
+ * Text: "%s: No verified channel paths remain for the device\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ * Description:
+ * All verified channel paths to the device have become non-operational.
+ * Any other paths to the device have previously been identified as not usable.
+ * The DASD device driver suspends I/O operations and queues I/O requests
+ * for this device until at least one channel path becomes operational
+ * again.
+ * User action:
+ * Ensure that each channel path to the device has been set up correctly
+ * and that the related physical cable connections are in place.
+ * Set all paths to the device offline and online again to repeat the path
+ * verification. Alternatively, set the device offline and online again to
+ * verify all available paths for this device.
+ * If this problem persists, gather Linux debug data and report the problem
+ * to your support organization.
+ */
+
+/*?
  * Text: "%s: A channel path to the device has become operational\n"
  * Severity: Informational
  * Parameter:
