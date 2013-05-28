@@ -52,6 +52,8 @@ static DECLARE_COMPLETION(sclp_request_queue_flushed);
 
 /* Number of console pages to allocate, used by sclp_con.c and sclp_vt220.c */
 int sclp_console_pages = SCLP_CONSOLE_PAGES;
+/* Number of times the console pages pool run empty */
+unsigned long sclp_console_pages_empty;
 
 static int __init sclp_setup_console_pages(char *str)
 {
@@ -1038,6 +1040,22 @@ static struct platform_driver sclp_pdrv = {
 
 static struct platform_device *sclp_pdev;
 
+static ssize_t sclp_show_console_pages(struct device_driver *dev, char *buf)
+{
+	return sprintf(buf, "%i\n", sclp_console_pages);
+}
+
+static DRIVER_ATTR(console_pages, S_IRUSR, sclp_show_console_pages, NULL);
+
+static ssize_t sclp_show_console_pages_empty(struct device_driver *dev,
+					     char *buf)
+{
+	return sprintf(buf, "%lu\n", sclp_console_pages_empty);
+}
+
+static DRIVER_ATTR(console_pages_empty, S_IRUSR,
+		   sclp_show_console_pages_empty, NULL);
+
 /* Initialize SCLP driver. Return zero if driver is operational, non-zero
  * otherwise. */
 static int
@@ -1111,10 +1129,21 @@ static __init int sclp_initcall(void)
 	rc = platform_driver_register(&sclp_pdrv);
 	if (rc)
 		return rc;
+
+	rc = driver_create_file(&sclp_pdrv.driver,
+				&driver_attr_console_pages);
+	if (rc)
+		goto fail_platform_driver_unregister;
+	rc = driver_create_file(&sclp_pdrv.driver,
+				&driver_attr_console_pages_empty);
+	if (rc)
+		goto fail_platform_attr_pages_remove;
+
 	sclp_pdev = platform_device_register_simple("sclp", -1, NULL, 0);
 	rc = IS_ERR(sclp_pdev) ? PTR_ERR(sclp_pdev) : 0;
 	if (rc)
-		goto fail_platform_driver_unregister;
+		goto fail_platform_attr_empty_remove;
+
 	rc = atomic_notifier_chain_register(&panic_notifier_list,
 					    &sclp_on_panic_nb);
 	if (rc)
@@ -1124,6 +1153,12 @@ static __init int sclp_initcall(void)
 
 fail_platform_device_unregister:
 	platform_device_unregister(sclp_pdev);
+fail_platform_attr_empty_remove:
+	driver_remove_file(&sclp_pdrv.driver,
+			   &driver_attr_console_pages);
+fail_platform_attr_pages_remove:
+	driver_remove_file(&sclp_pdrv.driver,
+			   &driver_attr_console_pages);
 fail_platform_driver_unregister:
 	platform_driver_unregister(&sclp_pdrv);
 	return rc;

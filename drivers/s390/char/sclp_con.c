@@ -150,6 +150,8 @@ sclp_console_write(struct console *console, const char *message,
 	do {
 		/* make sure we have a console output buffer */
 		if (sclp_conbuf == NULL) {
+			if (list_empty(&sclp_con_pages))
+				sclp_console_pages_empty++;
 			while (list_empty(&sclp_con_pages)) {
 				if (sclp_con_suspended)
 					goto out;

@@ -176,6 +176,7 @@ int sclp_sdias_init(void);
 void sclp_sdias_exit(void);
 
 extern int sclp_console_pages;
+extern unsigned long sclp_console_pages_empty;
 
 /* useful inlines */
 
