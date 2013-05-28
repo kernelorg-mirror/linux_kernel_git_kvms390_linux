@@ -543,9 +543,9 @@ static int handle_pfmf(struct kvm_vcpu *vcpu)
 	/* No support for conditional-SSKE */
 	if (vcpu->run->s.regs.gprs[reg1] & (PFMF_MR | PFMF_MC))
 		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
- 
+
 	start = vcpu->run->s.regs.gprs[reg2] & PAGE_MASK;
-	switch(vcpu->run->s.regs.gprs[reg1] & PFMF_FSC) {
+	switch (vcpu->run->s.regs.gprs[reg1] & PFMF_FSC) {
 	case 0x00000000:
 		end = (start + (1UL << 12)) & ~((1UL << 12) - 1);
 		break;
@@ -561,11 +561,11 @@ static int handle_pfmf(struct kvm_vcpu *vcpu)
 	}
 	while (start < end) {
 		unsigned long useraddr;
-	
+
 		useraddr = gmap_translate(start, vcpu->arch.gmap);
 		if (IS_ERR((void *)useraddr))
 			return kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
-		
+
 		if (vcpu->run->s.regs.gprs[reg1] & PFMF_CF) {
 			if (clear_user((void __user *)useraddr, PAGE_SIZE))
 				return kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
