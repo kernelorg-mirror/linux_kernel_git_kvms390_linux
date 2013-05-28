@@ -1030,16 +1030,6 @@ static const struct dev_pm_ops sclp_pm_ops = {
 	.restore	= sclp_restore,
 };
 
-static struct platform_driver sclp_pdrv = {
-	.driver = {
-		.name	= "sclp",
-		.owner	= THIS_MODULE,
-		.pm	= &sclp_pm_ops,
-	},
-};
-
-static struct platform_device *sclp_pdev;
-
 static ssize_t sclp_show_console_pages(struct device_driver *dev, char *buf)
 {
 	return sprintf(buf, "%i\n", sclp_console_pages);
@@ -1055,6 +1045,30 @@ static ssize_t sclp_show_console_pages_empty(struct device_driver *dev,
 
 static DRIVER_ATTR(console_pages_empty, S_IRUSR,
 		   sclp_show_console_pages_empty, NULL);
+
+static struct attribute *sclp_drv_attrs[] = {
+	&driver_attr_console_pages.attr,
+	&driver_attr_console_pages_empty.attr,
+	NULL,
+};
+static struct attribute_group sclp_drv_attr_group = {
+	.attrs = sclp_drv_attrs,
+};
+static const struct attribute_group *sclp_drv_attr_groups[] = {
+	&sclp_drv_attr_group,
+	NULL,
+};
+
+static struct platform_driver sclp_pdrv = {
+	.driver = {
+		.name	= "sclp",
+		.owner	= THIS_MODULE,
+		.pm	= &sclp_pm_ops,
+		.groups = sclp_drv_attr_groups,
+	},
+};
+
+static struct platform_device *sclp_pdev;
 
 /* Initialize SCLP driver. Return zero if driver is operational, non-zero
  * otherwise. */
@@ -1130,19 +1144,10 @@ static __init int sclp_initcall(void)
 	if (rc)
 		return rc;
 
-	rc = driver_create_file(&sclp_pdrv.driver,
-				&driver_attr_console_pages);
-	if (rc)
-		goto fail_platform_driver_unregister;
-	rc = driver_create_file(&sclp_pdrv.driver,
-				&driver_attr_console_pages_empty);
-	if (rc)
-		goto fail_platform_attr_pages_remove;
-
 	sclp_pdev = platform_device_register_simple("sclp", -1, NULL, 0);
 	rc = IS_ERR(sclp_pdev) ? PTR_ERR(sclp_pdev) : 0;
 	if (rc)
-		goto fail_platform_attr_empty_remove;
+		goto fail_platform_driver_unregister;
 
 	rc = atomic_notifier_chain_register(&panic_notifier_list,
 					    &sclp_on_panic_nb);
@@ -1153,12 +1158,6 @@ static __init int sclp_initcall(void)
 
 fail_platform_device_unregister:
 	platform_device_unregister(sclp_pdev);
-fail_platform_attr_empty_remove:
-	driver_remove_file(&sclp_pdrv.driver,
-			   &driver_attr_console_pages);
-fail_platform_attr_pages_remove:
-	driver_remove_file(&sclp_pdrv.driver,
-			   &driver_attr_console_pages);
 fail_platform_driver_unregister:
 	platform_driver_unregister(&sclp_pdrv);
 	return rc;
