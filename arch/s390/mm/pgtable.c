@@ -1212,7 +1212,7 @@ static inline void thp_split_mm(struct mm_struct *mm)
 	mm->def_flags |= VM_NOHUGEPAGE;
 }
 #else
-static inline thp_split_mm(struct mm_struct *mm)
+static inline void thp_split_mm(struct mm_struct *mm)
 {
 }
 #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
