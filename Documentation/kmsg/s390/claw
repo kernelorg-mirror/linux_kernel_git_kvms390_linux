@@ -1,21 +1,4 @@
 /*?
- * Text: "%s: Creating the /proc files for a new CLAW device failed\n"
- * Severity: Error
- * Parameter:
- *   @1: bus ID of the failed CLAW device
- * Description:
- * For each Common Link Access to Workstation (CLAW) device the CLAW device
- * driver maintains files in the proc file system. The CLAW device driver
- * failed to create a new CLAW device because it could not create these /proc
- * files for the new device. You cannot create CLAW devices for Linux kernels
- * that do not include a proc file system.
- * User action:
- * Ensure that your Linux kernel provides a proc file system. Reboot Linux.
- * If your kernel provides a proc file system and the problem persists, contact
- * your support organization.
- */
-
-/*?
  * Text: "%s: An uninitialized CLAW device received an IRQ, c-%02x d-%02x\n"
  * Severity: Warning
  * Parameter:

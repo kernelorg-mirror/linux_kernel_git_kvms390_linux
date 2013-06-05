@@ -15,19 +15,6 @@
  */
 
 /*?
- * Text: "%s: The user canceled setting the qeth device offline\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the qeth device
- * Description:
- * A user initiated setting the device offline but subsequently canceled the
- * operation, for example, with CTRL+C.
- * User action:
- * Check the status of the qeth device, for example, with the lsqeth command.
- * If necessary, repeat the operation to set the device offline.
- */
-
-/*?
  * Text: "%s: A recovery process has been started for the device\n"
  * Severity: Warning
  * Parameter:
@@ -223,22 +210,6 @@
  * network adapter.
  * User action:
  * Ungroup and regroup the subchannel triplet of the device. If this does not
- * resolve the problem, reboot Linux. If the problem persists, gather Linux
- * debug data and report the problem to your support organization.
- */
-
-/*?
- * Text: "%s: Starting proxy ARP support for %s failed\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the qeth device
- *   @2: network interface name
- * Description:
- * The qeth device driver could not start proxy ARP support on the network
- * adapter.
- * User action:
- * None if you do not require proxy ARP support. If you need proxy ARP,
- * ungroup and regroup the subchannel triplet of the device. If this does not
  * resolve the problem, reboot Linux. If the problem persists, gather Linux
  * debug data and report the problem to your support organization.
  */

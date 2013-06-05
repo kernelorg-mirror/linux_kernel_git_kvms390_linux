@@ -69,19 +69,6 @@
 /* dasd */
 
 /*?
- * Text: "%s: start_IO run out of retries and failed with request %s\n"
- * Severity: Error
- * Parameter:
- *   @1: bus ID of the DASD
- *   @2: pointer to request
- * Description:
- * The start IO function tried to start an IO request but the number
- * of retries for the I/O was exceeded before the request could be started.
- * User action:
- * Check for related previous error messages.
- */
-
-/*?
  * Text: "%s: Cancelling request %p failed with rc=%d\n"
  * Severity: Error
  * Parameter:

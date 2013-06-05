@@ -174,36 +174,6 @@
  */
 
 /*?
- * Text: "%s: Attaching the name server port to the FCP device failed\n"
- * Severity: Error
- * Parameter:
- *   @1: bus ID of the zfcp device
- * Description:
- * The zfcp device driver could not attach the name server port of the fibre
- * channel fabric to an FCP device. A possible cause of this problem is
- * memory constraints.
- * User action:
- * Set the FCP device offline, free some memory, then set the FCP device online
- * again. If this does not resolve the problem, reboot Linux and try again to
- * set the FCP device online.
- */
-
-/*?
- * Text: "%s: Registering unit 0x%016Lx on port 0x%016Lx failed\n"
- * Severity: Error
- * Parameter:
- *   @1: bus ID of the zfcp device
- *   @2: LUN
- *   @3: WWPN
- * Description:
- * The Linux kernel could not allocate enough memory to register the SCSI
- * device at the indicated LUN with the SCSI stack. The SCSI device is not
- * available.
- * User action:
- * Free some memory then detach the LUN and attach it again.
- */
-
-/*?
  * Text: "%s: Registering port 0x%016Lx failed\n"
  * Severity: Error
  * Parameter:
@@ -228,20 +198,6 @@
  * User action:
  * Check for related error messages. If this problem occurs frequently, gather
  * Linux debug data and contact your support organization.
- */
-
-/*?
- * Text: "%s: A QDIO protocol error occurred, operations continue\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the zfcp device
- * Description:
- * The zfcp device driver detected a missing flag in a QDIO queue. The device
- * driver tries to keep the FCP device operational.
- * User action:
- * Check for related error messages. If this problem occurs frequently, gather
- * Linux debug data, collect the FCP adapter hardware logs, and report the
- * problem to your support organization.
  */
 
 /*?

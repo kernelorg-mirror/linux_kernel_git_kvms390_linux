@@ -1814,18 +1814,6 @@
  */
 
 /*?
- * Text: "%s: ERP failed\n"
- * Severity: Error
- * Parameter:
- *   @1: bus ID of the DASD
- * Description:
- * The error recovery procedure (ERP) tried to recover an error but has
- * failed. A retry is not recommended. The I/O will also fail.
- * User action:
- * Check for related previous error messages.
- */
-
-/*?
  * Text: "%s: SIM - SRC: %02x%02x%02x%02x\n"
  * Severity: Error
  * Parameter:
