@@ -980,6 +980,9 @@ sie_fault:
 	.quad	sie_gmap
 .Lsie_critical_length:
 	.quad	sie_done - sie_gmap
+.globl sie_exit_addr
+sie_exit_addr:
+	.quad sie_exit
 
 	EX_TABLE(rewind_pad,sie_fault)
 	EX_TABLE(sie_exit,sie_fault)
