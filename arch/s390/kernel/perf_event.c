@@ -57,7 +57,7 @@ static bool is_in_guest(struct pt_regs *regs)
 	if (user_mode(regs))
 		return false;
 
-	return (ip == sie_exit_addr);
+	return ip == &sie_exit;
 }
 
 static unsigned long guest_is_user_mode(struct pt_regs *regs)
