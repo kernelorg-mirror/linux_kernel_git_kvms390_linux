@@ -14,6 +14,7 @@
 #include <linux/ioctl.h>
 #include <linux/fs.h>
 #include <linux/compat.h>
+#include <asm/compat.h>
 #include <asm/sclp_ctl.h>
 #include <asm/sclp.h>
 
@@ -41,7 +42,6 @@ static int sclp_ctl_cmdw_supported(unsigned int cmdw)
 	return 0;
 }
 
-#ifdef CONFIG_COMPAT
 static void __user *u64_to_uptr(u64 value)
 {
 	if (is_compat_task())
@@ -49,12 +49,6 @@ static void __user *u64_to_uptr(u64 value)
 	else
 		return (void __user *)(unsigned long)value;
 }
-#else
-static inline void __user *u64_to_uptr(u64 value)
-{
-	return (void __user *)(unsigned long)value;
-}
-#endif /* CONFIG_COMPAT */
 
 /*
  * Start SCLP request
@@ -76,7 +70,7 @@ static int sclp_ctl_ioctl_sccb(void __user *user_area)
 		rc = -EFAULT;
 		goto out_free;
 	}
-	if (sccb->length > PAGE_SIZE)
+	if (sccb->length > PAGE_SIZE || sccb->length < 8)
 		return -EINVAL;
 	if (copy_from_user(sccb, u64_to_uptr(ctl_sccb.sccb), sccb->length)) {
 		rc = -EFAULT;
