@@ -41,7 +41,7 @@ int register_adapter_interrupt(struct airq_struct *airq)
 		return -EINVAL;
 	snprintf(dbf_txt, sizeof(dbf_txt), "rairq:%p", airq);
 	CIO_TRACE_EVENT(4, dbf_txt);
-	isc_register(PCI_ISC);
+	isc_register(airq->isc);
 	mutex_lock(&airq_lists_mutex);
 	hlist_add_head_rcu(&airq->list, &airq_lists[airq->isc]);
 	mutex_unlock(&airq_lists_mutex);
@@ -64,7 +64,7 @@ void unregister_adapter_interrupt(struct airq_struct *airq)
 	mutex_lock(&airq_lists_mutex);
 	hlist_del_rcu(&airq->list);
 	mutex_unlock(&airq_lists_mutex);
-	isc_unregister(PCI_ISC);
+	isc_unregister(airq->isc);
 }
 EXPORT_SYMBOL(unregister_adapter_interrupt);
 
