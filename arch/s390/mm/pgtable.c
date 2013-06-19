@@ -975,7 +975,7 @@ EXPORT_SYMBOL(set_guest_storage_key);
 
 #else /* CONFIG_PGSTE */
 
-static inline int page_table_with_pgste(unsigned long *table)
+static inline int page_table_with_pgste(struct page *page)
 {
 	return 0;
 }
