@@ -23,16 +23,6 @@ static inline int __test_facility(unsigned long nr, void *facilities)
 	return (*ptr & (0x80 >> (nr & 7))) != 0;
 }
 
-static inline int __test_facility(unsigned long nr, void *facilities)
-{
-	unsigned char *ptr;
-
-	if (nr >= MAX_FACILITY_BIT)
-		return 0;
-	ptr = (unsigned char *) facilities + (nr >> 3);
-	return (*ptr & (0x80 >> (nr & 7))) != 0;
-}
-
 /*
  * The test_facility function uses the bit odering where the MSB is bit 0.
  * That makes it easier to query facility bits with the bit number as
