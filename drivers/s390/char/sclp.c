@@ -52,41 +52,39 @@ static DECLARE_COMPLETION(sclp_request_queue_flushed);
 
 /* Number of console pages to allocate, used by sclp_con.c and sclp_vt220.c */
 int sclp_console_pages = SCLP_CONSOLE_PAGES;
-/* Number of console pages to increase the alert counter */
-int sclp_console_pages_threshold = 1;
-/* Number of times the console pages pool run empty */
-unsigned long sclp_console_pages_empty;
-/* Number of times the console pages pool hit the threshold */
-unsigned long sclp_console_pages_alert;
-
-static int __init sclp_setup_console_pages(char *str)
-{
-	int pages;
-
-	pages = simple_strtoul(str, &str, 0);
-	if (pages >= 6)
-		sclp_console_pages = pages;
-	return 1;
-}
-
-__setup("sclp_console_pages=", sclp_setup_console_pages);
-
-static int __init sclp_setup_console_pages_threshold(char *str)
-{
-	int pages;
-
-	pages = simple_strtoul(str, &str, 0);
-	if (pages >= 6)
-		sclp_console_pages_threshold = pages;
-	return 1;
-}
-
-__setup("sclp_console_pages_threshold=", sclp_setup_console_pages_threshold);
+/* Flag to indicate if buffer pages are dropped on buffer full condition */
+int sclp_console_drop = 0;
+/* Number of times the console dropped buffer pages */
+unsigned long sclp_console_full;
 
 static void sclp_suspend_req_cb(struct sclp_req *req, void *data)
 {
 	complete(&sclp_request_queue_flushed);
 }
+
+static int __init sclp_setup_console_pages(char *str)
+{
+	int pages, rc;
+
+	rc = kstrtoint(str, 0, &pages);
+	if (!rc && pages >= SCLP_CONSOLE_PAGES)
+		sclp_console_pages = pages;
+	return 1;
+}
+
+__setup("sclp_con_pages=", sclp_setup_console_pages);
+
+static int __init sclp_setup_console_drop(char *str)
+{
+	int drop, rc;
+
+	rc = kstrtoint(str, 0, &drop);
+	if (!rc && drop)
+		sclp_console_drop = 1;
+	return 1;
+}
+
+__setup("sclp_con_drop=", sclp_setup_console_drop);
 
 static struct sclp_req sclp_suspend_req;
 
@@ -1056,40 +1054,26 @@ static ssize_t sclp_show_console_pages(struct device_driver *dev, char *buf)
 	return sprintf(buf, "%i\n", sclp_console_pages);
 }
 
-static DRIVER_ATTR(console_pages, S_IRUSR, sclp_show_console_pages, NULL);
+static DRIVER_ATTR(con_pages, S_IRUSR, sclp_show_console_pages, NULL);
 
-static ssize_t sclp_show_console_pages_threshold(struct device_driver *dev,
-						 char *buf)
+static ssize_t sclp_show_con_drop(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "%i\n", sclp_console_pages_threshold);
+	return sprintf(buf, "%i\n", sclp_console_drop);
 }
 
-static DRIVER_ATTR(console_pages_threshold, S_IRUSR,
-		   sclp_show_console_pages_threshold, NULL);
+static DRIVER_ATTR(con_drop, S_IRUSR, sclp_show_con_drop, NULL);
 
-static ssize_t sclp_show_console_pages_empty(struct device_driver *dev,
-					     char *buf)
+static ssize_t sclp_show_console_full(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "%lu\n", sclp_console_pages_empty);
+	return sprintf(buf, "%lu\n", sclp_console_full);
 }
 
-static DRIVER_ATTR(console_pages_empty, S_IRUSR,
-		   sclp_show_console_pages_empty, NULL);
-
-static ssize_t sclp_show_console_pages_alert(struct device_driver *dev,
-					     char *buf)
-{
-	return sprintf(buf, "%lu\n", sclp_console_pages_alert);
-}
-
-static DRIVER_ATTR(console_pages_alert, S_IRUSR,
-		   sclp_show_console_pages_alert, NULL);
+static DRIVER_ATTR(con_full, S_IRUSR, sclp_show_console_full, NULL);
 
 static struct attribute *sclp_drv_attrs[] = {
-	&driver_attr_console_pages.attr,
-	&driver_attr_console_pages_threshold.attr,
-	&driver_attr_console_pages_empty.attr,
-	&driver_attr_console_pages_alert.attr,
+	&driver_attr_con_pages.attr,
+	&driver_attr_con_drop.attr,
+	&driver_attr_con_full.attr,
 	NULL,
 };
 static struct attribute_group sclp_drv_attr_group = {

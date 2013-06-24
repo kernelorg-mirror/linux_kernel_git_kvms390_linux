@@ -63,9 +63,6 @@ static spinlock_t sclp_vt220_lock;
 /* List of empty pages to be used as write request buffers */
 static struct list_head sclp_vt220_empty;
 
-/* Number of empty pages on the sclp_vt220_empty list */
-static int sclp_vt220_empty_nr;
-
 /* List of pending requests */
 static struct list_head sclp_vt220_outqueue;
 
@@ -128,7 +125,6 @@ sclp_vt220_process_queue(struct sclp_vt220_request *request)
 		/* Move request from outqueue to empty queue */
 		list_del(&request->list);
 		list_add_tail((struct list_head *) page, &sclp_vt220_empty);
-		sclp_vt220_empty_nr++;
 		/* Check if there is a pending buffer on the out queue. */
 		request = NULL;
 		if (!list_empty(&sclp_vt220_outqueue))
@@ -372,6 +368,31 @@ sclp_vt220_timeout(unsigned long data)
 
 #define BUFFER_MAX_DELAY	HZ/20
 
+/*
+ * Drop oldest console buffer if sclp_con_drop is set
+ */
+static int
+sclp_vt220_drop_buffer(void)
+{
+	struct list_head *list;
+	struct sclp_vt220_request *request;
+	void *page;
+
+	if (!sclp_console_drop)
+		return 0;
+	list = sclp_vt220_outqueue.next;
+	if (sclp_vt220_queue_running)
+		/* The first element is in I/O */
+		list = list->next;
+	if (list == &sclp_vt220_outqueue)
+		return 0;
+	list_del(list);
+	request = list_entry(list, struct sclp_vt220_request, list);
+	page = request->sclp_req.sccb;
+	list_add_tail((struct list_head *) page, &sclp_vt220_empty);
+	return 1;
+}
+
 /* 
  * Internal implementation of the write function. Write COUNT bytes of data
  * from memory at BUF
@@ -401,21 +422,19 @@ __sclp_vt220_write(const unsigned char *buf, int count, int do_schedule,
 		/* Create an sclp output buffer if none exists yet */
 		if (sclp_vt220_current_request == NULL) {
 			if (list_empty(&sclp_vt220_empty))
-				sclp_console_pages_empty++;
+				sclp_console_full++;
 			while (list_empty(&sclp_vt220_empty)) {
-				spin_unlock_irqrestore(&sclp_vt220_lock, flags);
 				if (may_fail || sclp_vt220_suspended)
 					goto out;
-				else
-					sclp_sync_wait();
+				if (sclp_vt220_drop_buffer())
+					break;
+				spin_unlock_irqrestore(&sclp_vt220_lock, flags);
+				
+				sclp_sync_wait();
 				spin_lock_irqsave(&sclp_vt220_lock, flags);
 			}
 			page = (void *) sclp_vt220_empty.next;
 			list_del((struct list_head *) page);
-			sclp_vt220_empty_nr--;
-			if (sclp_console_pages_threshold &&
-			    sclp_console_pages_threshold == sclp_vt220_empty_nr)
-				sclp_console_pages_alert++;
 			sclp_vt220_current_request =
 				sclp_vt220_initialize_page(page);
 		}
@@ -444,8 +463,8 @@ __sclp_vt220_write(const unsigned char *buf, int count, int do_schedule,
 		sclp_vt220_timer.expires = jiffies + BUFFER_MAX_DELAY;
 		add_timer(&sclp_vt220_timer);
 	}
-	spin_unlock_irqrestore(&sclp_vt220_lock, flags);
 out:
+	spin_unlock_irqrestore(&sclp_vt220_lock, flags);
 	return overall_written;
 }
 
@@ -606,7 +625,6 @@ static void __init __sclp_vt220_free_pages(void)
 
 	list_for_each_safe(page, p, &sclp_vt220_empty) {
 		list_del(page);
-		sclp_vt220_empty_nr--;
 		free_page((unsigned long) page);
 	}
 }
@@ -650,7 +668,6 @@ static int __init __sclp_vt220_init(int num_pages)
 		if (!page)
 			goto out;
 		list_add_tail(page, &sclp_vt220_empty);
-		sclp_vt220_empty_nr++;
 	}
 	rc = sclp_register(&sclp_vt220_register);
 out:
