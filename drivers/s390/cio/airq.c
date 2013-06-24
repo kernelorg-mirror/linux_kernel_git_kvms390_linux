@@ -23,7 +23,7 @@
 #include "cio_debug.h"
 #include "ioasm.h"
 
-static DEFINE_MUTEX(airq_lists_mutex);
+static DEFINE_SPINLOCK(airq_lists_lock);
 static struct hlist_head airq_lists[MAX_ISC+1];
 
 /**
@@ -49,9 +49,9 @@ int register_adapter_interrupt(struct airq_struct *airq)
 	snprintf(dbf_txt, sizeof(dbf_txt), "rairq:%p", airq);
 	CIO_TRACE_EVENT(4, dbf_txt);
 	isc_register(airq->isc);
-	mutex_lock(&airq_lists_mutex);
+	spin_lock(&airq_lists_lock);
 	hlist_add_head_rcu(&airq->list, &airq_lists[airq->isc]);
-	mutex_unlock(&airq_lists_mutex);
+	spin_unlock(&airq_lists_lock);
 	return 0;
 }
 EXPORT_SYMBOL(register_adapter_interrupt);
@@ -68,9 +68,10 @@ void unregister_adapter_interrupt(struct airq_struct *airq)
 		return;
 	snprintf(dbf_txt, sizeof(dbf_txt), "urairq:%p", airq);
 	CIO_TRACE_EVENT(4, dbf_txt);
-	mutex_lock(&airq_lists_mutex);
+	spin_lock(&airq_lists_lock);
 	hlist_del_rcu(&airq->list);
-	mutex_unlock(&airq_lists_mutex);
+	spin_unlock(&airq_lists_lock);
+	synchronize_rcu();
 	isc_unregister(airq->isc);
 	if (airq->flags & AIRQ_PTR_ALLOCATED) {
 		kfree(airq->lsi_ptr);
@@ -84,10 +85,11 @@ void do_adapter_IO(u8 isc)
 {
 	struct airq_struct *airq;
 	struct hlist_head *head;
-	struct hlist_node *tmp;
 
 	head = &airq_lists[isc];
-	hlist_for_each_entry_safe(airq, tmp, head, list)
+	rcu_read_lock();
+	hlist_for_each_entry_rcu(airq, head, list)
 		if ((*airq->lsi_ptr & airq->lsi_mask) != 0)
 			airq->handler(airq);
+	rcu_read_unlock();
 }
