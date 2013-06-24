@@ -28,6 +28,8 @@
 static spinlock_t sclp_con_lock;
 /* List of free pages that can be used for console output buffering */
 static struct list_head sclp_con_pages;
+/* Number of empty pages on the sclp_con_pages list */
+static int sclp_con_pages_nr;
 /* List of full struct sclp_buffer structures ready for output */
 static struct list_head sclp_con_outqueue;
 /* Pointer to current console buffer */
@@ -56,6 +58,7 @@ sclp_conbuf_callback(struct sclp_buffer *buffer, int rc)
 		/* Remove buffer from outqueue */
 		list_del(&buffer->list);
 		list_add_tail((struct list_head *) page, &sclp_con_pages);
+		sclp_con_pages_nr++;
 
 		/* Check if there is a pending buffer on the out queue. */
 		buffer = NULL;
@@ -161,6 +164,10 @@ sclp_console_write(struct console *console, const char *message,
 			}
 			page = sclp_con_pages.next;
 			list_del((struct list_head *) page);
+			sclp_con_pages_nr--;
+			if (sclp_console_pages_threshold &&
+			    sclp_console_pages_threshold == sclp_con_pages_nr)
+				sclp_console_pages_alert++;
 			sclp_conbuf = sclp_make_buffer(page, sclp_con_columns,
 						       sclp_con_width_htab);
 		}
@@ -302,6 +309,7 @@ sclp_console_init(void)
 	for (i = 0; i < sclp_console_pages; i++) {
 		page = (void *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
 		list_add_tail(page, &sclp_con_pages);
+		sclp_con_pages_nr++;
 	}
 	INIT_LIST_HEAD(&sclp_con_outqueue);
 	spin_lock_init(&sclp_con_lock);
