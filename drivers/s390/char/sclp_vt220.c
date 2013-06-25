@@ -429,7 +429,7 @@ __sclp_vt220_write(const unsigned char *buf, int count, int do_schedule,
 				if (sclp_vt220_drop_buffer())
 					break;
 				spin_unlock_irqrestore(&sclp_vt220_lock, flags);
-				
+
 				sclp_sync_wait();
 				spin_lock_irqsave(&sclp_vt220_lock, flags);
 			}
