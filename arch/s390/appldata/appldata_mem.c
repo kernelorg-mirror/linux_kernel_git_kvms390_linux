@@ -132,7 +132,7 @@ static int __init appldata_mem_init(void)
 {
 	int ret;
 
-	ops.data = kzalloc(sizeof(*ops.data), GFP_KERNEL);
+	ops.data = kzalloc(sizeof(struct appldata_mem_data), GFP_KERNEL);
 	if (!ops.data)
 		return -ENOMEM;
 
