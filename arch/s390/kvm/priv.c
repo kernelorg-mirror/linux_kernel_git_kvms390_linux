@@ -520,6 +520,9 @@ static int handle_essa(struct kvm_vcpu *vcpu)
 	if (vcpu->arch.sie_block->gpsw.mask & PSW_MASK_PSTATE)
 		return kvm_s390_inject_program_int(vcpu, PGM_PRIVILEGED_OP);
 
+	if (((vcpu->arch.sie_block->ipb & 0xf0000000) >> 28) > 6)
+		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
+
 	/* Rewind PSW to repeat the ESSA instruction */
 	vcpu->arch.sie_block->gpsw.addr =
 		__rewind_psw(vcpu->arch.sie_block->gpsw, 4);
