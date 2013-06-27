@@ -199,7 +199,7 @@ unsigned long airq_iv_alloc_bit(struct airq_iv *iv)
 		bit = -1UL;
 	spin_unlock(&iv->lock);
 	return bit;
-	
+
 }
 EXPORT_SYMBOL(airq_iv_alloc_bit);
 
