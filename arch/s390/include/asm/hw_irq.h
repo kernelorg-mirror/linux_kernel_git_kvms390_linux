@@ -4,19 +4,13 @@
 #include <linux/msi.h>
 #include <linux/pci.h>
 
-static inline struct msi_desc *irq_get_msi_desc(unsigned int irq)
-{
-	return __irq_get_msi_desc(irq);
-}
+/* Interrupt handlers registered during init_IRQ */
+irqreturn_t do_airq_interrupt(int irq, void *dummy);
+irqreturn_t do_cio_interrupt(int irq, void *dummy);
+irqreturn_t do_ext_interrupt(int irq, void *dummy);
 
-/* Must be called with msi map lock held */
-static inline int irq_set_msi_desc(unsigned int irq, struct msi_desc *msi)
-{
-	if (!msi)
-		return -EINVAL;
-
-	msi->irq = irq;
-	return 0;
-}
+void __init init_airq_interrupts(void);
+void __init init_cio_interrupts(void);
+void __init init_ext_interrupts(void);
 
 #endif
