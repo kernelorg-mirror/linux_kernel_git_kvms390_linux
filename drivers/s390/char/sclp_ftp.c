@@ -190,7 +190,7 @@ static int sclp_ftp_trigger(const struct hmcdrv_ftp_cmdspec *ftp)
  *
  * Return: 0 on success, else a (negative) error code
  */
-static int sclp_ftp_wait()
+static int sclp_ftp_wait(void)
 {
 	int rc;
 
@@ -292,7 +292,7 @@ ssize_t sclp_ftp_cmd(const struct hmcdrv_ftp_cmdspec *ftp, size_t *fsize)
 /**
  * sclp_ftp_startup() - startup of FTP services, when running on LPAR
  */
-int sclp_ftp_startup()
+int sclp_ftp_startup(void)
 {
 	int rc;
 
@@ -345,7 +345,7 @@ int sclp_ftp_startup()
 /**
  * sclp_ftp_shutdown() - shutdown of FTP services, when running on LPAR
  */
-void sclp_ftp_shutdown()
+void sclp_ftp_shutdown(void)
 {
 	sclp_unregister(&sclp_ftp_event);
 	free_page((unsigned long)sclp_ftp_sccb);

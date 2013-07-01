@@ -25,7 +25,7 @@ MODULE_DESCRIPTION("HMC drive CD/DVD access");
 /*
  * module parameter 'cachesize'
  */
-size_t hmcdrv_mod_cachesize = HMCDRV_CACHE_SIZE_DFLT;
+static size_t hmcdrv_mod_cachesize = HMCDRV_CACHE_SIZE_DFLT;
 module_param_named(cachesize, hmcdrv_mod_cachesize, ulong, S_IRUGO);
 
 /**

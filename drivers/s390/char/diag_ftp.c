@@ -22,7 +22,7 @@
 #define DIAG_FTP_TIMEOUT	60 /* timeout (in seconds) of FTP request */
 
 /* DIAGNOSE X'2C4' return codes in Ry */
-#define DIAG_FTP_RET_OK 	0 /* HMC FTP started successully */
+#define DIAG_FTP_RET_OK	0 /* HMC FTP started successully */
 #define DIAG_FTP_RET_EBUSY	4 /* HMC FTP service currently busy */
 #define DIAG_FTP_RET_EIO	8 /* HMC FTP service I/O error */
 /* and an artifical extension */
@@ -199,7 +199,7 @@ static int diag_ftp_trigger(const struct hmcdrv_ftp_cmdspec *ftp)
  *
  * Return: 0 on success, else a (negative) error code
  */
-static int diag_ftp_wait()
+static int diag_ftp_wait(void)
 {
 	int rc;
 
@@ -289,7 +289,7 @@ ssize_t diag_ftp_cmd(const struct hmcdrv_ftp_cmdspec *ftp, size_t *fsize)
  *
  * Return: 0 on success, else an (negative) error code
  */
-int diag_ftp_startup()
+int diag_ftp_startup(void)
 {
 	int rc;
 
@@ -314,7 +314,7 @@ int diag_ftp_startup()
 /**
  * diag_ftp_shutdown() - shutdown of FTP services, when running on z/VM
  */
-void diag_ftp_shutdown()
+void diag_ftp_shutdown(void)
 {
 	unregister_external_interrupt(0x2603, diag_ftp_handler);
 	ctl_clear_bit(0, 63 - 22);

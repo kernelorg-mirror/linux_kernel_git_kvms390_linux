@@ -276,7 +276,7 @@ static ssize_t hmcdrv_dev_write(struct file *fp, const char __user *ubuf,
  *
  * Return: 0 on success, else an error code.
  */
-int hmcdrv_dev_init()
+int hmcdrv_dev_init(void)
 {
 	int rc;
 
@@ -344,7 +344,7 @@ out_err:
 /**
  * hmcdrv_dev_exit() - destroys a HMC drive CD/DVD device
  */
-void hmcdrv_dev_exit()
+void hmcdrv_dev_exit(void)
 {
 #ifdef HMCDRV_DEV_CLASS
 	if (!IS_ERR_OR_NULL(hmcdrv_dev_class)) {

@@ -241,7 +241,7 @@ int hmcdrv_cache_startup(size_t cachesize)
 /**
  * hmcdrv_cache_shutdown() - shutdown of HMC drive cache
  */
-void hmcdrv_cache_shutdown()
+void hmcdrv_cache_shutdown(void)
 {
 	if (hmcdrv_cache_file.content) {
 		free_pages((unsigned long) hmcdrv_cache_file.content,

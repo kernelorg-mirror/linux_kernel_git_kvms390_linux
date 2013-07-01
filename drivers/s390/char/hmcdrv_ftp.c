@@ -181,7 +181,7 @@ EXPORT_SYMBOL(hmcdrv_ftp_do);
  *
  * Return: 0 if service is available, else an (negative) error code
  */
-int hmcdrv_ftp_probe()
+int hmcdrv_ftp_probe(void)
 {
 	int rc;
 
@@ -288,7 +288,7 @@ ssize_t hmcdrv_ftp_cmd(char __kernel *cmd, loff_t offset,
  *
  * Return: 0 on success, else an (negative) error code
  */
-int hmcdrv_ftp_startup()
+int hmcdrv_ftp_startup(void)
 {
 	static struct hmcdrv_ftp_ops hmcdrv_ftp_zvm = {
 		.startup = diag_ftp_startup,
@@ -330,7 +330,7 @@ EXPORT_SYMBOL(hmcdrv_ftp_startup);
  * hmcdrv_ftp_shutdown() - shutdown of HMC drive FTP functionality for a
  * dedicated (owner) instance
  */
-void hmcdrv_ftp_shutdown()
+void hmcdrv_ftp_shutdown(void)
 {
 	mutex_lock(&hmcdrv_ftp_mutex);
 	--hmcdrv_ftp_refcnt;
