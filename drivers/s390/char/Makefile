@@ -36,4 +36,3 @@ obj-$(CONFIG_ZFCPDUMP) += zcore_mod.o
 
 hmcdrv-objs := hmcdrv_mod.o hmcdrv_dev.o hmcdrv_ftp.o hmcdrv_cache.o diag_ftp.o sclp_ftp.o
 obj-$(CONFIG_HMC_DRV) += hmcdrv.o
-

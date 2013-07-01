@@ -50,4 +50,3 @@
  * the associated server. Also verify that the LPAR user (this is not the
  * Linux user) executing the SLCP request has appropriate rights to do so.
  */
-
