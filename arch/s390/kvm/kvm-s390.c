@@ -150,6 +150,7 @@ int kvm_dev_ioctl_check_extension(long ext)
 	case KVM_CAP_ONE_REG:
 	case KVM_CAP_ENABLE_CAP:
 	case KVM_CAP_S390_CSS_SUPPORT:
+	case KVM_CAP_IOEVENTFD:
 		r = 1;
 		break;
 	case KVM_CAP_NR_VCPUS:
@@ -1083,9 +1084,8 @@ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
 /* Section: memory related */
 int kvm_arch_prepare_memory_region(struct kvm *kvm,
 				   struct kvm_memory_slot *memslot,
-				   struct kvm_memory_slot old,
 				   struct kvm_userspace_memory_region *mem,
-				   bool user_alloc)
+				   enum kvm_mr_change change)
 {
 	/* A few sanity checks. We can have memory slots which have to be
 	   located/ended at a segment boundary (1MB). The memory in userland is
@@ -1098,16 +1098,13 @@ int kvm_arch_prepare_memory_region(struct kvm *kvm,
 	if (mem->memory_size & 0xffffful)
 		return -EINVAL;
 
-	if (!user_alloc)
-		return -EINVAL;
-
 	return 0;
 }
 
 void kvm_arch_commit_memory_region(struct kvm *kvm,
 				struct kvm_userspace_memory_region *mem,
-				struct kvm_memory_slot old,
-				bool user_alloc)
+				const struct kvm_memory_slot *old,
+				enum kvm_mr_change change)
 {
 	int rc;
 
@@ -1117,9 +1114,9 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
 	 * fine by the normal fault handler + gmap, but it will also
 	 * cause faults on the prefix page of running guest CPUs.
 	 */
-	if (old.userspace_addr == mem->userspace_addr &&
-	    old.base_gfn * PAGE_SIZE == mem->guest_phys_addr &&
-	    old.npages * PAGE_SIZE == mem->memory_size)
+	if (old->userspace_addr == mem->userspace_addr &&
+	    old->base_gfn * PAGE_SIZE == mem->guest_phys_addr &&
+	    old->npages * PAGE_SIZE == mem->memory_size)
 		return;
 
 	rc = gmap_map_segment(kvm->arch.gmap, mem->userspace_addr,

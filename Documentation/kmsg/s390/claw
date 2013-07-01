@@ -696,3 +696,4 @@
 /*? Text: "%s: %s: Disconnect: Vers=%d,link_id=%d,Corr=%d\n" */
 /*? Text: "%s: %s: Recv Conn Resp: Vers=%d,link_id=%d,Corr=%d,RC=%d,Host appl=%.8s, WS appl=%.8s\n" */
 /*? Text: "netif_stop_queue() cannot be called before register_netdev()\n" */
+/*? Text: "flen=%u proglen=%u pass=%u image=%p\n" */

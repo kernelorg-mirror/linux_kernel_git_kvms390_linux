@@ -75,3 +75,4 @@
 /*? Text: "unknown Generic Netlink command\n" */
 /*? Text: "sync thread started: state = MASTER, mcast_ifn = %s, syncid = %d, id = %d\n" */
 /*? Text: "sync thread started: state = BACKUP, mcast_ifn = %s, syncid = %d, id = %d\n" */
+/*? Text: "flen=%u proglen=%u pass=%u image=%p\n" */

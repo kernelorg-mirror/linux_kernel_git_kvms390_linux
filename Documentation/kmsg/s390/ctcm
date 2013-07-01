@@ -197,3 +197,4 @@
 /*? Text: "%s: Connected with remote side\n" */
 /*? Text: "%s: Restarting device\n" */
 /*? Text: "netif_stop_queue() cannot be called before register_netdev()\n" */
+/*? Text: "flen=%u proglen=%u pass=%u image=%p\n" */
