@@ -135,7 +135,7 @@ struct airq_iv *airq_iv_create(unsigned long bits, unsigned long flags)
 	if (!iv->vector)
 		goto out_iv;
 	if (flags & AIRQ_IV_ALLOC) {
-		iv->avail = kzalloc(size, GFP_KERNEL);
+		iv->avail = kmalloc(size, GFP_KERNEL);
 		if (!iv->avail)
 			goto out_vector;
 		memset(iv->avail, 0xff, size);
@@ -215,9 +215,12 @@ void airq_iv_free_bit(struct airq_iv *iv, unsigned long bit)
 	if (!iv->avail)
 		return;
 	spin_lock(&iv->lock);
+	/* Clear (possibly left over) interrupt bit */
 	clear_bit(bit ^ be_to_le, iv->vector);
+	/* Make the bit position available again */
 	set_bit(bit ^ be_to_le, iv->avail);
 	if ((iv->avail) && bit == iv->end - 1) {
+		/* Find new end of bit-field */
 		while (--iv->end > 0)
 			if (!test_bit((iv->end - 1) ^ be_to_le, iv->avail))
 				break;
@@ -238,6 +241,7 @@ EXPORT_SYMBOL(airq_iv_free_bit);
 unsigned long airq_iv_scan(struct airq_iv *iv, unsigned long start,
 			   unsigned long end)
 {
+	const unsigned long be_to_le = BITS_PER_LONG - 1;
 	unsigned long bit;
 
 	/* Find non-zero bit starting from 'ivs->next'. */
@@ -245,7 +249,7 @@ unsigned long airq_iv_scan(struct airq_iv *iv, unsigned long start,
 	if (bit >= end)
 		return -1UL;
 	/* Clear interrupt bit (find left uses big-endian bit numbers) */
-	clear_bit(bit ^ 63, iv->vector);
+	clear_bit(bit ^ be_to_le, iv->vector);
 	return bit;
 }
 EXPORT_SYMBOL(airq_iv_scan);
