@@ -403,7 +403,8 @@ static void zpci_irq_handler(struct airq_struct *airq)
 	inc_irq_stat(IRQIO_PCI);
 	end = airq_iv_end(zpci_aisb_iv);
 	start = __get_cpu_var(next_sbit);
-	start = (start <= end) ? start : 0;
+	if (start > end)
+		start = 0;
 	for (si = start;;) {
 		/* Scan adapter summary indicator bit vector */
 		si = airq_iv_scan(zpci_aisb_iv, si, end);
