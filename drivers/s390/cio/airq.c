@@ -23,23 +23,8 @@
 #include "cio_debug.h"
 #include "ioasm.h"
 
-static struct irq_desc *irq_desc_airq;
-
-static struct irqaction airq_interrupt = {
-	.name	 = "AIO",
-	.handler = do_airq_interrupt,
-};
-
 static DEFINE_SPINLOCK(airq_lists_lock);
 static struct hlist_head airq_lists[MAX_ISC+1];
-
-void __init init_airq_interrupts(void)
-{
-	irq_set_chip_and_handler(THIN_INTERRUPT,
-				 &dummy_irq_chip, handle_percpu_irq);
-	setup_irq(THIN_INTERRUPT, &airq_interrupt);
-	irq_desc_airq = irq_to_desc(THIN_INTERRUPT);
-}
 
 /**
  * register_adapter_interrupt() - register adapter interrupt handler
@@ -96,14 +81,13 @@ void unregister_adapter_interrupt(struct airq_struct *airq)
 }
 EXPORT_SYMBOL(unregister_adapter_interrupt);
 
-irqreturn_t do_airq_interrupt(int irq, void *dummy)
+static irqreturn_t do_airq_interrupt(int irq, void *dummy)
 {
 	struct tpi_info *tpi_info;
 	struct airq_struct *airq;
 	struct hlist_head *head;
 
 	__this_cpu_write(s390_idle.nohz_delay, 1);
-	kstat_incr_irqs_this_cpu(THIN_INTERRUPT, irq_desc_airq);
 	tpi_info = (struct tpi_info *) &get_irq_regs()->int_code;
 	head = &airq_lists[tpi_info->isc];
 	rcu_read_lock();
@@ -113,6 +97,18 @@ irqreturn_t do_airq_interrupt(int irq, void *dummy)
 	rcu_read_unlock();
 
 	return IRQ_HANDLED;
+}
+
+static struct irqaction airq_interrupt = {
+	.name	 = "AIO",
+	.handler = do_airq_interrupt,
+};
+
+void __init init_airq_interrupts(void)
+{
+	irq_set_chip_and_handler(THIN_INTERRUPT,
+				 &dummy_irq_chip, handle_percpu_irq);
+	setup_irq(THIN_INTERRUPT, &airq_interrupt);
 }
 
 /**

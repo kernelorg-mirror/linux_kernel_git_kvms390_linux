@@ -45,21 +45,6 @@ debug_info_t *cio_debug_msg_id;
 debug_info_t *cio_debug_trace_id;
 debug_info_t *cio_debug_crw_id;
 
-static struct irq_desc *irq_desc_io;
-
-static struct irqaction io_interrupt = {
-	.name	 = "IO",
-	.handler = do_cio_interrupt,
-};
-
-void __init init_cio_interrupts(void)
-{
-	irq_set_chip_and_handler(IO_INTERRUPT,
-				 &dummy_irq_chip, handle_percpu_irq);
-	setup_irq(IO_INTERRUPT, &io_interrupt);
-	irq_desc_io = irq_to_desc(IO_INTERRUPT);
-}
-
 /*
  * Function: cio_debug_init
  * Initializes three debug logs for common I/O:
@@ -578,14 +563,13 @@ out:
 /*
  * do_cio_interrupt() handles all normal I/O device IRQ's
  */
-irqreturn_t do_cio_interrupt(int irq, void *dummy)
+static irqreturn_t do_cio_interrupt(int irq, void *dummy)
 {
 	struct tpi_info *tpi_info;
 	struct subchannel *sch;
 	struct irb *irb;
 
 	__this_cpu_write(s390_idle.nohz_delay, 1);
-	kstat_incr_irqs_this_cpu(IO_INTERRUPT, irq_desc_io);
 	tpi_info = (struct tpi_info *) &get_irq_regs()->int_code;
 	irb = (struct irb *) &S390_lowcore.irb;
 	sch = (struct subchannel *)(unsigned long) tpi_info->intparm;
@@ -610,6 +594,21 @@ irqreturn_t do_cio_interrupt(int irq, void *dummy)
 	spin_unlock(sch->lock);
 
 	return IRQ_HANDLED;
+}
+
+static struct irq_desc *irq_desc_io;
+
+static struct irqaction io_interrupt = {
+	.name	 = "IO",
+	.handler = do_cio_interrupt,
+};
+
+void __init init_cio_interrupts(void)
+{
+	irq_set_chip_and_handler(IO_INTERRUPT,
+				 &dummy_irq_chip, handle_percpu_irq);
+	setup_irq(IO_INTERRUPT, &io_interrupt);
+	irq_desc_io = irq_to_desc(IO_INTERRUPT);
 }
 
 #ifdef CONFIG_CCW_CONSOLE

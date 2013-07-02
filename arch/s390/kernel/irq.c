@@ -209,26 +209,6 @@ struct ext_int_info {
 /* ext_int_hash_lock protects the handler lists for external interrupts */
 DEFINE_SPINLOCK(ext_int_hash_lock);
 
-static struct irqaction external_interrupt = {
-	.name	 = "EXT",
-	.handler = do_ext_interrupt,
-};
-
-static struct irq_desc *irq_desc_ext;
-
-void __init init_ext_interrupts(void)
-{
-	int idx;
-
-	for (idx = 0; idx < ARRAY_SIZE(ext_int_hash); idx++)
-		INIT_LIST_HEAD(&ext_int_hash[idx]);
-
-	irq_set_chip_and_handler(EXT_INTERRUPT,
-				 &dummy_irq_chip, handle_percpu_irq);
-	setup_irq(EXT_INTERRUPT, &external_interrupt);
-	irq_desc_ext = irq_to_desc(EXT_INTERRUPT);
-}
-
 static inline int ext_hash(u16 code)
 {
 	return (code + (code >> 9)) & 0xff;
@@ -272,14 +252,13 @@ int unregister_external_interrupt(u16 code, ext_int_handler_t handler)
 }
 EXPORT_SYMBOL(unregister_external_interrupt);
 
-irqreturn_t do_ext_interrupt(int irq, void *dummy)
+static irqreturn_t do_ext_interrupt(int irq, void *dummy)
 {
 	struct pt_regs *regs = get_irq_regs();
 	struct ext_code ext_code;
 	struct ext_int_info *p;
 	int index;
 
-	kstat_incr_irqs_this_cpu(EXT_INTERRUPT, irq_desc_ext);
 	ext_code = *(struct ext_code *) &regs->int_code;
 	if (ext_code.code != 0x1004)
 		__get_cpu_var(s390_idle).nohz_delay = 1;
@@ -293,6 +272,23 @@ irqreturn_t do_ext_interrupt(int irq, void *dummy)
 	rcu_read_unlock();
 
 	return IRQ_HANDLED;
+}
+
+static struct irqaction external_interrupt = {
+	.name	 = "EXT",
+	.handler = do_ext_interrupt,
+};
+
+void __init init_ext_interrupts(void)
+{
+	int idx;
+
+	for (idx = 0; idx < ARRAY_SIZE(ext_int_hash); idx++)
+		INIT_LIST_HEAD(&ext_int_hash[idx]);
+
+	irq_set_chip_and_handler(EXT_INTERRUPT,
+				 &dummy_irq_chip, handle_percpu_irq);
+	setup_irq(EXT_INTERRUPT, &external_interrupt);
 }
 
 static DEFINE_SPINLOCK(sc_irq_lock);
