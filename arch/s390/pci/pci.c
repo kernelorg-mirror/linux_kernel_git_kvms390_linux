@@ -142,8 +142,8 @@ static int zpci_set_airq(struct zpci_dev *zdev)
 	fib->noi = airq_iv_end(zdev->aibv);
 	fib->aibv = (unsigned long) zdev->aibv->vector;
 	fib->aibvo = 0;		/* each zdev has its own interrupt vector */
+	fib->aisb = (unsigned long) zpci_aisb_iv->vector + (zdev->aisb/64)*8;
 	fib->aisbo = zdev->aisb & 63;
-	fib->aisb = (unsigned long)(zpci_aisb_iv->vector + zdev->aisb / 64);
 
 	rc = zpci_mod_fc(req, fib);
 	pr_debug("%s mpcifc returned noi: %d\n", __func__, fib->noi);
