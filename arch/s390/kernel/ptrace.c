@@ -47,7 +47,7 @@ enum s390_regset {
 	REGSET_GENERAL_EXTENDED,
 };
 
-void update_per_regs(struct task_struct *task)
+void update_cr_regs(struct task_struct *task)
 {
 	struct pt_regs *regs = task_pt_regs(task);
 	struct thread_struct *thread = &task->thread;
@@ -108,14 +108,14 @@ void user_enable_single_step(struct task_struct *task)
 {
 	set_tsk_thread_flag(task, TIF_SINGLE_STEP);
 	if (task == current)
-		update_per_regs(task);
+		update_cr_regs(task);
 }
 
 void user_disable_single_step(struct task_struct *task)
 {
 	clear_tsk_thread_flag(task, TIF_SINGLE_STEP);
 	if (task == current)
-		update_per_regs(task);
+		update_cr_regs(task);
 }
 
 /*
@@ -131,7 +131,7 @@ void ptrace_disable(struct task_struct *task)
 	clear_tsk_thread_flag(task, TIF_PER_TRAP);
 	task->thread.per_flags = 0;
 	if (task == current)
-		update_per_regs(task);
+		update_cr_regs(task);
 }
 
 #ifndef CONFIG_64BIT
