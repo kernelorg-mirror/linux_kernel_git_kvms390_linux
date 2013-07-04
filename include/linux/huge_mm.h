@@ -98,7 +98,7 @@ extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
 			  unsigned long addr, unsigned long end);
 extern int handle_pte_fault(struct mm_struct *mm,
 			    struct vm_area_struct *vma, unsigned long address,
-			    pmd_t *pmd, unsigned int flags);
+			    pte_t *pte, pmd_t *pmd, unsigned int flags);
 extern int split_huge_page_to_list(struct page *page, struct list_head *list);
 static inline int split_huge_page(struct page *page)
 {

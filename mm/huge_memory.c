@@ -783,6 +783,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
 {
 	struct page *page;
 	unsigned long haddr = address & HPAGE_PMD_MASK;
+	pte_t *pte;
 
 	if (haddr >= vma->vm_start && haddr + HPAGE_PMD_SIZE <= vma->vm_end) {
 		if (unlikely(anon_vma_prepare(vma)))
@@ -849,9 +850,10 @@ out:
 	 * A regular pmd is established and it can't morph into a huge pmd
 	 * from under us anymore at this point because we hold the mmap_sem
 	 * read mode and khugepaged takes it in write mode. So now it's
-	 * safe to call handle_pte_fault.
+	 * safe to run pte_offset_map().
 	 */
-	return handle_pte_fault(mm, vma, address, pmd, flags);
+	pte = pte_offset_map(pmd, address);
+	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
 }
 
 int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
