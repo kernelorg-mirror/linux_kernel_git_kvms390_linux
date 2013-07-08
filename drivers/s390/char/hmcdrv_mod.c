@@ -1,5 +1,5 @@
 /*
- *    HMC DVD Drive Module
+ *    HMC Drive DVD Module
  *
  *    Copyright IBM Corp. 2013
  *    Author(s): Ralf Hoppe (rhoppe@de.ibm.com)
@@ -20,7 +20,7 @@
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Copyright 2013 IBM Corporation");
-MODULE_DESCRIPTION("HMC drive CD/DVD access");
+MODULE_DESCRIPTION("HMC drive DVD access");
 
 /*
  * module parameter 'cachesize'
