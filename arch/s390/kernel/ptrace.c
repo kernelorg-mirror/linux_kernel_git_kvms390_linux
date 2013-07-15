@@ -130,8 +130,6 @@ void ptrace_disable(struct task_struct *task)
 	clear_tsk_thread_flag(task, TIF_SINGLE_STEP);
 	clear_tsk_thread_flag(task, TIF_PER_TRAP);
 	task->thread.per_flags = 0;
-	if (task == current)
-		update_cr_regs(task);
 }
 
 #ifndef CONFIG_64BIT
