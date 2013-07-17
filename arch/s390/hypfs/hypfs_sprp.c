@@ -78,7 +78,8 @@ static int __hypfs_sprp_ioctl(void __user *user_area)
 		return -ENOMEM;
 
 	ulpib = (void __user *)(unsigned long) diag304.lpib_ptr;
-	if (diag304.sub_code == DIAG304_QUERY_PRP)
+	if (diag304.sub_code == DIAG304_SET_WEIGHTS ||
+	    diag304.sub_code == DIAG304_SET_CAPPING)
 		if (copy_from_user(lpib, ulpib, PAGE_SIZE)) {
 			rc = -EFAULT;
 			goto out;
@@ -87,12 +88,12 @@ static int __hypfs_sprp_ioctl(void __user *user_area)
 	cmd = *(unsigned long *) &diag304.reserved;
 	diag304.return_code = hypfs_sprp_diag304(lpib, cmd);
 
-	if (diag304.sub_code == DIAG304_SET_WEIGHTS ||
-	    diag304.sub_code == DIAG304_SET_CAPPING)
+	if (diag304.sub_code == DIAG304_QUERY_PRP)
 		if (copy_to_user(ulpib, lpib, PAGE_SIZE)) {
 			rc = -EFAULT;
 			goto out;
 		}
+	rc = 0;
 out:
 	free_page((unsigned long) lpib);
 	return rc;
