@@ -1233,9 +1233,14 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
 		}
 		set_pte_at(mm, address, pte,
 			   swp_entry_to_pte(make_hwpoison_entry(page)));
-	} else if (pte_unused(pteval) && PageSwapCache(page) && PageAnon(page)) {
-		dec_mm_counter(mm, MM_ANONPAGES);
-		ret = SWAP_FREE;
+	} else if (pte_unused(pteval)) {
+		if (PageAnon(page))
+			dec_mm_counter(mm, MM_ANONPAGES);
+		else
+			dec_mm_counter(mm, MM_FILEPAGES);
+		page_remove_rmap(page);
+		free_page_and_swap_cache(page);
+		goto out_unmap;
 	} else if (PageAnon(page)) {
 		swp_entry_t entry = { .val = page_private(page) };
 
@@ -1458,7 +1463,6 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
 	pgoff_t pgoff;
 	struct anon_vma_chain *avc;
 	int ret = SWAP_AGAIN;
-	int used = 0;
 
 	anon_vma = page_lock_anon_vma_read(page);
 	if (!anon_vma)
@@ -1483,29 +1487,8 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
 
 		address = vma_address(page, vma);
 		ret = try_to_unmap_one(page, vma, address, flags);
-
-		/*
-		 * If SWAP_FREE was returned, we know that the page
-		 * is not used (as indicated by pte_unused()) by this
-		 * mapper. If only one of the mappers used the page,
-		 * it is considered used.
-		 */
-		if (ret == SWAP_FREE)
-			ret = SWAP_AGAIN;
-		else
-			used = 1;
-
 		if (ret != SWAP_AGAIN || !page_mapped(page))
 			break;
-	}
-
-	/*
-	 * If none of the mappers use the page, clear the dirty bit
-	 * so that the caller of try_to_unmap_anon() will free its mapping.
-	 */
-	if (!used && page_swapcount(page) == 0) {
-		ClearPageDirty(page);
-		ret = SWAP_FREE;
 	}
 
 	page_unlock_anon_vma_read(anon_vma);
@@ -1650,7 +1633,7 @@ int try_to_unmap(struct page *page, enum ttu_flags flags)
 		ret = try_to_unmap_anon(page, flags);
 	else
 		ret = try_to_unmap_file(page, flags);
-	if (ret != SWAP_FREE && ret != SWAP_MLOCK && !page_mapped(page))
+	if (ret != SWAP_MLOCK && !page_mapped(page))
 		ret = SWAP_SUCCESS;
 	return ret;
 }
