@@ -741,7 +741,7 @@ out:
 
 /*
  * Note: for security reasons, bpf code will follow a randomly
- *       sized amount of illegal instructions.
+ *	 sized amount of illegal instructions.
  */
 struct bpf_binary_header {
 	unsigned int pages;
