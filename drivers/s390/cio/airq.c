@@ -215,7 +215,7 @@ void airq_iv_free_bit(struct airq_iv *iv, unsigned long bit)
 	clear_bit(bit ^ be_to_le, iv->vector);
 	/* Make the bit position available again */
 	set_bit(bit ^ be_to_le, iv->avail);
-	if ((iv->avail) && bit == iv->end - 1) {
+	if (bit == iv->end - 1) {
 		/* Find new end of bit-field */
 		while (--iv->end > 0)
 			if (!test_bit((iv->end - 1) ^ be_to_le, iv->avail))
