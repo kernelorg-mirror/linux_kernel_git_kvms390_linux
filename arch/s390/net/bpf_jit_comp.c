@@ -760,8 +760,8 @@ call_fn:	/* lg %r1,<d(function)>(%r13) */
 		EMIT4(0xa7580000);
 		/* ic %r5,<d(pkt_type_offset)>(%r2) */
 		EMIT4_DISP(0x43502000, pkt_type_offset);
-		/* srl %r5,1 */
-		EMIT4_DISP(0x88500000, 1);
+		/* srl %r5,5 */
+		EMIT4_DISP(0x88500000, 5);
 		break;
 	case BPF_S_ANC_CPU: /* A = smp_processor_id() */
 #ifdef CONFIG_SMP
