@@ -646,9 +646,11 @@ static inline void pgste_set_unlock(pte_t *ptep, pgste_t pgste)
 
 static inline pgste_t pgste_get(pte_t *ptep)
 {
+	unsigned long pgste = 0;
 #ifdef CONFIG_PGSTE
-	return *(pgste_t *)(ptep + PTRS_PER_PTE);
+	pgste = *(unsigned long *)(ptep + PTRS_PER_PTE);
 #endif
+	return __pgste(pgste);
 }
 
 static inline void pgste_set(pte_t *ptep, pgste_t pgste)
