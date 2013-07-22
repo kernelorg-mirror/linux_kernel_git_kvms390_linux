@@ -828,3 +828,39 @@
  * See your hardware documentation about how to authorize HiperSockets
  * ports for becoming a Bridge Port.
  */
+
+/*?
+ * Text: %s: Setting address notification failed
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * Enabling or disabling the address notification feature of a
+ * HiperSockets device failed. The device might not be configured as a
+ * Bridge Port.
+ * User action:
+ * None, unless you need address notifications for this device.
+ * If you need notifications, confirm that your device is attached to a
+ * HiperSockets LAN that supports Bridge Capable Ports and that your
+ * device is configured as a Bridge Port. If the 'bridgeport_role'
+ * sysfs attribute of the device contains, one of the values 'primary'
+ * or 'secondary' and you cannot set the address notification, contact
+ * your support organization.
+ */
+
+/*?
+ * Text: %s: Address notification from the HiperSockets Bridge Port stopped %s (%s)
+ * Severity: Informational
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ *   @2: network interface name
+ *   @3: error reported by the hardware
+ * Description:
+ * A Bridge Port no longer provides address notifications.
+ * Possible reasons include traffic overflow and that the device is no
+ * longer configured as a Bridge Port. A udev event with
+ * BRIDGEDHOST=abort was emitted to alert applications that rely on the
+ * address notifications.
+ * User action:
+ * None.
+ */
