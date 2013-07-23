@@ -836,7 +836,8 @@ static inline unsigned long *page_table_alloc_pgste(struct mm_struct *mm,
 	atomic_set(&page->_mapcount, 0);
 	table = (unsigned long *) page_to_phys(page);
 	clear_table(table, _PAGE_INVALID, PAGE_SIZE/2);
-	clear_table(table + PTRS_PER_PTE, 0, PAGE_SIZE/2);
+	clear_table(table + PTRS_PER_PTE, PGSTE_HR_BIT | PGSTE_HC_BIT,
+		    PAGE_SIZE/2);
 	return table;
 }
 
@@ -965,7 +966,7 @@ int set_guest_storage_key(struct mm_struct *mm, unsigned long addr,
 	/* changing the guest storage key is considered a change of the page */
 	if ((pgste_val(new) ^ pgste_val(old)) &
 	    (PGSTE_ACC_BITS | PGSTE_FP_BIT | PGSTE_GR_BIT | PGSTE_GC_BIT))
-		pgste_val(new) |= PGSTE_UC_BIT;
+		pgste_val(new) |= PGSTE_HC_BIT;
 
 	pgste_set_unlock(ptep, new);
 	pte_unmap_unlock(*ptep, ptl);
