@@ -391,41 +391,25 @@ static struct pci_ops pci_root_ops = {
 	.write = pci_write,
 };
 
-/* store the last handled bit to implement fair scheduling of devices */
-static DEFINE_PER_CPU(unsigned long, next_sbit);
-
 static void zpci_irq_handler(struct airq_struct *airq)
 {
-	unsigned long start, end, si, ai;
+	unsigned long si, ai;
 	struct airq_iv *aibv;
 	int irqs_on = 0;
 
 	inc_irq_stat(IRQIO_PCI);
-	end = airq_iv_end(zpci_aisb_iv);
-	start = __get_cpu_var(next_sbit);
-	if (start >= end)
-		start = 0;
-	for (si = start;;) {
+	for (si = 0;;) {
 		/* Scan adapter summary indicator bit vector */
-		si = airq_iv_scan(zpci_aisb_iv, si, end);
+		si = airq_iv_scan(zpci_aisb_iv, si, airq_iv_end(zpci_aisb_iv));
 		if (si == -1UL) {
-			if (start > 0) {
-				/* Scan first part of the vector */
-				end = start;
-				start = si = 0;
-				continue;
-			}
 			if (irqs_on++)
 				/* End of second scan with interrupts on. */
 				break;
 			/* First scan complete, reenable interrupts. */
 			zpci_set_irq_ctrl(SIC_IRQ_MODE_SINGLE, NULL, PCI_ISC);
-			end = airq_iv_end(zpci_aisb_iv);
-			start = si = 0;
+			si = 0;
 			continue;
 		}
-		/* Found summary bit != 0, remember next bit to check */
-		__get_cpu_var(next_sbit) = si + 1;
 
 		/* Scan the adapter interrupt vector for this device. */
 		aibv = zpci_aibv[si];
