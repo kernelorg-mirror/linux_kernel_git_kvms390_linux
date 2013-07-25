@@ -114,6 +114,7 @@ void __init init_airq_interrupts(void)
 /**
  * airq_iv_create - create an interrupt vector
  * @bits: number of bits in the interrupt vector
+ * @flags: allocation flags
  *
  * Returns a pointer to an interrupt vector structure
  */
