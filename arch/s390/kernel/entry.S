@@ -590,10 +590,9 @@ ext_skip:
 	mvc	__PT_INT_CODE(4,%r11),__LC_EXT_CPU_ADDR
 	mvc	__PT_INT_PARM(4,%r11),__LC_EXT_PARAMS
 	TRACE_IRQS_OFF
-	lr	%r2,%r11		# pass pointer to pt_regs
-	l	%r1,BASED(.Ldo_extint)
-	lhi	%r3,EXT_INTERRUPT
 	l	%r1,BASED(.Ldo_IRQ)
+	lr	%r2,%r11		# pass pointer to pt_regs
+	lhi	%r3,EXT_INTERRUPT
 	basr	%r14,%r1		# call do_IRQ
 	j	io_return
 
