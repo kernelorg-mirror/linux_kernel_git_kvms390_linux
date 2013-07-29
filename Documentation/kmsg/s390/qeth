@@ -726,3 +726,105 @@
  * The HiperSockets device is disabled for completion queueing. This device
  * cannot or no longer be used to set up AF_IUCV communication in an LPAR.
  */
+
+/*?
+ * Text: %s: The device represents a HiperSockets Bridge Capable Port
+ * Severity: Informational
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * You can configure this device as a Bridge Port.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: %s: The HiperSockets device is not configured as a Bridge Port
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * The Bridge Port role cannot be withdrawn from a HiperSockets device
+ * that is not configured as a Bridge Port.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: %s: The HiperSockets LAN already has a primary Bridge Port
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * A HiperSockets LAN can have multiple secondary Bridge Ports, but only
+ * one primary Bridge Port. Configuring the HiperSockets device as a
+ * primary Bridge Port failed because another port on the HiperSockets
+ * LAN has been configured as the primary Bridge Port.
+ * User action:
+ * Find out which operating system instance has configured the primary
+ * Bridge Port. Assure that the primary role for this port is withdrawn
+ * before trying again to configure your device as the primary Bridge
+ * Port. Alternatively, consider configuring your device as a secondary
+ * Bridge Port.
+ */
+
+/*?
+ * Text: %s: The HiperSockets device is already a secondary Bridge Port
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * A HiperSockets device cannot be configured as a primary or secondary
+ * Bridge Port if it is already configured as a secondary Bridge Port.
+ * User action:
+ * None, if you want the device to be a secondary Bridge Port.
+ * If you want to configure the device as the primary Bridge Port,
+ * withdraw the secondary role by writing 'none' to the 'bridgeport_role'
+ * sysfs attribute of the device. Then try again to configure the
+ * device as the primary Bridge Port.
+ */
+
+/*?
+ * Text: %s: The HiperSockets LAN cannot have more secondary Bridge Ports
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * A HiperSockets LAN can have up to five secondary Bridge Ports.
+ * You cannot configure a further HiperSockets device as a secondary
+ * Bridge Port unless the Bridge Ports role is withdrawn from one of
+ * the existing secondary Bridge Ports.
+ * User action:
+ * Assure that the Bridge Port role is withdrawn from one of the
+ * existing secondary Bridge Ports before trying again to configure your
+ * device as a secondary Bridge Port.
+ */
+
+/*?
+ * Text: %s: The HiperSockets device is already a primary Bridge Port
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * A HiperSockets device cannot be configured as a primary or secondary
+ * Bridge Port if it is already configured as a primary Bridge Port.
+ * User action:
+ * None, if you want the device to be a primary Bridge Port.
+ * If you want to configure the device as a secondary Bridge Port,
+ * withdraw the primary role by writing 'none' to the 'bridgeport_role'
+ * sysfs attribute of the device. Then try again to configure the
+ * device as the secondary Bridge Port.
+ */
+
+/*?
+ * Text: %s: The HiperSockets device is not authorized to be a Bridge Port
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * The HiperSockets device cannot be configured as a Bridge Port because
+ * the required authorizations in the hardware are not in place.
+ * User action:
+ * See your hardware documentation about how to authorize HiperSockets
+ * ports for becoming a Bridge Port.
+ */
