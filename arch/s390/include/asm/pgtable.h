@@ -295,12 +295,12 @@ extern unsigned long MODULES_END;
 #define _SEGMENT_ENTRY_EMPTY	(_SEGMENT_ENTRY_INVALID)
 
 /*
- * Segment table entry encoding (i = invalid, r = read-only bit):
- * ir
- * 00	writable segment table entry
- * 01	read-only segment table entry
- * 10	empty segment table entry
- * 11	PROT_NONE segment table entry
+ * Segment table entry encoding (I = invalid, R = read-only bit):
+ *		..R...I.....
+ * prot-none	..1...1.....
+ * read-only	..1...0.....
+ * read-write	..0...0.....
+ * empty	..0...1.....
  */
 
 /* Page status table bits for virtualization */
@@ -367,16 +367,16 @@ extern unsigned long MODULES_END;
 #define _SEGMENT_ENTRY_NONE	_SEGMENT_ENTRY_YOUNG
 
 /*
- * Segment table entry encoding (i = invalid, r = read-only, y = young bit):
- * iry
- * 001	writable, young segment table entry
- * 011	read-only, young segment table entry
- * 100	writable, old segment table entry
- * 101	PROT_NONE, old segment table entry
- * 110	read-only, old segment table entry
- * 111	PROT_NONE, young segment table entry
+ * Segment table entry encoding (R = read-only, I = invalid, y = young bit):
+ *			..R...I....y
+ * prot-none, old	..0...1....1
+ * prot-none, young	..1...1....1
+ * read-only, old	..1...1....0
+ * read-only, young	..1...0....1
+ * read-write, old	..0...1....0
+ * read-write, young	..0...0....1
  * The segment table origin is used to distinguish empty (origin==0) from
- * writable, old segment table entries (origin!=0)
+ * read-write, old segment table entries (origin!=0)
  */
 
 #define _SEGMENT_ENTRY_SPLIT_BIT 0	/* THP splitting bit number */
@@ -1017,7 +1017,6 @@ static inline pte_t pte_mkspecial(pte_t pte)
 #ifdef CONFIG_HUGETLB_PAGE
 static inline pte_t pte_mkhuge(pte_t pte)
 {
-	pte_val(pte) |= (_SEGMENT_ENTRY_LARGE | _SEGMENT_ENTRY_CO);
 	return pte;
 }
 #endif
@@ -1399,6 +1398,19 @@ static inline void __pmd_idte(unsigned long address, pmd_t *pmdp)
 			: "cc"
 		);
 	}
+}
+
+static inline void __pmd_csp(pmd_t *pmdp)
+{
+	register unsigned long reg2 asm("2") = pmd_val(*pmdp);
+	register unsigned long reg3 asm("3") = pmd_val(*pmdp) |
+					       _SEGMENT_ENTRY_INVALID;
+	register unsigned long reg4 asm("4") = ((unsigned long) pmdp) + 5;
+
+	asm volatile(
+		"	csp %1,%3"
+		: "=m" (*pmdp)
+		: "d" (reg2), "d" (reg3), "d" (reg4), "m" (*pmdp) : "cc");
 }
 
 #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLB_PAGE)
