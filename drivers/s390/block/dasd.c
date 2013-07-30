@@ -2395,7 +2395,7 @@ int dasd_sleep_on_immediatly(struct dasd_ccw_req *cqr)
 
 	/* kick tasklets */
 	dasd_schedule_device_bh(device);
-	if(device->block)
+	if (device->block)
 		dasd_schedule_block_bh(device->block);
 
 	return rc;
