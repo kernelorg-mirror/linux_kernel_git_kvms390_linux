@@ -15,20 +15,20 @@ static inline pmd_t __pte_to_pmd(pte_t pte)
 
 	/*
 	 * Convert encoding		  pte bits	  pmd bits
-	 *				.IR...wrdytp	..R...I....y
-	 * empty			.10...000000 -> ..0...1....0
-	 * prot-none, clean, old	.10...000001 -> ..0...1....1
-	 * prot-none, clean, young	.10...000101 -> ..1...1....1
-	 * prot-none, dirty, old	.10...001001 -> ..0...1....1
-	 * prot-none, dirty, young	.10...001101 -> ..1...1....1
-	 * read-only, clean, old	.11...010001 -> ..1...1....0
-	 * read-only, clean, young	.01...010101 -> ..1...0....1
-	 * read-only, dirty, old	.11...011001 -> ..1...1....0
-	 * read-only, dirty, young	.01...011101 -> ..1...0....1
-	 * read-write, clean, old	.11...110001 -> ..0...1....0
-	 * read-write, clean, young	.01...110101 -> ..0...0....1
-	 * read-write, dirty, old	.10...111001 -> ..0...1....0
-	 * read-write, dirty, young	.00...111101 -> ..0...0....1
+	 *				.IR...wrdytp	..R...I...y.
+	 * empty			.10...000000 -> ..0...1...0.
+	 * prot-none, clean, old	.10...000001 -> ..0...1...1.
+	 * prot-none, clean, young	.10...000101 -> ..1...1...1.
+	 * prot-none, dirty, old	.10...001001 -> ..0...1...1.
+	 * prot-none, dirty, young	.10...001101 -> ..1...1...1.
+	 * read-only, clean, old	.11...010001 -> ..1...1...0.
+	 * read-only, clean, young	.01...010101 -> ..1...0...1.
+	 * read-only, dirty, old	.11...011001 -> ..1...1...0.
+	 * read-only, dirty, young	.01...011101 -> ..1...0...1.
+	 * read-write, clean, old	.11...110001 -> ..0...1...0.
+	 * read-write, clean, young	.01...110101 -> ..0...0...1.
+	 * read-write, dirty, old	.10...111001 -> ..0...1...0.
+	 * read-write, dirty, young	.00...111101 -> ..0...0...1.
 	 * Huge ptes are dirty by definition, a clean pte is made dirty
 	 * by the conversion.
 	 */
@@ -57,18 +57,18 @@ static inline pte_t __pmd_to_pte(pmd_t pmd)
 
 	/*
 	 * Convert encoding	  pmd bits	  pte bits
-	 *			..R...I....y	.IR...wrdytp
-	 * empty		..0...1....0 -> .10...000000
-	 * prot-none, old	..0...1....1 -> .10...001001
-	 * prot-none, young	..1...1....1 -> .10...001101
-	 * read-only, old	..1...1....0 -> .11...011001
-	 * read-only, young	..1...0....1 -> .01...011101
-	 * read-write, old	..0...1....0 -> .10...111001
-	 * read-write, young	..0...0....1 -> .00...111101
+	 *			..R...I...y.	.IR...wrdytp
+	 * empty		..0...1...0. -> .10...000000
+	 * prot-none, old	..0...1...1. -> .10...001001
+	 * prot-none, young	..1...1...1. -> .10...001101
+	 * read-only, old	..1...1...0. -> .11...011001
+	 * read-only, young	..1...0...1. -> .01...011101
+	 * read-write, old	..0...1...0. -> .10...111001
+	 * read-write, young	..0...0...1. -> .00...111101
 	 * Huge ptes are dirty by definition
 	 */
 	if (pmd_present(pmd)) {
-		pte_val(pte) = _PAGE_PRESENT | _PAGE_DIRTY |
+		pte_val(pte) = _PAGE_PRESENT | _PAGE_LARGE | _PAGE_DIRTY |
 			(pmd_val(pmd) & _SEGMENT_ENTRY_ORIGIN);
 		if (pmd_val(pmd) && _SEGMENT_ENTRY_INVALID)
 			pte_val(pte) |= _PAGE_INVALID;
@@ -99,7 +99,7 @@ void set_huge_pte_at(struct mm_struct *mm, unsigned long addr,
 		pmd_val(pmd) &= ~_SEGMENT_ENTRY_ORIGIN;
 		pmd_val(pmd) |= pte_page(pte)[1].index;
 	} else
-		pmd_val(pmd) |= _SEGMENT_ENTRY_LARGE;
+		pmd_val(pmd) |= _SEGMENT_ENTRY_LARGE | _SEGMENT_ENTRY_CO;
 	*(pmd_t *) ptep = pmd;
 }
 

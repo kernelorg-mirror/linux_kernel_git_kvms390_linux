@@ -222,6 +222,7 @@ extern unsigned long MODULES_END;
 #define _PAGE_CO	0x100		/* HW Change-bit override */
 #define _PAGE_PROTECT	0x200		/* HW read-only bit  */
 #define _PAGE_INVALID	0x400		/* HW invalid bit    */
+#define _PAGE_LARGE	0x800		/* Bit to mark a large pte */
 
 /* Software bits in the page table entry */
 #define _PAGE_PRESENT	0x001		/* SW pte present bit */
@@ -368,13 +369,13 @@ extern unsigned long MODULES_END;
 
 /*
  * Segment table entry encoding (R = read-only, I = invalid, y = young bit):
- *			..R...I....y
- * prot-none, old	..0...1....1
- * prot-none, young	..1...1....1
- * read-only, old	..1...1....0
- * read-only, young	..1...0....1
- * read-write, old	..0...1....0
- * read-write, young	..0...0....1
+ *			..R...I...y.
+ * prot-none, old	..0...1...1.
+ * prot-none, young	..1...1...1.
+ * read-only, old	..1...1...0.
+ * read-only, young	..1...0...1.
+ * read-write, old	..0...1...0.
+ * read-write, young	..0...0...1.
  * The segment table origin is used to distinguish empty (origin==0) from
  * read-write, old segment table entries (origin!=0)
  */
@@ -1017,6 +1018,7 @@ static inline pte_t pte_mkspecial(pte_t pte)
 #ifdef CONFIG_HUGETLB_PAGE
 static inline pte_t pte_mkhuge(pte_t pte)
 {
+	pte_val(pte) |= _PAGE_LARGE;
 	return pte;
 }
 #endif
