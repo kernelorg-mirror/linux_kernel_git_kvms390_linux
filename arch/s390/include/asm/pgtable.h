@@ -1108,6 +1108,7 @@ static inline int ptep_test_and_clear_young(struct vm_area_struct *vma,
 {
 	pgste_t pgste;
 	pte_t pte;
+	int young;
 
 	if (mm_has_pgste(vma->vm_mm)) {
 		pgste = pgste_get_lock(ptep);
@@ -1116,6 +1117,7 @@ static inline int ptep_test_and_clear_young(struct vm_area_struct *vma,
 
 	pte = *ptep;
 	__ptep_ipte(addr, ptep);
+	young = pte_young(pte);
 	pte = pte_mkold(pte);
 
 	if (mm_has_pgste(vma->vm_mm)) {
@@ -1124,7 +1126,7 @@ static inline int ptep_test_and_clear_young(struct vm_area_struct *vma,
 	} else
 		*ptep = pte;
 
-	return pte_young(pte);
+	return young;
 }
 
 #define __HAVE_ARCH_PTEP_CLEAR_YOUNG_FLUSH
