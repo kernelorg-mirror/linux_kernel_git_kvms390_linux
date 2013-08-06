@@ -33,7 +33,7 @@ static inline pmd_t __pte_to_pmd(pte_t pte)
 	 * by the conversion.
 	 */
 	if (pte_present(pte)) {
-		pmd_val(pmd) = pte_val(pte) & _SEGMENT_ENTRY_ORIGIN;
+		pmd_val(pmd) = pte_val(pte) & PAGE_MASK;
 		if (pte_val(pte) & _PAGE_INVALID)
 			pmd_val(pmd) |= _SEGMENT_ENTRY_INVALID;
 		none = (pte_val(pte) & _PAGE_PRESENT) &&
@@ -69,15 +69,15 @@ static inline pte_t __pmd_to_pte(pmd_t pmd)
 	 */
 	if (pmd_present(pmd)) {
 		pte_val(pte) = _PAGE_PRESENT | _PAGE_LARGE | _PAGE_DIRTY |
-			(pmd_val(pmd) & _SEGMENT_ENTRY_ORIGIN);
-		if (pmd_val(pmd) && _SEGMENT_ENTRY_INVALID)
+			(pmd_val(pmd) & PAGE_MASK);
+		if (pmd_val(pmd) & _SEGMENT_ENTRY_INVALID)
 			pte_val(pte) |= _PAGE_INVALID;
 		if (pmd_prot_none(pmd)) {
 			if (pmd_val(pmd) & _SEGMENT_ENTRY_PROTECT)
 				pte_val(pte) |= _PAGE_YOUNG;
 		} else {
 			pte_val(pte) |= _PAGE_READ;
-			if (pmd_val(pmd) && _SEGMENT_ENTRY_PROTECT)
+			if (pmd_val(pmd) & _SEGMENT_ENTRY_PROTECT)
 				pte_val(pte) |= _PAGE_PROTECT;
 			else
 				pte_val(pte) |= _PAGE_WRITE;
