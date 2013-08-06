@@ -9,6 +9,8 @@
 #ifndef _ASM_S390_AIRQ_H
 #define _ASM_S390_AIRQ_H
 
+#include <linux/bit_spinlock.h>
+
 struct airq_struct {
 	struct hlist_node list;		/* Handler queueing. */
 	void (*handler)(struct airq_struct *);	/* Thin-interrupt handler */
@@ -27,6 +29,7 @@ void unregister_adapter_interrupt(struct airq_struct *airq);
 struct airq_iv {
 	unsigned long *vector;	/* Adapter interrupt bit vector */
 	unsigned long *avail;	/* Allocation bit mask for the bit vector */
+	unsigned long *bitlock;	/* Lock bit mask for the bit vector */
 	unsigned int *data;	/* 32 bit value associated with each bit */
 	unsigned long bits;	/* Number of bits in the vector */
 	unsigned long end;	/* Number of highest allocated bit + 1 */
@@ -34,7 +37,8 @@ struct airq_iv {
 };
 
 #define AIRQ_IV_ALLOC	1	/* Use an allocation bit mask */
-#define AIRQ_IV_DATA	2	/* Allocate the data array */
+#define AIRQ_IV_BITLOCK	2	/* Allocate the lock bit mask */
+#define AIRQ_IV_DATA	4	/* Allocate the data array */
 
 struct airq_iv *airq_iv_create(unsigned long bits, unsigned long flags);
 void airq_iv_release(struct airq_iv *iv);
@@ -46,6 +50,18 @@ unsigned long airq_iv_scan(struct airq_iv *iv, unsigned long start,
 static inline unsigned long airq_iv_end(struct airq_iv *iv)
 {
 	return iv->end;
+}
+
+static inline void airq_iv_lock(struct airq_iv *iv, unsigned long bit)
+{
+	const unsigned long be_to_le = BITS_PER_LONG - 1;
+	bit_spin_lock(bit ^ be_to_le, iv->bitlock);
+}
+
+static inline void airq_iv_unlock(struct airq_iv *iv, unsigned long bit)
+{
+	const unsigned long be_to_le = BITS_PER_LONG - 1;
+	bit_spin_unlock(bit ^ be_to_le, iv->bitlock);
 }
 
 static inline void airq_iv_set_data(struct airq_iv *iv, unsigned long bit,
