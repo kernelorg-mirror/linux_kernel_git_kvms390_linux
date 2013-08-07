@@ -100,7 +100,6 @@ static void sclp_ftp_rxcb(struct evbuf_header *evbuf)
 	if ((evbuf->type != EVTYP_DIAG_TEST) ||
 	    (diag->route != SCLP_DIAG_FTP_ROUTE) ||
 	    (diag->mdd.ftp.pcx != SCLP_DIAG_FTP_XPCX) ||
-	    (evbuf->flags != 0) ||
 	    (evbuf->length < SCLP_DIAG_FTP_EVBUF_LEN))
 		return;
 

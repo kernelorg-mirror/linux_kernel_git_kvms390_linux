@@ -8,10 +8,10 @@
 #ifndef __HMCDRV_CACHE_H__
 #define __HMCDRV_CACHE_H__
 
-#include <linux/types.h> /* size_t, ssize_t */
-#include "hmcdrv_ftp.h"	 /* struct hmcdrv_ftp_cmdspec */
+#include <linux/mmzone.h>
+#include "hmcdrv_ftp.h"
 
-#define HMCDRV_CACHE_SIZE_DFLT	(1024U * 1024U) /* default cache size */
+#define HMCDRV_CACHE_SIZE_DFLT	(MAX_ORDER_NR_PAGES * PAGE_SIZE)
 
 typedef ssize_t (*hmcdrv_cache_ftpfunc)(const struct hmcdrv_ftp_cmdspec *ftp,
 					size_t *fsize);

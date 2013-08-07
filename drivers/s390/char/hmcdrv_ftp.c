@@ -274,7 +274,7 @@ ssize_t hmcdrv_ftp_cmd(char __kernel *cmd, loff_t offset,
 		break;
 
 	default:
-		retlen = -ENOTSUPP;
+		retlen = -EOPNOTSUPP;
 		break;
 	}
 
@@ -309,10 +309,10 @@ int hmcdrv_ftp_startup(void)
 	if (hmcdrv_ftp_refcnt == 0) {
 		if (MACHINE_IS_VM)
 			hmcdrv_ftp_funcs = &hmcdrv_ftp_zvm;
-		else if (MACHINE_IS_LPAR)
+		else if (MACHINE_IS_LPAR || MACHINE_IS_KVM)
 			hmcdrv_ftp_funcs = &hmcdrv_ftp_lpar;
 		else
-			rc = -ENOTSUPP;
+			rc = -EOPNOTSUPP;
 
 		if (hmcdrv_ftp_funcs)
 			rc = hmcdrv_ftp_funcs->startup();

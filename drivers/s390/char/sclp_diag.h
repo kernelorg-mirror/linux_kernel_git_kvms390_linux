@@ -14,8 +14,8 @@
 #define SCLP_DIAG_FTP_OK	0x80U /* success */
 #define SCLP_DIAG_FTP_LDFAIL	0x01U /* load failed */
 #define SCLP_DIAG_FTP_LDNPERM	0x02U /* not allowed */
-#define SCLP_DIAG_FTP_LDNRUNS	0x03U /* LD runs */
-#define SCLP_DIAG_FTP_LDRUNS	0x04U /* LD does not run */
+#define SCLP_DIAG_FTP_LDRUNS	0x03U /* LD runs */
+#define SCLP_DIAG_FTP_LDNRUNS	0x04U /* LD does not run */
 
 #define SCLP_DIAG_FTP_XPCX	0x80 /* PCX communication code */
 #define SCLP_DIAG_FTP_ROUTE	4 /* routing code for new FTP service */
