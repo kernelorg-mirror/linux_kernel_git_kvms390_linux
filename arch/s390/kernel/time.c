@@ -172,8 +172,7 @@ static void clock_comparator_interrupt(struct ext_code ext_code,
 				       unsigned long param64)
 {
 	inc_irq_stat(IRQEXT_CLK);
-	if (S390_lowcore.clock_comparator == -1ULL)
-		set_clock_comparator(S390_lowcore.clock_comparator);
+	/* Work already done by clock_comparator_work */
 }
 
 static void etr_timing_alert(struct etr_irq_parm *);
