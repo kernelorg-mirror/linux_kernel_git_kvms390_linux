@@ -130,11 +130,11 @@ struct airq_iv *airq_iv_create(unsigned long bits, unsigned long flags)
 	size = BITS_TO_LONGS(bits) * sizeof(unsigned long);
 	iv->vector = kzalloc(size, GFP_KERNEL);
 	if (!iv->vector)
-		goto out_iv;
+		goto out_free;
 	if (flags & AIRQ_IV_ALLOC) {
 		iv->avail = kmalloc(size, GFP_KERNEL);
 		if (!iv->avail)
-			goto out_vector;
+			goto out_free;
 		memset(iv->avail, 0xff, size);
 		iv->end = 0;
 	} else
@@ -142,24 +142,28 @@ struct airq_iv *airq_iv_create(unsigned long bits, unsigned long flags)
 	if (flags & AIRQ_IV_BITLOCK) {
 		iv->bitlock = kzalloc(size, GFP_KERNEL);
 		if (!iv->bitlock)
-			goto out_alloc;
+			goto out_free;
+	}
+	if (flags & AIRQ_IV_PTR) {
+		size = bits * sizeof(unsigned long);
+		iv->ptr = kzalloc(size, GFP_KERNEL);
+		if (!iv->ptr)
+			goto out_free;
 	}
 	if (flags & AIRQ_IV_DATA) {
 		size = bits * sizeof(unsigned int);
 		iv->data = kzalloc(size, GFP_KERNEL);
 		if (!iv->data)
-			goto out_bitlock;
+			goto out_free;
 	}
 	spin_lock_init(&iv->lock);
 	return iv;
 
-out_bitlock:
+out_free:
+	kfree(iv->ptr);
 	kfree(iv->bitlock);
-out_alloc:
 	kfree(iv->avail);
-out_vector:
 	kfree(iv->vector);
-out_iv:
 	kfree(iv);
 out:
 	return NULL;
@@ -173,6 +177,7 @@ EXPORT_SYMBOL(airq_iv_create);
 void airq_iv_release(struct airq_iv *iv)
 {
 	kfree(iv->data);
+	kfree(iv->ptr);
 	kfree(iv->bitlock);
 	kfree(iv->vector);
 	kfree(iv->avail);
