@@ -474,7 +474,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
 	ktime_t now, idle;
 
-	if (!tick_nohz_enabled || !cpu_online(cpu))
+	if (!tick_nohz_enabled)
 		return -1;
 
 	now = ktime_get();
@@ -515,7 +515,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
 	ktime_t now, iowait;
 
-	if (!tick_nohz_enabled || !cpu_online(cpu))
+	if (!tick_nohz_enabled)
 		return -1;
 
 	now = ktime_get();
