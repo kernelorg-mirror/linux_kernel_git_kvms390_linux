@@ -1331,8 +1331,11 @@ static inline pte_t mk_pte_phys(unsigned long physpage, pgprot_t pgprot)
 static inline pte_t mk_pte(struct page *page, pgprot_t pgprot)
 {
 	unsigned long physpage = page_to_phys(page);
+	pte_t __pte = mk_pte_phys(physpage, pgprot);
 
-	return mk_pte_phys(physpage, pgprot);
+	if (pte_write(__pte) && PageDirty(page))
+		__pte = pte_mkdirty(__pte);
+	return __pte;
 }
 
 #define pgd_index(address) (((address) >> PGDIR_SHIFT) & (PTRS_PER_PGD-1))
@@ -1687,8 +1690,6 @@ extern int s390_enable_sie(void);
  */
 static inline void pgtable_cache_init(void) { }
 static inline void check_pgt_cache(void) { }
-
-#define __ARCH_WANT_PTE_WRITE_DIRTY
 
 #include <asm-generic/pgtable.h>
 
