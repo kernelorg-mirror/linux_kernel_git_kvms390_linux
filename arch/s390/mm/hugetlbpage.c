@@ -17,8 +17,8 @@ static inline pmd_t __pte_to_pmd(pte_t pte)
 	 * Convert encoding		  pte bits	  pmd bits
 	 *				.IR...wrdytp	..R...I...y.
 	 * empty			.10...000000 -> ..0...1...0.
-	 * prot-none, clean, old	.10...000001 -> ..0...1...1.
-	 * prot-none, clean, young	.10...000101 -> ..1...1...1.
+	 * prot-none, clean, old	.11...000001 -> ..0...1...1.
+	 * prot-none, clean, young	.11...000101 -> ..1...1...1.
 	 * prot-none, dirty, old	.10...001001 -> ..0...1...1.
 	 * prot-none, dirty, young	.10...001101 -> ..1...1...1.
 	 * read-only, clean, old	.11...010001 -> ..1...1...0.

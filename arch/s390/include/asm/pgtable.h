@@ -227,8 +227,8 @@ extern unsigned long MODULES_END;
 /* Software bits in the page table entry */
 #define _PAGE_PRESENT	0x001		/* SW pte present bit */
 #define _PAGE_TYPE	0x002		/* SW pte type bit */
-#define _PAGE_DIRTY	0x004		/* SW pte dirty bit */
-#define _PAGE_YOUNG	0x008		/* SW pte young bit */
+#define _PAGE_YOUNG	0x004		/* SW pte young bit */
+#define _PAGE_DIRTY	0x008		/* SW pte dirty bit */
 #define _PAGE_READ	0x010		/* SW pte read bit */
 #define _PAGE_WRITE	0x020		/* SW pte write bit */
 #define _PAGE_SPECIAL	0x040		/* SW associated with special page */
@@ -255,8 +255,8 @@ extern unsigned long MODULES_END;
  * empty			.10...000000
  * swap				.10...xxxx10
  * file				.11...xxxxx0
- * prot-none, clean, old	.10...000001
- * prot-none, clean, young	.10...000101
+ * prot-none, clean, old	.11...000001
+ * prot-none, clean, young	.11...000101
  * prot-none, dirty, old	.10...001001
  * prot-none, dirty, young	.10...001101
  * read-only, clean, old	.11...010001
@@ -963,9 +963,7 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
 static inline pte_t pte_wrprotect(pte_t pte)
 {
 	pte_val(pte) &= ~_PAGE_WRITE;
-	/* Do not clobber PROT_NONE pages!  */
-	if (!(pte_val(pte) & _PAGE_INVALID))
-		pte_val(pte) |= _PAGE_PROTECT;
+	pte_val(pte) |= _PAGE_PROTECT;
 	return pte;
 }
 
@@ -980,9 +978,7 @@ static inline pte_t pte_mkwrite(pte_t pte)
 static inline pte_t pte_mkclean(pte_t pte)
 {
 	pte_val(pte) &= ~_PAGE_DIRTY;
-	/* Do not clobber PROT_NONE pages!  */
-	if (!(pte_val(pte) & _PAGE_INVALID))
-		pte_val(pte) |= _PAGE_PROTECT;
+	pte_val(pte) |= _PAGE_PROTECT;
 	return pte;
 }
 
@@ -1004,7 +1000,7 @@ static inline pte_t pte_mkold(pte_t pte)
 static inline pte_t pte_mkyoung(pte_t pte)
 {
 	pte_val(pte) |= _PAGE_YOUNG;
-	if (pte_val(pte) & (_PAGE_READ | _PAGE_WRITE))
+	if (pte_val(pte) & _PAGE_READ)
 		pte_val(pte) &= ~_PAGE_INVALID;
 	return pte;
 }
@@ -1615,10 +1611,8 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
  * exception will occur instead of a page translation exception. The
  * specifiation exception has the bad habit not to store necessary
  * information in the lowcore.
- * Bit 21 and bit 22 are the page invalid bit and the page protection
- * bit. We set both to indicate a swapped page.
- * Bit 30 and 31 are used to distinguish the different page types. For
- * a swapped page these bits need to be zero.
+ * Bits 21, 22, 30 and 31 are used to indicate the page type.
+ * A swap pte is indicated by bit pattern (pte & 0x603) == 0x402
  * This leaves the bits 1-19 and bits 24-29 to store type and offset.
  * We use the 5 bits from 25-29 for the type and the 20 bits from 1-19
  * plus 24 for the offset.
@@ -1632,10 +1626,8 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
  * exception will occur instead of a page translation exception. The
  * specifiation exception has the bad habit not to store necessary
  * information in the lowcore.
- * Bit 53 and bit 54 are the page invalid bit and the page protection
- * bit. We set both to indicate a swapped page.
- * Bit 62 and 63 are used to distinguish the different page types. For
- * a swapped page these bits need to be zero.
+ * Bits 53, 54, 62 and 63 are used to indicate the page type.
+ * A swap pte is indicated by bit pattern (pte & 0x603) == 0x402
  * This leaves the bits 0-51 and bits 56-61 to store type and offset.
  * We use the 5 bits from 57-61 for the type and the 53 bits from 0-51
  * plus 56 for the offset.
