@@ -60,17 +60,20 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	WARN_ON(atomic_read(&prev->context.attach_count) < 0);
 	if (atomic_inc_return(&next->context.attach_count) >> 16)
 		set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
-	/* Check for TLBs not flushed yet */
-	__tlb_flush_mm_lazy(next);
+	else
+		/* Check for TLBs not flushed yet */
+		__tlb_flush_mm_lazy(next);
 }
 
 #define finish_switch_mm finish_switch_mm
 static inline void finish_switch_mm(struct mm_struct *mm,
 				    struct task_struct *tsk)
 {
-	if (test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
+	if (test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT)) {
 		while (atomic_read(&mm->context.attach_count) >> 16)
 			cpu_relax();
+		__tlb_flush_mm_lazy(mm);
+	}
 }
 
 #define enter_lazy_tlb(mm,tsk)	do { } while (0)
