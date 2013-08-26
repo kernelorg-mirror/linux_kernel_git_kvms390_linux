@@ -840,7 +840,7 @@ int kvm_s390_inject_vcpu(struct kvm_vcpu *vcpu,
 static void clear_floating_interrupts(struct kvm *kvm)
 {
 	struct kvm_s390_float_interrupt *fi;
-	struct kvm_s390_interrupt_info  *n, *inti = NULL;
+	struct kvm_s390_interrupt_info	*n, *inti = NULL;
 
 	mutex_lock(&kvm->lock);
 	fi = &kvm->arch.float_int;

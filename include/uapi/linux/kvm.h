@@ -426,7 +426,7 @@ struct kvm_s390_psw {
 	 ((ai) << 26))
 #define KVM_S390_INT_IO_MIN		0x00000000u
 #define KVM_S390_INT_IO_MAX		0xfffdffffu
-#define KVM_S390_INT_MAX                0xffffffffu
+#define KVM_S390_INT_MAX		0xffffffffu
 
 
 struct kvm_s390_interrupt {
