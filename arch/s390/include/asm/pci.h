@@ -158,11 +158,11 @@ static inline void zpci_rescan(void) {}
 int zpci_init_slot(struct zpci_dev *);
 void zpci_exit_slot(struct zpci_dev *);
 #else /* CONFIG_HOTPLUG_PCI_S390 */
-static inline int zpci_init_slot(struct zpci_dev *)
+static inline int zpci_init_slot(struct zpci_dev *zdev)
 {
 	return 0;
 }
-static inline void zpci_exit_slot(struct zpci_dev *) {}
+static inline void zpci_exit_slot(struct zpci_dev *zdev) {}
 #endif /* CONFIG_HOTPLUG_PCI_S390 */
 
 /* Helpers */
