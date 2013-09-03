@@ -1317,9 +1317,9 @@ int s390_enable_sie(void)
 	thp_split_mm(mm);
 	/* Reallocate the page tables with pgstes */
 	mm->context.has_pgste = 1;
-	tlb_gather_mmu(&tlb, mm, 0);
+	tlb_gather_mmu(&tlb, mm, 0, TASK_SIZE);
 	page_table_realloc(&tlb, mm, 0, TASK_SIZE);
-	tlb_finish_mmu(&tlb, 0, -1);
+	tlb_finish_mmu(&tlb, 0, TASK_SIZE);
 	up_write(&mm->mmap_sem);
 	return mm->context.has_pgste ? 0 : -ENOMEM;
 }
@@ -1364,7 +1364,8 @@ void pmdp_splitting_flush(struct vm_area_struct *vma, unsigned long address,
 	}
 }
 
-void pgtable_trans_huge_deposit(struct mm_struct *mm, pgtable_t pgtable)
+void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+				pgtable_t pgtable)
 {
 	struct list_head *lh = (struct list_head *) pgtable;
 
@@ -1378,7 +1379,7 @@ void pgtable_trans_huge_deposit(struct mm_struct *mm, pgtable_t pgtable)
 	mm->pmd_huge_pte = pgtable;
 }
 
-pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm)
+pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
 {
 	struct list_head *lh;
 	pgtable_t pgtable;

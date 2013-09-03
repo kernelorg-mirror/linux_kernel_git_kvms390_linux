@@ -684,16 +684,6 @@ int kvm_arch_vcpu_ioctl_set_mpstate(struct kvm_vcpu *vcpu,
 	return -EINVAL; /* not implemented yet */
 }
 
-bool kvm_enabled_cmma(void)
-{
-	if (!MACHINE_IS_LPAR)
-		return false;
-	/* only enable for z10 and later */
-	if (!MACHINE_HAS_EDAT1)
-		return false;
-	return true;
-}
-
 static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
 {
 	/*
@@ -713,6 +703,16 @@ static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
 		s390_vcpu_unblock(vcpu);
 	}
 	return 0;
+}
+
+bool kvm_enabled_cmma(void)
+{
+	if (!MACHINE_IS_LPAR)
+		return false;
+	/* only enable for z10 and later */
+	if (!MACHINE_HAS_EDAT1)
+		return false;
+	return true;
 }
 
 static int __vcpu_run(struct kvm_vcpu *vcpu)
@@ -1177,3 +1177,12 @@ static void __exit kvm_s390_exit(void)
 
 module_init(kvm_s390_init);
 module_exit(kvm_s390_exit);
+
+/*
+ * Enable autoloading of the kvm module.
+ * Note that we add the module alias here instead of virt/kvm/kvm_main.c
+ * since x86 takes a different approach.
+ */
+#include <linux/miscdevice.h>
+MODULE_ALIAS_MISCDEV(KVM_MINOR);
+MODULE_ALIAS("devname:kvm");

@@ -58,9 +58,6 @@ extern unsigned long zero_page_mask;
 #define __HAVE_COLOR_ZERO_PAGE
 
 /* TODO: s390 cannot support io_remap_pfn_range... */
-#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
-	remap_pfn_range(vma, vaddr, pfn, size, prot)
-
 #endif /* !__ASSEMBLY__ */
 
 /*
@@ -1497,10 +1494,11 @@ static inline void pmdp_flush_lazy(struct mm_struct *mm,
 #ifdef CONFIG_TRANSPARENT_HUGEPAGE
 
 #define __HAVE_ARCH_PGTABLE_DEPOSIT
-extern void pgtable_trans_huge_deposit(struct mm_struct *mm, pgtable_t pgtable);
+extern void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+				       pgtable_t pgtable);
 
 #define __HAVE_ARCH_PGTABLE_WITHDRAW
-extern pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm);
+extern pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp);
 
 static inline int pmd_trans_splitting(pmd_t pmd)
 {

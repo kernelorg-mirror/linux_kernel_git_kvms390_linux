@@ -63,7 +63,7 @@ struct sca_block {
 #define CPUSTAT_MCDS       0x00000100
 #define CPUSTAT_SM         0x00000080
 #define CPUSTAT_G          0x00000008
-#define CPUSTAT_GED	   0x00000004
+#define CPUSTAT_GED        0x00000004
 #define CPUSTAT_J          0x00000002
 #define CPUSTAT_P          0x00000001
 
@@ -98,8 +98,8 @@ struct kvm_s390_sie_block {
 	__u32	scaoh;			/* 0x005c */
 	__u8	reserved60;		/* 0x0060 */
 	__u8	ecb;			/* 0x0061 */
-	__u8	ecb2;			/* 0x0062 */
-	__u8	reserved63[1];		/* 0x0063 */
+	__u8    ecb2;                   /* 0x0062 */
+	__u8    reserved63[1];          /* 0x0063 */
 	__u32	scaol;			/* 0x0064 */
 	__u8	reserved68[4];		/* 0x0068 */
 	__u32	todpr;			/* 0x006c */

@@ -531,57 +531,15 @@ static int handle_epsw(struct kvm_vcpu *vcpu)
 	return 0;
 }
 
-static int handle_essa(struct kvm_vcpu *vcpu)
-{
-	/* entries expected to be 1FF */
-	int entries = (vcpu->arch.sie_block->cbrlo & ~PAGE_MASK) >> 3;
-	unsigned long *cbrlo, cbrle;
-	struct gmap *gmap;
-	int i;
-
-	VCPU_EVENT(vcpu, 5, "cmma release %d pages", entries);
-	gmap = vcpu->arch.gmap;
-	vcpu->stat.instruction_essa++;
-	if (!kvm_enabled_cmma() || !vcpu->arch.sie_block->cbrlo)
-		return kvm_s390_inject_program_int(vcpu, PGM_OPERATION);
-
-	if (vcpu->arch.sie_block->gpsw.mask & PSW_MASK_PSTATE)
-		return kvm_s390_inject_program_int(vcpu, PGM_PRIVILEGED_OP);
-
-	if (((vcpu->arch.sie_block->ipb & 0xf0000000) >> 28) > 6)
-		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
-
-	/* Rewind PSW to repeat the ESSA instruction */
-	vcpu->arch.sie_block->gpsw.addr =
-		__rewind_psw(vcpu->arch.sie_block->gpsw, 4);
-	vcpu->arch.sie_block->cbrlo &= PAGE_MASK;	/* reset nceo */
-	cbrlo = phys_to_virt(vcpu->arch.sie_block->cbrlo);
-	down_read(&gmap->mm->mmap_sem);
-	for (i = 0; i < entries; ++i) {
-		cbrle = cbrlo[i];
-		if (unlikely(cbrle & ~PAGE_MASK || cbrle < 2 * PAGE_SIZE))
-			/* invalid entry */
-			break;
-		/* try to free backing */
-		__gmap_zap(cbrle, gmap);
-	}
-	up_read(&gmap->mm->mmap_sem);
-	if (i < entries)
-		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
-	return 0;
-}
-
-
-
-#define PFMF_RESERVED	0xfffc0101UL
-#define PFMF_SK		0x00020000UL
-#define PFMF_CF		0x00010000UL
-#define PFMF_UI		0x00008000UL
-#define PFMF_FSC	0x00007000UL
-#define PFMF_NQ		0x00000800UL
-#define PFMF_MR		0x00000400UL
-#define PFMF_MC		0x00000200UL
-#define PFMF_KEY	0x000000feUL
+#define PFMF_RESERVED   0xfffc0101UL
+#define PFMF_SK         0x00020000UL
+#define PFMF_CF         0x00010000UL
+#define PFMF_UI         0x00008000UL
+#define PFMF_FSC        0x00007000UL
+#define PFMF_NQ         0x00000800UL
+#define PFMF_MR         0x00000400UL
+#define PFMF_MC         0x00000200UL
+#define PFMF_KEY        0x000000feUL
 
 static int handle_pfmf(struct kvm_vcpu *vcpu)
 {
@@ -647,6 +605,46 @@ static int handle_pfmf(struct kvm_vcpu *vcpu)
 	}
 	if (vcpu->run->s.regs.gprs[reg1] & PFMF_FSC)
 		vcpu->run->s.regs.gprs[reg2] = end;
+	return 0;
+}
+
+static int handle_essa(struct kvm_vcpu *vcpu)
+{
+	/* entries expected to be 1FF */
+	int entries = (vcpu->arch.sie_block->cbrlo & ~PAGE_MASK) >> 3;
+	unsigned long *cbrlo, cbrle;
+	struct gmap *gmap;
+	int i;
+
+	VCPU_EVENT(vcpu, 5, "cmma release %d pages", entries);
+	gmap = vcpu->arch.gmap;
+	vcpu->stat.instruction_essa++;
+	if (!kvm_enabled_cmma() || !vcpu->arch.sie_block->cbrlo)
+		return kvm_s390_inject_program_int(vcpu, PGM_OPERATION);
+
+	if (vcpu->arch.sie_block->gpsw.mask & PSW_MASK_PSTATE)
+		return kvm_s390_inject_program_int(vcpu, PGM_PRIVILEGED_OP);
+
+	if (((vcpu->arch.sie_block->ipb & 0xf0000000) >> 28) > 6)
+		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
+
+	/* Rewind PSW to repeat the ESSA instruction */
+	vcpu->arch.sie_block->gpsw.addr =
+		__rewind_psw(vcpu->arch.sie_block->gpsw, 4);
+	vcpu->arch.sie_block->cbrlo &= PAGE_MASK;	/* reset nceo */
+	cbrlo = phys_to_virt(vcpu->arch.sie_block->cbrlo);
+	down_read(&gmap->mm->mmap_sem);
+	for (i = 0; i < entries; ++i) {
+		cbrle = cbrlo[i];
+		if (unlikely(cbrle & ~PAGE_MASK || cbrle < 2 * PAGE_SIZE))
+			/* invalid entry */
+			break;
+		/* try to free backing */
+		__gmap_zap(cbrle, gmap);
+	}
+	up_read(&gmap->mm->mmap_sem);
+	if (i < entries)
+		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
 	return 0;
 }
 

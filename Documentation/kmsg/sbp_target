@@ -44,4 +44,4 @@
 /*? Text: "target_fabric_configfs_register() failed for SBP\n" */
 /*? Text: "unknown management function 0x%x\n" */
 /*? Text: "unlink LUN: failed to update unit directory\n" */
-/*? Text: "flen=%u proglen=%u pass=%u image=%p\n" */
+/*? Text: "flen=%u proglen=%u pass=%u image=%pK\n" */
