@@ -334,7 +334,7 @@ static int setup_frame32(int sig, struct k_sigaction *ka,
 	if (ka->sa.sa_flags & SA_RESTORER) {
 		regs->gprs[14] = (__u64 __force) ka->sa.sa_restorer | PSW32_ADDR_AMODE;
 	} else {
-		regs->gprs[14] = (__u64 __force ) frame->retcode | PSW32_ADDR_AMODE;
+		regs->gprs[14] = (__u64 __force) frame->retcode | PSW32_ADDR_AMODE;
 		if (__put_user(S390_SYSCALL_OPCODE | __NR_sigreturn,
 			       (u16 __force __user *)(frame->retcode)))
 			goto give_sigsegv;
