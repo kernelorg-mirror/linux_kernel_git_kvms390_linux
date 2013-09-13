@@ -4,6 +4,11 @@
 #include <linux/errno.h>
 
 typedef struct {
+#ifdef CONFIG_CPUMASK_OFFSTACK
+	struct cpumask cpu_attach_mask;
+#endif
+	cpumask_var_t cpu_attach_mask_var;
+	spinlock_t attach_lock;
 	atomic_t attach_count;
 	unsigned int flush_mm;
 	spinlock_t list_lock;
@@ -17,7 +22,8 @@ typedef struct {
 } mm_context_t;
 
 #define INIT_MM_CONTEXT(name)						      \
-	.context.list_lock    = __SPIN_LOCK_UNLOCKED(name.context.list_lock), \
+	.context.attach_lock = __SPIN_LOCK_UNLOCKED(name.context.attach_lock),\
+	.context.list_lock = __SPIN_LOCK_UNLOCKED(name.context.list_lock),    \
 	.context.pgtable_list = LIST_HEAD_INIT(name.context.pgtable_list),    \
 	.context.gmap_list = LIST_HEAD_INIT(name.context.gmap_list),
 

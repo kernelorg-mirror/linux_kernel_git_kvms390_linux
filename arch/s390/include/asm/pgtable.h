@@ -1053,21 +1053,35 @@ static inline int ptep_test_and_clear_user_young(struct mm_struct *mm,
 	return young;
 }
 
-static inline void __ptep_ipte(unsigned long address, pte_t *ptep)
+static inline void __ptep_ipte(struct mm_struct *mm, unsigned long address,
+			       pte_t *ptep)
 {
-	if (!(pte_val(*ptep) & _PAGE_INVALID)) {
+	pte_t *pto;
+
+	if (pte_val(*ptep) & _PAGE_INVALID)
+		return;
 #ifndef CONFIG_64BIT
-		/* pto must point to the start of the segment table */
-		pte_t *pto = (pte_t *) (((unsigned long) ptep) & 0x7ffffc00);
+	/* pto must point to the start of the segment table */
+	pto = (pte_t *) (((unsigned long) ptep) & 0x7ffffc00);
 #else
-		/* ipte in zarch mode can do the math */
-		pte_t *pto = ptep;
+	/* ipte in zarch mode can do the math */
+	pto = ptep;
 #endif
+	preempt_disable();
+	if (MACHINE_HAS_TLB_LC &&
+	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id())))
+		/* Invalidation + local TLB flush for the pte */
+		asm volatile(
+			"	.insn rrf,0xb2210000,%2,%3,0,1"
+			: "=m" (*ptep) : "m" (*ptep),
+			  "a" (pto), "a" (address));
+	else
+		/* Invalidation + global TLB flush for the pte */
 		asm volatile(
 			"	ipte	%2,%3"
 			: "=m" (*ptep) : "m" (*ptep),
 			  "a" (pto), "a" (address));
-	}
+	preempt_enable();
 }
 
 #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
@@ -1088,7 +1102,7 @@ static inline void ptep_flush_lazy(struct mm_struct *mm,
 	int active = (mm == current->active_mm) ? 1 : 0;
 
 	if ((atomic_read(&mm->context.attach_count) & 0xffff) > active)
-		__ptep_ipte(address, ptep);
+		__ptep_ipte(mm, address, ptep);
 	else
 		mm->context.flush_mm = 1;
 }
@@ -1107,7 +1121,7 @@ static inline int ptep_test_and_clear_young(struct vm_area_struct *vma,
 	}
 
 	pte = *ptep;
-	__ptep_ipte(addr, ptep);
+	__ptep_ipte(vma->vm_mm, addr, ptep);
 	young = pte_young(pte);
 	pte = pte_mkold(pte);
 
@@ -1215,7 +1229,7 @@ static inline pte_t ptep_clear_flush(struct vm_area_struct *vma,
 	}
 
 	pte = *ptep;
-	__ptep_ipte(address, ptep);
+	__ptep_ipte(vma->vm_mm, address, ptep);
 	pte_val(*ptep) = _PAGE_INVALID;
 
 	if (mm_has_pgste(vma->vm_mm)) {
@@ -1299,7 +1313,7 @@ static inline int ptep_set_access_flags(struct vm_area_struct *vma,
 		pgste = pgste_ipte_notify(vma->vm_mm, address, ptep, pgste);
 	}
 
-	__ptep_ipte(address, ptep);
+	__ptep_ipte(vma->vm_mm, address, ptep);
 
 	if (mm_has_pgste(vma->vm_mm)) {
 		pgste_set_pte(ptep, entry);

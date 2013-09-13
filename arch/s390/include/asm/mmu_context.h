@@ -15,6 +15,10 @@
 static inline int init_new_context(struct task_struct *tsk,
 				   struct mm_struct *mm)
 {
+#ifdef CONFIG_CPUMASK_OFFSTACK
+	mm->context.cpu_attach_mask_var = &mm->context.cpu_attach_mask;
+#endif
+	cpumask_clear(mm->context.cpu_attach_mask_var);
 	atomic_set(&mm->context.attach_count, 0);
 	mm->context.flush_mm = 0;
 	mm->context.asce_bits = _ASCE_TABLE_LENGTH | _ASCE_USER_BITS;
@@ -54,15 +58,28 @@ static inline void update_mm(struct mm_struct *mm, struct task_struct *tsk)
 static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 			     struct task_struct *tsk)
 {
-	cpumask_set_cpu(smp_processor_id(), mm_cpumask(next));
+	int cpu;
+
+	if (prev == next)
+		return;
+	cpu = smp_processor_id();
+	if (MACHINE_HAS_TLB_LC) {
+		unsigned long flags;
+		spin_lock_irqsave(&next->context.attach_lock, flags);
+		cpumask_set_cpu(cpu, next->context.cpu_attach_mask_var);
+		spin_unlock_irqrestore(&next->context.attach_lock, flags);
+	}
+	cpumask_set_cpu(cpu, mm_cpumask(next));
 	update_mm(next, tsk);
-	atomic_dec(&prev->context.attach_count);
+	if (MACHINE_HAS_TLB_LC)
+		cpumask_clear_cpu(cpu, prev->context.cpu_attach_mask_var);
 	WARN_ON(atomic_read(&prev->context.attach_count) < 0);
+	atomic_dec(&prev->context.attach_count);
 	if (atomic_inc_return(&next->context.attach_count) >> 16)
 		set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
-	else
-		/* Check for TLBs not flushed yet */
-		__tlb_flush_mm_lazy(next);
+	else if (next->context.flush_mm)
+		/* Flush pending TLBs */
+		__tlb_flush_mm(next);
 }
 
 #define finish_switch_mm finish_switch_mm
@@ -72,7 +89,8 @@ static inline void finish_switch_mm(struct mm_struct *mm,
 	if (test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT)) {
 		while (atomic_read(&mm->context.attach_count) >> 16)
 			cpu_relax();
-		__tlb_flush_mm_lazy(mm);
+		if (mm->context.flush_mm)
+			__tlb_flush_mm(mm);
 	}
 }
 

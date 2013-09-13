@@ -44,17 +44,22 @@ static inline void __tlb_flush_global(void)
 
 static inline void __tlb_flush_full(struct mm_struct *mm)
 {
-	cpumask_t local_cpumask;
-
 	preempt_disable();
-	/*
-	 * If the process only ran on the local cpu, do a local flush.
-	 */
-	cpumask_copy(&local_cpumask, cpumask_of(smp_processor_id()));
-	if (cpumask_equal(mm_cpumask(mm), &local_cpumask))
+	if (cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
+		/* Local TLB flush */
 		__tlb_flush_local();
-	else
+	} else {
+		if (MACHINE_HAS_TLB_LC) {
+			unsigned long flags;
+			/* Reset TLB flush mask */
+			spin_lock_irqsave(&mm->context.attach_lock, flags);
+			cpumask_copy(mm_cpumask(mm),
+				     mm->context.cpu_attach_mask_var);
+			spin_unlock_irqrestore(&mm->context.attach_lock, flags);
+		}
+		/* Global TLB flush */
 		__tlb_flush_global();
+	}
 	preempt_enable();
 }
 #else
@@ -65,11 +70,30 @@ static inline void __tlb_flush_full(struct mm_struct *mm)
 /*
  * Flush all tlb entries of a page table on all cpus.
  */
-static inline void __tlb_flush_idte(unsigned long asce)
+static inline void __tlb_flush_idte(struct mm_struct *mm, unsigned long asce)
 {
-	asm volatile(
-		"	.insn	rrf,0xb98e0000,0,%0,%1,0"
-		: : "a" (2048), "a" (asce) : "cc" );
+	preempt_disable();
+	if (MACHINE_HAS_TLB_LC &&
+	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
+		/* Local TLB flush for the mm */
+		asm volatile(
+			"	.insn	rrf,0xb98e0000,0,%0,%1,1"
+			: : "a" (2048), "a" (asce) : "cc" );
+	} else {
+		if (MACHINE_HAS_TLB_LC) {
+			unsigned long flags;
+			/* Reset TLB flush mask */
+			spin_lock_irqsave(&mm->context.attach_lock, flags);
+			cpumask_copy(mm_cpumask(mm),
+				     mm->context.cpu_attach_mask_var);
+			spin_unlock_irqrestore(&mm->context.attach_lock, flags);
+		}
+		/* Global TLB flush for the mm */
+		asm volatile(
+			"	.insn	rrf,0xb98e0000,0,%0,%1,0"
+			: : "a" (2048), "a" (asce) : "cc" );
+	}
+	preempt_enable();
 }
 
 static inline void __tlb_flush_mm(struct mm_struct * mm)
@@ -80,7 +104,7 @@ static inline void __tlb_flush_mm(struct mm_struct * mm)
 	 * only ran on the local cpu.
 	 */
 	if (MACHINE_HAS_IDTE && list_empty(&mm->context.gmap_list))
-		__tlb_flush_idte((unsigned long) mm->pgd |
+		__tlb_flush_idte(mm, (unsigned long) mm->pgd |
 				 mm->context.asce_bits);
 	else
 		__tlb_flush_full(mm);
