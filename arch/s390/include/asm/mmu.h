@@ -1,13 +1,11 @@
 #ifndef __MMU_H
 #define __MMU_H
 
+#include <linux/cpumask.h>
 #include <linux/errno.h>
 
 typedef struct {
-#ifdef CONFIG_CPUMASK_OFFSTACK
-	struct cpumask cpu_attach_mask;
-#endif
-	cpumask_var_t cpu_attach_mask_var;
+	cpumask_t cpu_attach_mask;
 	spinlock_t attach_lock;
 	atomic_t attach_count;
 	unsigned int flush_mm;

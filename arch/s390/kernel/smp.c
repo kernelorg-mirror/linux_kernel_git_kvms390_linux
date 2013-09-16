@@ -237,7 +237,7 @@ static void pcpu_prepare_secondary(struct pcpu *pcpu, int cpu)
 	struct _lowcore *lc = pcpu->lowcore;
 
 	if (MACHINE_HAS_TLB_LC)
-		cpumask_set_cpu(cpu, init_mm.context.cpu_attach_mask_var);
+		cpumask_set_cpu(cpu, &init_mm.context.cpu_attach_mask);
 	cpumask_set_cpu(cpu, mm_cpumask(&init_mm));
 	atomic_inc(&init_mm.context.attach_count);
 	lc->cpu_nr = cpu;
@@ -778,7 +778,7 @@ void __cpu_die(unsigned int cpu)
 	atomic_dec(&init_mm.context.attach_count);
 	cpumask_clear_cpu(cpu, mm_cpumask(&init_mm));
 	if (MACHINE_HAS_TLB_LC)
-		cpumask_clear_cpu(cpu, init_mm.context.cpu_attach_mask_var);
+		cpumask_clear_cpu(cpu, &init_mm.context.cpu_attach_mask);
 }
 
 void __noreturn cpu_die(void)

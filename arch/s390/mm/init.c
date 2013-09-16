@@ -124,11 +124,8 @@ void __init paging_init(void)
 	__ctl_load(S390_lowcore.kernel_asce, 13, 13);
 	arch_local_irq_restore(4UL << (BITS_PER_LONG - 8));
 
-#ifdef CONFIG_CPUMASK_OFFSTACK
-	init_mm.context.cpu_attach_mask_var = &init_mm->context.cpu_attach_mask;
-#endif
 	if (MACHINE_HAS_TLB_LC)
-		cpumask_set_cpu(0, init_mm.context.cpu_attach_mask_var);
+		cpumask_set_cpu(0, &init_mm.context.cpu_attach_mask);
 	cpumask_set_cpu(0, mm_cpumask(&init_mm));
 	atomic_set(&init_mm.context.attach_count, 1);
 

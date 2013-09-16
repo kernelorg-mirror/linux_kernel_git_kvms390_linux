@@ -54,7 +54,7 @@ static inline void __tlb_flush_full(struct mm_struct *mm)
 			/* Reset TLB flush mask */
 			spin_lock_irqsave(&mm->context.attach_lock, flags);
 			cpumask_copy(mm_cpumask(mm),
-				     mm->context.cpu_attach_mask_var);
+				     &mm->context.cpu_attach_mask);
 			spin_unlock_irqrestore(&mm->context.attach_lock, flags);
 		}
 		/* Global TLB flush */
@@ -85,7 +85,7 @@ static inline void __tlb_flush_idte(struct mm_struct *mm, unsigned long asce)
 			/* Reset TLB flush mask */
 			spin_lock_irqsave(&mm->context.attach_lock, flags);
 			cpumask_copy(mm_cpumask(mm),
-				     mm->context.cpu_attach_mask_var);
+				     &mm->context.cpu_attach_mask);
 			spin_unlock_irqrestore(&mm->context.attach_lock, flags);
 		}
 		/* Global TLB flush for the mm */

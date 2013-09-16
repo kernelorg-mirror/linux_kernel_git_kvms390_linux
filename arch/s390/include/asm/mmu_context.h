@@ -15,10 +15,7 @@
 static inline int init_new_context(struct task_struct *tsk,
 				   struct mm_struct *mm)
 {
-#ifdef CONFIG_CPUMASK_OFFSTACK
-	mm->context.cpu_attach_mask_var = &mm->context.cpu_attach_mask;
-#endif
-	cpumask_clear(mm->context.cpu_attach_mask_var);
+	cpumask_clear(&mm->context.cpu_attach_mask);
 	atomic_set(&mm->context.attach_count, 0);
 	mm->context.flush_mm = 0;
 	mm->context.asce_bits = _ASCE_TABLE_LENGTH | _ASCE_USER_BITS;
@@ -66,13 +63,13 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	if (MACHINE_HAS_TLB_LC) {
 		unsigned long flags;
 		spin_lock_irqsave(&next->context.attach_lock, flags);
-		cpumask_set_cpu(cpu, next->context.cpu_attach_mask_var);
+		cpumask_set_cpu(cpu, &next->context.cpu_attach_mask);
 		spin_unlock_irqrestore(&next->context.attach_lock, flags);
 	}
 	cpumask_set_cpu(cpu, mm_cpumask(next));
 	update_mm(next, tsk);
 	if (MACHINE_HAS_TLB_LC)
-		cpumask_clear_cpu(cpu, prev->context.cpu_attach_mask_var);
+		cpumask_clear_cpu(cpu, &prev->context.cpu_attach_mask);
 	WARN_ON(atomic_read(&prev->context.attach_count) < 0);
 	atomic_dec(&prev->context.attach_count);
 	if (atomic_inc_return(&next->context.attach_count) >> 16)
