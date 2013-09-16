@@ -78,7 +78,7 @@ static inline void __tlb_flush_idte(struct mm_struct *mm, unsigned long asce)
 		/* Local TLB flush for the mm */
 		asm volatile(
 			"	.insn	rrf,0xb98e0000,0,%0,%1,1"
-			: : "a" (2048), "a" (asce) : "cc" );
+			: : "a" (2048), "a" (asce) : "cc");
 	} else {
 		if (MACHINE_HAS_TLB_LC) {
 			unsigned long flags;
@@ -91,7 +91,7 @@ static inline void __tlb_flush_idte(struct mm_struct *mm, unsigned long asce)
 		/* Global TLB flush for the mm */
 		asm volatile(
 			"	.insn	rrf,0xb98e0000,0,%0,%1,0"
-			: : "a" (2048), "a" (asce) : "cc" );
+			: : "a" (2048), "a" (asce) : "cc");
 	}
 	preempt_enable();
 }
