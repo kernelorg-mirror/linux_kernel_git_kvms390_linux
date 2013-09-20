@@ -149,7 +149,6 @@ bool __init sclp_has_linemode(void)
 		return 0;
 	if (!(sccb->sclp_receive_mask & (EVTYP_MSG_MASK | EVTYP_PMSGCMD_MASK)))
 		return 0;
-
 	return 1;
 }
 
