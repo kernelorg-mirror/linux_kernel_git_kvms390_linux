@@ -45,6 +45,7 @@
 #error only <linux/bitops.h> can be included directly
 #endif
 
+#include <linux/typecheck.h>
 #include <linux/compiler.h>
 
 #ifndef CONFIG_64BIT
@@ -57,15 +58,15 @@
 ({								\
 	unsigned long __old, __new;				\
 								\
+	typecheck(unsigned long *, (__addr));			\
 	asm volatile(						\
 		"	l	%0,%2\n"			\
 		"0:	lr	%1,%0\n"			\
 		__op_string "	%1,%3\n"			\
 		"	cs	%0,%1,%2\n"			\
 		"	jl	0b"				\
-		: "=&d" (__old), "=&d" (__new),			\
-		  "=Q" (*(unsigned long *) __addr)		\
-		: "d" (__val), "Q" (*(unsigned long *) __addr)	\
+		: "=&d" (__old), "=&d" (__new), "+Q" (*(__addr))\
+		: "d" (__val)					\
 		: "cc");					\
 	__old;							\
 })
@@ -82,9 +83,10 @@
 ({								\
 	unsigned long __old;					\
 								\
+	typecheck(unsigned long *, (__addr));			\
 	asm volatile(						\
 		__op_string "	%0,%2,%1\n"			\
-		: "=d" (__old),	"+Q" (*(unsigned long *)__addr)	\
+		: "=d" (__old),	"+Q" (*(__addr))		\
 		: "d" (__val)					\
 		: "cc");					\
 	__old;							\
@@ -100,15 +102,15 @@
 ({								\
 	unsigned long __old, __new;				\
 								\
+	typecheck(unsigned long *, (__addr));			\
 	asm volatile(						\
 		"	lg	%0,%2\n"			\
 		"0:	lgr	%1,%0\n"			\
 		__op_string "	%1,%3\n"			\
 		"	csg	%0,%1,%2\n"			\
 		"	jl	0b"				\
-		: "=&d" (__old), "=&d" (__new),			\
-		  "=Q" (*(unsigned long *) __addr)		\
-		: "d" (__val), "Q" (*(unsigned long *) __addr)	\
+		: "=&d" (__old), "=&d" (__new), "+Q" (*(__addr))\
+		: "d" (__val)					\
 		: "cc");					\
 	__old;							\
 })
@@ -119,6 +121,15 @@
 
 #define __BITOPS_WORDS(bits) (((bits) + BITS_PER_LONG - 1) / BITS_PER_LONG)
 
+static inline unsigned long *
+__bitops_word(unsigned long nr, volatile unsigned long *ptr)
+{
+	unsigned long addr;
+
+	addr = (unsigned long)ptr + ((nr ^ (nr & (BITS_PER_LONG - 1))) >> 3);
+	return (unsigned long *)addr;
+}
+
 static inline unsigned char *
 __bitops_byte(unsigned long nr, volatile unsigned long *ptr)
 {
@@ -127,7 +138,8 @@ __bitops_byte(unsigned long nr, volatile unsigned long *ptr)
 
 static inline void set_bit(unsigned long nr, volatile unsigned long *ptr)
 {
-	unsigned long addr, mask;
+	unsigned long *addr = __bitops_word(nr, ptr);
+	unsigned long mask;
 
 #ifdef CONFIG_HAVE_MARCH_ZEC12_FEATURES
 	if (__builtin_constant_p(nr)) {
@@ -141,18 +153,14 @@ static inline void set_bit(unsigned long nr, volatile unsigned long *ptr)
 		return;
 	}
 #endif
-	addr = (unsigned long) ptr;
-	/* calculate address for CS */
-	addr += (nr ^ (nr & (BITS_PER_LONG - 1))) >> 3;
-	/* make OR mask */
 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	/* Do the atomic update. */
 	__BITOPS_LOOP(addr, mask, __BITOPS_OR);
 }
 
 static inline void clear_bit(unsigned long nr, volatile unsigned long *ptr)
 {
-	unsigned long addr, mask;
+	unsigned long *addr = __bitops_word(nr, ptr);
+	unsigned long mask;
 
 #ifdef CONFIG_HAVE_MARCH_ZEC12_FEATURES
 	if (__builtin_constant_p(nr)) {
@@ -166,18 +174,14 @@ static inline void clear_bit(unsigned long nr, volatile unsigned long *ptr)
 		return;
 	}
 #endif
-	addr = (unsigned long) ptr;
-	/* calculate address for CS */
-	addr += (nr ^ (nr & (BITS_PER_LONG - 1))) >> 3;
-	/* make AND mask */
 	mask = ~(1UL << (nr & (BITS_PER_LONG - 1)));
-	/* Do the atomic update. */
 	__BITOPS_LOOP(addr, mask, __BITOPS_AND);
 }
 
 static inline void change_bit(unsigned long nr, volatile unsigned long *ptr)
 {
-	unsigned long addr, mask;
+	unsigned long *addr = __bitops_word(nr, ptr);
+	unsigned long mask;
 
 #ifdef CONFIG_HAVE_MARCH_ZEC12_FEATURES
 	if (__builtin_constant_p(nr)) {
@@ -191,26 +195,17 @@ static inline void change_bit(unsigned long nr, volatile unsigned long *ptr)
 		return;
 	}
 #endif
-	addr = (unsigned long) ptr;
-	/* calculate address for CS */
-	addr += (nr ^ (nr & (BITS_PER_LONG - 1))) >> 3;
-	/* make XOR mask */
 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	/* Do the atomic update. */
 	__BITOPS_LOOP(addr, mask, __BITOPS_XOR);
 }
 
 static inline int
 test_and_set_bit(unsigned long nr, volatile unsigned long *ptr)
 {
-	unsigned long addr, old, mask;
+	unsigned long *addr = __bitops_word(nr, ptr);
+	unsigned long old, mask;
 
-	addr = (unsigned long) ptr;
-	/* calculate address for CS */
-	addr += (nr ^ (nr & (BITS_PER_LONG - 1))) >> 3;
-	/* make OR/test mask */
 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	/* Do the atomic update. */
 	old = __BITOPS_LOOP(addr, mask, __BITOPS_OR);
 	barrier();
 	return (old & mask) != 0;
@@ -219,14 +214,10 @@ test_and_set_bit(unsigned long nr, volatile unsigned long *ptr)
 static inline int
 test_and_clear_bit(unsigned long nr, volatile unsigned long *ptr)
 {
-	unsigned long addr, old, mask;
+	unsigned long *addr = __bitops_word(nr, ptr);
+	unsigned long old, mask;
 
-	addr = (unsigned long) ptr;
-	/* calculate address for CS */
-	addr += (nr ^ (nr & (BITS_PER_LONG - 1))) >> 3;
-	/* make AND/test mask */
 	mask = ~(1UL << (nr & (BITS_PER_LONG - 1)));
-	/* Do the atomic update. */
 	old = __BITOPS_LOOP(addr, mask, __BITOPS_AND);
 	barrier();
 	return (old & ~mask) != 0;
@@ -235,14 +226,10 @@ test_and_clear_bit(unsigned long nr, volatile unsigned long *ptr)
 static inline int
 test_and_change_bit(unsigned long nr, volatile unsigned long *ptr)
 {
-	unsigned long addr, old, mask;
+	unsigned long *addr = __bitops_word(nr, ptr);
+	unsigned long old, mask;
 
-	addr = (unsigned long) ptr;
-	/* calculate address for CS */
-	addr += (nr ^ (nr & (BITS_PER_LONG - 1))) >> 3;
-	/* make XOR/test mask */
 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	/* Do the atomic update. */
 	old = __BITOPS_LOOP(addr, mask, __BITOPS_XOR);
 	barrier();
 	return (old & mask) != 0;
