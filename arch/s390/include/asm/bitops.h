@@ -351,15 +351,55 @@ static inline int test_bit_inv(unsigned long nr,
 
 #ifdef CONFIG_HAVE_MARCH_Z9_109_FEATURES
 
-static inline unsigned long __flogr(unsigned long word)
+/**
+ * __flogr - find leftmost one
+ * @word - The word to search
+ *
+ * Returns the bit number of the most significant bit set,
+ * where the most significant bit has bit number 0.
+ * If no bit is set this function returns 64.
+ */
+static inline unsigned char __flogr(unsigned long word)
 {
-	register unsigned long bit asm("4") = word;
-	register unsigned long out asm("5");
+	if (__builtin_constant_p(word)) {
+		unsigned long bit = 0;
 
-	asm volatile(
-		"       flogr   %[bit],%[bit]\n"
-		: [bit] "+d" (bit), [out] "=d" (out) : : "cc");
-	return bit;
+		if (!word)
+			return 64;
+		if (!(word & 0xffffffff00000000UL)) {
+			word <<= 32;
+			bit += 32;
+		}
+		if (!(word & 0xffff000000000000UL)) {
+			word <<= 16;
+			bit += 16;
+		}
+		if (!(word & 0xff00000000000000UL)) {
+			word <<= 8;
+			bit += 8;
+		}
+		if (!(word & 0xf000000000000000UL)) {
+			word <<= 4;
+			bit += 4;
+		}
+		if (!(word & 0xc000000000000000UL)) {
+			word <<= 2;
+			bit += 2;
+		}
+		if (!(word & 0x8000000000000000UL)) {
+			word <<= 1;
+			bit += 1;
+		}
+		return bit;
+	} else {
+		register unsigned long bit asm("4") = word;
+		register unsigned long out asm("5");
+
+		asm volatile(
+			"       flogr   %[bit],%[bit]\n"
+			: [bit] "+d" (bit), [out] "=d" (out) : : "cc");
+		return bit;
+	}
 }
 
 /**
@@ -377,15 +417,15 @@ static inline unsigned long __ffs(unsigned long word)
  * ffs - find first bit set
  * @word: the word to search
  *
- * This is defined the same way as
- * the libc and compiler builtin ffs routines, therefore
- * differs in spirit from the above ffz (man ffs).
+ * This is defined the same way as the libc and
+ * compiler builtin ffs routines (man ffs).
  */
 static inline int ffs(int word)
 {
-	if (!word)
-		return 0;
-	return 1 + __ffs(word);
+	unsigned long mask = 2 * BITS_PER_LONG - 1;
+	unsigned int val = (unsigned int)word;
+
+	return (1 + (__flogr(-val & val) ^ (BITS_PER_LONG - 1))) & mask;
 }
 
 /**
@@ -400,20 +440,6 @@ static inline unsigned long __fls(unsigned long word)
 }
 
 /**
- * fls - find last (most-significant) bit set
- * @word: the word to search
- *
- * This is defined the same way as ffs.
- * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
- */
-static inline int fls(int word)
-{
-	if (!word)
-		return 0;
-	return 1 + __fls(word);
-}
-
-/**
  * fls64 - find last set bit in a 64-bit word
  * @word: the word to search
  *
@@ -424,11 +450,23 @@ static inline int fls(int word)
  * set bit if value is nonzero. The last (most significant) bit is
  * at position 64.
  */
-static inline int fls64(__u64 word)
+static inline int fls64(unsigned long word)
 {
-	if (!word)
-		return 0;
-	return 1 + __fls(word);
+	unsigned long mask = 2 * BITS_PER_LONG - 1;
+
+	return (1 + (__flogr(word) ^ (BITS_PER_LONG - 1))) & mask;
+}
+
+/**
+ * fls - find last (most-significant) bit set
+ * @word: the word to search
+ *
+ * This is defined the same way as ffs.
+ * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
+ */
+static inline int fls(int word)
+{
+	return fls64((unsigned int)word);
 }
 
 #else /* CONFIG_HAVE_MARCH_Z9_109_FEATURES */
