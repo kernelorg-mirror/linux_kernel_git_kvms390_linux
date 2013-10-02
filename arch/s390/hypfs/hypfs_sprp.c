@@ -48,7 +48,7 @@ static int hypfs_sprp_create(void **data, void **data_free_ptr, size_t *size)
 	if (!lpib)
 		return -ENOMEM;
 	rc = hypfs_sprp_diag304(lpib, DIAG304_QUERY_PRP);
-	if (rc) {
+	if (rc != 1) {
 		*data = *data_free_ptr = NULL;
 		*size = 0;
 		free_page((unsigned long) lpib);
