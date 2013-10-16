@@ -31,7 +31,7 @@ static inline int test_fp_ctl(u32 fpc)
 		: "=d" (rc), "=d" (orig_fpc)
 		: "d" (fpc), "0" (-EINVAL));
 	return rc;
-	
+
 }
 
 static inline void save_fp_ctl(u32 *fpc)

@@ -19,7 +19,7 @@
 #include <math-emu/double.h>
 #include <math-emu/quad.h>
 
-#define FPC_VALID_MASK          0xF8F8FF03
+#define FPC_VALID_MASK		0xF8F8FF03
 
 /*
  * I miss a macro to round a floating point number to the
