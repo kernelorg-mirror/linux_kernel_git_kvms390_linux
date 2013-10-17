@@ -125,8 +125,17 @@ static int hmcdrv_dev_open(struct inode *inode, struct file *fp)
 	if ((fp->f_flags & O_ACCMODE) == O_RDONLY)
 		return -EINVAL;
 
-	rc = hmcdrv_ftp_startup();
+	/* prevent unloading this module as long as anyone holds the
+	 * device file open - so increment the reference count here
+	 */
+	if (!try_module_get(THIS_MODULE))
+		return -ENODEV;
+
 	fp->private_data = NULL; /* no command yet */
+	rc = hmcdrv_ftp_startup();
+	if (rc)
+		module_put(THIS_MODULE);
+
 	pr_debug("open file '/dev/%s' with return code %d\n",
 		 fp->f_dentry->d_name.name, rc);
 	return rc;
@@ -141,6 +150,7 @@ static int hmcdrv_dev_release(struct inode *inode, struct file *fp)
 	kfree(fp->private_data);
 	fp->private_data = NULL;
 	hmcdrv_ftp_shutdown();
+	module_put(THIS_MODULE);
 	return 0;
 }
 

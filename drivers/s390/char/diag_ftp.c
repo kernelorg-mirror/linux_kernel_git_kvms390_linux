@@ -316,8 +316,8 @@ int diag_ftp_startup(void)
  */
 void diag_ftp_shutdown(void)
 {
-	unregister_external_interrupt(0x2603, diag_ftp_handler);
 	ctl_clear_bit(0, 63 - 22);
+	unregister_external_interrupt(0x2603, diag_ftp_handler);
 	free_page((unsigned long)diag_ftp_fpl);
 	diag_ftp_fpl = NULL;
 }

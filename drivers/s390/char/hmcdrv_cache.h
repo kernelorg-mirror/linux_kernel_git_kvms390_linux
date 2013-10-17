@@ -11,7 +11,7 @@
 #include <linux/mmzone.h>
 #include "hmcdrv_ftp.h"
 
-#define HMCDRV_CACHE_SIZE_DFLT	(MAX_ORDER_NR_PAGES * PAGE_SIZE)
+#define HMCDRV_CACHE_SIZE_DFLT	(MAX_ORDER_NR_PAGES * PAGE_SIZE / 2UL)
 
 typedef ssize_t (*hmcdrv_cache_ftpfunc)(const struct hmcdrv_ftp_cmdspec *ftp,
 					size_t *fsize);
