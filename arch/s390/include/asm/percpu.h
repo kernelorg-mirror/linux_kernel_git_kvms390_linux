@@ -70,26 +70,26 @@
 
 #define arch_this_cpu_add(pcp, val, op1, op2, szcast)			\
 {									\
-	typedef typeof(pcp) pcp_op_T__;                                 \
-	pcp_op_T__ val__ = (val);                                       \
-	pcp_op_T__ old__, *ptr__;                                       \
-	preempt_disable();                                              \
-	ptr__ = __this_cpu_ptr(&(pcp));                                 \
-	if (__builtin_constant_p(val__) &&                              \
-	    ((szcast)val__ > -129) && ((szcast)val__ < 128)) {          \
-		asm volatile(                                           \
-			op2 "   %[ptr__],%[val__]\n"                    \
-			: [ptr__] "+Q" (*ptr__)                         \
-			: [val__] "i" ((szcast)val__)                   \
-			: "cc");                                        \
-	} else {                                                        \
-		asm volatile(                                           \
-			op1 "   %[old__],%[val__],%[ptr__]\n"           \
-			: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)   \
-			: [val__] "d" (val__)                           \
-			: "cc");                                        \
-	}                                                               \
-	preempt_enable();                                               \
+	typedef typeof(pcp) pcp_op_T__; 				\
+	pcp_op_T__ val__ = (val);					\
+	pcp_op_T__ old__, *ptr__;					\
+	preempt_disable();						\
+	ptr__ = __this_cpu_ptr(&(pcp)); 				\
+	if (__builtin_constant_p(val__) &&				\
+	    ((szcast)val__ > -129) && ((szcast)val__ < 128)) {		\
+		asm volatile(						\
+			op2 "   %[ptr__],%[val__]\n"			\
+			: [ptr__] "+Q" (*ptr__) 			\
+			: [val__] "i" ((szcast)val__)			\
+			: "cc");					\
+	} else {							\
+		asm volatile(						\
+			op1 "   %[old__],%[val__],%[ptr__]\n"		\
+			: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)	\
+			: [val__] "d" (val__)				\
+			: "cc");					\
+	}								\
+	preempt_enable();						\
 }
 
 #define this_cpu_add_4(pcp, val) arch_this_cpu_add(pcp, val, "laa", "asi", int)
@@ -97,36 +97,36 @@
 
 #define arch_this_cpu_add_return(pcp, val, op)				\
 ({									\
-	typedef typeof(pcp) pcp_op_T__;                                 \
-	pcp_op_T__ val__ = (val);                                       \
-	pcp_op_T__ old__, *ptr__;                                       \
-	preempt_disable();                                              \
-	ptr__ = __this_cpu_ptr(&(pcp));                                 \
-	asm volatile(                                                   \
-		op "    %[old__],%[val__],%[ptr__]\n"                   \
-		: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)           \
-		: [val__] "d" (val__)                                   \
-		: "cc");                                                \
-	preempt_enable();                                               \
+	typedef typeof(pcp) pcp_op_T__; 				\
+	pcp_op_T__ val__ = (val);					\
+	pcp_op_T__ old__, *ptr__;					\
+	preempt_disable();						\
+	ptr__ = __this_cpu_ptr(&(pcp)); 				\
+	asm volatile(							\
+		op "    %[old__],%[val__],%[ptr__]\n"			\
+		: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)		\
+		: [val__] "d" (val__)					\
+		: "cc");						\
+	preempt_enable();						\
 	old__ + val__;							\
 })
 
 #define this_cpu_add_return_4(pcp, val) arch_this_cpu_add_return(pcp, val, "laa")
 #define this_cpu_add_return_8(pcp, val) arch_this_cpu_add_return(pcp, val, "laag")
-  
+
 #define arch_this_cpu_to_op(pcp, val, op)				\
 {									\
-	typedef typeof(pcp) pcp_op_T__;                                 \
-	pcp_op_T__ val__ = (val);                                       \
-	pcp_op_T__ old__, *ptr__;                                       \
-	preempt_disable();                                              \
-	ptr__ = __this_cpu_ptr(&(pcp));                                 \
-	asm volatile(                                                   \
-		op "    %[old__],%[val__],%[ptr__]\n"                   \
-		: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)           \
-		: [val__] "d" (val__)                                   \
-		: "cc");                                                \
-	preempt_enable();                                               \
+	typedef typeof(pcp) pcp_op_T__; 				\
+	pcp_op_T__ val__ = (val);					\
+	pcp_op_T__ old__, *ptr__;					\
+	preempt_disable();						\
+	ptr__ = __this_cpu_ptr(&(pcp)); 				\
+	asm volatile(							\
+		op "    %[old__],%[val__],%[ptr__]\n"			\
+		: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)		\
+		: [val__] "d" (val__)					\
+		: "cc");						\
+	preempt_enable();						\
 }
 
 #define this_cpu_and_4(pcp, val)	arch_this_cpu_to_op(pcp, val, "lan")
