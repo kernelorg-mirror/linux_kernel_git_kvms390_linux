@@ -93,7 +93,8 @@ static int __hypfs_sprp_ioctl(void __user *user_area)
 			rc = -EFAULT;
 			goto out;
 		}
-	rc = 0;
+
+	rc = copy_to_user(user_area, &diag304, sizeof(diag304)) ? -EFAULT : 0;
 out:
 	free_page((unsigned long) lpib);
 	return rc;
