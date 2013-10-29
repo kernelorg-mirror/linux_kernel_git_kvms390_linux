@@ -51,10 +51,6 @@ static struct hmcdrv_cache_entry hmcdrv_cache_file = {
 	.fname = {'\0'}
 };
 
-static ssize_t hmcdrv_cache_get(const struct hmcdrv_ftp_cmdspec *ftp);
-static ssize_t hmcdrv_cache_do(const struct hmcdrv_ftp_cmdspec *ftp,
-			       hmcdrv_cache_ftpfunc func);
-
 /**
  * hmcdrv_cache_get() - looks for file data/content in read cache
  * @ftp: pointer to FTP command specification
@@ -92,7 +88,7 @@ static ssize_t hmcdrv_cache_get(const struct hmcdrv_ftp_cmdspec *ftp)
 	pos = ftp->ofs - hmcdrv_cache_file.ofs;
 
 	if ((pos >= 0) &&
-	    ((pos + len) < hmcdrv_cache_file.len)) {
+	    ((pos + len) <= hmcdrv_cache_file.len)) {
 
 		memcpy(ftp->buf,
 		       hmcdrv_cache_file.content + pos,

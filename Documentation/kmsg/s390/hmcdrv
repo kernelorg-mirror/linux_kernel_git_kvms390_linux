@@ -36,17 +36,3 @@
  * the Linux system, else restart it (on demand).
  */
 
-/*?
- * Text: "SCLP (ET7) request failed with response code 0x%04x, flag 0x%02x, status %d\n"
- * Severity: Warning
- * Parameter:
- *   @1: SCLP response code (hexadecimal)
- *   @2: event buffer header flags (hexadecimal)
- *   @3: request status from SCLP driver
- * Description:
- * A SCLP Event Type 7 request has failed, in a LPAR environment.
- * User action:
- * Check if there is a CD/DVD inserted into the HMC drive and is assigned to
- * the associated server. Also verify that the LPAR user (this is not the
- * Linux user) executing the SLCP request has appropriate rights to do so.
- */

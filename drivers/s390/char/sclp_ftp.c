@@ -12,6 +12,7 @@
 #include <linux/kernel.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
+#include <linux/io.h>
 #include <linux/wait.h>
 #include <linux/string.h>
 
@@ -79,10 +80,6 @@ static void sclp_ftp_txcb(struct sclp_req *req, void *data)
 		sclp_ftp_status = SCLP_REQ_FILLED;
 	} else {
 		sclp_ftp_status = SCLP_REQ_FAILED;
-		pr_warn("SCLP (ET7) request failed with response code 0x%04x, flag 0x%02x, status %d\n",
-			sccb->hdr.response_code,
-			sccb->evbuf.hdr.flags,
-			req->status);
 	}
 
 	wake_up_interruptible(&sclp_ftp_waitq);
@@ -146,16 +143,17 @@ static int sclp_ftp_prepare(const struct hmcdrv_ftp_cmdspec *ftp)
 {
 	size_t len;
 
-	sclp_ftp_sccb->evbuf.mdd.ftp.ldflg = SCLP_DIAG_FTP_LDFAIL;
-	sclp_ftp_sccb->evbuf.mdd.ftp.fsize = 0;
-	sclp_ftp_sccb->evbuf.mdd.ftp.cmd = ftp->id;
-	sclp_ftp_sccb->evbuf.mdd.ftp.offset = ftp->ofs;
-	sclp_ftp_sccb->evbuf.mdd.ftp.length = ftp->len;
-	sclp_ftp_sccb->evbuf.mdd.ftp.bufaddr = (u64) ftp->buf;
+	struct sclp_diag_ftp *diag = &sclp_ftp_sccb->evbuf.mdd.ftp;
+
+	diag->ldflg = SCLP_DIAG_FTP_LDFAIL;
+	diag->fsize = 0;
+	diag->cmd = ftp->id;
+	diag->offset = ftp->ofs;
+	diag->length = ftp->len;
+	diag->bufaddr = virt_to_phys(ftp->buf);
 	sclp_ftp_sccb->evbuf.hdr.flags = 0; /* clear "processed-buffer" */
 
-	len = strlcpy(sclp_ftp_sccb->evbuf.mdd.ftp.fident,
-		      ftp->fname, HMCDRV_FTP_FIDENT_MAX);
+	len = strlcpy(diag->fident, ftp->fname, HMCDRV_FTP_FIDENT_MAX);
 
 	if (len >= HMCDRV_FTP_FIDENT_MAX)
 		return -EINVAL;
@@ -309,8 +307,8 @@ int sclp_ftp_startup(void)
 	sclp_ftp_sccb->evbuf.route = SCLP_DIAG_FTP_ROUTE;
 	sclp_ftp_sccb->evbuf.mdd.ftp.pcx = SCLP_DIAG_FTP_XPCX;
 	sclp_ftp_sccb->evbuf.mdd.ftp.srcflg = 0;
-	sclp_ftp_sccb->evbuf.mdd.ftp.pgsize = (PAGE_SIZE == 4096) ? 0 : 1;
-	sclp_ftp_sccb->evbuf.mdd.ftp.asce = S390_lowcore.kernel_asce;
+	sclp_ftp_sccb->evbuf.mdd.ftp.pgsize = 0;
+	sclp_ftp_sccb->evbuf.mdd.ftp.asce = _ASCE_REAL_SPACE;
 	sclp_ftp_sccb->hdr.length = SCLP_DIAG_FTP_EVBUF_LEN +
 		sizeof(struct sccb_header);
 	sclp_ftp_requ.sccb = sclp_ftp_sccb;
