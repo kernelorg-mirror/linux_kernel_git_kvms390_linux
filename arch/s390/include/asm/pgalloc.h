@@ -112,7 +112,6 @@ static inline void pud_populate(struct mm_struct *mm, pud_t *pud, pmd_t *pmd)
 
 static inline pgd_t *pgd_alloc(struct mm_struct *mm)
 {
-	spin_lock_init(&mm->context.attach_lock);
 	spin_lock_init(&mm->context.list_lock);
 	INIT_LIST_HEAD(&mm->context.pgtable_list);
 	INIT_LIST_HEAD(&mm->context.gmap_list);

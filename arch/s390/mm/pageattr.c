@@ -73,7 +73,7 @@ static void change_page_attr(unsigned long addr, int numpages,
 			break;
 		pte = *ptep;
 		pte = set(pte);
-		__ptep_ipte(&init_mm, addr, ptep);
+		__ptep_ipte(addr, ptep);
 		*ptep = pte;
 		addr += PAGE_SIZE;
 	}
@@ -119,7 +119,7 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
 		pmd = pmd_offset(pud, address);
 		pte = pte_offset_kernel(pmd, address);
 		if (!enable) {
-			__ptep_ipte(&init_mm, address, pte);
+			__ptep_ipte(address, pte);
 			pte_val(*pte) = _PAGE_INVALID;
 			continue;
 		}

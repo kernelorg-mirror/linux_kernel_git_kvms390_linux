@@ -6,7 +6,6 @@
 
 typedef struct {
 	cpumask_t cpu_attach_mask;
-	spinlock_t attach_lock;
 	atomic_t attach_count;
 	unsigned int flush_mm;
 	spinlock_t list_lock;
@@ -20,8 +19,7 @@ typedef struct {
 } mm_context_t;
 
 #define INIT_MM_CONTEXT(name)						      \
-	.context.attach_lock = __SPIN_LOCK_UNLOCKED(name.context.attach_lock),\
-	.context.list_lock = __SPIN_LOCK_UNLOCKED(name.context.list_lock),    \
+	.context.list_lock    = __SPIN_LOCK_UNLOCKED(name.context.list_lock), \
 	.context.pgtable_list = LIST_HEAD_INIT(name.context.pgtable_list),    \
 	.context.gmap_list = LIST_HEAD_INIT(name.context.gmap_list),
 

@@ -146,7 +146,7 @@ struct stack_frame {
 	regs->gprs[15]	= new_stackp;					\
 	__tlb_flush_mm(current->mm);					\
 	crst_table_downgrade(current->mm, 1UL << 31);			\
-	update_mm(current->mm, current);				\
+	update_user_asce(current->mm);					\
 	execve_tail();							\
 } while (0)
 

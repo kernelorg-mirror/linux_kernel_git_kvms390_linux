@@ -45,21 +45,19 @@ static inline void __tlb_flush_global(void)
 static inline void __tlb_flush_full(struct mm_struct *mm)
 {
 	preempt_disable();
+	atomic_add(0x10000, &mm->context.attach_count);
 	if (cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
 		/* Local TLB flush */
 		__tlb_flush_local();
 	} else {
-		if (MACHINE_HAS_TLB_LC) {
-			unsigned long flags;
-			/* Reset TLB flush mask */
-			spin_lock_irqsave(&mm->context.attach_lock, flags);
-			cpumask_copy(mm_cpumask(mm),
-				     &mm->context.cpu_attach_mask);
-			spin_unlock_irqrestore(&mm->context.attach_lock, flags);
-		}
 		/* Global TLB flush */
 		__tlb_flush_global();
+		/* Reset TLB flush mask */
+		if (MACHINE_HAS_TLB_LC)
+			cpumask_copy(mm_cpumask(mm),
+				     &mm->context.cpu_attach_mask);
 	}
+	atomic_sub(0x10000, &mm->context.attach_count);
 	preempt_enable();
 }
 #else
@@ -72,27 +70,28 @@ static inline void __tlb_flush_full(struct mm_struct *mm)
  */
 static inline void __tlb_flush_idte(struct mm_struct *mm, unsigned long asce)
 {
+	int active, count;
+
 	preempt_disable();
-	if (MACHINE_HAS_TLB_LC &&
+	active = (mm == current->active_mm) ? 1 : 0;
+	count = atomic_add_return(0x10000, &mm->context.attach_count);
+	if (MACHINE_HAS_TLB_LC && (count & 0xffff) <= active &&
 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
 		/* Local TLB flush for the mm */
 		asm volatile(
 			"	.insn	rrf,0xb98e0000,0,%0,%1,1"
 			: : "a" (2048), "a" (asce) : "cc");
 	} else {
-		if (MACHINE_HAS_TLB_LC) {
-			unsigned long flags;
-			/* Reset TLB flush mask */
-			spin_lock_irqsave(&mm->context.attach_lock, flags);
-			cpumask_copy(mm_cpumask(mm),
-				     &mm->context.cpu_attach_mask);
-			spin_unlock_irqrestore(&mm->context.attach_lock, flags);
-		}
 		/* Global TLB flush for the mm */
 		asm volatile(
 			"	.insn	rrf,0xb98e0000,0,%0,%1,0"
 			: : "a" (2048), "a" (asce) : "cc");
+		/* Reset TLB flush mask */
+		if (MACHINE_HAS_TLB_LC)
+			cpumask_copy(mm_cpumask(mm),
+				     &mm->context.cpu_attach_mask);
 	}
+	atomic_sub(0x10000, &mm->context.attach_count);
 	preempt_enable();
 }
 

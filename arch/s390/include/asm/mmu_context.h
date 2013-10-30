@@ -36,7 +36,7 @@ static inline int init_new_context(struct task_struct *tsk,
 #define LCTL_OPCODE "lctlg"
 #endif
 
-static inline void update_mm(struct mm_struct *mm, struct task_struct *tsk)
+static inline void update_user_asce(struct mm_struct *mm)
 {
 	pgd_t *pgd = mm->pgd;
 
@@ -46,43 +46,54 @@ static inline void update_mm(struct mm_struct *mm, struct task_struct *tsk)
 	set_fs(current->thread.mm_segment);
 }
 
+static inline void clear_user_asce(struct mm_struct *mm)
+{
+	S390_lowcore.user_asce = S390_lowcore.kernel_asce;
+	asm volatile(LCTL_OPCODE" 1,1,%0\n" : : "m" (S390_lowcore.user_asce));
+	asm volatile(LCTL_OPCODE" 7,7,%0\n" : : "m" (S390_lowcore.user_asce));
+}
+
 static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 			     struct task_struct *tsk)
 {
-	int cpu;
+	int cpu = smp_processor_id();
 
 	if (prev == next)
 		return;
-	cpu = smp_processor_id();
-	if (MACHINE_HAS_TLB_LC) {
-		unsigned long flags;
-		spin_lock_irqsave(&next->context.attach_lock, flags);
+	if (MACHINE_HAS_TLB_LC)
 		cpumask_set_cpu(cpu, &next->context.cpu_attach_mask);
-		spin_unlock_irqrestore(&next->context.attach_lock, flags);
+	if (atomic_inc_return(&next->context.attach_count) >> 16) {
+		/* Delay update_user_asce until all TLB flushes are done. */
+		set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
+		/* Clear old ASCE by loading the kernel ASCE. */
+		clear_user_asce(next);
+	} else {
+		cpumask_set_cpu(cpu, mm_cpumask(next));
+		update_user_asce(next);
+		if (next->context.flush_mm)
+			/* Flush pending TLBs */
+			__tlb_flush_mm(next);
 	}
-	cpumask_set_cpu(cpu, mm_cpumask(next));
-	update_mm(next, tsk);
+	atomic_dec(&prev->context.attach_count);
+	WARN_ON(atomic_read(&prev->context.attach_count) < 0);
 	if (MACHINE_HAS_TLB_LC)
 		cpumask_clear_cpu(cpu, &prev->context.cpu_attach_mask);
-	WARN_ON(atomic_read(&prev->context.attach_count) < 0);
-	atomic_dec(&prev->context.attach_count);
-	if (atomic_inc_return(&next->context.attach_count) >> 16)
-		set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
-	else if (next->context.flush_mm)
-		/* Flush pending TLBs */
-		__tlb_flush_mm(next);
 }
 
 #define finish_switch_mm finish_switch_mm
 static inline void finish_switch_mm(struct mm_struct *mm,
 				    struct task_struct *tsk)
 {
-	if (test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT)) {
-		while (atomic_read(&mm->context.attach_count) >> 16)
-			cpu_relax();
-		if (mm->context.flush_mm)
-			__tlb_flush_mm(mm);
-	}
+	if (!test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
+		return;
+
+	while (atomic_read(&mm->context.attach_count) >> 16)
+		cpu_relax();
+
+	cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
+	update_user_asce(mm);
+	if (mm->context.flush_mm)
+		__tlb_flush_mm(mm);
 }
 
 #define enter_lazy_tlb(mm,tsk)	do { } while (0)

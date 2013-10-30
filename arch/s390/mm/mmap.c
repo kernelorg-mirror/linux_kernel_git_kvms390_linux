@@ -116,7 +116,7 @@ int s390_mmap_check(unsigned long addr, unsigned long len, unsigned long flags)
 		rc = crst_table_upgrade(current->mm, 1UL << 53);
 		if (rc)
 			return rc;
-		update_mm(current->mm, current);
+		update_user_asce(current->mm);
 	}
 	return 0;
 }
@@ -137,7 +137,7 @@ s390_get_unmapped_area(struct file *filp, unsigned long addr,
 		rc = crst_table_upgrade(mm, 1UL << 53);
 		if (rc)
 			return (unsigned long) rc;
-		update_mm(mm, current);
+		update_user_asce(mm);
 		area = arch_get_unmapped_area(filp, addr, len, pgoff, flags);
 	}
 	return area;
@@ -160,7 +160,7 @@ s390_get_unmapped_area_topdown(struct file *filp, const unsigned long addr,
 		rc = crst_table_upgrade(mm, 1UL << 53);
 		if (rc)
 			return (unsigned long) rc;
-		update_mm(mm, current);
+		update_user_asce(mm);
 		area = arch_get_unmapped_area_topdown(filp, addr, len,
 						      pgoff, flags);
 	}

@@ -440,7 +440,7 @@ void __kprobes do_asce_exception(struct pt_regs *regs)
 	up_read(&mm->mmap_sem);
 
 	if (vma) {
-		update_mm(mm, current);
+		update_user_asce(mm);
 		return;
 	}
 
