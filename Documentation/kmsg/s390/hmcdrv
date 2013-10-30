@@ -35,4 +35,3 @@
  * available and the HMC is operating. Also verify any overload condition on
  * the Linux system, else restart it (on demand).
  */
-
