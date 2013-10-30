@@ -250,15 +250,12 @@ config MARCH_Z990_TUNE
 
 config MARCH_Z9_109_TUNE
 	def_bool TUNE_Z9_109 || MARCH_Z9_109 && TUNE_DEFAULT
-	bool
 
 config MARCH_Z10_TUNE
 	def_bool TUNE_Z10 || MARCH_Z10 && TUNE_DEFAULT
-	bool
 
 config MARCH_Z196_TUNE
 	def_bool TUNE_Z196 || MARCH_Z196 && TUNE_DEFAULT
-	bool
 
 config MARCH_ZEC12_TUNE
 	def_bool TUNE_ZEC12 || MARCH_ZEC12 && TUNE_DEFAULT
