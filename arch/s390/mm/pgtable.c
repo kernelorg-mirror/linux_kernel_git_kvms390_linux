@@ -53,7 +53,7 @@ static void __crst_table_upgrade(void *arg)
 {
 	struct mm_struct *mm = arg;
 
-	if (current->mm == mm)
+	if (current->active_mm == mm)
 		update_mm(mm, current);
 	__tlb_flush_local();
 }
