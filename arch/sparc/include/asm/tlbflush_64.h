@@ -38,9 +38,9 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
 #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
 
 extern void flush_tlb_pending(void);
-extern void arch_enter_lazy_mmu_mode(struct mm_struct *mm);
-extern void arch_leave_lazy_mmu_mode(struct mm_struct *mm);
-#define arch_flush_lazy_mmu_mode(mm)	  do {} while (0)
+extern void arch_enter_lazy_mmu_mode(void);
+extern void arch_leave_lazy_mmu_mode(void);
+#define arch_flush_lazy_mmu_mode()      do {} while (0)
 
 /* Local cpu only.  */
 extern void __flush_tlb_all(void);

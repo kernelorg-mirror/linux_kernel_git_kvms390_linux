@@ -1413,7 +1413,7 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
 	 */
 	__flush_tlb_all();
 
-	arch_flush_lazy_mmu_mode(&init_mm);
+	arch_flush_lazy_mmu_mode();
 }
 
 #ifdef CONFIG_HIBERNATION

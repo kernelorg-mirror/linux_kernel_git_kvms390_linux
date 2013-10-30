@@ -253,23 +253,23 @@ static void leave_lazy(enum paravirt_lazy_mode mode)
 	this_cpu_write(paravirt_lazy_mode, PARAVIRT_LAZY_NONE);
 }
 
-void paravirt_enter_lazy_mmu(struct mm_struct *mm)
+void paravirt_enter_lazy_mmu(void)
 {
 	enter_lazy(PARAVIRT_LAZY_MMU);
 }
 
-void paravirt_leave_lazy_mmu(struct mm_struct *mm)
+void paravirt_leave_lazy_mmu(void)
 {
 	leave_lazy(PARAVIRT_LAZY_MMU);
 }
 
-void paravirt_flush_lazy_mmu(struct mm_struct *mm)
+void paravirt_flush_lazy_mmu(void)
 {
 	preempt_disable();
 
 	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
-		arch_leave_lazy_mmu_mode(mm);
-		arch_enter_lazy_mmu_mode(mm);
+		arch_leave_lazy_mmu_mode();
+		arch_enter_lazy_mmu_mode();
 	}
 
 	preempt_enable();
@@ -280,7 +280,7 @@ void paravirt_start_context_switch(struct task_struct *prev)
 	BUG_ON(preemptible());
 
 	if (this_cpu_read(paravirt_lazy_mode) == PARAVIRT_LAZY_MMU) {
-		arch_leave_lazy_mmu_mode(prev->mm);
+		arch_leave_lazy_mmu_mode();
 		set_ti_thread_flag(task_thread_info(prev), TIF_LAZY_MMU_UPDATES);
 	}
 	enter_lazy(PARAVIRT_LAZY_CPU);
@@ -293,7 +293,7 @@ void paravirt_end_context_switch(struct task_struct *next)
 	leave_lazy(PARAVIRT_LAZY_CPU);
 
 	if (test_and_clear_ti_thread_flag(task_thread_info(next), TIF_LAZY_MMU_UPDATES))
-		arch_enter_lazy_mmu_mode(next->mm);
+		arch_enter_lazy_mmu_mode();
 }
 
 enum paravirt_lazy_mode paravirt_get_lazy_mode(void)

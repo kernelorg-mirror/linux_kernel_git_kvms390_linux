@@ -2128,11 +2128,11 @@ static void __init xen_post_allocator_init(void)
 	xen_mark_init_mm_pinned();
 }
 
-static void xen_leave_lazy_mmu(struct mm_struct *mm)
+static void xen_leave_lazy_mmu(void)
 {
 	preempt_disable();
 	xen_mc_flush();
-	paravirt_leave_lazy_mmu(mm);
+	paravirt_leave_lazy_mmu();
 	preempt_enable();
 }
 

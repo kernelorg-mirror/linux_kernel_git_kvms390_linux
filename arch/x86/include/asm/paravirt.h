@@ -689,19 +689,19 @@ static inline void arch_end_context_switch(struct task_struct *next)
 }
 
 #define  __HAVE_ARCH_ENTER_LAZY_MMU_MODE
-static inline void arch_enter_lazy_mmu_mode(struct mm_struct *mm)
+static inline void arch_enter_lazy_mmu_mode(void)
 {
-	PVOP_VCALL1(pv_mmu_ops.lazy_mode.enter, mm);
+	PVOP_VCALL0(pv_mmu_ops.lazy_mode.enter);
 }
 
-static inline void arch_leave_lazy_mmu_mode(struct mm_struct *mm)
+static inline void arch_leave_lazy_mmu_mode(void)
 {
-	PVOP_VCALL1(pv_mmu_ops.lazy_mode.leave, mm);
+	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
 }
 
-static inline void arch_flush_lazy_mmu_mode(struct mm_struct *mm)
+static inline void arch_flush_lazy_mmu_mode(void)
 {
-	PVOP_VCALL1(pv_mmu_ops.lazy_mode.flush, mm);
+	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
 }
 
 static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,

@@ -197,10 +197,10 @@ static void lazy_hcall4(unsigned long call,
  * flush any stored calls, and call the generic helper to reset the
  * per-cpu lazy mode variable.
  */
-static void lguest_leave_lazy_mmu_mode(struct mm_struct *mm)
+static void lguest_leave_lazy_mmu_mode(void)
 {
 	hcall(LHCALL_FLUSH_ASYNC, 0, 0, 0, 0);
-	paravirt_leave_lazy_mmu(mm);
+	paravirt_leave_lazy_mmu();
 }
 
 /*

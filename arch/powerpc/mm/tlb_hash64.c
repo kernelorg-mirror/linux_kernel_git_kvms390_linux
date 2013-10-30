@@ -205,7 +205,7 @@ void __flush_hash_table_range(struct mm_struct *mm, unsigned long start,
 	 * way to do things but is fine for our needs here.
 	 */
 	local_irq_save(flags);
-	arch_enter_lazy_mmu_mode(mm);
+	arch_enter_lazy_mmu_mode();
 	for (; start < end; start += PAGE_SIZE) {
 		pte_t *ptep = find_linux_pte_or_hugepte(mm->pgd, start,
 							&hugepage_shift);
@@ -221,7 +221,7 @@ void __flush_hash_table_range(struct mm_struct *mm, unsigned long start,
 		else
 			hpte_need_flush(mm, start, ptep, pte, 0);
 	}
-	arch_leave_lazy_mmu_mode(mm);
+	arch_leave_lazy_mmu_mode();
 	local_irq_restore(flags);
 }
 

@@ -105,14 +105,14 @@ extern void __flush_tlb_pending(struct ppc64_tlb_batch *batch);
 
 #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
 
-static inline void arch_enter_lazy_mmu_mode(struct mm_struct *mm)
+static inline void arch_enter_lazy_mmu_mode(void)
 {
 	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
 
 	batch->active = 1;
 }
 
-static inline void arch_leave_lazy_mmu_mode(struct mm_struct *mm)
+static inline void arch_leave_lazy_mmu_mode(void)
 {
 	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
 
@@ -121,7 +121,7 @@ static inline void arch_leave_lazy_mmu_mode(struct mm_struct *mm)
 	batch->active = 0;
 }
 
-#define arch_flush_lazy_mmu_mode(mm)	  do {} while (0)
+#define arch_flush_lazy_mmu_mode()      do {} while (0)
 
 
 extern void flush_hash_page(unsigned long vpn, real_pte_t pte, int psize,

@@ -922,7 +922,7 @@ again:
 	spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
 	orig_src_pte = src_pte;
 	orig_dst_pte = dst_pte;
-	arch_enter_lazy_mmu_mode(src_mm);
+	arch_enter_lazy_mmu_mode();
 
 	do {
 		/*
@@ -946,7 +946,7 @@ again:
 		progress += 8;
 	} while (dst_pte++, src_pte++, addr += PAGE_SIZE, addr != end);
 
-	arch_leave_lazy_mmu_mode(src_mm);
+	arch_leave_lazy_mmu_mode();
 	spin_unlock(src_ptl);
 	pte_unmap(orig_src_pte);
 	add_mm_rss_vec(dst_mm, rss);
@@ -1103,7 +1103,7 @@ again:
 	init_rss_vec(rss);
 	start_pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
 	pte = start_pte;
-	arch_enter_lazy_mmu_mode(mm);
+	arch_enter_lazy_mmu_mode();
 	do {
 		pte_t ptent = *pte;
 		if (pte_none(ptent)) {
@@ -1194,7 +1194,7 @@ again:
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 
 	add_mm_rss_vec(mm, rss);
-	arch_leave_lazy_mmu_mode(mm);
+	arch_leave_lazy_mmu_mode();
 	pte_unmap_unlock(start_pte, ptl);
 
 	/*
@@ -2274,13 +2274,13 @@ static int remap_pte_range(struct mm_struct *mm, pmd_t *pmd,
 	pte = pte_alloc_map_lock(mm, pmd, addr, &ptl);
 	if (!pte)
 		return -ENOMEM;
-	arch_enter_lazy_mmu_mode(mm);
+	arch_enter_lazy_mmu_mode();
 	do {
 		BUG_ON(!pte_none(*pte));
 		set_pte_at(mm, addr, pte, pte_mkspecial(pfn_pte(pfn, prot)));
 		pfn++;
 	} while (pte++, addr += PAGE_SIZE, addr != end);
-	arch_leave_lazy_mmu_mode(mm);
+	arch_leave_lazy_mmu_mode();
 	pte_unmap_unlock(pte - 1, ptl);
 	return 0;
 }
@@ -2458,7 +2458,7 @@ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
 
 	BUG_ON(pmd_huge(*pmd));
 
-	arch_enter_lazy_mmu_mode(mm);
+	arch_enter_lazy_mmu_mode();
 
 	token = pmd_pgtable(*pmd);
 
@@ -2468,7 +2468,7 @@ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
 			break;
 	} while (addr += PAGE_SIZE, addr != end);
 
-	arch_leave_lazy_mmu_mode(mm);
+	arch_leave_lazy_mmu_mode();
 
 	if (mm != &init_mm)
 		pte_unmap_unlock(pte-1, ptl);

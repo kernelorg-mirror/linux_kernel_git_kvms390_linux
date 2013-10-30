@@ -47,7 +47,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
 	int last_nid = -1;
 
 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-	arch_enter_lazy_mmu_mode(mm);
+	arch_enter_lazy_mmu_mode();
 	do {
 		oldpte = *pte;
 		if (pte_present(oldpte)) {
@@ -105,7 +105,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
 			pages++;
 		}
 	} while (pte++, addr += PAGE_SIZE, addr != end);
-	arch_leave_lazy_mmu_mode(mm);
+	arch_leave_lazy_mmu_mode();
 	pte_unmap_unlock(pte - 1, ptl);
 
 	*ret_all_same_node = all_same_node;

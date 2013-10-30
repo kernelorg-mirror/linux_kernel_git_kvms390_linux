@@ -380,7 +380,7 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
 
 	if (pgd_none(*pgd)) {
 		set_pgd(pgd, *pgd_ref);
-		arch_flush_lazy_mmu_mode(&init_mm);
+		arch_flush_lazy_mmu_mode();
 	} else {
 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
 	}

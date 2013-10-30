@@ -51,14 +51,14 @@ out:
 	put_cpu_var(tlb_batch);
 }
 
-void arch_enter_lazy_mmu_mode(struct mm_struct *mm)
+void arch_enter_lazy_mmu_mode(void)
 {
 	struct tlb_batch *tb = &__get_cpu_var(tlb_batch);
 
 	tb->active = 1;
 }
 
-void arch_leave_lazy_mmu_mode(struct mm_struct *mm)
+void arch_leave_lazy_mmu_mode(void)
 {
 	struct tlb_batch *tb = &__get_cpu_var(tlb_batch);
 
