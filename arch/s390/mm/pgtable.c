@@ -1253,9 +1253,10 @@ again:
 			continue;
 		/* Allocate new page table with pgstes */
 		new = page_table_alloc_pgste(mm, addr);
-		if (!new)
-			return -ENOMEM;
-
+		if (!new) {
+			mm->context.has_pgste = 0;
+			continue;
+		}
 		spin_lock(&mm->page_table_lock);
 		if (likely((unsigned long *) pmd_deref(*pmd) == table)) {
 			/* Nuke pmd entry pointing to the "short" page table */
@@ -1293,15 +1294,13 @@ static unsigned long page_table_realloc_pud(struct mmu_gather *tlb,
 		if (pud_none_or_clear_bad(pud))
 			continue;
 		next = page_table_realloc_pmd(tlb, mm, pud, addr, next);
-		if (unlikely(IS_ERR_VALUE(next)))
-			return next;
 	} while (pud++, addr = next, addr != end);
 
 	return addr;
 }
 
-static unsigned long page_table_realloc(struct mmu_gather *tlb, struct mm_struct *mm,
-					unsigned long addr, unsigned long end)
+static void page_table_realloc(struct mmu_gather *tlb, struct mm_struct *mm,
+			       unsigned long addr, unsigned long end)
 {
 	unsigned long next;
 	pgd_t *pgd;
@@ -1312,11 +1311,7 @@ static unsigned long page_table_realloc(struct mmu_gather *tlb, struct mm_struct
 		if (pgd_none_or_clear_bad(pgd))
 			continue;
 		next = page_table_realloc_pud(tlb, mm, pgd, addr, next);
-		if (unlikely(IS_ERR_VALUE(next)))
-			return next;
 	} while (pgd++, addr = next, addr != end);
-
-	return 0;
 }
 
 /*
@@ -1336,10 +1331,10 @@ int s390_enable_sie(void)
 	/* split thp mappings and disable thp for future mappings */
 	thp_split_mm(mm);
 	/* Reallocate the page tables with pgstes */
-	tlb_gather_mmu(&tlb, mm, 0);
-	if (!page_table_realloc(&tlb, mm, 0, TASK_SIZE))
-		mm->context.has_pgste = 1;
-	tlb_finish_mmu(&tlb, 0, -1);
+	mm->context.has_pgste = 1;
+	tlb_gather_mmu(&tlb, mm, 0, TASK_SIZE);
+	page_table_realloc(&tlb, mm, 0, TASK_SIZE);
+	tlb_finish_mmu(&tlb, 0, TASK_SIZE);
 	up_write(&mm->mmap_sem);
 	return mm->context.has_pgste ? 0 : -ENOMEM;
 }
