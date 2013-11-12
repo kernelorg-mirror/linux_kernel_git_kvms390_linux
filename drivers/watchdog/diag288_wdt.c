@@ -74,7 +74,7 @@ MODULE_ALIAS("vmwatchdog"); /* The driver's old name */
 
 
 static int __diag288(unsigned int func, unsigned int timeout,
-		     unsigned int action, unsigned int len)
+		     unsigned long action, unsigned int len)
 {
 	register unsigned long __func asm("2") = func;
 	register unsigned long __timeout asm("3") = timeout;
@@ -95,14 +95,14 @@ static int __diag288(unsigned int func, unsigned int timeout,
 
 
 static int __diag288_vm(unsigned int  func, unsigned int timeout,
-			    char *cmd, size_t len)
+			char *cmd, size_t len)
 {
 	return __diag288(func, timeout, virt_to_phys(cmd), len);
 }
 
 
 static int __diag288_lpar(unsigned int func, unsigned int timeout,
-			   unsigned int action)
+			  unsigned long action)
 {
 	return __diag288(func, timeout, action, 0);
 }
@@ -111,11 +111,7 @@ static int __diag288_lpar(unsigned int func, unsigned int timeout,
 
 static int wdt_start(struct watchdog_device *dev)
 {
-	/* we allocate new memory every time to avoid having
-	 * to track the state. static allocation is not an
-	 * option since that might not be contiguous in real
-	 * storage in case of a modular build */
-	static char *ebc_cmd;
+	char *ebc_cmd;
 	size_t len;
 	int ret;
 	unsigned int func;
@@ -132,7 +128,6 @@ static int wdt_start(struct watchdog_device *dev)
 
 		func = conceal_on ? (WDT_FUNC_INIT | WDT_FUNC_CONCEAL)
 			: WDT_FUNC_INIT;
-
 		ret = __diag288_vm(func, dev->timeout, ebc_cmd, len);
 		WARN_ON(ret != 0);
 		kfree(ebc_cmd);
@@ -163,14 +158,7 @@ static int wdt_stop(struct watchdog_device *dev)
 
 static int wdt_ping(struct watchdog_device *dev)
 {
-	/*
-	 *we allocate new memory every time to avoid having
-	 * to track the state. static allocation is not an
-	 * option since that might not be contiguous in real
-	 * storage in case of a modular build
-	 */
-
-	static char *ebc_cmd;
+	char *ebc_cmd;
 	size_t len;
 	int ret;
 	unsigned int func;
@@ -207,7 +195,8 @@ static int wdt_ping(struct watchdog_device *dev)
 	return ret;
 }
 
-static int wdt_set_timeout(struct watchdog_device * dev, unsigned int new_to){
+static int wdt_set_timeout(struct watchdog_device * dev, unsigned int new_to)
+{
 	dev->timeout=new_to;
 	return wdt_ping(dev);
 }
@@ -257,13 +246,14 @@ static int __init diag288_init(void)
 			pr_err("Could not initialize watchdog!\n");
 			return -EINVAL;
 		}
-		if (__diag288_lpar(WDT_FUNC_CANCEL, 0, 0)) {
-			pr_err("Could not stop watchdog!\n");
-			return -EINVAL;
-		}
 	} else  {
 		pr_err("Unsupported environment - watchdog not started.\n");
 		return -ENODEV;
+	}
+
+	if (__diag288_lpar(WDT_FUNC_CANCEL, 0, 0)) {
+		pr_err("Could not stop watchdog!\n");
+		return -EINVAL;
 	}
 
 	return watchdog_register_device(&wdt_dev);
