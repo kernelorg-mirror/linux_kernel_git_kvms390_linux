@@ -13,7 +13,7 @@
  *
  * Copyright IBM Corp. 2004, 2013
  * Author(s): Arnd Bergmann (arndb@de.ibm.com)
- *            Philipp Hachtmann (phacht@de.ibm.com)
+ *	      Philipp Hachtmann (phacht@de.ibm.com)
  *
  */
 
@@ -246,7 +246,7 @@ static int __init diag288_init(void)
 			pr_err("Could not initialize watchdog!\n");
 			return -EINVAL;
 		}
-	} else  {
+	} else {
 		pr_err("Unsupported environment - watchdog not started.\n");
 		return -ENODEV;
 	}
