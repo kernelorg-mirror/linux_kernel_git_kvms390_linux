@@ -110,9 +110,6 @@ void create_mem_hole(struct mem_chunk mem_chunk[], unsigned long addr,
 #define MACHINE_HAS_TLB_LC	(S390_lowcore.machine_flags & MACHINE_FLAG_TLB_LC)
 #endif /* CONFIG_64BIT */
 
-#define ZFCPDUMP_HSA_SIZE	(32UL<<20)
-#define ZFCPDUMP_HSA_SIZE_MAX	(64UL<<20)
-
 /*
  * Console mode. Override with conmode=
  */
