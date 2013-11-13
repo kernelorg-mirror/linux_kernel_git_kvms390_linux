@@ -1221,7 +1221,7 @@ config WATCHDOG_RTAS
 # S390 Architecture
 
 config DIAG288_WATCHDOG
-	tristate "System z diag288  Watchdog"
+	tristate "System z diag288 Watchdog"
 	depends on S390
 	select WATCHDOG_CORE
 	help

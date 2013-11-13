@@ -149,7 +149,8 @@ static int wdt_start(struct watchdog_device *dev)
 
 static int wdt_stop(struct watchdog_device *dev)
 {
-	int ret = -ENODEV;
+	int ret;
+
 	ret = __diag288(WDT_FUNC_CANCEL, 0, 0, 0);
 	pr_info("Watchdog stopped.\n");
 	return ret;
@@ -197,7 +198,7 @@ static int wdt_ping(struct watchdog_device *dev)
 
 static int wdt_set_timeout(struct watchdog_device * dev, unsigned int new_to)
 {
-	dev->timeout=new_to;
+	dev->timeout = new_to;
 	return wdt_ping(dev);
 }
 
@@ -206,7 +207,7 @@ static struct watchdog_ops wdt_ops = {
 	.start = wdt_start,
 	.stop = wdt_stop,
 	.ping = wdt_ping,
-	.set_timeout=wdt_set_timeout,
+	.set_timeout = wdt_set_timeout,
 };
 
 static struct watchdog_info wdt_info = {
