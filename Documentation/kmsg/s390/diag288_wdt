@@ -1,0 +1,111 @@
+/*?
+ * Text: "The system cannot be suspended while the watchdog is in use\n"
+ * Severity: Error
+ * Description:
+ * The watchdog code inhibits system suspend while the watchdog' device
+ * file (e.g. /dev/watchdog) is still opened.
+ * This is done to avoid situations where the watchdog triggers while the
+ * system is being suspended.
+ * User action:
+ * Close the watchdog device file and try again.
+ */
+
+/*?
+ * Text: "The watchdog is running on z/VM\n"
+ * Severity: Informational
+ * Description:
+ * The driver indicates that is has recognized a z/VM environment.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "The watchdog is running on LPAR\n"
+ * Severity: Informational
+ * Description:
+ * The driver indicates that is has recognized an LPAR environment.
+ * Please insert description here
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "Watchdog started\n"
+ * Severity: Informational
+ * Description:
+ * Indicates that the watchdog has been started and is counting.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "Could not initialize watchdog\n"
+ * Severity: Error
+ * Description:
+ * Indicates an unexpected malfunction of the diag288 command.
+ * The watchdog will stay disabled.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "Watchdog could not be started\n"
+ * Severity: Error
+ * Description:
+ * Indicates an unexpected malfunction of the diag288 command.
+ * The watchdog will stay disabled.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "The system cannot be suspended while the watchdog is running\n"
+ * Severity: Error
+ * Description:
+ * The watchdog code inhibits system suspend while the watchdog is running.
+ * This is done to avoid situations where the watchdog triggers while the
+ * system is still being suspended.
+ * User action:
+ * Stop the watchdog and try again.
+ */
+
+/*?
+ * Text: "Watchdog stopped\n"
+ * Severity: Informational
+ * Description:
+ * Indicates that the watchdog has been stopped.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "Watchdog could not be started/retriggered\n"
+ * Severity: Error
+ * Description:
+ * Indicates an unexpected malfunction of the diag288 command.
+ * The watchdog will stay disabled.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "Could not stop watchdog\n"
+ * Severity: Error
+ * Description:
+ * Indicates an unexpected malfunction of the diag288 command.
+ * The watchdog will stay enabled.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "Unsupported environment - watchdog not started\n"
+ * Severity: Error
+ * Description:
+ * The diag288 watchdog is currently supported only under z/VM
+ * and LPAR. The message indicates that neither LPAR or z/VM were
+ * recognized by the driver. The watchdog will not work.
+ * User action:
+ * Either choose another watchdog driver like a software watchdog
+ * or run the kernel/driver under z/VM or LPAR.
+ */

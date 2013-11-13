@@ -139,10 +139,10 @@ static int wdt_start(struct watchdog_device *dev)
 	}
 
 	if (ret) {
-		pr_err("Watchdog could not be started!\n");
+		pr_err("Watchdog could not be started\n");
 		return ret;
 	}
-	pr_info("Watchdog started.\n");
+	pr_info("Watchdog started\n");
 	return 0;
 }
 
@@ -152,7 +152,7 @@ static int wdt_stop(struct watchdog_device *dev)
 	int ret;
 
 	ret = __diag288(WDT_FUNC_CANCEL, 0, 0, 0);
-	pr_info("Watchdog stopped.\n");
+	pr_info("Watchdog stopped\n");
 	return ret;
 }
 
@@ -192,7 +192,7 @@ static int wdt_ping(struct watchdog_device *dev)
 
 
 	if (ret)
-		pr_err("Watchdog could not be started/retriggered!\n");
+		pr_err("Watchdog could not be started/retriggered\n");
 	return ret;
 }
 
@@ -292,22 +292,22 @@ static int __init diag288_init(void)
 		pr_info("The watchdog is running on z/VM\n");
 		if (__diag288_vm(WDT_FUNC_INIT, 15,
 				 ebc_begin, sizeof(ebc_begin)) != 0) {
-			pr_err("Could not initialize watchdog!\n");
+			pr_err("Could not initialize watchdog\n");
 			return -EINVAL;
 		}
 	} else if (MACHINE_IS_LPAR) {
 		pr_info("The watchdog is running on LPAR\n");
 		if (__diag288_lpar(WDT_FUNC_INIT, 30, LPARWDT_RESTART)) {
-			pr_err("Could not initialize watchdog!\n");
+			pr_err("Could not initialize watchdog\n");
 			return -EINVAL;
 		}
 	} else {
-		pr_err("Unsupported environment - watchdog not started.\n");
+		pr_err("Unsupported environment - watchdog not started\n");
 		return -ENODEV;
 	}
 
 	if (__diag288_lpar(WDT_FUNC_CANCEL, 0, 0)) {
-		pr_err("Could not stop watchdog!\n");
+		pr_err("Could not stop watchdog\n");
 		return -EINVAL;
 	}
 
