@@ -28,6 +28,7 @@
 #include <linux/slab.h>
 #include <linux/miscdevice.h>
 #include <linux/watchdog.h>
+#include <linux/suspend.h>
 #include <asm/ebcdic.h>
 #include <linux/io.h>
 #include <linux/uaccess.h>
@@ -84,8 +85,8 @@ static int __diag288(unsigned int func, unsigned int timeout,
 
 	err = -EINVAL;
 	asm volatile(
-		"	diag	%1,%3,0x288\n"
-		"0:	la	%0,0\n"
+		"	diag	%1, %3, 0x288\n"
+		"0:	la	%0, 0\n"
 		"1:\n"
 		EX_TABLE(0b, 1b)
 		: "+d" (err) : "d"(__func), "d"(__timeout),
@@ -106,7 +107,6 @@ static int __diag288_lpar(unsigned int func, unsigned int timeout,
 {
 	return __diag288(func, timeout, action, 0);
 }
-
 
 
 static int wdt_start(struct watchdog_device *dev)
@@ -196,11 +196,13 @@ static int wdt_ping(struct watchdog_device *dev)
 	return ret;
 }
 
+
 static int wdt_set_timeout(struct watchdog_device * dev, unsigned int new_to)
 {
 	dev->timeout = new_to;
 	return wdt_ping(dev);
 }
+
 
 static struct watchdog_ops wdt_ops = {
 	.owner = THIS_MODULE,
@@ -210,11 +212,13 @@ static struct watchdog_ops wdt_ops = {
 	.set_timeout = wdt_set_timeout,
 };
 
+
 static struct watchdog_info wdt_info = {
 	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
 	.firmware_version = 0,
 	.identity = "z Watchdog",
 };
+
 
 static struct watchdog_device wdt_dev = {
 	.parent = NULL,
@@ -228,8 +232,58 @@ static struct watchdog_device wdt_dev = {
 };
 
 
+/*
+ * It makes no sense to go into suspend while the watchdog is running.
+ * Depending on the memory size, the watchdog might trigger, while we
+ * are still saving the memory.
+ * We reuse the open flag to ensure that suspend and watchdog open are
+ * exclusive operations
+ */
+static int wdt_suspend(void)
+{
+	if (test_and_set_bit(WDOG_DEV_OPEN, &wdt_dev.status)) {
+		pr_err("The system cannot be suspended while the watchdog is in use\n");
+		return notifier_from_errno(-EBUSY);
+	}
+	if (test_bit(WDOG_ACTIVE, &wdt_dev.status)) {
+		clear_bit(WDOG_DEV_OPEN, &wdt_dev.status);
+		pr_err("The system cannot be suspended while the watchdog is running\n");
+		return notifier_from_errno(-EBUSY);
+	}
+	return NOTIFY_DONE;
+}
+
+static int wdt_resume(void)
+{
+	clear_bit(WDOG_DEV_OPEN, &wdt_dev.status);
+	return NOTIFY_DONE;
+}
+
+
+static int wdt_power_event(struct notifier_block *this, unsigned long event,
+			   void *ptr)
+{
+	switch (event) {
+	case PM_POST_HIBERNATION:
+	case PM_POST_SUSPEND:
+		return wdt_resume();
+	case PM_HIBERNATION_PREPARE:
+	case PM_SUSPEND_PREPARE:
+		return wdt_suspend();
+	default:
+		return NOTIFY_DONE;
+	}
+}
+
+
+static struct notifier_block wdt_power_notifier = {
+	.notifier_call = wdt_power_event,
+};
+
+
 static int __init diag288_init(void)
 {
+	int ret;
 	char ebc_begin[] = {
 		194, 197, 199, 201, 213
 	};
@@ -257,7 +311,15 @@ static int __init diag288_init(void)
 		return -EINVAL;
 	}
 
-	return watchdog_register_device(&wdt_dev);
+	ret = register_pm_notifier(&wdt_power_notifier);
+	if (ret)
+		return ret;
+
+	ret = watchdog_register_device(&wdt_dev);
+	if (ret)
+		unregister_pm_notifier(&wdt_power_notifier);
+
+	return ret;
 }
 
 
