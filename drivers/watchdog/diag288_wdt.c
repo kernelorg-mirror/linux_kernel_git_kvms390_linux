@@ -17,7 +17,6 @@
  *
  */
 
-
 #define KMSG_COMPONENT "diag288_wdt"
 #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
 
@@ -50,7 +49,6 @@
 /* Action codes for LPAR watchdog */
 #define LPARWDT_RESTART 0
 
-
 static char wdt_cmd[MAX_CMDLEN] = DEFAULT_CMD;
 static bool conceal_on;
 static bool nowayout_info = WATCHDOG_NOWAYOUT;
@@ -71,7 +69,6 @@ module_param_named(nowayout, nowayout_info, bool, 0444);
 MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default = CONFIG_WATCHDOG_NOWAYOUT)");
 
 MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-MODULE_ALIAS("vmwatchdog"); /* The driver's old name */
 
 
 static int __diag288(unsigned int func, unsigned int timeout,
@@ -94,20 +91,17 @@ static int __diag288(unsigned int func, unsigned int timeout,
 	return err;
 }
 
-
 static int __diag288_vm(unsigned int  func, unsigned int timeout,
 			char *cmd, size_t len)
 {
 	return __diag288(func, timeout, virt_to_phys(cmd), len);
 }
 
-
 static int __diag288_lpar(unsigned int func, unsigned int timeout,
 			  unsigned long action)
 {
 	return __diag288(func, timeout, action, 0);
 }
-
 
 static int wdt_start(struct watchdog_device *dev)
 {
@@ -146,7 +140,6 @@ static int wdt_start(struct watchdog_device *dev)
 	return 0;
 }
 
-
 static int wdt_stop(struct watchdog_device *dev)
 {
 	int ret;
@@ -155,7 +148,6 @@ static int wdt_stop(struct watchdog_device *dev)
 	pr_info("Watchdog stopped\n");
 	return ret;
 }
-
 
 static int wdt_ping(struct watchdog_device *dev)
 {
@@ -190,19 +182,16 @@ static int wdt_ping(struct watchdog_device *dev)
 	if (MACHINE_IS_LPAR)
 		ret = __diag288_lpar(WDT_FUNC_CHANGE, dev->timeout, 0);
 
-
 	if (ret)
 		pr_err("Watchdog could not be started/retriggered\n");
 	return ret;
 }
-
 
 static int wdt_set_timeout(struct watchdog_device * dev, unsigned int new_to)
 {
 	dev->timeout = new_to;
 	return wdt_ping(dev);
 }
-
 
 static struct watchdog_ops wdt_ops = {
 	.owner = THIS_MODULE,
@@ -212,13 +201,11 @@ static struct watchdog_ops wdt_ops = {
 	.set_timeout = wdt_set_timeout,
 };
 
-
 static struct watchdog_info wdt_info = {
 	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
 	.firmware_version = 0,
 	.identity = "z Watchdog",
 };
-
 
 static struct watchdog_device wdt_dev = {
 	.parent = NULL,
@@ -230,7 +217,6 @@ static struct watchdog_device wdt_dev = {
 	.max_timeout = MAX_INTERVAL,
 	.status = WATCHDOG_NOWAYOUT_INIT_STATUS,
 };
-
 
 /*
  * It makes no sense to go into suspend while the watchdog is running.
@@ -259,7 +245,6 @@ static int wdt_resume(void)
 	return NOTIFY_DONE;
 }
 
-
 static int wdt_power_event(struct notifier_block *this, unsigned long event,
 			   void *ptr)
 {
@@ -275,11 +260,9 @@ static int wdt_power_event(struct notifier_block *this, unsigned long event,
 	}
 }
 
-
 static struct notifier_block wdt_power_notifier = {
 	.notifier_call = wdt_power_event,
 };
-
 
 static int __init diag288_init(void)
 {
@@ -322,10 +305,10 @@ static int __init diag288_init(void)
 	return ret;
 }
 
-
 static void __exit diag288_exit(void)
 {
 	watchdog_unregister_device(&wdt_dev);
+	unregister_pm_notifier(&wdt_power_notifier);
 }
 
 module_init(diag288_init);
