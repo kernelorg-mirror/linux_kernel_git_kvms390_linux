@@ -64,7 +64,8 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		cpumask_set_cpu(cpu, &next->context.cpu_attach_mask);
 	if (atomic_inc_return(&next->context.attach_count) >> 16) {
 		/* Delay update_user_asce until all TLB flushes are done. */
-		set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
+		if (!test_and_set_tsk_thread_flag(tsk, TIF_TLB_WAIT))
+			preempt_disable();
 		/* Clear old ASCE by loading the kernel ASCE. */
 		clear_user_asce(next);
 	} else {
@@ -94,6 +95,7 @@ static inline void finish_switch_mm(struct mm_struct *mm,
 	update_user_asce(mm);
 	if (mm->context.flush_mm)
 		__tlb_flush_mm(mm);
+	preempt_enable();
 }
 
 #define enter_lazy_tlb(mm,tsk)	do { } while (0)
