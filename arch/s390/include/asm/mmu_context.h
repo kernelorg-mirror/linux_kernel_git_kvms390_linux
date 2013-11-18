@@ -64,8 +64,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		cpumask_set_cpu(cpu, &next->context.cpu_attach_mask);
 	if (atomic_inc_return(&next->context.attach_count) >> 16) {
 		/* Delay update_user_asce until all TLB flushes are done. */
-		if (!test_and_set_tsk_thread_flag(tsk, TIF_TLB_WAIT))
-			preempt_disable();
+		set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
 		/* Clear old ASCE by loading the kernel ASCE. */
 		clear_user_asce(next);
 	} else {
@@ -87,9 +86,10 @@ static inline void finish_arch_post_lock_switch(void)
 	struct task_struct *tsk = current;
 	struct mm_struct *mm = tsk->mm;
 
-	if (!test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
+	if (!test_tsk_thread_flag(tsk, TIF_TLB_WAIT))
 		return;
-
+	preempt_disable();
+	clear_tsk_thread_flag(tsk, TIF_TLB_WAIT);
 	while (atomic_read(&mm->context.attach_count) >> 16)
 		cpu_relax();
 
