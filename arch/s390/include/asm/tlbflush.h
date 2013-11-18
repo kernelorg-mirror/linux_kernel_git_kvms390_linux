@@ -42,6 +42,22 @@ static inline void __tlb_flush_global(void)
 		: : "d" (reg2), "d" (reg3), "d" (reg4), "m" (dummy) : "cc" );
 }
 
+static inline void __tlb_flush_idte(unsigned long asce)
+{
+	/* Global TLB flush for the mm */
+	asm volatile(
+		"	.insn	rrf,0xb98e0000,0,%0,%1,0"
+		: : "a" (2048), "a" (asce) : "cc");
+}
+
+static inline void __tlb_flush_idte_local(unsigned long asce)
+{
+	/* Local TLB flush for the mm */
+	asm volatile(
+		"	.insn	rrf,0xb98e0000,0,%0,%1,1"
+		: : "a" (2048), "a" (asce) : "cc");
+}
+
 static inline void __tlb_flush_full(struct mm_struct *mm)
 {
 	preempt_disable();
@@ -68,7 +84,7 @@ static inline void __tlb_flush_full(struct mm_struct *mm)
 /*
  * Flush all tlb entries of a page table on all cpus.
  */
-static inline void __tlb_flush_idte(struct mm_struct *mm, unsigned long asce)
+static inline void __tlb_flush_mask(struct mm_struct *mm, unsigned long asce)
 {
 	int active, count;
 
@@ -77,15 +93,9 @@ static inline void __tlb_flush_idte(struct mm_struct *mm, unsigned long asce)
 	count = atomic_add_return(0x10000, &mm->context.attach_count);
 	if (MACHINE_HAS_TLB_LC && (count & 0xffff) <= active &&
 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
-		/* Local TLB flush for the mm */
-		asm volatile(
-			"	.insn	rrf,0xb98e0000,0,%0,%1,1"
-			: : "a" (2048), "a" (asce) : "cc");
+		__tlb_flush_idte_local(asce);
 	} else {
-		/* Global TLB flush for the mm */
-		asm volatile(
-			"	.insn	rrf,0xb98e0000,0,%0,%1,0"
-			: : "a" (2048), "a" (asce) : "cc");
+		__tlb_flush_idte(asce);
 		/* Reset TLB flush mask */
 		if (MACHINE_HAS_TLB_LC)
 			cpumask_copy(mm_cpumask(mm),
@@ -103,7 +113,7 @@ static inline void __tlb_flush_mm(struct mm_struct * mm)
 	 * only ran on the local cpu.
 	 */
 	if (MACHINE_HAS_IDTE && list_empty(&mm->context.gmap_list))
-		__tlb_flush_idte(mm, (unsigned long) mm->pgd |
+		__tlb_flush_mask(mm, (unsigned long) mm->pgd |
 				 mm->context.asce_bits);
 	else
 		__tlb_flush_full(mm);
@@ -153,7 +163,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
 static inline void flush_tlb_kernel_range(unsigned long start,
 					  unsigned long end)
 {
-	__tlb_flush_mm(&init_mm);
+	__tlb_flush_idte((unsigned long) init_mm.pgd |
+			 init_mm.context.asce_bits);
 }
 
 #endif /* _S390_TLBFLUSH_H */
