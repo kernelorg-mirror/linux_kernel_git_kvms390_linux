@@ -8,8 +8,8 @@ struct mm_struct;
 void use_mm(struct mm_struct *mm);
 void unuse_mm(struct mm_struct *mm);
 
-#ifndef finish_switch_mm
-#define finish_switch_mm(mm, tsk) do { } while (0)
+#ifndef finish_arch_post_lock_switch
+# define finish_arch_post_lock_switch()	do { } while (0)
 #endif
 
 #endif

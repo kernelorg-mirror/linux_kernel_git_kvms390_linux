@@ -81,10 +81,12 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		cpumask_clear_cpu(cpu, &prev->context.cpu_attach_mask);
 }
 
-#define finish_switch_mm finish_switch_mm
-static inline void finish_switch_mm(struct mm_struct *mm,
-				    struct task_struct *tsk)
+#define finish_arch_post_lock_switch finish_arch_post_lock_switch
+static inline void finish_arch_post_lock_switch(void)
 {
+	struct task_struct *tsk = current;
+	struct mm_struct *mm = tsk->mm;
+
 	if (!test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
 		return;
 

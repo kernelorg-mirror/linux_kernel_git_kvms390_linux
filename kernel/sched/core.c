@@ -1885,7 +1885,6 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
 	perf_event_task_sched_in(prev, current);
 	finish_lock_switch(rq, prev);
 	finish_arch_post_lock_switch();
-	finish_switch_mm(current->mm, current);
 
 	fire_sched_in_preempt_notifiers(current);
 	if (mm)
@@ -4380,7 +4379,7 @@ void idle_task_exit(void)
 
 	if (mm != &init_mm) {
 		switch_mm(mm, &init_mm, current);
-		finish_switch_mm(&init_mm, current);
+		finish_arch_post_lock_switch();
 	}
 	mmdrop(mm);
 }
