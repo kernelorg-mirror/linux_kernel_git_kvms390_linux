@@ -19,8 +19,6 @@
 #include "hmcdrv_ftp.h"
 #include "diag_ftp.h"
 
-#define DIAG_FTP_TIMEOUT	60 /* timeout (in seconds) of FTP request */
-
 /* DIAGNOSE X'2C4' return codes in Ry */
 #define DIAG_FTP_RET_OK	0 /* HMC FTP started successully */
 #define DIAG_FTP_RET_EBUSY	4 /* HMC FTP service currently busy */
@@ -38,9 +36,6 @@
 #define DIAG_FTP_STAT_LDNPERM	(DIAG_FTP_STAT_EBASE + 2U) /* not allowed */
 #define DIAG_FTP_STAT_LDRUNS	(DIAG_FTP_STAT_EBASE + 3U) /* runs */
 #define DIAG_FTP_STAT_LDNRUNS	(DIAG_FTP_STAT_EBASE + 4U) /* not runs */
-
-/* and an artifical extension */
-#define DIAG_FTP_STAT_WAITING	1U /* a response code not used by HW */
 
 /**
  * struct diag_ftp_ldfpl - load file FTP parameter list (LDFPL)
@@ -66,17 +61,8 @@ struct diag_ftp_ldfpl {
 	u8 fident[HMCDRV_FTP_FIDENT_MAX];
 } __packed;
 
-static void diag_ftp_handler(struct ext_code extirq, unsigned int param32,
-			     unsigned long param64);
-static int diag_ftp_2c4(struct diag_ftp_ldfpl *fpl,
-			enum hmcdrv_ftp_cmdid cmd);
-static int diag_ftp_prepare(const struct hmcdrv_ftp_cmdspec *ftp);
-static int diag_ftp_trigger(const struct hmcdrv_ftp_cmdspec *ftp);
-static int diag_ftp_wait(void);
-
-static DECLARE_WAIT_QUEUE_HEAD(diag_ftp_waitq);
-static int diag_ftp_status = DIAG_FTP_STAT_OK;
-static struct diag_ftp_ldfpl *diag_ftp_fpl; /* = NULL */
+static DECLARE_COMPLETION(diag_ftp_rx_complete);
+static int diag_ftp_subcode;
 
 /**
  * diag_ftp_handler() - FTP services IRQ handler
@@ -92,8 +78,8 @@ static void diag_ftp_handler(struct ext_code extirq,
 		return; /* not a FTP services sub-code */
 
 	inc_irq_stat(IRQEXT_FTP);
-	diag_ftp_status = extirq.subcode & 0xffU;
-	wake_up_interruptible(&diag_ftp_waitq);
+	diag_ftp_subcode = extirq.subcode & 0xffU;
+	complete(&diag_ftp_rx_complete);
 }
 
 /**
@@ -115,7 +101,6 @@ static int diag_ftp_2c4(struct diag_ftp_ldfpl *fpl,
 			enum hmcdrv_ftp_cmdid cmd)
 {
 	int rc;
-	unsigned long addr = virt_to_phys(fpl); /* make (guest) abs. addr */
 
 	asm volatile(
 		"	diag	%[addr],%[cmd],0x2c4\n"
@@ -123,104 +108,22 @@ static int diag_ftp_2c4(struct diag_ftp_ldfpl *fpl,
 		"1:	la	%[rc],%[err]\n"
 		"2:\n"
 		EX_TABLE(0b, 1b)
-		: [rc] "=r" (rc), "+m" (*fpl)
-		: [cmd] "0" (cmd), [addr] "r" (addr),
+		: [rc] "=d" (rc), "+m" (*fpl)
+		: [cmd] "0" (cmd), [addr] "d" (virt_to_phys(fpl)),
 		  [err] "i" (DIAG_FTP_RET_EPERM)
 		: "cc");
 
 	switch (rc) {
 	case DIAG_FTP_RET_OK:
-		rc = 0;
-		break;
+		return 0;
 	case DIAG_FTP_RET_EBUSY:
-		rc = -EBUSY;
-		break;
+		return -EBUSY;
 	case DIAG_FTP_RET_EPERM:
-		rc = -EPERM;
-		break;
+		return -EPERM;
 	case DIAG_FTP_RET_EIO:
 	default:
-		rc = -EIO;
-		break;
+		return -EIO;
 	}
-
-	return rc;
-}
-
-/**
- * diag_ftp_prepare() - prepare an allocated LDFPL
- * @ftp: pointer to FTP descriptor
- *
- * Return: 0 on success, else a (negative) error code
- */
-static int diag_ftp_prepare(const struct hmcdrv_ftp_cmdspec *ftp)
-{
-	size_t len;
-
-	len = strlcpy(diag_ftp_fpl->fident, ftp->fname,
-		      sizeof(diag_ftp_fpl->fident));
-
-	if (len >= HMCDRV_FTP_FIDENT_MAX)
-		return -EINVAL;
-
-	diag_ftp_fpl->transferred = 0;
-	diag_ftp_fpl->fsize = 0;
-	diag_ftp_fpl->offset = ftp->ofs;
-	diag_ftp_fpl->buflen = ftp->len;
-	diag_ftp_fpl->bufaddr = virt_to_phys(ftp->buf);
-
-	return 0;
-}
-
-/**
- * diag_ftp_trigger() - start a FTP transfer
- * @ftp: pointer to FTP descriptor
- *
- * Return: 0 on success, else a (negative) error code
- */
-static int diag_ftp_trigger(const struct hmcdrv_ftp_cmdspec *ftp)
-{
-	int rc = diag_ftp_prepare(ftp);
-
-	if (rc)
-		return rc;
-
-	diag_ftp_status = DIAG_FTP_STAT_WAITING;
-	rc = diag_ftp_2c4(diag_ftp_fpl, ftp->id);
-
-	if (rc)
-		diag_ftp_status = DIAG_FTP_STAT_OK;
-
-	return rc;
-}
-
-/**
- * diag_ftp_wait() - wait for FTP transfer completion, with timeout
- *
- * Return: 0 on success, else a (negative) error code
- */
-static int diag_ftp_wait(void)
-{
-	int rc;
-
-	rc = wait_event_interruptible_timeout(
-		diag_ftp_waitq,
-		diag_ftp_status != DIAG_FTP_STAT_WAITING,
-		HZ * DIAG_FTP_TIMEOUT);
-
-	if (rc < 0)
-		return rc; /* error (normally -ERESTARTSYS) */
-
-	if (diag_ftp_status == DIAG_FTP_STAT_WAITING) {
-		pr_warn("DIAG X'2C4' with timeout, after %ds\n",
-			DIAG_FTP_TIMEOUT);
-		return -EIO; /* map internal timeout to EIO */
-	}
-
-	pr_debug("completed DIAG X'2C4' after %d ms\n",
-		 (HZ * DIAG_FTP_TIMEOUT - rc) * 1000 / HZ);
-
-	return 0; /* no timeout, no error */
 }
 
 /**
@@ -235,52 +138,75 @@ static int diag_ftp_wait(void)
  */
 ssize_t diag_ftp_cmd(const struct hmcdrv_ftp_cmdspec *ftp, size_t *fsize)
 {
+	struct diag_ftp_ldfpl *ldfpl;
 	ssize_t len;
-	int rc;
+#ifdef DEBUG
+	unsigned long start_jiffies;
 
 	pr_debug("starting DIAG X'2C4' on '%s', requesting %zd bytes\n",
 		 ftp->fname, ftp->len);
+	start_jiffies = jiffies;
+#endif
+	init_completion(&diag_ftp_rx_complete);
 
-	rc = diag_ftp_trigger(ftp);
+	ldfpl = (void *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
+	if (!ldfpl) {
+		len = -ENOMEM;
+		goto out;
+	}
 
-	if (rc)
-		return rc;
+	len = strlcpy(ldfpl->fident, ftp->fname, sizeof(ldfpl->fident));
+	if (len >= HMCDRV_FTP_FIDENT_MAX) {
+		len = -EINVAL;
+		goto out_free;
+	}
 
-	rc = diag_ftp_wait();
+	ldfpl->transferred = 0;
+	ldfpl->fsize = 0;
+	ldfpl->offset = ftp->ofs;
+	ldfpl->buflen = ftp->len;
+	ldfpl->bufaddr = virt_to_phys(ftp->buf);
 
+	len = diag_ftp_2c4(ldfpl, ftp->id);
+	if (len)
+		goto out_free;
+
+	/*
+	 * There is no way to cancel the running diag X'2C4', the code
+	 * needs to wait unconditionally until the transfer is complete.
+	 */
+	wait_for_completion(&diag_ftp_rx_complete);
+
+#ifdef DEBUG
+	pr_debug("completed DIAG X'2C4' after %lu ms\n",
+		 (jiffies - start_jiffies) * 1000 / HZ);
 	pr_debug("status of DIAG X'2C4' is %u, with %lld/%lld bytes\n",
-		 diag_ftp_status,
-		 diag_ftp_fpl->transferred,
-		 diag_ftp_fpl->fsize);
+		 diag_ftp_subcode, ldfpl->transferred, ldfpl->fsize);
+#endif
 
-	if (rc)
-		return rc;
-
-	switch (diag_ftp_status) {
+	switch (diag_ftp_subcode) {
 	case DIAG_FTP_STAT_OK: /* success */
-		len = diag_ftp_fpl->transferred;
-
+		len = ldfpl->transferred;
 		if (fsize)
-			*fsize = diag_ftp_fpl->fsize;
+			*fsize = ldfpl->fsize;
 		break;
-
 	case DIAG_FTP_STAT_LDNPERM:
 		len = -EPERM;
 		break;
-
 	case DIAG_FTP_STAT_LDRUNS:
 		len = -EBUSY;
 		break;
-
 	case DIAG_FTP_STAT_LDFAIL:
 		len = -ENOENT; /* no such file or media */
 		break;
-
 	default:
 		len = -EIO;
 		break;
 	}
 
+out_free:
+	free_page((unsigned long) ldfpl);
+out:
 	return len;
 }
 
@@ -293,22 +219,12 @@ int diag_ftp_startup(void)
 {
 	int rc;
 
-	diag_ftp_fpl = (struct diag_ftp_ldfpl *)
-		get_zeroed_page(GFP_KERNEL | GFP_DMA);
-
-	if (!diag_ftp_fpl)
-		return -ENOMEM;
-
 	rc = register_external_interrupt(0x2603, diag_ftp_handler);
+	if (rc)
+		return rc;
 
-	if (!rc) {
-		ctl_set_bit(0, 63 - 22);
-	} else {
-		free_page((unsigned long)diag_ftp_fpl);
-		diag_ftp_fpl = NULL;
-	}
-
-	return rc;
+	ctl_set_bit(0, 63 - 22);
+	return 0;
 }
 
 /**
@@ -318,6 +234,4 @@ void diag_ftp_shutdown(void)
 {
 	ctl_clear_bit(0, 63 - 22);
 	unregister_external_interrupt(0x2603, diag_ftp_handler);
-	free_page((unsigned long)diag_ftp_fpl);
-	diag_ftp_fpl = NULL;
 }

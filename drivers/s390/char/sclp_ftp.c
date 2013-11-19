@@ -15,74 +15,31 @@
 #include <linux/io.h>
 #include <linux/wait.h>
 #include <linux/string.h>
-
-#ifdef DEBUG
 #include <linux/jiffies.h>
 #include <asm/sysinfo.h>
 #include <asm/ebcdic.h>
-#endif	/* DEBUG */
 
 #include "sclp.h"
 #include "sclp_diag.h"
 #include "sclp_ftp.h"
 
-#define SCLP_FTP_TIMEOUT    60 /* timeout (in seconds) of FTP request */
-
-static void sclp_ftp_txcb(struct sclp_req *req, void *data);
-static void sclp_ftp_rxcb(struct evbuf_header *evbuf);
-static int sclp_ftp_et7(struct sclp_req *req);
-static int sclp_ftp_prepare(const struct hmcdrv_ftp_cmdspec *ftp);
-static int sclp_ftp_trigger(const struct hmcdrv_ftp_cmdspec *ftp);
-static int sclp_ftp_wait(void);
-
-static DECLARE_WAIT_QUEUE_HEAD(sclp_ftp_waitq);
-static int sclp_ftp_status = SCLP_REQ_FILLED;
-static struct sclp_diag_sccb *sclp_ftp_sccb;
-static struct sclp_req sclp_ftp_requ = {
-	.command = SCLP_CMDW_WRITE_EVENT_DATA,
-	.callback = sclp_ftp_txcb,
-	.callback_data = NULL
-};
-
-#ifdef DEBUG
-static unsigned long sclp_ftp_jiffies; /* jiffies at start of command */
-#endif /* DEBUG */
-
-/*
- * SCLP descriptor, to be passed to function sclp_register()
- */
-static struct sclp_register sclp_ftp_event = {
-	.send_mask = EVTYP_DIAG_TEST_MASK,    /* want tx events */
-	.receive_mask = EVTYP_DIAG_TEST_MASK, /* want rx events */
-	.receiver_fn = sclp_ftp_rxcb,	      /* async callback (rx) */
-	.state_change_fn = NULL,
-	.pm_event_fn = NULL,
-};
+static DECLARE_COMPLETION(sclp_ftp_rx_complete);
+static u8 sclp_ftp_ldflg;
+static u64 sclp_ftp_fsize;
+static u64 sclp_ftp_length;
 
 /**
  * sclp_ftp_txcb() - Diagnostic Test FTP services SCLP command callback
- *
- * Note: If a request is NOT accepted by the SCLP layer (see "processed-buffer"
- * flag and response code in SCLP header), then we MUST skip the receive wait,
- * because sclp_ftp_rxcb() is NOT called and so the second call to
- * wait_event_timeout() would produce a timeout). In the other case we MUST wait
- * for the ET7 event (RX).
  */
 static void sclp_ftp_txcb(struct sclp_req *req, void *data)
 {
-	struct sclp_diag_sccb *sccb = (struct sclp_diag_sccb *) req->sccb;
+	struct completion *completion = data;
 
-	pr_debug("SCLP (ET7) TX-IRQ, SCCB @ 0x%p: %*phN\n", sccb, 24, sccb);
-
-	if ((req->status == SCLP_REQ_DONE) &&
-	    (sccb->evbuf.hdr.flags & 0x80) && /* "processed-buffer" */
-	    ((sccb->hdr.response_code & 0xffU) == 0x20U)) {
-		sclp_ftp_status = SCLP_REQ_FILLED;
-	} else {
-		sclp_ftp_status = SCLP_REQ_FAILED;
-	}
-
-	wake_up_interruptible(&sclp_ftp_waitq);
+#ifdef DEBUG
+	pr_debug("SCLP (ET7) TX-IRQ, SCCB @ 0x%p: %*phN\n",
+		 req->sccb, 24, req->sccb);
+#endif
+	complete(completion);
 }
 
 /**
@@ -92,125 +49,112 @@ static void sclp_ftp_rxcb(struct evbuf_header *evbuf)
 {
 	struct sclp_diag_evbuf *diag = (struct sclp_diag_evbuf *) evbuf;
 
-	/* first check for Diagnostic Test FTP Service
+	/*
+	 * Check for Diagnostic Test FTP Service
 	 */
-	if ((evbuf->type != EVTYP_DIAG_TEST) ||
-	    (diag->route != SCLP_DIAG_FTP_ROUTE) ||
-	    (diag->mdd.ftp.pcx != SCLP_DIAG_FTP_XPCX) ||
-	    (evbuf->length < SCLP_DIAG_FTP_EVBUF_LEN))
+	if (evbuf->type != EVTYP_DIAG_TEST ||
+	    diag->route != SCLP_DIAG_FTP_ROUTE ||
+	    diag->mdd.ftp.pcx != SCLP_DIAG_FTP_XPCX ||
+	    evbuf->length < SCLP_DIAG_FTP_EVBUF_LEN)
 		return;
 
+#ifdef DEBUG
 	pr_debug("SCLP (ET7) RX-IRQ, Event @ 0x%p: %*phN\n",
 		 evbuf, 24, evbuf);
+#endif
 
-	/* because the event buffer is located in a page,
-	 * which is owned by the SCLP core, all data of
-	 * interest must be copied
+	/*
+	 * Because the event buffer is located in a page which is owned
+	 * by the SCLP core, all data of interest must be copied. The
+	 * error indication is in 'sclp_ftp_ldflg'
 	 */
-	sclp_ftp_sccb->evbuf.mdd.ftp.ldflg = diag->mdd.ftp.ldflg;
-	sclp_ftp_sccb->evbuf.mdd.ftp.fsize = diag->mdd.ftp.fsize;
-	sclp_ftp_sccb->evbuf.mdd.ftp.length = diag->mdd.ftp.length;
+	sclp_ftp_ldflg = diag->mdd.ftp.ldflg;
+	sclp_ftp_fsize = diag->mdd.ftp.fsize;
+	sclp_ftp_length = diag->mdd.ftp.length;
 
-	/* the error indication is by 'sclp_ftp_sccb->evbuf.mdd.ftp.ldflg',
-	 * unless there is an I/O error signalled by 'sclp_ftp_status'
-	 */
-	if (sclp_ftp_status != SCLP_REQ_FAILED)
-		sclp_ftp_status = SCLP_REQ_DONE;
-
-	wake_up_interruptible(&sclp_ftp_waitq);
+	complete(&sclp_ftp_rx_complete);
 }
 
 /**
  * sclp_ftp_et7() - start a Diagnostic Test FTP Service SCLP request
- * @req: SCLP request
+ * @ftp: pointer to FTP descriptor
  *
  * Return: 0 on success, else a (negative) error code
  */
-static int sclp_ftp_et7(struct sclp_req *req)
+static int sclp_ftp_et7(const struct hmcdrv_ftp_cmdspec *ftp)
 {
-	req->status = SCLP_REQ_FILLED;
-	return sclp_add_request(req);
-}
-
-/**
- * sclp_ftp_prepare() - prepares the Diagnostic Test FTP Service (ET7) SCCB
- * in variable 'sclp_ftp_sccb' for a new SCLP request
- * @ftp: pointer to FTP descriptor
- *
- * Return: 0 on success, else a (negative) error code.
- */
-static int sclp_ftp_prepare(const struct hmcdrv_ftp_cmdspec *ftp)
-{
+	struct completion completion;
+	struct sclp_diag_sccb *sccb;
+	struct sclp_req *req;
 	size_t len;
-
-	struct sclp_diag_ftp *diag = &sclp_ftp_sccb->evbuf.mdd.ftp;
-
-	diag->ldflg = SCLP_DIAG_FTP_LDFAIL;
-	diag->fsize = 0;
-	diag->cmd = ftp->id;
-	diag->offset = ftp->ofs;
-	diag->length = ftp->len;
-	diag->bufaddr = virt_to_phys(ftp->buf);
-	sclp_ftp_sccb->evbuf.hdr.flags = 0; /* clear "processed-buffer" */
-
-	len = strlcpy(diag->fident, ftp->fname, HMCDRV_FTP_FIDENT_MAX);
-
-	if (len >= HMCDRV_FTP_FIDENT_MAX)
-		return -EINVAL;
-
-	return 0;
-}
-
-/**
- * sclp_ftp_trigger() - prepare the SCCB and start a Diagnostic Test (ET7)
- * FTP Service SCLP request
- * @ftp: pointer to FTP descriptor
- *
- * Return: 0 on success, else a (negative) error code
- */
-static int sclp_ftp_trigger(const struct hmcdrv_ftp_cmdspec *ftp)
-{
-	int rc = sclp_ftp_prepare(ftp);
-
-	if (rc)
-		return rc;
-
-	sclp_ftp_status = SCLP_REQ_FILLED;
-#ifdef DEBUG
-	sclp_ftp_jiffies = jiffies;
-#endif
-	return sclp_ftp_et7(&sclp_ftp_requ);
-}
-
-/**
- * sclp_ftp_wait() - wait for a SCLP event from ISR, with timeout
- *
- * Return: 0 on success, else a (negative) error code
- */
-static int sclp_ftp_wait(void)
-{
 	int rc;
 
-	rc = wait_event_interruptible_timeout(
-		sclp_ftp_waitq,
-		sclp_ftp_status >= SCLP_REQ_DONE,
-		HZ * SCLP_FTP_TIMEOUT);
-
-	if (rc < 0)
-		return rc; /* error (normally -ERESTARTSYS) */
-
-	if (sclp_ftp_status < SCLP_REQ_DONE) {
-		pr_warn("SCLP (ET7) with timeout, after %d seconds\n",
-			SCLP_FTP_TIMEOUT);
-		return -EIO; /* map internal timeout to EIO */
+	req = kzalloc(sizeof(*req), GFP_KERNEL);
+	sccb = (void *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
+	if (!req || !sccb) {
+		rc = -ENOMEM;
+		goto out_free;
 	}
 
+	sccb->hdr.length = SCLP_DIAG_FTP_EVBUF_LEN +
+		sizeof(struct sccb_header);
+	sccb->evbuf.hdr.type = EVTYP_DIAG_TEST;
+	sccb->evbuf.hdr.length = SCLP_DIAG_FTP_EVBUF_LEN;
+	sccb->evbuf.hdr.flags = 0; /* clear processed-buffer */
+	sccb->evbuf.route = SCLP_DIAG_FTP_ROUTE;
+	sccb->evbuf.mdd.ftp.pcx = SCLP_DIAG_FTP_XPCX;
+	sccb->evbuf.mdd.ftp.srcflg = 0;
+	sccb->evbuf.mdd.ftp.pgsize = 0;
+	sccb->evbuf.mdd.ftp.asce = _ASCE_REAL_SPACE;
+	sccb->evbuf.mdd.ftp.ldflg = SCLP_DIAG_FTP_LDFAIL;
+	sccb->evbuf.mdd.ftp.fsize = 0;
+	sccb->evbuf.mdd.ftp.cmd = ftp->id;
+	sccb->evbuf.mdd.ftp.offset = ftp->ofs;
+	sccb->evbuf.mdd.ftp.length = ftp->len;
+	sccb->evbuf.mdd.ftp.bufaddr = virt_to_phys(ftp->buf);
+
+	len = strlcpy(sccb->evbuf.mdd.ftp.fident, ftp->fname,
+		      HMCDRV_FTP_FIDENT_MAX);
+	if (len >= HMCDRV_FTP_FIDENT_MAX) {
+		rc = -EINVAL;
+		goto out_free;
+	}
+
+	req->command = SCLP_CMDW_WRITE_EVENT_DATA;
+	req->sccb = sccb;
+	req->status = SCLP_REQ_FILLED;
+	req->callback = sclp_ftp_txcb;
+	req->callback_data = &completion;
+
+	init_completion(&completion);
+
+	rc = sclp_add_request(req);
+	if (rc)
+		goto out_free;
+
+	/* Wait for end of ftp sclp command. */
+	wait_for_completion(&completion);
+
 #ifdef DEBUG
-	pr_debug("completed SCLP (ET7) request after %lu ms (all), %d ms (rx)\n",
-		 (jiffies - sclp_ftp_jiffies) * 1000 / HZ,
-		 (HZ * SCLP_FTP_TIMEOUT - rc) * 1000 / HZ);
+	pr_debug("status of SCLP (ET7) request is 0x%04x (0x%02x)\n",
+		 sccb->hdr.response_code, sccb->evbuf.hdr.flags);
 #endif
-	return 0; /* no timeout, no error */
+
+	/*
+	 * Check if sclp accepted the request. The data transfer runs
+	 * asynchronously and the completion is indicated with an
+	 * sclp ET7 event.
+	 */
+	if (req->status != SCLP_REQ_DONE ||
+	    (sccb->evbuf.hdr.flags & 0x80) == 0 || /* processed-buffer */
+	    (sccb->hdr.response_code & 0xffU) != 0x20U) {
+		rc = -EIO;
+	}
+
+out_free:
+	free_page((unsigned long) sccb);
+	kfree(req);
+	return rc;
 }
 
 /**
@@ -226,48 +170,39 @@ static int sclp_ftp_wait(void)
 ssize_t sclp_ftp_cmd(const struct hmcdrv_ftp_cmdspec *ftp, size_t *fsize)
 {
 	ssize_t len;
-	int rc;
+#ifdef DEBUG
+	unsigned long start_jiffies;
 
 	pr_debug("starting SCLP (ET7), cmd %d for '%s' at %lld with %zd bytes\n",
 		 ftp->id, ftp->fname, (long long) ftp->ofs, ftp->len);
+	start_jiffies = jiffies;
+#endif
 
-	rc = sclp_ftp_trigger(ftp);
+	init_completion(&sclp_ftp_rx_complete);
 
-	if (rc)
-		return rc;
+	/* Start ftp sclp command. */
+	len = sclp_ftp_et7(ftp);
+	if (len)
+		goto out_unlock;
 
-	/* First wait for end of request processing, then for an
-	 * asynchronous event indicating the transfer has completed.
+	/*
+	 * There is no way to cancel the sclp ET7 request, the code
+	 * needs to wait unconditionally until the transfer is complete.
 	 */
-	if (wait_event_interruptible(sclp_ftp_waitq,
-				     sclp_ftp_status >= SCLP_REQ_DONE))
-		return -ERESTARTSYS;
+	wait_for_completion(&sclp_ftp_rx_complete);
 
-	pr_debug("status of SCLP (ET7) request is 0x%04x (0x%02x, %d)\n",
-		 sclp_ftp_sccb->hdr.response_code,
-		 sclp_ftp_sccb->evbuf.hdr.flags,
-		 sclp_ftp_status);
+#ifdef DEBUG
+	pr_debug("completed SCLP (ET7) request after %lu ms (all)\n",
+		 (jiffies - start_jiffies) * 1000 / HZ);
+	pr_debug("return code of SCLP (ET7) FTP Service is 0x%02x, with %lld/%lld bytes\n",
+		 sclp_ftp_ldflg, sclp_ftp_length, sclp_ftp_fsize);
+#endif
 
-	rc = sclp_ftp_wait(); /* wait (with timeout) for RX event */
-
-	pr_debug("return code of SCLP (ET7) FTP Service is 0x%02x (%d), with %lld/%lld bytes\n",
-		 sclp_ftp_sccb->evbuf.mdd.ftp.ldflg,
-		 sclp_ftp_status,
-		 sclp_ftp_sccb->evbuf.mdd.ftp.length,
-		 sclp_ftp_sccb->evbuf.mdd.ftp.fsize);
-
-	if (rc)
-		return rc;
-
-	if (sclp_ftp_status != SCLP_REQ_DONE)
-		return -EIO;
-
-	switch (sclp_ftp_sccb->evbuf.mdd.ftp.ldflg) {
+	switch (sclp_ftp_ldflg) {
 	case SCLP_DIAG_FTP_OK:
-		len = sclp_ftp_sccb->evbuf.mdd.ftp.length;
-
+		len = sclp_ftp_length;
 		if (fsize)
-			*fsize = sclp_ftp_sccb->evbuf.mdd.ftp.fsize;
+			*fsize = sclp_ftp_fsize;
 		break;
 	case SCLP_DIAG_FTP_LDNPERM:
 		len = -EPERM;
@@ -283,42 +218,34 @@ ssize_t sclp_ftp_cmd(const struct hmcdrv_ftp_cmdspec *ftp, size_t *fsize)
 		break;
 	}
 
+out_unlock:
 	return len;
 }
+
+/*
+ * ET7 event listener
+ */
+static struct sclp_register sclp_ftp_event = {
+	.send_mask = EVTYP_DIAG_TEST_MASK,    /* want tx events */
+	.receive_mask = EVTYP_DIAG_TEST_MASK, /* want rx events */
+	.receiver_fn = sclp_ftp_rxcb,	      /* async callback (rx) */
+	.state_change_fn = NULL,
+	.pm_event_fn = NULL,
+};
 
 /**
  * sclp_ftp_startup() - startup of FTP services, when running on LPAR
  */
 int sclp_ftp_startup(void)
 {
-	int rc;
-
 #ifdef DEBUG
 	unsigned long info;
 #endif
-	sclp_ftp_sccb = (struct sclp_diag_sccb *)
-		get_zeroed_page(GFP_KERNEL | GFP_DMA);
+	int rc;
 
-	if (!sclp_ftp_sccb)
-		return -ENOMEM;
-
-	sclp_ftp_sccb->evbuf.hdr.type = EVTYP_DIAG_TEST;
-	sclp_ftp_sccb->evbuf.hdr.length = SCLP_DIAG_FTP_EVBUF_LEN;
-	sclp_ftp_sccb->evbuf.route = SCLP_DIAG_FTP_ROUTE;
-	sclp_ftp_sccb->evbuf.mdd.ftp.pcx = SCLP_DIAG_FTP_XPCX;
-	sclp_ftp_sccb->evbuf.mdd.ftp.srcflg = 0;
-	sclp_ftp_sccb->evbuf.mdd.ftp.pgsize = 0;
-	sclp_ftp_sccb->evbuf.mdd.ftp.asce = _ASCE_REAL_SPACE;
-	sclp_ftp_sccb->hdr.length = SCLP_DIAG_FTP_EVBUF_LEN +
-		sizeof(struct sccb_header);
-	sclp_ftp_requ.sccb = sclp_ftp_sccb;
 	rc = sclp_register(&sclp_ftp_event);
-
-	if (rc) {
-		free_page((unsigned long)sclp_ftp_sccb);
-		sclp_ftp_sccb = NULL;
+	if (rc)
 		return rc;
-	}
 
 #ifdef DEBUG
 	info = get_zeroed_page(GFP_KERNEL);
@@ -345,6 +272,4 @@ int sclp_ftp_startup(void)
 void sclp_ftp_shutdown(void)
 {
 	sclp_unregister(&sclp_ftp_event);
-	free_page((unsigned long)sclp_ftp_sccb);
-	sclp_ftp_sccb = NULL;
 }
