@@ -4611,7 +4611,7 @@ int qeth_query_card_info_cb(struct qeth_card *card,
 
 	QETH_CARD_TEXT(card, 2, "qcrdincb");
 	carrier_info = (struct carrier_info *)reply->param;
-	cmd = (struct qeth_ipa_cmd *) data;
+	cmd = (struct qeth_ipa_cmd *)data;
 	card_info = &cmd->data.setadapterparms.data.card_info;
 	if (cmd->data.setadapterparms.hdr.return_code == 0) {
 		carrier_info->card_type = card_info->card_type;
@@ -5668,8 +5668,9 @@ static void qeth_set_ecmd_adv_sup(struct ethtool_cmd *ecmd,
 
 	/* "Fallthrough" case'es ordered from high to low result in setting  */
 	/* flags cumulatively, starting from the specified speed and down to */
-	/* the lowest possible. 					     */
-	spd_sup = spd_adv = 0;
+	/* the lowest possible.						     */
+	spd_sup = 0;
+	spd_adv = 0;
 	switch (maxspeed) {
 	case SPEED_10000:
 		spd_sup |= SUPPORTED_10000baseT_Full;
