@@ -5643,9 +5643,9 @@ void qeth_core_get_drvinfo(struct net_device *dev,
 EXPORT_SYMBOL_GPL(qeth_core_get_drvinfo);
 
 /* Helper function to fill 'advertizing' and 'supported' which are the same. */
-/* Autoneg and full-duplex are supported and advertized uncondionally.       */
+/* Autoneg and full-duplex are supported and advertized uncondionally.	     */
 /* Always advertize and support all speeds up to specified, and only one     */
-/* specified port type.                                                      */
+/* specified port type. 						     */
 static void qeth_set_ecmd_adv_sup(struct ethtool_cmd *ecmd,
 				int maxspeed, int porttype)
 {
@@ -5668,7 +5668,7 @@ static void qeth_set_ecmd_adv_sup(struct ethtool_cmd *ecmd,
 
 	/* "Fallthrough" case'es ordered from high to low result in setting  */
 	/* flags cumulatively, starting from the specified speed and down to */
-	/* the lowest possible.                                              */
+	/* the lowest possible. 					     */
 	spd_sup = spd_adv = 0;
 	switch (maxspeed) {
 	case SPEED_10000:
@@ -5737,9 +5737,9 @@ int qeth_core_ethtool_get_settings(struct net_device *netdev,
 		ecmd->port = PORT_TP;
 	}
 
-	/* Check if we can obtain more accurate information.     */
+	/* Check if we can obtain more accurate information.	 */
 	/* If QUERY_CARD_INFO command is not supported or fails, */
-	/* just return the heuristics that was filled above.     */
+	/* just return the heuristics that was filled above.	 */
 	if (qeth_query_card_info(card, &carrier_info) != 0)
 		return 0;
 
