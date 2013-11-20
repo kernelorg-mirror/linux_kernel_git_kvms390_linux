@@ -370,27 +370,27 @@ static int xcrb_msg_to_type6_ep11cprb_msgx(struct zcrypt_device *zdev,
 
 	static struct type6_hdr static_type6_ep11_hdr = {
 		.type		=  0x06,
-		.rqid           = {0x00, 0x01},
-		.function_code  = {0x00, 0x00},
-		.agent_id[0]    =  0x58,	/* {'X'} */
-		.agent_id[1]    =  0x43,	/* {'C'} */
+		.rqid		= {0x00, 0x01},
+		.function_code	= {0x00, 0x00},
+		.agent_id[0]	=  0x58,	/* {'X'} */
+		.agent_id[1]	=  0x43,	/* {'C'} */
 		.offset1	=  0x00000058,
 	};
 
 	struct {
 		struct type6_hdr hdr;
 		struct ep11_cprb cprbx;
-		unsigned char   pld_tag;	/* fixed value 0x30 */
-		unsigned char   pld_lenfmt;	/* payload length format */
+		unsigned char	pld_tag;	/* fixed value 0x30 */
+		unsigned char	pld_lenfmt;	/* payload length format */
 	} __packed * msg = ap_msg->message;
 
 	struct pld_hdr {
-		unsigned char   func_tag;       /* fixed value 0x4 */
-		unsigned char   func_len;       /* fixed value 0x4 */
-		unsigned int    func_val;       /* function ID     */
-		unsigned char   dom_tag;        /* fixed value 0x4 */
-		unsigned char   dom_len;        /* fixed value 0x4 */
-		unsigned int    dom_val;        /* domain id       */
+		unsigned char	func_tag;	/* fixed value 0x4 */
+		unsigned char	func_len;	/* fixed value 0x4 */
+		unsigned int	func_val;	/* function ID	   */
+		unsigned char	dom_tag;	/* fixed value 0x4 */
+		unsigned char	dom_len;	/* fixed value 0x4 */
+		unsigned int	dom_val;	/* domain id	   */
 	} __packed * payload_hdr;
 
 	/* length checks */
@@ -991,7 +991,7 @@ out_free:
  * The request distributor calls this function if it picked the CEX4P
  * device to handle a send_ep11_cprb request.
  * @zdev: pointer to zcrypt_device structure that identifies the
- *        CEX4P device to the request distributor
+ *	  CEX4P device to the request distributor
  * @xcRB: pointer to the ep11 user request block
  */
 static long zcrypt_msgtype6_send_ep11_cprb(struct zcrypt_device *zdev,

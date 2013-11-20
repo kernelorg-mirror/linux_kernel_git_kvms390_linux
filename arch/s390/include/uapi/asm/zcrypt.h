@@ -159,12 +159,12 @@ struct ica_xcRB {
  * EP11 CPRB
  */
 struct ep11_cprb {
-	unsigned short	cprb_len;	/* CPRB header length     0x0020    */
-	unsigned char	cprb_ver_id;	/* CPRB version id.       0x04	    */
+	unsigned short	cprb_len;	/* CPRB header length	  0x0020    */
+	unsigned char	cprb_ver_id;	/* CPRB version id.	  0x04	    */
 	unsigned char	pad_000[2];	/* Alignment pad bytes		    */
 	unsigned char	flags;		/* Admin cmd 0x80 / func. cmd 0x00  */
 	unsigned char	func_id[2];	/* Function id / subtype  0x5434    */
-	unsigned int	source_id;	/* Source id [originator id]        */
+	unsigned int	source_id;	/* Source id [originator id]	    */
 	unsigned int	target_id;	/* Target id [usage/ctrl domain id] */
 	unsigned int	ret_code;	/* Return code			    */
 	unsigned int	reserved1;	/* Reserved			    */
@@ -185,12 +185,12 @@ struct ep11_target_dev {
  */
 struct ep11_urb {
 	short			targets_num;	/* Number of target adapters */
-	struct target_list	*targets;	/* Target adapter list       */
+	struct target_list	*targets;	/* Target adapter list	     */
 	unsigned long		weight;		/* Level of request priority */
-	unsigned long		req_no;		/* Request id/number         */
-	unsigned long		req_len;	/* Request length            */
+	unsigned long		req_no;		/* Request id/number	     */
+	unsigned long		req_len;	/* Request length	     */
 	char __user		*req;		/* Pointer to request block  */
-	unsigned long		resp_len;	/* Response length           */
+	unsigned long		resp_len;	/* Response length	     */
 	char  __user		*resp;		/* Pointer to response block */
 } __attribute__((packed));
 
