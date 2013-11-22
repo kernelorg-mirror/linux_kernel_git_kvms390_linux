@@ -271,6 +271,9 @@ static int __init diag288_init(void)
 		194, 197, 199, 201, 213
 	};
 
+	if (nowayout_info)
+		wdt_dev.status = (1 << WDOG_NO_WAY_OUT);
+
 	if (MACHINE_IS_VM) {
 		pr_info("The watchdog is running on z/VM\n");
 		if (__diag288_vm(WDT_FUNC_INIT, 15,
