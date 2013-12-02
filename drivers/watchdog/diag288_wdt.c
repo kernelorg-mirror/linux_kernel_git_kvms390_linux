@@ -133,10 +133,10 @@ static int wdt_start(struct watchdog_device *dev)
 	}
 
 	if (ret) {
-		pr_err("Watchdog could not be started\n");
+		pr_err("The watchdog cannot be activated\n");
 		return ret;
 	}
-	pr_info("Watchdog started\n");
+	pr_info("The watchdog was activated\n");
 	return 0;
 }
 
@@ -145,7 +145,7 @@ static int wdt_stop(struct watchdog_device *dev)
 	int ret;
 
 	ret = __diag288(WDT_FUNC_CANCEL, 0, 0, 0);
-	pr_info("Watchdog stopped\n");
+	pr_info("The watchdog was deactivated\n");
 	return ret;
 }
 
@@ -183,7 +183,7 @@ static int wdt_ping(struct watchdog_device *dev)
 		ret = __diag288_lpar(WDT_FUNC_CHANGE, dev->timeout, 0);
 
 	if (ret)
-		pr_err("Watchdog could not be started/retriggered\n");
+		pr_err("The watchdog timer cannot be started or reset\n");
 	return ret;
 }
 
@@ -228,12 +228,12 @@ static struct watchdog_device wdt_dev = {
 static int wdt_suspend(void)
 {
 	if (test_and_set_bit(WDOG_DEV_OPEN, &wdt_dev.status)) {
-		pr_err("The system cannot be suspended while the watchdog is in use\n");
+		pr_err("Linux cannot be suspended while the watchdog is in use\n");
 		return notifier_from_errno(-EBUSY);
 	}
 	if (test_bit(WDOG_ACTIVE, &wdt_dev.status)) {
 		clear_bit(WDOG_DEV_OPEN, &wdt_dev.status);
-		pr_err("The system cannot be suspended while the watchdog is running\n");
+		pr_err("Linux cannot be suspended while the watchdog is in use\n");
 		return notifier_from_errno(-EBUSY);
 	}
 	return NOTIFY_DONE;
@@ -275,25 +275,25 @@ static int __init diag288_init(void)
 		wdt_dev.status = (1 << WDOG_NO_WAY_OUT);
 
 	if (MACHINE_IS_VM) {
-		pr_info("The watchdog is running on z/VM\n");
+		pr_info("The watchdog device driver detected a z/VM environment\n");
 		if (__diag288_vm(WDT_FUNC_INIT, 15,
 				 ebc_begin, sizeof(ebc_begin)) != 0) {
-			pr_err("Could not initialize watchdog\n");
+			pr_err("The watchdog cannot be initialized\n");
 			return -EINVAL;
 		}
 	} else if (MACHINE_IS_LPAR) {
-		pr_info("The watchdog is running on LPAR\n");
+		pr_info("The watchdog device driver detected an LPAR environment\n");
 		if (__diag288_lpar(WDT_FUNC_INIT, 30, LPARWDT_RESTART)) {
-			pr_err("Could not initialize watchdog\n");
+			pr_err("The watchdog cannot be initialized\n");
 			return -EINVAL;
 		}
 	} else {
-		pr_err("Unsupported environment - watchdog not started\n");
+		pr_err("Linux runs in an environment that does not support the diag288 watchdog\n");
 		return -ENODEV;
 	}
 
 	if (__diag288_lpar(WDT_FUNC_CANCEL, 0, 0)) {
-		pr_err("Could not stop watchdog\n");
+		pr_err("The watchdog cannot be deactivated\n");
 		return -EINVAL;
 	}
 
