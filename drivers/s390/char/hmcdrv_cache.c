@@ -221,7 +221,7 @@ int hmcdrv_cache_startup(size_t cachesize)
 						  hmcdrv_cache_order);
 
 		if (!hmcdrv_cache_file.content) {
-			pr_err("allocation of memory failed (reduce 'cachesize=%zu' parameter)\n",
+			pr_err("Allocating the requested cache size of %zu bytes failed\n",
 			       cachesize);
 			return -ENOMEM;
 		}
