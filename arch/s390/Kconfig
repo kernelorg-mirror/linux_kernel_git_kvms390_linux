@@ -355,7 +355,7 @@ config NR_CPUS
 	default "64" if 64BIT
 	help
 	  This allows you to specify the maximum number of CPUs which this
-	  kernel will support.  The maximum supported value is 256 and the
+	  kernel will support. The maximum supported value is 256 and the
 	  minimum value which makes sense is 2.
 
 	  This is purely to save memory - each supported CPU adds
