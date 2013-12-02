@@ -9,29 +9,3 @@
  * Load module 'hmcdrv' with a 'cachesize=N' parameter, N less than
  * 1048576 (1 megabyte).
  */
-
-/*?
- * Text: "DIAG X'2C4' with timeout, after %ds\n"
- * Severity: Warning
- * Parameter:
- *   @1: timeout in seconds
- * Description:
- * A DIAGNOSE '2C4 call has failed with timeout, in a z/VM environment.
- * User action:
- * Check if a network connection to the hardware management console (HMC) is
- * available and the HMC is operating. Also verify any overload condition on
- * the Linux system, else restart it (on demand).
- */
-
-/*?
- * Text: "SCLP (ET7) with timeout, after %d seconds\n"
- * Severity: Warning
- * Parameter:
- *   @1: timeout in seconds
- * Description:
- * A SCLP Event Type 7 request has failed with timeout, in a LPAR environment.
- * User action:
- * Check if a network connection to the hardware management console (HMC) is
- * available and the HMC is operating. Also verify any overload condition on
- * the Linux system, else restart it (on demand).
- */
