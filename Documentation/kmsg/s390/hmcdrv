@@ -13,7 +13,7 @@
  * For a separate 'hmcdrv' module, the cache size was specified with the
  * 'cachesize=' module parameter.
  * User action:
- * Specify a smaller cache size and try again to load the module. 
+ * Specify a smaller cache size and try again to load the module.
  * Do not exceed the maximum specification of 1048576 (1 megabyte).
  * If necessary, free some memory and try again.
  * If the module is compiled into the kernel, you must reboot Linux to change
