@@ -502,8 +502,8 @@
  * The corresponding HiperSockets interface is switched into promiscuous mode
  * but the network traffic analyzer (NTA) rules configured at the Support Element (SE)
  * do not allow tracing. Possible reasons are:
- * - Tracing is not authorized for all HiperSockets channels in the mainframe system
- * - Tracing is not authorized for this HiperSockets channel
+ * - Tracing is not authorized for all HiperSockets LANs in the mainframe system
+ * - Tracing is not authorized for this HiperSockets LAN
  * - LPAR is not authorized to enable an NTA
  * User action:
  * Configure appropriate HiperSockets NTA rules at the SE.
@@ -517,11 +517,11 @@
  * Description:
  * The sysfs 'sniffer' attribute of the HiperSockets device has the value '1'.
  * The HiperSockets interface is switched into promiscuous mode but another
- * HiperSockets device on the same HiperSockets channel is already running as
+ * HiperSockets device on the same HiperSockets LAN is already running as
  * a network traffic analyzer.
- * A HiperSockets channel can only have one active network traffic analyzer.
+ * A HiperSockets LAN can only have one active network traffic analyzer.
  * User action:
- * Do not configure multiple HiperSockets devices in the same HiperSockets channel as
+ * Do not configure multiple HiperSockets devices in the same HiperSockets LAN as
  * tracing devices.
  */
 
