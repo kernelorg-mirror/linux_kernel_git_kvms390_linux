@@ -58,74 +58,74 @@ struct cpumf_ctr_info {
 
 /* QUERY SAMPLING INFORMATION block */
 struct hws_qsi_info_block {	    /* Bit(s) */
-	unsigned int b0_13:14;      /* 0-13: zeros                       */
-	unsigned int as:1;          /* 14: sampling authorisation control*/
-	unsigned int b15_21:7;      /* 15-21: zeros                      */
-	unsigned int es:1;          /* 22: sampling enable control       */
-	unsigned int b23_29:7;      /* 23-29: zeros                      */
-	unsigned int cs:1;          /* 30: sampling activation control   */
-	unsigned int:1;             /* 31: reserved                      */
-	unsigned int bsdes:16;      /* 4-5: size of basic sampling entry      */
-	unsigned int dsdes:16;      /* 6-7: size of diagnostic sampling entry */
+	unsigned int b0_13:14;	    /* 0-13: zeros			 */
+	unsigned int as:1;	    /* 14: sampling authorisation control*/
+	unsigned int b15_21:7;	    /* 15-21: zeros			 */
+	unsigned int es:1;	    /* 22: sampling enable control	 */
+	unsigned int b23_29:7;	    /* 23-29: zeros			 */
+	unsigned int cs:1;	    /* 30: sampling activation control	 */
+	unsigned int:1; 	    /* 31: reserved			 */
+	unsigned int bsdes:16;	    /* 4-5: size of basic sampling entry      */
+	unsigned int dsdes:16;	    /* 6-7: size of diagnostic sampling entry */
 	unsigned long min_sampl_rate; /* 8-15: minimum sampling interval */
 	unsigned long max_sampl_rate; /* 16-23: maximum sampling interval*/
-	unsigned long tear;         /* 24-31: TEAR contents              */
-	unsigned long dear;         /* 32-39: DEAR contents              */
-	unsigned int rsvrd0;        /* 40-43: reserved                   */
-	unsigned int cpu_speed;     /* 44-47: CPU speed                  */
-	unsigned long long rsvrd1;  /* 48-55: reserved                   */
-	unsigned long long rsvrd2;  /* 56-63: reserved                   */
+	unsigned long tear;	    /* 24-31: TEAR contents		 */
+	unsigned long dear;	    /* 32-39: DEAR contents		 */
+	unsigned int rsvrd0;	    /* 40-43: reserved			 */
+	unsigned int cpu_speed;     /* 44-47: CPU speed 		 */
+	unsigned long long rsvrd1;  /* 48-55: reserved			 */
+	unsigned long long rsvrd2;  /* 56-63: reserved			 */
 } __packed;
 
 /* SET SAMPLING CONTROLS request block */
 struct hws_lsctl_request_block {
-	unsigned int s:1;           /* 0: maximum buffer indicator       */
-	unsigned int h:1;           /* 1: part. level reserved for VM use*/
-	unsigned long long b2_53:52;/* 2-53: zeros                       */
-	unsigned int es:1;          /* 54: sampling enable control       */
-	unsigned int b55_61:7;      /* 55-61: - zeros                    */
-	unsigned int cs:1;          /* 62: sampling activation control   */
-	unsigned int b63:1;         /* 63: zero                          */
-	unsigned long interval;     /* 8-15: sampling interval           */
-	unsigned long tear;         /* 16-23: TEAR contents              */
-	unsigned long dear;         /* 24-31: DEAR contents              */
-	/* 32-63:                                                        */
-	unsigned long rsvrd1;       /* reserved                          */
-	unsigned long rsvrd2;       /* reserved                          */
-	unsigned long rsvrd3;       /* reserved                          */
-	unsigned long rsvrd4;       /* reserved                          */
+	unsigned int s:1;	    /* 0: maximum buffer indicator	 */
+	unsigned int h:1;	    /* 1: part. level reserved for VM use*/
+	unsigned long long b2_53:52;/* 2-53: zeros			 */
+	unsigned int es:1;	    /* 54: sampling enable control	 */
+	unsigned int b55_61:7;	    /* 55-61: - zeros			 */
+	unsigned int cs:1;	    /* 62: sampling activation control	 */
+	unsigned int b63:1;	    /* 63: zero 			 */
+	unsigned long interval;     /* 8-15: sampling interval		 */
+	unsigned long tear;	    /* 16-23: TEAR contents		 */
+	unsigned long dear;	    /* 24-31: DEAR contents		 */
+	/* 32-63:							 */
+	unsigned long rsvrd1;	    /* reserved 			 */
+	unsigned long rsvrd2;	    /* reserved 			 */
+	unsigned long rsvrd3;	    /* reserved 			 */
+	unsigned long rsvrd4;	    /* reserved 			 */
 } __packed;
 
 
 struct hws_data_entry {
-	unsigned int def:16;        /* 0-15  Data Entry Format           */
-	unsigned int R:4;           /* 16-19 reserved                    */
-	unsigned int U:4;           /* 20-23 Number of unique instruct.  */
-	unsigned int z:2;           /* zeros                             */
-	unsigned int T:1;           /* 26 PSW DAT mode                   */
-	unsigned int W:1;           /* 27 PSW wait state                 */
-	unsigned int P:1;           /* 28 PSW Problem state              */
-	unsigned int AS:2;          /* 29-30 PSW address-space control   */
-	unsigned int I:1;           /* 31 entry valid or invalid         */
+	unsigned int def:16;	    /* 0-15  Data Entry Format		 */
+	unsigned int R:4;	    /* 16-19 reserved			 */
+	unsigned int U:4;	    /* 20-23 Number of unique instruct.  */
+	unsigned int z:2;	    /* zeros				 */
+	unsigned int T:1;	    /* 26 PSW DAT mode			 */
+	unsigned int W:1;	    /* 27 PSW wait state		 */
+	unsigned int P:1;	    /* 28 PSW Problem state		 */
+	unsigned int AS:2;	    /* 29-30 PSW address-space control	 */
+	unsigned int I:1;	    /* 31 entry valid or invalid	 */
 	unsigned int:16;
-	unsigned int prim_asn:16;   /* primary ASN                       */
-	unsigned long long ia;      /* Instruction Address               */
+	unsigned int prim_asn:16;   /* primary ASN			 */
+	unsigned long long ia;	    /* Instruction Address		 */
 	unsigned long long gpp;     /* Guest Program Parameter		 */
 	unsigned long long hpp;     /* Host Program Parameter		 */
 } __packed;
 
 struct hws_trailer_entry {
-	unsigned int f:1;           /* 0 - Block Full Indicator          */
-	unsigned int a:1;           /* 1 - Alert request control         */
+	unsigned int f:1;	    /* 0 - Block Full Indicator 	 */
+	unsigned int a:1;	    /* 1 - Alert request control	 */
 	unsigned int t:1;	    /* 2 - Timestamp format		 */
-	unsigned long long:61;	    /* 3 - 63: Reserved                  */
-	unsigned long long overflow;     /* 64 - sample Overflow count        */
-	unsigned long long timestamp;    /* 16 - time-stamp                   */
-	unsigned long long timestamp1;   /*                                   */
-	unsigned long long reserved1;    /* 32 -Reserved                      */
-	unsigned long long reserved2;    /*                                   */
-	unsigned long long progusage1;   /* 48 - reserved for programming use */
-	unsigned long long progusage2;   /*                                   */
+	unsigned long long:61;	    /* 3 - 63: Reserved 		 */
+	unsigned long long overflow;	 /* 64 - sample Overflow count	      */
+	unsigned long long timestamp;	 /* 16 - time-stamp		      */
+	unsigned long long timestamp1;	 /*				      */
+	unsigned long long reserved1;	 /* 32 -Reserved		      */
+	unsigned long long reserved2;	 /*				      */
+	unsigned long long progusage1;	 /* 48 - reserved for programming use */
+	unsigned long long progusage2;	 /*				      */
 } __packed;
 
 /* Query counter information */
@@ -210,7 +210,7 @@ static inline int lsctl(struct hws_lsctl_request_block *req)
 
 /* Sampling control helper functions */
 
-#define SDB_TE_ALERT_REQ_MASK   0x4000000000000000UL
+#define SDB_TE_ALERT_REQ_MASK	0x4000000000000000UL
 #define SDB_TE_BUFFER_FULL_MASK 0x8000000000000000UL
 
 /* Return pointer to trailer entry of an sample data block */
