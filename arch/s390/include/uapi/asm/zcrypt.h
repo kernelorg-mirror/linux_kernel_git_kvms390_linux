@@ -156,42 +156,63 @@ struct ica_xcRB {
 } __attribute__((packed));
 
 /**
- * EP11 CPRB
+ * struct ep11_cprb - EP11 connectivity programming request block
+ * @cprb_len:		CPRB header length [0x0020]
+ * @cprb_ver_id:	CPRB version id.   [0x04]
+ * @pad_000:		Alignment pad bytes
+ * @flags:		Admin cmd [0x80] or functional cmd [0x00]
+ * @func_id:		Function id / subtype [0x5434]
+ * @source_id:		Source id [originator id]
+ * @target_id:		Target id [usage/ctrl domain id]
+ * @ret_code:		Return code
+ * @reserved1:		Reserved
+ * @reserved2:		Reserved
+ * @payload_len:	Payload length
  */
 struct ep11_cprb {
-	unsigned short	cprb_len;	/* CPRB header length	  0x0020    */
-	unsigned char	cprb_ver_id;	/* CPRB version id.	  0x04	    */
-	unsigned char	pad_000[2];	/* Alignment pad bytes		    */
-	unsigned char	flags;		/* Admin cmd 0x80 / func. cmd 0x00  */
-	unsigned char	func_id[2];	/* Function id / subtype  0x5434    */
-	unsigned int	source_id;	/* Source id [originator id]	    */
-	unsigned int	target_id;	/* Target id [usage/ctrl domain id] */
-	unsigned int	ret_code;	/* Return code			    */
-	unsigned int	reserved1;	/* Reserved			    */
-	unsigned int	reserved2;	/* Reserved			    */
-	unsigned int	payload_len;	/* Payload length		    */
+	uint16_t	cprb_len;
+	unsigned char	cprb_ver_id;
+	unsigned char	pad_000[2];
+	unsigned char	flags;
+	unsigned char	func_id[2];
+	uint32_t	source_id;
+	uint32_t	target_id;
+	uint32_t	ret_code;
+	uint32_t	reserved1;
+	uint32_t	reserved2;
+	uint32_t	payload_len;
 } __attribute__((packed));
 
 /**
- * EP11 target device
+ * struct ep11_target_dev - EP11 target device list
+ * @ap_id:	AP device id
+ * @dom_id:	Usage domain id
  */
 struct ep11_target_dev {
-	short ap_id;	/* AP device id    */
-	short dom_id;	/* Usage domain id */
+	uint16_t ap_id;
+	uint16_t dom_id;
 };
 
 /**
- * EP11 user request block
+ * struct ep11_urb - EP11 user request block
+ * @targets_num:	Number of target adapters
+ * @*targets:		Target adapter list
+ * @weight:		Level of request priority
+ * @req_no:		Request id/number
+ * @req_len:		Request length
+ * @req:		Pointer to request block
+ * @resp_len:		Response length
+ * @resp:		Pointer to response block
  */
 struct ep11_urb {
-	short			targets_num;	/* Number of target adapters */
-	struct target_list	*targets;	/* Target adapter list	     */
-	unsigned long		weight;		/* Level of request priority */
-	unsigned long		req_no;		/* Request id/number	     */
-	unsigned long		req_len;	/* Request length	     */
-	char __user		*req;		/* Pointer to request block  */
-	unsigned long		resp_len;	/* Response length	     */
-	char  __user		*resp;		/* Pointer to response block */
+	uint16_t		targets_num;
+	struct ep11_target_dev	*targets;
+	uint64_t		weight;
+	uint64_t		req_no;
+	uint64_t		req_len;
+	uint8_t __user		*req;
+	uint64_t		resp_len;
+	uint8_t __user		*resp;
 } __attribute__((packed));
 
 #define AUTOSELECT ((unsigned int)0xFFFFFFFF)

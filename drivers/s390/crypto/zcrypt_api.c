@@ -584,7 +584,7 @@ static long zcrypt_send_cprb(struct ica_xcRB *xcRB)
 }
 
 struct ep11_target_dev_list {
-	short			targets_num;
+	unsigned short		targets_num;
 	struct ep11_target_dev	*targets;
 };
 
@@ -606,23 +606,30 @@ static long zcrypt_send_ep11_cprb(struct ep11_urb *xcrb)
 {
 	struct zcrypt_device *zdev;
 	bool autoselect = false;
-	struct ep11_target_dev_list ep11_dev_list;
 	int rc;
+	struct ep11_target_dev_list ep11_dev_list = {
+		.targets_num	=  0x00,
+		.targets	=  NULL,
+	};
 
-	ep11_dev_list.targets_num = (short) xcrb->targets_num,
-	ep11_dev_list.targets = kmalloc((short)xcrb->targets_num *
-					 sizeof(struct ep11_target_dev),
-					 GFP_KERNEL);
-	if (!ep11_dev_list.targets)
-		return -ENOMEM;
-
-	if (copy_from_user(ep11_dev_list.targets, xcrb->targets,
-			   xcrb->targets_num * sizeof(struct ep11_target_dev)))
-		return -EFAULT;
+	ep11_dev_list.targets_num = (unsigned short) xcrb->targets_num;
 
 	/* empty list indicates autoselect (all available targets) */
 	if (ep11_dev_list.targets_num == 0)
 		autoselect = true;
+	else {
+		ep11_dev_list.targets = kcalloc((unsigned short)
+						xcrb->targets_num,
+						sizeof(struct ep11_target_dev),
+						GFP_KERNEL);
+		if (!ep11_dev_list.targets)
+			return -ENOMEM;
+
+		if (copy_from_user(ep11_dev_list.targets, xcrb->targets,
+				   xcrb->targets_num *
+				   sizeof(struct ep11_target_dev)))
+			return -EFAULT;
+	}
 
 	spin_lock_bh(&zcrypt_device_lock);
 	list_for_each_entry(zdev, &zcrypt_device_list, list) {

@@ -395,11 +395,12 @@ static int xcrb_msg_to_type6_ep11cprb_msgx(struct zcrypt_device *zdev,
 
 	/* length checks */
 	ap_msg->length = sizeof(struct type6_hdr) + xcRB->req_len;
-	if (ap_msg->length > MSGTYPE06_MAX_MSG_SIZE)
+	if (CEIL4(xcRB->req_len) > MSGTYPE06_MAX_MSG_SIZE -
+				   (sizeof(struct type6_hdr)))
 		return -EINVAL;
 
-	if ((sizeof(struct type86_fmt2_msg) + CEIL4(xcRB->resp_len))
-					 > MSGTYPE06_MAX_MSG_SIZE)
+	if (CEIL4(xcRB->resp_len) > MSGTYPE06_MAX_MSG_SIZE -
+				    (sizeof(struct type86_fmt2_msg)))
 		return -EINVAL;
 
 	/* prepare type6 header */
@@ -617,6 +618,9 @@ static int convert_type86_ep11_xcrb(struct zcrypt_device *zdev,
 {
 	struct type86_fmt2_msg *msg = reply->message;
 	char *data = reply->message;
+
+	if (xcRB->resp_len < msg->fmt2.count1)
+		return -EINVAL;
 
 	/* Copy response CPRB to user */
 	if (copy_to_user(xcRB->resp,
