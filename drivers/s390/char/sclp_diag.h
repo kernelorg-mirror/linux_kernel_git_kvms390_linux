@@ -39,7 +39,7 @@
  * @fsize: file size
  * @length: buffer size resp. bytes transferred
  * @failaddr: failing address
- * @bufaddr: buffer adress, virtual
+ * @bufaddr: buffer address, virtual
  * @asce: region or segment table designation
  * @fident: file name (ASCII, zero-terminated)
  */

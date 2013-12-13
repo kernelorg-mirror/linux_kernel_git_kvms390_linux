@@ -20,10 +20,10 @@
 #include "diag_ftp.h"
 
 /* DIAGNOSE X'2C4' return codes in Ry */
-#define DIAG_FTP_RET_OK	0 /* HMC FTP started successully */
+#define DIAG_FTP_RET_OK	0 /* HMC FTP started successfully */
 #define DIAG_FTP_RET_EBUSY	4 /* HMC FTP service currently busy */
 #define DIAG_FTP_RET_EIO	8 /* HMC FTP service I/O error */
-/* and an artifical extension */
+/* and an artificial extension */
 #define DIAG_FTP_RET_EPERM	2 /* HMC FTP service privilege error */
 
 /* FTP service status codes (after INTR at guest real location 133) */
@@ -39,7 +39,7 @@
 
 /**
  * struct diag_ftp_ldfpl - load file FTP parameter list (LDFPL)
- * @bufaddr: real buffer adress (at 4k boundary)
+ * @bufaddr: real buffer address (at 4k boundary)
  * @buflen: length of buffer
  * @offset: dir/file offset
  * @intparm: interruption parameter (unused)
