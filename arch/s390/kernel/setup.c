@@ -733,6 +733,7 @@ static void __init reserve_crashkernel(void)
 
 static void __init setup_memory(void)
 {
+        unsigned long bootmap_size;
 	unsigned long start_pfn, end_pfn;
 	int i;
 
@@ -741,7 +742,7 @@ static void __init setup_memory(void)
 	 * we are rounding upwards:
 	 */
 	start_pfn = PFN_UP(__pa(&_end));
-	end_pfn = max_pfn = max_low_pfn = PFN_DOWN(memory_end);
+	end_pfn = max_pfn = PFN_DOWN(memory_end);
 
 #ifdef CONFIG_BLK_DEV_INITRD
 	/*
@@ -784,6 +785,12 @@ static void __init setup_memory(void)
 		}
 	}
 #endif
+
+	/*
+	 * Initialize the boot-time allocator
+	 */
+	bootmap_size = init_bootmem(start_pfn, end_pfn);
+
 	/*
 	 * Register RAM areas with the bootmem allocator.
 	 */
@@ -811,9 +818,18 @@ static void __init setup_memory(void)
 	/*
 	 * Reserve memory used for lowcore/command line/kernel image.
 	 */
-	memblock_reserve(0, (unsigned long)_ehead);
-	memblock_reserve((unsigned long)_stext, PFN_PHYS(start_pfn)
-			  - (unsigned long)_stext);
+	reserve_bootmem(0, (unsigned long)_ehead, BOOTMEM_DEFAULT);
+	reserve_bootmem((unsigned long)_stext,
+			PFN_PHYS(start_pfn) - (unsigned long)_stext,
+			BOOTMEM_DEFAULT);
+	/*
+	 * Reserve the bootmem bitmap itself as well. We do this in two
+	 * steps (first step was init_bootmem()) because this catches
+	 * the (very unlikely) case of us accidentally initializing the
+	 * bootmem allocator with an invalid RAM area.
+	 */
+	reserve_bootmem(start_pfn << PAGE_SHIFT, bootmap_size,
+			BOOTMEM_DEFAULT);
 
 #ifdef CONFIG_CRASH_DUMP
 	if (crashk_res.start)
