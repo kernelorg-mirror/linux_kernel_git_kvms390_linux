@@ -1020,7 +1020,7 @@ static int perf_push_sample(struct perf_event *event, struct sf_raw_sample *sfr)
 	}
 
 	/* The host-program-parameter (hpp) contains the sie control
-	 * block that is set by sie64a() in entry64.S.  Check if hpp
+	 * block that is set by sie64a() in entry64.S.	Check if hpp
 	 * refers to a valid control block and set sde_regs flags
 	 * accordingly.  This would allow to use hpp values for other
 	 * purposes too.
@@ -1126,7 +1126,7 @@ static void debug_sample_entry(struct hws_combined_entry *sample,
  * then pushed to the perf event subsystem.  Depending on the sampling function,
  * there can be either basic-sampling or combined-sampling data entries.  A
  * combined-sampling data entry consists of a basic- and a diagnostic-sampling
- * data entry.  The sampling function is determined by the flags in the perf
+ * data entry.	The sampling function is determined by the flags in the perf
  * event hardware structure.  The function always works with a combined-sampling
  * data entry but ignores the the diagnostic portion if it is not available.
  *
@@ -1206,9 +1206,9 @@ static void hw_collect_samples(struct perf_event *event, unsigned long *sdbt,
  * The sampling buffer position are retrieved and saved in the TEAR_REG
  * register of the specified perf event.
  *
- * Only full sample-data-blocks are processed.  Specify the flash_all flag
+ * Only full sample-data-blocks are processed.	Specify the flash_all flag
  * to also walk through partially filled sample-data-blocks.  It is ignored
- * if PERF_CPUM_SF_FULL_BLOCKS is set.  The PERF_CPUM_SF_FULL_BLOCKS flag
+ * if PERF_CPUM_SF_FULL_BLOCKS is set.	The PERF_CPUM_SF_FULL_BLOCKS flag
  * enforces the processing of full sample-data-blocks only (trailer entries
  * with the block-full-indicator bit set).
  */
