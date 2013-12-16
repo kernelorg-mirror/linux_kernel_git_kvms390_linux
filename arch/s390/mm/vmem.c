@@ -10,6 +10,7 @@
 #include <linux/list.h>
 #include <linux/hugetlb.h>
 #include <linux/slab.h>
+#include <linux/memblock.h>
 #include <asm/pgalloc.h>
 #include <asm/pgtable.h>
 #include <asm/setup.h>
@@ -66,7 +67,8 @@ static pte_t __ref *vmem_pte_alloc(unsigned long address)
 	if (slab_is_available())
 		pte = (pte_t *) page_table_alloc(&init_mm, address);
 	else
-		pte = alloc_bootmem(PTRS_PER_PTE * sizeof(pte_t));
+		pte = alloc_bootmem_align(PTRS_PER_PTE * sizeof(pte_t),
+					  PTRS_PER_PTE * sizeof(pte_t));
 	if (!pte)
 		return NULL;
 	clear_table((unsigned long *) pte, _PAGE_INVALID,
@@ -371,16 +373,12 @@ out:
 void __init vmem_map_init(void)
 {
 	unsigned long ro_start, ro_end;
-	unsigned long start, end;
-	int i;
+	phys_addr_t start, end;
+	u64 idx;
 
 	ro_start = PFN_ALIGN((unsigned long)&_stext);
 	ro_end = (unsigned long)&_eshared & PAGE_MASK;
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		if (!memory_chunk[i].size)
-			continue;
-		start = memory_chunk[i].addr;
-		end = memory_chunk[i].addr + memory_chunk[i].size;
+	for_each_usable_mem_range(idx, NUMA_NO_NODE, &start, &end, NULL) {
 		if (start >= ro_end || end <= ro_start)
 			vmem_add_mem(start, end - start, 0);
 		else if (start >= ro_start && end <= ro_end)
@@ -400,23 +398,22 @@ void __init vmem_map_init(void)
 }
 
 /*
- * Convert memory chunk array to a memory segment list so there is a single
- * list that contains both r/w memory and shared memory segments.
+ * Convert memblock.memory  to a memory segment list so there is a single
+ * list that contains all memory segments.
  */
 static int __init vmem_convert_memory_chunk(void)
 {
+	phys_addr_t start, end;
 	struct memory_segment *seg;
-	int i;
+	u64 idx;
 
 	mutex_lock(&vmem_mutex);
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		if (!memory_chunk[i].size)
-			continue;
+	for_each_usable_mem_range(idx, NUMA_NO_NODE, &start, &end, NULL) {
 		seg = kzalloc(sizeof(*seg), GFP_KERNEL);
 		if (!seg)
 			panic("Out of memory...\n");
-		seg->start = memory_chunk[i].addr;
-		seg->size = memory_chunk[i].size;
+		seg->start = start;
+		seg->size = end - start;
 		insert_memory_segment(seg);
 	}
 	mutex_unlock(&vmem_mutex);

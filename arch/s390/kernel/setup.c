@@ -78,10 +78,9 @@ EXPORT_SYMBOL(console_irq);
 unsigned long elf_hwcap = 0;
 char elf_platform[ELF_PLATFORM_SIZE];
 
-struct mem_chunk __initdata memory_chunk[MEMORY_CHUNKS];
-
 int __initdata memory_end_set;
 unsigned long __initdata memory_end;
+unsigned long __initdata max_physmem_end;
 
 unsigned long VMALLOC_START;
 EXPORT_SYMBOL(VMALLOC_START);
@@ -401,7 +400,9 @@ static struct resource __initdata *standard_resources[] = {
 static void __init setup_resources(void)
 {
 	struct resource *res, *std_res, *sub_res;
-	int i, j;
+	int j;
+	phys_addr_t start, end;
+	u64 idx;
 
 	code_resource.start = (unsigned long) &_text;
 	code_resource.end = (unsigned long) &_etext - 1;
@@ -410,12 +411,11 @@ static void __init setup_resources(void)
 	bss_resource.start = (unsigned long) &__bss_start;
 	bss_resource.end = (unsigned long) &__bss_stop - 1;
 
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		if (!memory_chunk[i].size)
-			continue;
+	for_each_usable_mem_range(idx, NUMA_NO_NODE, &start, &end, NULL) {
 		res = alloc_bootmem_low(sizeof(*res));
 		res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
-		switch (memory_chunk[i].type) {
+
+/*		switch (memory_chunk[i].type) {
 		case CHUNK_READ_WRITE:
 			res->name = "System RAM";
 			break;
@@ -426,8 +426,10 @@ static void __init setup_resources(void)
 		default:
 			res->name = "reserved";
 		}
-		res->start = memory_chunk[i].addr;
-		res->end = res->start + memory_chunk[i].size - 1;
+*/
+		res->name = "System Memory";
+		res->start = start;
+		res->end = end - 1;
 		request_resource(&iomem_resource, res);
 
 		for (j = 0; j < ARRAY_SIZE(standard_resources); j++) {
@@ -451,44 +453,12 @@ static void __init setup_resources(void)
 static void __init setup_memory_end(void)
 {
 	unsigned long vmax, vmalloc_size, tmp;
-	unsigned long real_memory_size = 0;
-	int i;
+	unsigned long real_memory_size;
 
-
-#ifdef CONFIG_ZFCPDUMP
-	if (ipl_info.type == IPL_TYPE_FCP_DUMP &&
-	    !OLDMEM_BASE && sclp_get_hsa_size()) {
-		memory_end = sclp_get_hsa_size();
-		memory_end_set = 1;
-	}
-#endif
 	memory_end &= PAGE_MASK;
 
-	/*
-	 * Make sure all chunks are MAX_ORDER aligned so we don't need the
-	 * extra checks that HOLES_IN_ZONE would require.
-	 */
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		unsigned long start, end;
-		struct mem_chunk *chunk;
-		unsigned long align;
-
-		chunk = &memory_chunk[i];
-		if (!chunk->size)
-			continue;
-		align = 1UL << (MAX_ORDER + PAGE_SHIFT - 1);
-		start = (chunk->addr + align - 1) & ~(align - 1);
-		end = (chunk->addr + chunk->size) & ~(align - 1);
-		if (start >= end)
-			memset(chunk, 0, sizeof(*chunk));
-		else {
-			chunk->addr = start;
-			chunk->size = end - start;
-		}
-		real_memory_size = max(real_memory_size,
-				       chunk->addr + chunk->size);
-	}
-
+	real_memory_size = memblock_end_of_DRAM();
+	pr_notice("Real memory size: %#lx\n", real_memory_size);
 	/* Choose kernel address space layout: 2, 3, or 4 levels. */
 #ifdef CONFIG_64BIT
 	vmalloc_size = VMALLOC_END ?: (128UL << 30) - MODULES_LEN;
@@ -522,19 +492,7 @@ static void __init setup_memory_end(void)
 	/* Take care that memory_end is set and <= vmemmap */
 	memory_end = min(memory_end ?: real_memory_size, tmp);
 
-	/* Fixup memory chunk array to fit into 0..memory_end */
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		struct mem_chunk *chunk = &memory_chunk[i];
-
-		if (!chunk->size)
-			continue;
-		if (chunk->addr >= memory_end) {
-			memset(chunk, 0, sizeof(*chunk));
-			continue;
-		}
-		if (chunk->addr + chunk->size > memory_end)
-			chunk->size = memory_end - chunk->addr;
-	}
+	max_pfn = max_low_pfn = PFN_DOWN(memory_end);
 }
 
 static void __init setup_vmcoreinfo(void)
@@ -551,25 +509,21 @@ static unsigned long __init find_crash_base(unsigned long crash_size,
 					    char **msg)
 {
 	unsigned long crash_base;
-	struct mem_chunk *chunk;
-	int i;
+	u64 i;
+	phys_addr_t start, end;
 
-	if (memory_chunk[0].size < crash_size) {
+	if (memblock.memory.regions[0].size < crash_size) {
 		*msg = "first memory chunk must be at least crashkernel size";
 		return 0;
 	}
+
 	if (OLDMEM_BASE && crash_size == OLDMEM_SIZE)
 		return OLDMEM_BASE;
 
-	for (i = MEMORY_CHUNKS - 1; i >= 0; i--) {
-		chunk = &memory_chunk[i];
-		if (chunk->size == 0)
+	for_each_free_mem_range_reverse(i, NUMA_NO_NODE, &start, &end, NULL) {
+		if (end - start < crash_size)
 			continue;
-		if (chunk->type != CHUNK_READ_WRITE)
-			continue;
-		if (chunk->size < crash_size)
-			continue;
-		crash_base = (chunk->addr + chunk->size) - crash_size;
+		crash_base = end - crash_size;
 		if (crash_base < crash_size)
 			continue;
 		if (crash_base < sclp_get_hsa_size())
@@ -580,51 +534,6 @@ static unsigned long __init find_crash_base(unsigned long crash_size,
 	}
 	*msg = "no suitable area found";
 	return 0;
-}
-
-/*
- * Check if crash_base and crash_size is valid
- */
-static int __init verify_crash_base(unsigned long crash_base,
-				    unsigned long crash_size,
-				    char **msg)
-{
-	struct mem_chunk *chunk;
-	int i;
-
-	/*
-	 * Because we do the swap to zero, we must have at least 'crash_size'
-	 * bytes free space before crash_base
-	 */
-	if (crash_size > crash_base) {
-		*msg = "crashkernel offset must be greater than size";
-		return -EINVAL;
-	}
-
-	/* First memory chunk must be at least crash_size */
-	if (memory_chunk[0].size < crash_size) {
-		*msg = "first memory chunk must be at least crashkernel size";
-		return -EINVAL;
-	}
-	/* Check if we fit into the respective memory chunk */
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		chunk = &memory_chunk[i];
-		if (chunk->size == 0)
-			continue;
-		if (crash_base < chunk->addr)
-			continue;
-		if (crash_base >= chunk->addr + chunk->size)
-			continue;
-		/* we have found the memory chunk */
-		if (crash_base + crash_size > chunk->addr + chunk->size) {
-			*msg = "selected memory chunk is too small for "
-				"crashkernel memory";
-			return -EINVAL;
-		}
-		return 0;
-	}
-	*msg = "invalid memory range specified";
-	return -EINVAL;
 }
 
 /*
@@ -658,18 +567,9 @@ static struct notifier_block kdump_mem_nb = {
 static void reserve_oldmem(void)
 {
 #ifdef CONFIG_CRASH_DUMP
-	unsigned long real_size = 0;
-	int i;
-
-	if (!OLDMEM_BASE)
-		return;
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		struct mem_chunk *chunk = &memory_chunk[i];
-
-		real_size = max(real_size, chunk->addr + chunk->size);
-	}
-	create_mem_hole(memory_chunk, OLDMEM_BASE, OLDMEM_SIZE);
-	create_mem_hole(memory_chunk, OLDMEM_SIZE, real_size - OLDMEM_SIZE);
+	if (OLDMEM_BASE)
+		/* Forget all memory above the running kdump system */
+		memblock_excluded_add(OLDMEM_SIZE, (phys_addr_t)ULLONG_MAX);
 #endif
 }
 
@@ -698,17 +598,12 @@ static void __init reserve_crashkernel(void)
 		unregister_memory_notifier(&kdump_mem_nb);
 		return;
 	}
-	if (verify_crash_base(crash_base, crash_size, &msg)) {
-		pr_info("crashkernel reservation failed: %s\n", msg);
-		unregister_memory_notifier(&kdump_mem_nb);
-		return;
-	}
 	if (!OLDMEM_BASE && MACHINE_IS_VM)
 		diag10_range(PFN_DOWN(crash_base), PFN_DOWN(crash_size));
 	crashk_res.start = crash_base;
 	crashk_res.end = crash_base + crash_size - 1;
 	insert_resource(&iomem_resource, &crashk_res);
-	create_mem_hole(memory_chunk, crash_base, crash_size);
+	memblock_excluded_add(crash_base, crash_size);
 	pr_info("Reserving %lluMB of memory at %lluMB "
 		"for crashkernel (System RAM: %luMB)\n",
 		crash_size >> 20, crash_base >> 20, memory_end >> 20);
@@ -716,131 +611,68 @@ static void __init reserve_crashkernel(void)
 #endif
 }
 
-static void __init setup_memory(void)
+/*
+ * Reserve the initrd from being used by memblock
+ */
+static void __init reserve_initrd(void)
 {
-        unsigned long bootmap_size;
-	unsigned long start_pfn, end_pfn;
-	int i;
-
-	/*
-	 * partially used pages are not usable - thus
-	 * we are rounding upwards:
-	 */
-	start_pfn = PFN_UP(__pa(&_end));
-	end_pfn = max_pfn = PFN_DOWN(memory_end);
-
-#ifdef CONFIG_BLK_DEV_INITRD
-	/*
-	 * Move the initrd in case the bitmap of the bootmem allocater
-	 * would overwrite it.
-	 */
-
-	if (INITRD_START && INITRD_SIZE) {
-		unsigned long bmap_size;
-		unsigned long start;
-
-		bmap_size = bootmem_bootmap_pages(end_pfn - start_pfn + 1);
-		bmap_size = PFN_PHYS(bmap_size);
-
-		if (PFN_PHYS(start_pfn) + bmap_size > INITRD_START) {
-			start = PFN_PHYS(start_pfn) + bmap_size + PAGE_SIZE;
-
-#ifdef CONFIG_CRASH_DUMP
-			if (OLDMEM_BASE) {
-				/* Move initrd behind kdump oldmem */
-				if (start + INITRD_SIZE > OLDMEM_BASE &&
-				    start < OLDMEM_BASE + OLDMEM_SIZE)
-					start = OLDMEM_BASE + OLDMEM_SIZE;
-			}
-#endif
-			if (start + INITRD_SIZE > memory_end) {
-				pr_err("initrd extends beyond end of "
-				       "memory (0x%08lx > 0x%08lx) "
-				       "disabling initrd\n",
-				       start + INITRD_SIZE, memory_end);
-				INITRD_START = INITRD_SIZE = 0;
-			} else {
-				pr_info("Moving initrd (0x%08lx -> "
-					"0x%08lx, size: %ld)\n",
-					INITRD_START, start, INITRD_SIZE);
-				memmove((void *) start, (void *) INITRD_START,
-					INITRD_SIZE);
-				INITRD_START = start;
-			}
-		}
-	}
-#endif
-
-	/*
-	 * Initialize the boot-time allocator
-	 */
-	bootmap_size = init_bootmem(start_pfn, end_pfn);
-
-	/*
-	 * Register RAM areas with the bootmem allocator.
-	 */
-
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		unsigned long start_chunk, end_chunk, pfn;
-
-		if (!memory_chunk[i].size)
-			continue;
-		start_chunk = PFN_DOWN(memory_chunk[i].addr);
-		end_chunk = start_chunk + PFN_DOWN(memory_chunk[i].size);
-		end_chunk = min(end_chunk, end_pfn);
-		if (start_chunk >= end_chunk)
-			continue;
-		memblock_add_node(PFN_PHYS(start_chunk),
-				  PFN_PHYS(end_chunk - start_chunk), 0);
-		pfn = max(start_chunk, start_pfn);
-		storage_key_init_range(PFN_PHYS(pfn), PFN_PHYS(end_chunk));
-	}
-
-	psw_set_key(PAGE_DEFAULT_KEY);
-
-	free_bootmem_with_active_regions(0, max_pfn);
-
-	/*
-	 * Reserve memory used for lowcore/command line/kernel image.
-	 */
-	reserve_bootmem(0, (unsigned long)_ehead, BOOTMEM_DEFAULT);
-	reserve_bootmem((unsigned long)_stext,
-			PFN_PHYS(start_pfn) - (unsigned long)_stext,
-			BOOTMEM_DEFAULT);
-	/*
-	 * Reserve the bootmem bitmap itself as well. We do this in two
-	 * steps (first step was init_bootmem()) because this catches
-	 * the (very unlikely) case of us accidentally initializing the
-	 * bootmem allocator with an invalid RAM area.
-	 */
-	reserve_bootmem(start_pfn << PAGE_SHIFT, bootmap_size,
-			BOOTMEM_DEFAULT);
-
-#ifdef CONFIG_CRASH_DUMP
-	if (crashk_res.start)
-		reserve_bootmem(crashk_res.start,
-				crashk_res.end - crashk_res.start + 1,
-				BOOTMEM_DEFAULT);
-	if (is_kdump_kernel())
-		reserve_bootmem(elfcorehdr_addr - OLDMEM_BASE,
-				PAGE_ALIGN(elfcorehdr_size), BOOTMEM_DEFAULT);
-#endif
 #ifdef CONFIG_BLK_DEV_INITRD
 	if (INITRD_START && INITRD_SIZE) {
 		if (INITRD_START + INITRD_SIZE <= memory_end) {
-			reserve_bootmem(INITRD_START, INITRD_SIZE,
-					BOOTMEM_DEFAULT);
+			memblock_reserve(INITRD_START, INITRD_SIZE);
 			initrd_start = INITRD_START;
 			initrd_end = initrd_start + INITRD_SIZE;
 		} else {
-			pr_err("initrd extends beyond end of "
-			       "memory (0x%08lx > 0x%08lx) "
-			       "disabling initrd\n",
+			pr_err("initrd extends beyond end of memory (0x%08lx > 0x%08lx), disabling initrd\n",
 			       initrd_start + INITRD_SIZE, memory_end);
 			initrd_start = initrd_end = 0;
 		}
 	}
 #endif
+}
+
+/*
+ * Reserve all kernel text
+ */
+static void __init reserve_kernel(void)
+{
+	unsigned long start_pfn;
+	start_pfn = PFN_UP(__pa(&_end));
+
+	/*
+	 * Reserve memory used for lowcore/command line/kernel image.
+	 */
+	memblock_reserve(0, (unsigned long)_ehead);
+	memblock_reserve((unsigned long)_stext, PFN_PHYS(start_pfn)
+			 - (unsigned long)_stext);
+}
+
+static void __init reserve_crash_dump(void)
+{
+#ifdef CONFIG_CRASH_DUMP
+	if (crashk_res.start)
+		memblock_reserve(crashk_res.start,
+				 crashk_res.end - crashk_res.start + 1);
+	if (is_kdump_kernel())
+		memblock_reserve(elfcorehdr_addr - OLDMEM_BASE,
+				 PAGE_ALIGN(elfcorehdr_size));
+#endif
+}
+
+static void __init setup_memory(void)
+{
+	struct memblock_region *reg;
+
+	/*
+	 * Init storage key for present memory
+	 */
+	for_each_memblock(memory, reg) {
+		storage_key_init_range(reg->base, reg->base + reg->size);
+	}
+	psw_set_key(PAGE_DEFAULT_KEY);
+
+	/* Only cosmetics */
+	memblock_enforce_memory_limit(memblock_end_of_DRAM());
 }
 
 /*
@@ -989,19 +821,49 @@ void __init setup_arch(char **cmdline_p)
 
         ROOT_DEV = Root_RAM0;
 
+	/* Is init_mm really needed? */
 	init_mm.start_code = PAGE_OFFSET;
 	init_mm.end_code = (unsigned long) &_etext;
 	init_mm.end_data = (unsigned long) &_edata;
 	init_mm.brk = (unsigned long) &_end;
 
 	parse_early_param();
-	detect_memory_layout(memory_chunk, memory_end);
 	os_info_init();
 	setup_ipl();
+
+	/* Do some memory reservations *before* memory is added to memblock */
 	reserve_oldmem();
-	setup_memory_end();
+	reserve_kernel();
 	reserve_crashkernel();
+	reserve_initrd();
+	reserve_crash_dump(); /* What's that? */
+
+	/* Get information about *all* installed memory */
+	detect_memory_memblock();
+	memblock_allow_resize();
+
+#ifdef CONFIG_ZFCPDUMP
+	if (ipl_info.type == IPL_TYPE_FCP_DUMP &&
+	    !OLDMEM_BASE && sclp_get_hsa_size()) {
+		memory_end = sclp_get_hsa_size();
+		memory_end_set = 1;
+	}
+#endif
+
+	if (memory_end_set)
+		memblock_excluded_add(memory_end, ULLONG_MAX);
+
+	/*
+	 * Make sure all chunks are MAX_ORDER aligned so we don't need the
+	 * extra checks that HOLES_IN_ZONE would require.
+	 *
+	 * Is this still required?
+	 */
+	memblock_trim_memory(1UL << (MAX_ORDER - 1 + PAGE_SHIFT));
+
+	setup_memory_end();
 	setup_memory();
+
 	setup_resources();
 	setup_vmcoreinfo();
 	setup_lowcore();
