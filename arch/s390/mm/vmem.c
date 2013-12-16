@@ -66,7 +66,8 @@ static pte_t __ref *vmem_pte_alloc(unsigned long address)
 	if (slab_is_available())
 		pte = (pte_t *) page_table_alloc(&init_mm, address);
 	else
-		pte = alloc_bootmem(PTRS_PER_PTE * sizeof(pte_t));
+		pte = alloc_bootmem_align(PTRS_PER_PTE * sizeof(pte_t),
+					  PTRS_PER_PTE * sizeof(pte_t));
 	if (!pte)
 		return NULL;
 	clear_table((unsigned long *) pte, _PAGE_INVALID,

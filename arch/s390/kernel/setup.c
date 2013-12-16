@@ -733,7 +733,6 @@ static void __init reserve_crashkernel(void)
 
 static void __init setup_memory(void)
 {
-        unsigned long bootmap_size;
 	unsigned long start_pfn, end_pfn;
 	int i;
 
@@ -742,54 +741,7 @@ static void __init setup_memory(void)
 	 * we are rounding upwards:
 	 */
 	start_pfn = PFN_UP(__pa(&_end));
-	end_pfn = max_pfn = PFN_DOWN(memory_end);
-
-#ifdef CONFIG_BLK_DEV_INITRD
-	/*
-	 * Move the initrd in case the bitmap of the bootmem allocater
-	 * would overwrite it.
-	 */
-
-	if (INITRD_START && INITRD_SIZE) {
-		unsigned long bmap_size;
-		unsigned long start;
-
-		bmap_size = bootmem_bootmap_pages(end_pfn - start_pfn + 1);
-		bmap_size = PFN_PHYS(bmap_size);
-
-		if (PFN_PHYS(start_pfn) + bmap_size > INITRD_START) {
-			start = PFN_PHYS(start_pfn) + bmap_size + PAGE_SIZE;
-
-#ifdef CONFIG_CRASH_DUMP
-			if (OLDMEM_BASE) {
-				/* Move initrd behind kdump oldmem */
-				if (start + INITRD_SIZE > OLDMEM_BASE &&
-				    start < OLDMEM_BASE + OLDMEM_SIZE)
-					start = OLDMEM_BASE + OLDMEM_SIZE;
-			}
-#endif
-			if (start + INITRD_SIZE > memory_end) {
-				pr_err("initrd extends beyond end of "
-				       "memory (0x%08lx > 0x%08lx) "
-				       "disabling initrd\n",
-				       start + INITRD_SIZE, memory_end);
-				INITRD_START = INITRD_SIZE = 0;
-			} else {
-				pr_info("Moving initrd (0x%08lx -> "
-					"0x%08lx, size: %ld)\n",
-					INITRD_START, start, INITRD_SIZE);
-				memmove((void *) start, (void *) INITRD_START,
-					INITRD_SIZE);
-				INITRD_START = start;
-			}
-		}
-	}
-#endif
-
-	/*
-	 * Initialize the boot-time allocator
-	 */
-	bootmap_size = init_bootmem(start_pfn, end_pfn);
+	end_pfn = max_pfn = max_low_pfn = PFN_DOWN(memory_end);
 
 	/*
 	 * Register RAM areas with the bootmem allocator.
@@ -818,33 +770,22 @@ static void __init setup_memory(void)
 	/*
 	 * Reserve memory used for lowcore/command line/kernel image.
 	 */
-	reserve_bootmem(0, (unsigned long)_ehead, BOOTMEM_DEFAULT);
-	reserve_bootmem((unsigned long)_stext,
-			PFN_PHYS(start_pfn) - (unsigned long)_stext,
-			BOOTMEM_DEFAULT);
-	/*
-	 * Reserve the bootmem bitmap itself as well. We do this in two
-	 * steps (first step was init_bootmem()) because this catches
-	 * the (very unlikely) case of us accidentally initializing the
-	 * bootmem allocator with an invalid RAM area.
-	 */
-	reserve_bootmem(start_pfn << PAGE_SHIFT, bootmap_size,
-			BOOTMEM_DEFAULT);
+	memblock_reserve(0, (unsigned long)_ehead);
+	memblock_reserve((unsigned long)_stext, PFN_PHYS(start_pfn)
+			  - (unsigned long)_stext);
 
 #ifdef CONFIG_CRASH_DUMP
 	if (crashk_res.start)
-		reserve_bootmem(crashk_res.start,
-				crashk_res.end - crashk_res.start + 1,
-				BOOTMEM_DEFAULT);
+		memblock_reserve(crashk_res.start,
+				 crashk_res.end - crashk_res.start + 1);
 	if (is_kdump_kernel())
-		reserve_bootmem(elfcorehdr_addr - OLDMEM_BASE,
-				PAGE_ALIGN(elfcorehdr_size), BOOTMEM_DEFAULT);
+		memblock_reserve(elfcorehdr_addr - OLDMEM_BASE,
+				 PAGE_ALIGN(elfcorehdr_size));
 #endif
 #ifdef CONFIG_BLK_DEV_INITRD
 	if (INITRD_START && INITRD_SIZE) {
 		if (INITRD_START + INITRD_SIZE <= memory_end) {
-			reserve_bootmem(INITRD_START, INITRD_SIZE,
-					BOOTMEM_DEFAULT);
+			memblock_reserve(INITRD_START, INITRD_SIZE);
 			initrd_start = INITRD_START;
 			initrd_end = initrd_start + INITRD_SIZE;
 		} else {
