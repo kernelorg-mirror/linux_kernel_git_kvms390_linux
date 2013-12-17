@@ -410,7 +410,7 @@ static int xcrb_msg_to_type6_ep11cprb_msgx(struct zcrypt_device *zdev,
 
 	/* Import CPRB data from the ioctl input parameter */
 	if (copy_from_user(&(msg->cprbx.cprb_len),
-			   xcRB->req, xcRB->req_len)) {
+			   (char *)xcRB->req, xcRB->req_len)) {
 		return -EFAULT;
 	}
 
@@ -623,7 +623,7 @@ static int convert_type86_ep11_xcrb(struct zcrypt_device *zdev,
 		return -EINVAL;
 
 	/* Copy response CPRB to user */
-	if (copy_to_user(xcRB->resp,
+	if (copy_to_user((char *)xcRB->resp,
 			 data + msg->fmt2.offset1, msg->fmt2.count1))
 		return -EFAULT;
 	xcRB->resp_len = msg->fmt2.count1;

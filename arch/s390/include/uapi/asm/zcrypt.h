@@ -196,23 +196,23 @@ struct ep11_target_dev {
 /**
  * struct ep11_urb - EP11 user request block
  * @targets_num:	Number of target adapters
- * @*targets:		Target adapter list
+ * @targets:		Addr to target adapter list
  * @weight:		Level of request priority
  * @req_no:		Request id/number
  * @req_len:		Request length
- * @req:		Pointer to request block
+ * @req:		Addr to request block
  * @resp_len:		Response length
- * @resp:		Pointer to response block
+ * @resp:		Addr to response block
  */
 struct ep11_urb {
 	uint16_t		targets_num;
-	struct ep11_target_dev	*targets;
+	uint64_t		targets;
 	uint64_t		weight;
 	uint64_t		req_no;
 	uint64_t		req_len;
-	uint8_t __user		*req;
+	uint64_t		req;
 	uint64_t		resp_len;
-	uint8_t __user		*resp;
+	uint64_t		resp;
 } __attribute__((packed));
 
 #define AUTOSELECT ((unsigned int)0xFFFFFFFF)

@@ -625,7 +625,8 @@ static long zcrypt_send_ep11_cprb(struct ep11_urb *xcrb)
 		if (!ep11_dev_list.targets)
 			return -ENOMEM;
 
-		if (copy_from_user(ep11_dev_list.targets, xcrb->targets,
+		if (copy_from_user(ep11_dev_list.targets,
+				   (struct ep11_target_dev *)xcrb->targets,
 				   xcrb->targets_num *
 				   sizeof(struct ep11_target_dev)))
 			return -EFAULT;
