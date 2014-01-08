@@ -214,7 +214,7 @@ extern asmlinkage void dump_stack(void) __cold;
 
 #elif defined(CONFIG_KMSG_IDS) && defined(KMSG_COMPONENT)
 
-int printk_hash(const char *, const char *, ...);
+__printf(2, 3) int printk_hash(const char *, const char *, ...);
 #define pr_printk_hash(level, format, ...) \
 	printk_hash(level KMSG_COMPONENT ".%06x" ": ", format, ##__VA_ARGS__)
 
