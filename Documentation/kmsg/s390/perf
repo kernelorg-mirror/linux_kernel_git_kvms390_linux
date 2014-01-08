@@ -17,7 +17,7 @@
  */
 
 /*?
- * Text: "CPU[%i] CPUM_SF: basic=%i diag=%i min=%i max=%i cpu_speed=%i\n"
+ * Text: "CPU[%i] CPUM_SF: basic=%i diag=%i min=%lu max=%lu cpu_speed=%u\n"
  * Severity: Informational
  * Parameter:
  *   @1: cpu number
@@ -35,7 +35,7 @@
  */
 
 /*?
- * Text: "CPU[%i] CPUM_SF: Basic-sampling: a=%i e=%i c=%i bsdes=%i tear=%p dear=%p\n"
+ * Text: "CPU[%i] CPUM_SF: Basic-sampling: a=%i e=%i c=%i bsdes=%i tear=%016lx dear=%016lx\n"
  * Severity: Informational
  * Parameter:
  *   @1: cpu number
@@ -55,7 +55,7 @@
  */
 
 /*?
- * Text: "CPU[%i] CPUM_SF: Diagnostic-sampling: a=%i e=%i c=%i dsdes=%i tear=%p dear=%p\n"
+ * Text: "CPU[%i] CPUM_SF: Diagnostic-sampling: a=%i e=%i c=%i dsdes=%i tear=%016lx dear=%016lx\n"
  * Severity: Informational
  * Parameter:
  *   @1: cpu number
