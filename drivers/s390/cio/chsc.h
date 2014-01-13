@@ -228,7 +228,7 @@ struct chsc_pnso_area {
 	union {
 		struct qdio_brinfo_entry_l3_ipv6 l3_ipv6[0];
 		struct qdio_brinfo_entry_l3_ipv4 l3_ipv4[0];
-		struct qdio_brinfo_entry_l2      l2[0];
+		struct qdio_brinfo_entry_l2	 l2[0];
 	} entries;
 } __packed;
 

@@ -195,7 +195,7 @@ void qeth_l2_remove_device_attributes(struct device *dev)
 
 /**
  * qeth_l2_setup_bridgeport_attrs() - set/restore attrs when turning online.
- * @card:                             qeth_card structure pointer
+ * @card:			      qeth_card structure pointer
  *
  * Note: this function is called with conf_mutex held by the caller
  */

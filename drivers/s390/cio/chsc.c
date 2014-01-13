@@ -1206,10 +1206,10 @@ EXPORT_SYMBOL_GPL(chsc_scm_info);
 
 /**
  * chsc_pnso_brinfo() - Perform Network-Subchannel Operation, Bridge Info.
- * @schid:              id of the subchannel on which PNSO is performed
- * @brinfo_area:        request and response block for the operation
- * @resume_token:       resume token for multiblock response
- * @cnc:                Boolean change-notification control
+ * @schid:		id of the subchannel on which PNSO is performed
+ * @brinfo_area:	request and response block for the operation
+ * @resume_token:	resume token for multiblock response
+ * @cnc:		Boolean change-notification control
  *
  * brinfo_area must be allocated by the caller with get_zeroed_page(GFP_KERNEL)
  *
@@ -1223,13 +1223,13 @@ int chsc_pnso_brinfo(struct subchannel_id schid,
 	memset(brinfo_area, 0, sizeof(*brinfo_area));
 	brinfo_area->request.length = 0x0030;
 	brinfo_area->request.code = 0x003d; /* network-subchannel operation */
-	brinfo_area->m     = schid.m;
+	brinfo_area->m	   = schid.m;
 	brinfo_area->ssid  = schid.ssid;
 	brinfo_area->sch   = schid.sch_no;
 	brinfo_area->cssid = schid.cssid;
 	brinfo_area->oc    = 0; /* Store-network-bridging-information list */
 	brinfo_area->resume_token = resume_token;
-	brinfo_area->n     = (cnc != 0);
+	brinfo_area->n	   = (cnc != 0);
 	if (chsc(brinfo_area))
 		return -EIO;
 	return chsc_error_from_response(brinfo_area->response.code);

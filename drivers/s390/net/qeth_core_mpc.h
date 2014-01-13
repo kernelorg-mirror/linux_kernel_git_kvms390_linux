@@ -502,7 +502,7 @@ struct qeth_ipacmd_diagass {
 	__u8   cdata[64];
 } __attribute__ ((packed));
 
-/* SETBRIDGEPORT IPA Command:    *********************************************/
+/* SETBRIDGEPORT IPA Command:	 *********************************************/
 enum qeth_ipa_sbp_cmd {
 	IPA_SBP_QUERY_COMMANDS_SUPPORTED	= 0x00000000L,
 	IPA_SBP_RESET_BRIDGE_PORT_ROLE		= 0x00000001L,
@@ -590,7 +590,7 @@ struct qeth_ipacmd_setbridgeport {
 } __packed;
 
 /* ADDRESS_CHANGE_NOTIFICATION adapter-initiated "command" *******************/
-/* Bitmask for entry->change_code. Both bits may be raised.                  */
+/* Bitmask for entry->change_code. Both bits may be raised.		     */
 enum qeth_ipa_addr_change_code {
 	IPA_ADDR_CHANGE_CODE_VLANID		= 0x01,
 	IPA_ADDR_CHANGE_CODE_MACADDR		= 0x02,

@@ -1360,10 +1360,10 @@ enum qeth_an_event_type {anev_reg_unreg, anev_abort, anev_reset};
  * qeth_bridge_emit_host_event() - bridgeport address change notification
  * @card:  qeth_card structure pointer, for udev events.
  * @evtype:  "normal" register/unregister, or abort, or reset. For abort
- *            and reset token and addr_lnid are unused and may be NULL.
+ *	      and reset token and addr_lnid are unused and may be NULL.
  * @code:  event bitmask: high order bit 0x80 value 1 means removal of an
- *                        object, 0 - addition of an object.
- *                        0x01 - VLAN, 0x02 - MAC, 0x03 - VLAN and MAC.
+ *			  object, 0 - addition of an object.
+ *			  0x01 - VLAN, 0x02 - MAC, 0x03 - VLAN and MAC.
  * @token: "network token" structure identifying physical address of the port.
  * @addr_lnid: pointer to structure with MAC address and VLAN ID.
  *
@@ -1578,9 +1578,9 @@ struct _qeth_sbp_cbctl {
 
 /**
  * qeth_bridgeport_makerc() - derive "traditional" error from hardware codes.
- * @card:                     qeth_card structure pointer, for debug messages.
- * @cbctl:                    state structure with hardware return codes.
- * @setcmd:                   IPA command code
+ * @card:		      qeth_card structure pointer, for debug messages.
+ * @cbctl:		      state structure with hardware return codes.
+ * @setcmd:		      IPA command code
  *
  * Returns negative errno-compatible error indication or 0 on success.
  */
@@ -1674,7 +1674,7 @@ static int qeth_bridgeport_query_support_cb(struct qeth_card *card,
 
 /**
  * qeth_bridgeport_query_support() - store bitmask of supported subfunctions.
- * @card:                            qeth_card structure pointer.
+ * @card:			     qeth_card structure pointer.
  *
  * Sets bitmask of supported setbridgeport subfunctions in the qeth_card
  * strucutre: card->options.sbp.supported_funcs.
@@ -1736,7 +1736,7 @@ static int qeth_bridgeport_query_ports_cb(struct qeth_card *card,
 
 /**
  * qeth_bridgeport_query_ports() - query local bridgeport status.
- * @card:                          qeth_card structure pointer.
+ * @card:			   qeth_card structure pointer.
  * @role:   Role of the port: 0-none, 1-primary, 2-secondary.
  * @state:  State of the port: 0-inactive, 1-standby, 2-active.
  *
@@ -1794,8 +1794,8 @@ static int qeth_bridgeport_set_cb(struct qeth_card *card,
 
 /**
  * qeth_bridgeport_setrole() - Assign primary role to the port.
- * @card:                      qeth_card structure pointer.
- * @role:                      Role to assign.
+ * @card:		       qeth_card structure pointer.
+ * @role:		       Role to assign.
  *
  * Returns negative errno-compatible error indication or 0 on success.
  */
@@ -1846,7 +1846,7 @@ int qeth_bridgeport_setrole(struct qeth_card *card, enum qeth_sbp_roles role)
 
 /**
  * qeth_anset_makerc() - derive "traditional" error from hardware codes.
- * @card:                     qeth_card structure pointer, for debug messages.
+ * @card:		      qeth_card structure pointer, for debug messages.
  *
  * Returns negative errno-compatible error indication or 0 on success.
  */
@@ -1908,8 +1908,8 @@ static void qeth_bridgeport_an_set_cb(void *priv,
 
 /**
  * qeth_bridgeport_an_set() - Enable or disable bridgeport address notification
- * @card:                     qeth_card structure pointer.
- * @enable:                   0 - disable, non-zero - enable notifications
+ * @card:		      qeth_card structure pointer.
+ * @enable:		      0 - disable, non-zero - enable notifications
  *
  * Returns negative errno-compatible error indication or 0 on success.
  *

@@ -1754,15 +1754,15 @@ EXPORT_SYMBOL(qdio_stop_irq);
 
 /**
  * qdio_pnso_brinfo() - perform network subchannel op #0 - bridge info.
- * @schid:              Subchannel ID.
- * @cnc:                Boolean Change-Notification Control
- * @response:           Response code will be stored at this address
- * @cb:                 Callback function will be executed for each element
- *                      of the address list
- * @priv:               Pointer passed from the caller to qdio_pnso_brinfo()
- * @type:               Type of the address entry passed to the callback
- * @entry:              Entry containg the address of the specified type
- * @priv:               Pointer to pass to the callback function.
+ * @schid:		Subchannel ID.
+ * @cnc:		Boolean Change-Notification Control
+ * @response:		Response code will be stored at this address
+ * @cb: 		Callback function will be executed for each element
+ *			of the address list
+ * @priv:		Pointer passed from the caller to qdio_pnso_brinfo()
+ * @type:		Type of the address entry passed to the callback
+ * @entry:		Entry containg the address of the specified type
+ * @priv:		Pointer to pass to the callback function.
  *
  * Performs "Store-network-bridging-information list" operation and calls
  * the callback function for every entry in the list. If "change-
