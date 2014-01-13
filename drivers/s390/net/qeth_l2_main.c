@@ -1588,7 +1588,6 @@ static int qeth_bridgeport_makerc(struct qeth_card *card,
 	struct _qeth_sbp_cbctl *cbctl, enum qeth_ipa_sbp_cmd setcmd)
 {
 	int rc;
-	char *msg = NULL;
 
 	switch (cbctl->ipa_rc) {
 	case IPA_RC_SUCCESS:
@@ -1601,17 +1600,20 @@ static int qeth_bridgeport_makerc(struct qeth_card *card,
 			break;
 		case 0x000C: /* Not configured as bridge Port */
 			rc = -ENODEV; /* maybe not the best code here? */
-			msg = "device is not configured as a Bridge Port";
+			dev_err(&card->gdev->dev,
+	"The HiperSockets device is not configured as a Bridge Port\n");
 			break;
 		case 0x0014: /* Another device is Primary */
 			switch (setcmd) {
 			case IPA_SBP_SET_PRIMARY_BRIDGE_PORT:
 				rc = -EEXIST;
-				msg = "LAN already has a primary Bridge Port";
+				dev_err(&card->gdev->dev,
+	"The HiperSockets LAN already has a primary Bridge Port\n");
 				break;
 			case IPA_SBP_SET_SECONDARY_BRIDGE_PORT:
 				rc = -EBUSY;
-				msg = "device is already a primary Bridge Port";
+				dev_err(&card->gdev->dev,
+	"The HiperSockets device is already a primary Bridge Port\n");
 				break;
 			default:
 				rc = -EIO;
@@ -1619,19 +1621,23 @@ static int qeth_bridgeport_makerc(struct qeth_card *card,
 			break;
 		case 0x0018: /* This device is currently Secondary */
 			rc = -EBUSY;
-			msg = "device is already a secondary Bridge Port";
+			dev_err(&card->gdev->dev,
+	"The HiperSockets device is already a secondary Bridge Port\n");
 			break;
 		case 0x001C: /* Limit for Secondary devices reached */
 			rc = -EEXIST;
-			msg = "LAN cannot have more secondary Bridge Ports";
+			dev_err(&card->gdev->dev,
+	"The HiperSockets LAN cannot have more secondary Bridge Ports\n");
 			break;
 		case 0x0024: /* This device is currently Primary */
 			rc = -EBUSY;
-			msg = "device is already a primary Bridge Port";
+			dev_err(&card->gdev->dev,
+	"The HiperSockets device is already a primary Bridge Port\n");
 			break;
 		case 0x0020: /* Not authorized by zManager */
 			rc = -EACCES;
-			msg = "device is not authorized to be a Bridge Port";
+			dev_err(&card->gdev->dev,
+	"The HiperSockets device is not authorized to be a Bridge Port\n");
 			break;
 		default:
 			rc = -EIO;
@@ -1650,8 +1656,6 @@ static int qeth_bridgeport_makerc(struct qeth_card *card,
 		QETH_CARD_TEXT_(card, 2, "SBPi%04x", cbctl->ipa_rc);
 		QETH_CARD_TEXT_(card, 2, "SBPc%04x", cbctl->cmd_rc);
 	}
-	if (msg)
-		dev_warn(&card->gdev->dev, "The HiperSockets %s\n", msg);
 	return rc;
 }
 

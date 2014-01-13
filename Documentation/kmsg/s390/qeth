@@ -728,7 +728,7 @@
  */
 
 /*?
- * Text: %s: The device represents a HiperSockets Bridge Capable Port
+ * Text: "%s: The device represents a HiperSockets Bridge Capable Port\n"
  * Severity: Informational
  * Parameter:
  *   @1: bus ID of the qeth device
@@ -739,7 +739,7 @@
  */
 
 /*?
- * Text: %s: The HiperSockets device is not configured as a Bridge Port
+ * Text: "%s: The HiperSockets device is not configured as a Bridge Port\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the qeth device
@@ -751,7 +751,7 @@
  */
 
 /*?
- * Text: %s: The HiperSockets LAN already has a primary Bridge Port
+ * Text: "%s: The HiperSockets LAN already has a primary Bridge Port\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the qeth device
@@ -769,7 +769,7 @@
  */
 
 /*?
- * Text: %s: The HiperSockets device is already a secondary Bridge Port
+ * Text: "%s: The HiperSockets device is already a secondary Bridge Port\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the qeth device
@@ -785,7 +785,7 @@
  */
 
 /*?
- * Text: %s: The HiperSockets LAN cannot have more secondary Bridge Ports
+ * Text: "%s: The HiperSockets LAN cannot have more secondary Bridge Ports\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the qeth device
@@ -801,7 +801,7 @@
  */
 
 /*?
- * Text: %s: The HiperSockets device is already a primary Bridge Port
+ * Text: "%s: The HiperSockets device is already a primary Bridge Port\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the qeth device
@@ -817,7 +817,7 @@
  */
 
 /*?
- * Text: %s: The HiperSockets device is not authorized to be a Bridge Port
+ * Text: "%s: The HiperSockets device is not authorized to be a Bridge Port\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the qeth device
