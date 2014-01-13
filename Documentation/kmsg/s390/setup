@@ -1,29 +1,4 @@
 /*?
- * Text: "Address spaces switched, mvcos available\n"
- * Severity: Informational
- * Description:
- * The kernel parameter 'switch_amode' has been specified. The kernel
- * will use the primary address space for user space processes and the
- * home address space for the kernel. The mvcos instruction is used to
- * copy between the user and kernel address space.
- * User action:
- * None.
- */
-
-/*?
- * Text: "Address spaces switched, mvcos not available\n"
- * Severity: Informational
- * Description:
- * The kernel parameter 'switch_amode' has been specified. The kernel
- * will use the primary address space for user space processes and the
- * home address space for the kernel. The mvcos instruction is not
- * available and the kernel will use the slower page table walk method
- * to copy between the user and kernel address space.
- * User action:
- * None.
- */
-
-/*?
  * Text: "initrd extends beyond end of memory (0x%08lx > 0x%08lx) disabling initrd\n"
  * Severity: Error
  * Parameter:
