@@ -28,6 +28,12 @@
 static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
 static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
 
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+static struct memblock_region
+memblock_excluded_init_regions[INIT_MEMBLOCK_EXCLUDED_REGIONS]
+__initdata_memblock;
+#endif
+
 struct memblock memblock __initdata_memblock = {
 	.memory.regions		= memblock_memory_init_regions,
 	.memory.cnt		= 1,	/* empty dummy entry */
@@ -37,6 +43,11 @@ struct memblock memblock __initdata_memblock = {
 	.reserved.cnt		= 1,	/* empty dummy entry */
 	.reserved.max		= INIT_MEMBLOCK_REGIONS,
 
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+	.excluded.regions       = memblock_excluded_init_regions,
+	.excluded.cnt           = 1,	/* empty dummy entry */
+	.excluded.max           = INIT_MEMBLOCK_EXCLUDED_REGIONS,
+#endif
 	.bottom_up		= false,
 	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
 };
@@ -292,6 +303,20 @@ phys_addr_t __init_memblock get_allocated_memblock_memory_regions_info(
 			  memblock.memory.max);
 }
 
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+phys_addr_t __init_memblock get_allocated_memblock_excluded_regions_info(
+					phys_addr_t *addr)
+{
+	if (memblock.memory.regions == memblock_memory_init_regions)
+		return 0;
+
+	*addr = __pa(memblock.memory.regions);
+
+	return PAGE_ALIGN(sizeof(struct memblock_region) *
+			  memblock.memory.max);
+}
+
+#endif /* CONFIG_ARCH_MEMBLOCK_EXCLUDE */
 #endif
 
 /**
@@ -757,6 +782,60 @@ int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+/*
+ * memblock_excluded_add() - mark a memory range as completely unusable
+ *
+ * This can be used to exclude memory regions from every further treatment
+ * in the running system. Ranges which are added to the excluded list will
+ * also be marked as reserved. So they won't either be allocated by memblock
+ * nor freed to the page allocator.
+ *
+ * The usable (i.e. not part of the excluded list) memory can be iterated
+ * via for_each_usable_mem_range().
+ *
+ * memblock_start_of_DRAM() and memblock_end_of_DRAM() still refer to the
+ * whole system memory.
+ */
+int __init_memblock memblock_excluded_add(phys_addr_t base, phys_addr_t size)
+{
+	int ret;
+	memblock_dbg("memblock_excluded_add: [%#016llx-%#016llx] %pF\n",
+		     (unsigned long long)base,
+		     (unsigned long long)base + size,
+		     (void *)_RET_IP_);
+
+	ret = memblock_add_region(&memblock.reserved, base,
+				  size, MAX_NUMNODES, 0);
+	if (ret)
+		return ret;
+
+	return memblock_add_region(&memblock.excluded, base,
+				   size, MAX_NUMNODES, 0);
+}
+
+/*
+ * memblock_excluded_remove() - remove a memory range from the excluded list
+ *
+ * This is the inverse function to memblock_excluded_add().
+ */
+int __init_memblock memblock_excluded_remove(phys_addr_t base, phys_addr_t size)
+{
+	int ret;
+	memblock_dbg("memblock_excluded_remove: [%#016llx-%#016llx] %pF\n",
+		     (unsigned long long)base,
+		     (unsigned long long)base + size,
+		     (void *)_RET_IP_);
+
+	ret = __memblock_remove(&memblock.reserved, base, size);
+	if (ret)
+		return ret;
+
+	return __memblock_remove(&memblock.excluded, base, size);
+}
+
+#endif
+
 /**
  * __next_free_mem_range - next function for for_each_free_mem_range()
  * @idx: pointer to u64 loop variable
@@ -835,6 +914,89 @@ void __init_memblock __next_free_mem_range(u64 *idx, int nid,
 	/* signal end of iteration */
 	*idx = ULLONG_MAX;
 }
+
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+/**
+ * __next_usable_mem_range - next function for for_each_free_mem_range()
+ * @idx: pointer to u64 loop variable
+ * @nid: node selector, %NUMA_NO_NODE for all nodes
+ * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
+ * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
+ * @out_nid: ptr to int for nid of the range, can be %NULL
+ *
+ * Find the first free area from *@idx which matches @nid, fill the out
+ * parameters, and update *@idx for the next iteration.  The lower 32bit of
+ * *@idx contains index into memory region and the upper 32bit indexes the
+ * areas before each reserved region.  For example, if reserved regions
+ * look like the following,
+ *
+ *	0:[0-16), 1:[32-48), 2:[128-130)
+ *
+ * The upper 32bit indexes the following regions.
+ *
+ *	0:[0-0), 1:[16-32), 2:[48-128), 3:[130-MAX)
+ *
+ * As both region arrays are sorted, the function advances the two indices
+ * in lockstep and returns each intersection.
+ */
+void __init_memblock __next_usable_mem_range(u64 *idx, int nid,
+					   phys_addr_t *out_start,
+					   phys_addr_t *out_end, int *out_nid)
+{
+	struct memblock_type *mem = &memblock.memory;
+	struct memblock_type *rsv = &memblock.excluded;
+	int mi = *idx & 0xffffffff;
+	int ri = *idx >> 32;
+
+	if (WARN_ONCE(nid == MAX_NUMNODES,
+	"Usage of MAX_NUMNODES is deprecated. Use NUMA_NO_NODE instead\n"))
+		nid = NUMA_NO_NODE;
+
+	for (; mi < mem->cnt; mi++) {
+		struct memblock_region *m = &mem->regions[mi];
+		phys_addr_t m_start = m->base;
+		phys_addr_t m_end = m->base + m->size;
+
+		/* only memory regions are associated with nodes, check it */
+		if (nid != NUMA_NO_NODE && nid != memblock_get_region_node(m))
+			continue;
+
+		/* scan areas before each reservation for intersection */
+		for (; ri < rsv->cnt + 1; ri++) {
+			struct memblock_region *r = &rsv->regions[ri];
+			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
+			phys_addr_t r_end = ri < rsv->cnt ?
+				r->base : ULLONG_MAX;
+
+			/* if ri advanced past mi, break out to advance mi */
+			if (r_start >= m_end)
+				break;
+			/* if the two regions intersect, we're done */
+			if (m_start < r_end) {
+				if (out_start)
+					*out_start = max(m_start, r_start);
+				if (out_end)
+					*out_end = min(m_end, r_end);
+				if (out_nid)
+					*out_nid = memblock_get_region_node(m);
+				/*
+				 * The region which ends first is advanced
+				 * for the next iteration.
+				 */
+				if (m_end <= r_end)
+					mi++;
+				else
+					ri++;
+				*idx = (u32)mi | (u64)ri << 32;
+				return;
+			}
+		}
+	}
+
+	/* signal end of iteration */
+	*idx = ULLONG_MAX;
+}
+#endif
 
 /**
  * __next_free_mem_range_rev - next function for for_each_free_mem_range_reverse()
@@ -1294,6 +1456,10 @@ void __init memblock_enforce_memory_limit(phys_addr_t limit)
 	/* truncate both memory and reserved regions */
 	__memblock_remove(&memblock.memory, max_addr, (phys_addr_t)ULLONG_MAX);
 	__memblock_remove(&memblock.reserved, max_addr, (phys_addr_t)ULLONG_MAX);
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+	__memblock_remove(&memblock.excluded, max_addr,
+			  (phys_addr_t)ULLONG_MAX);
+#endif
 }
 
 static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
@@ -1438,12 +1604,21 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
 void __init_memblock __memblock_dump_all(void)
 {
 	pr_info("MEMBLOCK configuration:\n");
+#ifndef CONFIG_ARCH_MEMBLOCK_EXCLUDE
 	pr_info(" memory size = %#llx reserved size = %#llx\n",
 		(unsigned long long)memblock.memory.total_size,
 		(unsigned long long)memblock.reserved.total_size);
-
+#else
+	pr_info(" memory size = %#llx reserved size = %#llx excluded size = %#llx\n",
+		(unsigned long long)memblock.memory.total_size,
+		(unsigned long long)memblock.reserved.total_size,
+		(unsigned long long)memblock.excluded.total_size);
+#endif
 	memblock_dump(&memblock.memory, "memory");
 	memblock_dump(&memblock.reserved, "reserved");
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+	memblock_dump(&memblock.excluded, "excluded");
+#endif
 }
 
 void __init memblock_allow_resize(void)
@@ -1502,6 +1677,10 @@ static int __init memblock_init_debugfs(void)
 		return -ENXIO;
 	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
 	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+	debugfs_create_file("excluded", S_IRUGO, root,
+			    &memblock.excluded, &memblock_debug_fops);
+#endif
 
 	return 0;
 }

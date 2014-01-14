@@ -18,6 +18,7 @@
 #include <linux/mm.h>
 
 #define INIT_MEMBLOCK_REGIONS	128
+#define INIT_MEMBLOCK_EXCLUDED_REGIONS 4
 
 /* Definition of memblock flags. */
 #define MEMBLOCK_HOTPLUG	0x1	/* hotpluggable region */
@@ -43,6 +44,9 @@ struct memblock {
 	phys_addr_t current_limit;
 	struct memblock_type memory;
 	struct memblock_type reserved;
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+	struct memblock_type excluded;
+#endif
 };
 
 extern struct memblock memblock;
@@ -68,6 +72,10 @@ int memblock_add(phys_addr_t base, phys_addr_t size);
 int memblock_remove(phys_addr_t base, phys_addr_t size);
 int memblock_free(phys_addr_t base, phys_addr_t size);
 int memblock_reserve(phys_addr_t base, phys_addr_t size);
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+int memblock_excluded_add(phys_addr_t base, phys_addr_t size);
+int memblock_excluded_remove(phys_addr_t base, phys_addr_t size);
+#endif
 void memblock_trim_memory(phys_addr_t align);
 int memblock_mark_hotplug(phys_addr_t base, phys_addr_t size);
 int memblock_clear_hotplug(phys_addr_t base, phys_addr_t size);
@@ -132,6 +140,23 @@ void __next_free_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
 	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid);	\
 	     i != (u64)ULLONG_MAX;					\
 	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid))
+
+
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+#define for_each_usable_mem_range(i, nid, p_start, p_end, p_nid)	\
+	for (i = 0,							\
+		     __next_usable_mem_range(&i, nid, &memblock.memory,	\
+				      &memblock.excluded, p_start,	\
+				      p_end, p_nid);			\
+	     i != (u64)ULLONG_MAX;					\
+	     __next_usable_mem_range(&i, nid, &memblock.memory,		\
+				     &memblock.excluded,		\
+				     p_start, p_end, p_nid))
+
+void __next_usable_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
+			     phys_addr_t *out_end, int *out_nid);
+
+#endif
 
 void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
 			       phys_addr_t *out_end, int *out_nid);

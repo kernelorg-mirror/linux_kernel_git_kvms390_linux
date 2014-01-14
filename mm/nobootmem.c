@@ -135,9 +135,15 @@ static unsigned long __init free_low_memory_core_early(void)
 		size = get_allocated_memblock_memory_regions_info(&start);
 		if (size)
 			count += __free_memory_core(start, start + size);
+
+#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
+		/* Free memblock.excluded array if it was allocated */
+		size = get_allocated_memblock_memory_regions_info(&start);
+		if (size)
+			count += __free_memory_core(start, start + size);
+#endif
 	}
 #endif
-
 	return count;
 }
 

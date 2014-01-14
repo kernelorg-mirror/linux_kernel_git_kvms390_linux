@@ -137,6 +137,9 @@ config HAVE_MEMBLOCK_NODE_MAP
 config ARCH_DISCARD_MEMBLOCK
 	boolean
 
+config ARCH_MEMBLOCK_EXCLUDE
+	boolean
+
 config NO_BOOTMEM
 	boolean
 
