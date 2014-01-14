@@ -944,7 +944,7 @@ static inline int copy_irq_from_user(struct kvm_s390_interrupt_info *inti,
 {
 	struct kvm_s390_irq __user *uptr = (struct kvm_s390_irq __user *) addr;
 	void *target = NULL;
-	void __user *source;
+	void *source;
 	u64 size;
 	int r = 0;
 
