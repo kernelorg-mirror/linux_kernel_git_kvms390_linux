@@ -971,6 +971,7 @@ static inline int copy_irq_from_user(struct kvm_s390_interrupt_info *inti,
 		goto out;
 	default:
 		r = -EINVAL;
+		WARN_ON(r);
 		return r;
 	}
 
