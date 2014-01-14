@@ -830,7 +830,7 @@
  */
 
 /*?
- * Text: %s: Setting address notification failed
+ * Text: "%s: Setting address notification failed\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the qeth device
@@ -849,7 +849,7 @@
  */
 
 /*?
- * Text: %s: Address notification from the HiperSockets Bridge Port stopped %s (%s)
+ * Text: "%s: Address notification from the HiperSockets Bridge Port stopped %s (%s)\n"
  * Severity: Informational
  * Parameter:
  *   @1: bus ID of the qeth device

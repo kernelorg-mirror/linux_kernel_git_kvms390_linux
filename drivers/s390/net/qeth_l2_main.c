@@ -1504,7 +1504,7 @@ static void qeth_bridge_host_event_worker(struct work_struct *work)
 
 	if (data->hostevs.lost_event_mask) {
 		dev_info(&data->card->gdev->dev,
-"Address notification from the HiperSockets Bridge Port stopped %s (%s)",
+"Address notification from the HiperSockets Bridge Port stopped %s (%s)\n",
 			data->card->dev->name,
 			(data->hostevs.lost_event_mask == 0x01)
 			? "Overflow"
@@ -1857,7 +1857,6 @@ int qeth_bridgeport_setrole(struct qeth_card *card, enum qeth_sbp_roles role)
 static int qeth_anset_makerc(struct qeth_card *card, int pnso_rc, u16 response)
 {
 	int rc;
-	char *msg = NULL;
 
 	if (pnso_rc == 0)
 		switch (response) {
@@ -1868,7 +1867,8 @@ static int qeth_anset_makerc(struct qeth_card *card, int pnso_rc, u16 response)
 		case 0x0100:
 		case 0x0106:
 			rc = -ENOSYS;
-			msg = "Setting address notification failed";
+			dev_err(&card->gdev->dev,
+				"Setting address notification failed\n");
 			break;
 		case 0x0107:
 			rc = -EAGAIN;
@@ -1883,9 +1883,6 @@ static int qeth_anset_makerc(struct qeth_card *card, int pnso_rc, u16 response)
 		QETH_CARD_TEXT_(card, 2, "SBPp%04x", pnso_rc);
 		QETH_CARD_TEXT_(card, 2, "SBPr%04x", response);
 	}
-	if (msg)
-		dev_warn(&card->gdev->dev,
-			"%s\n", msg);
 	return rc;
 }
 
