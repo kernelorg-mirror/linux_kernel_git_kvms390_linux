@@ -121,8 +121,9 @@ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
 	     i >= 0; __next_mem_pfn_range(&i, nid, p_start, p_end, p_nid))
 #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
 
-void __next_free_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
-			   phys_addr_t *out_end, int *out_nid);
+void __next_mem_range(u64 *idx, int nid, struct memblock_type *type_a,
+		      struct memblock_type *type_b, phys_addr_t *out_start,
+		      phys_addr_t *out_end, int *out_nid);
 
 /**
  * for_each_free_mem_range - iterate through free memblock areas
@@ -137,29 +138,31 @@ void __next_free_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
  */
 #define for_each_free_mem_range(i, nid, p_start, p_end, p_nid)		\
 	for (i = 0,							\
-	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid);	\
+		     __next_mem_range(&i, nid, &memblock.memory,	\
+				      &memblock.reserved, p_start,	\
+				      p_end, p_nid);			\
 	     i != (u64)ULLONG_MAX;					\
-	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid))
-
+	     __next_mem_range(&i, nid, &memblock.memory,		\
+			      &memblock.reserved,			\
+			      p_start, p_end, p_nid))
 
 #ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
 #define for_each_usable_mem_range(i, nid, p_start, p_end, p_nid)	\
 	for (i = 0,							\
-		     __next_usable_mem_range(&i, nid, &memblock.memory,	\
+		     __next_mem_range(&i, nid, &memblock.memory,	\
 				      &memblock.excluded, p_start,	\
 				      p_end, p_nid);			\
 	     i != (u64)ULLONG_MAX;					\
-	     __next_usable_mem_range(&i, nid, &memblock.memory,		\
-				     &memblock.excluded,		\
-				     p_start, p_end, p_nid))
-
-void __next_usable_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
-			     phys_addr_t *out_end, int *out_nid);
-
+	     __next_mem_range(&i, nid, &memblock.memory,		\
+			      &memblock.excluded,			\
+			      p_start, p_end, p_nid))
 #endif
 
-void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
-			       phys_addr_t *out_end, int *out_nid);
+void __next_mem_range_rev(u64 *idx, int nid,
+					  struct memblock_type *type_a,
+					  struct memblock_type *type_b,
+					  phys_addr_t *out_start,
+					  phys_addr_t *out_end, int *out_nid);
 
 /**
  * for_each_free_mem_range_reverse - rev-iterate through free memblock areas
@@ -174,9 +177,15 @@ void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
  */
 #define for_each_free_mem_range_reverse(i, nid, p_start, p_end, p_nid)	\
 	for (i = (u64)ULLONG_MAX,					\
-	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid);	\
+		     __next_mem_range_rev(&i, nid,			\
+					  &memblock.memory,		\
+					  &memblock.reserved,		\
+					  p_start, p_end, p_nid);	\
 	     i != (u64)ULLONG_MAX;					\
-	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid))
+	     __next_mem_range_rev(&i, nid,				\
+				  &memblock.memory,			\
+				  &memblock.reserved,			\
+				  p_start, p_end, p_nid))
 
 static inline void memblock_set_region_flags(struct memblock_region *r,
 					     unsigned long flags)
@@ -321,11 +330,10 @@ static inline unsigned long memblock_region_reserved_end_pfn(const struct memblo
 	return PFN_UP(reg->base + reg->size);
 }
 
-#define for_each_memblock(memblock_type, region)					\
-	for (region = memblock.memblock_type.regions;				\
-	     region < (memblock.memblock_type.regions + memblock.memblock_type.cnt);	\
+#define for_each_memblock(type_name, region)				\
+	for (region = memblock.type_name.regions;			\
+	     region < (memblock.type_name.regions + memblock.type_name.cnt); \
 	     region++)
-
 
 #ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
 #define __init_memblock __meminit

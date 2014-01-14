@@ -837,17 +837,19 @@ int __init_memblock memblock_excluded_remove(phys_addr_t base, phys_addr_t size)
 #endif
 
 /**
- * __next_free_mem_range - next function for for_each_free_mem_range()
+ * __next__mem_range - next function for for_each_free_mem_range() etc.
  * @idx: pointer to u64 loop variable
  * @nid: node selector, %NUMA_NO_NODE for all nodes
+ * @type_a: pointer to memblock_type from where the range is taken
+ * @type_b: pointer to memblock_type which excludes memory from being taken
  * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
  * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
  * @out_nid: ptr to int for nid of the range, can be %NULL
  *
- * Find the first free area from *@idx which matches @nid, fill the out
+ * Find the first area from *@idx which matches @nid, fill the out
  * parameters, and update *@idx for the next iteration.  The lower 32bit of
- * *@idx contains index into memory region and the upper 32bit indexes the
- * areas before each reserved region.  For example, if reserved regions
+ * *@idx contains index into type_a and the upper 32bit indexes the
+ * areas before each region in type_b.  For example, if type_b regions
  * look like the following,
  *
  *	0:[0-16), 1:[32-48), 2:[128-130)
@@ -859,135 +861,65 @@ int __init_memblock memblock_excluded_remove(phys_addr_t base, phys_addr_t size)
  * As both region arrays are sorted, the function advances the two indices
  * in lockstep and returns each intersection.
  */
-void __init_memblock __next_free_mem_range(u64 *idx, int nid,
-					   phys_addr_t *out_start,
-					   phys_addr_t *out_end, int *out_nid)
+void __init_memblock __next_mem_range(u64 *idx, int nid,
+				      struct memblock_type *type_a,
+				      struct memblock_type *type_b,
+				      phys_addr_t *out_start,
+				      phys_addr_t *out_end, int *out_nid)
 {
-	struct memblock_type *mem = &memblock.memory;
-	struct memblock_type *rsv = &memblock.reserved;
-	int mi = *idx & 0xffffffff;
-	int ri = *idx >> 32;
-
-	if (WARN_ONCE(nid == MAX_NUMNODES, "Usage of MAX_NUMNODES is deprecated. Use NUMA_NO_NODE instead\n"))
-		nid = NUMA_NO_NODE;
-
-	for ( ; mi < mem->cnt; mi++) {
-		struct memblock_region *m = &mem->regions[mi];
-		phys_addr_t m_start = m->base;
-		phys_addr_t m_end = m->base + m->size;
-
-		/* only memory regions are associated with nodes, check it */
-		if (nid != NUMA_NO_NODE && nid != memblock_get_region_node(m))
-			continue;
-
-		/* scan areas before each reservation for intersection */
-		for ( ; ri < rsv->cnt + 1; ri++) {
-			struct memblock_region *r = &rsv->regions[ri];
-			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
-			phys_addr_t r_end = ri < rsv->cnt ? r->base : ULLONG_MAX;
-
-			/* if ri advanced past mi, break out to advance mi */
-			if (r_start >= m_end)
-				break;
-			/* if the two regions intersect, we're done */
-			if (m_start < r_end) {
-				if (out_start)
-					*out_start = max(m_start, r_start);
-				if (out_end)
-					*out_end = min(m_end, r_end);
-				if (out_nid)
-					*out_nid = memblock_get_region_node(m);
-				/*
-				 * The region which ends first is advanced
-				 * for the next iteration.
-				 */
-				if (m_end <= r_end)
-					mi++;
-				else
-					ri++;
-				*idx = (u32)mi | (u64)ri << 32;
-				return;
-			}
-		}
-	}
-
-	/* signal end of iteration */
-	*idx = ULLONG_MAX;
-}
-
-#ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
-/**
- * __next_usable_mem_range - next function for for_each_free_mem_range()
- * @idx: pointer to u64 loop variable
- * @nid: node selector, %NUMA_NO_NODE for all nodes
- * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
- * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
- * @out_nid: ptr to int for nid of the range, can be %NULL
- *
- * Find the first free area from *@idx which matches @nid, fill the out
- * parameters, and update *@idx for the next iteration.  The lower 32bit of
- * *@idx contains index into memory region and the upper 32bit indexes the
- * areas before each reserved region.  For example, if reserved regions
- * look like the following,
- *
- *	0:[0-16), 1:[32-48), 2:[128-130)
- *
- * The upper 32bit indexes the following regions.
- *
- *	0:[0-0), 1:[16-32), 2:[48-128), 3:[130-MAX)
- *
- * As both region arrays are sorted, the function advances the two indices
- * in lockstep and returns each intersection.
- */
-void __init_memblock __next_usable_mem_range(u64 *idx, int nid,
-					   phys_addr_t *out_start,
-					   phys_addr_t *out_end, int *out_nid)
-{
-	struct memblock_type *mem = &memblock.memory;
-	struct memblock_type *rsv = &memblock.excluded;
-	int mi = *idx & 0xffffffff;
-	int ri = *idx >> 32;
+	int idx_a = *idx & 0xffffffff;
+	int idx_b = *idx >> 32;
 
 	if (WARN_ONCE(nid == MAX_NUMNODES,
 	"Usage of MAX_NUMNODES is deprecated. Use NUMA_NO_NODE instead\n"))
 		nid = NUMA_NO_NODE;
 
-	for (; mi < mem->cnt; mi++) {
-		struct memblock_region *m = &mem->regions[mi];
+	for (; idx_a < type_a->cnt; idx_a++) {
+		struct memblock_region *m = &type_a->regions[idx_a];
+
 		phys_addr_t m_start = m->base;
 		phys_addr_t m_end = m->base + m->size;
+		int         m_nid = memblock_get_region_node(m);
 
 		/* only memory regions are associated with nodes, check it */
 		if (nid != NUMA_NO_NODE && nid != memblock_get_region_node(m))
 			continue;
 
-		/* scan areas before each reservation for intersection */
-		for (; ri < rsv->cnt + 1; ri++) {
-			struct memblock_region *r = &rsv->regions[ri];
-			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
-			phys_addr_t r_end = ri < rsv->cnt ?
+		/* scan areas before each reservation */
+		for (; idx_b < type_b->cnt + 1; idx_b++) {
+			struct memblock_region *r;
+			phys_addr_t r_start;
+			phys_addr_t r_end;
+
+			r = &type_b->regions[idx_b];
+			r_start = idx_b ? r[-1].base + r[-1].size : 0;
+			r_end = idx_b < type_b->cnt ?
 				r->base : ULLONG_MAX;
 
-			/* if ri advanced past mi, break out to advance mi */
+			/*
+			 * if idx_b advanced past idx_a,
+			 * break out to advance idx_a
+			 */
 			if (r_start >= m_end)
 				break;
 			/* if the two regions intersect, we're done */
 			if (m_start < r_end) {
 				if (out_start)
-					*out_start = max(m_start, r_start);
+					*out_start =
+						max(m_start, r_start);
 				if (out_end)
 					*out_end = min(m_end, r_end);
 				if (out_nid)
-					*out_nid = memblock_get_region_node(m);
+					*out_nid = m_nid;
 				/*
-				 * The region which ends first is advanced
-				 * for the next iteration.
+				 * The region which ends first is
+				 * advanced for the next iteration.
 				 */
 				if (m_end <= r_end)
-					mi++;
+					idx_a++;
 				else
-					ri++;
-				*idx = (u32)mi | (u64)ri << 32;
+					idx_b++;
+				*idx = (u32)idx_a | (u64)idx_b << 32;
 				return;
 			}
 		}
@@ -996,42 +928,43 @@ void __init_memblock __next_usable_mem_range(u64 *idx, int nid,
 	/* signal end of iteration */
 	*idx = ULLONG_MAX;
 }
-#endif
 
 /**
- * __next_free_mem_range_rev - next function for for_each_free_mem_range_reverse()
+ * __next_mem_range_rev - generic next function for for_each_*_range_rev()
+ *
+ * Finds the next range from type_a which is not marked as unsuitable
+ * in type_b.
+ *
  * @idx: pointer to u64 loop variable
  * @nid: nid: node selector, %NUMA_NO_NODE for all nodes
+ * @type_a: pointer to memblock_type from where the range is taken
+ * @type_b: pointer to memblock_type which excludes memory from being taken
  * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
  * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
  * @out_nid: ptr to int for nid of the range, can be %NULL
  *
- * Reverse of __next_free_mem_range().
- *
- * Linux kernel cannot migrate pages used by itself. Memory hotplug users won't
- * be able to hot-remove hotpluggable memory used by the kernel. So this
- * function skip hotpluggable regions if needed when allocating memory for the
- * kernel.
+ * Reverse of __next_mem_range().
  */
-void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
-					   phys_addr_t *out_start,
-					   phys_addr_t *out_end, int *out_nid)
+void __init_memblock __next_mem_range_rev(u64 *idx, int nid,
+					  struct memblock_type *type_a,
+					  struct memblock_type *type_b,
+					  phys_addr_t *out_start,
+					  phys_addr_t *out_end, int *out_nid)
 {
-	struct memblock_type *mem = &memblock.memory;
-	struct memblock_type *rsv = &memblock.reserved;
-	int mi = *idx & 0xffffffff;
-	int ri = *idx >> 32;
+	int idx_a = *idx & 0xffffffff;
+	int idx_b = *idx >> 32;
 
 	if (WARN_ONCE(nid == MAX_NUMNODES, "Usage of MAX_NUMNODES is deprecated. Use NUMA_NO_NODE instead\n"))
 		nid = NUMA_NO_NODE;
 
 	if (*idx == (u64)ULLONG_MAX) {
-		mi = mem->cnt - 1;
-		ri = rsv->cnt;
+		idx_a = type_a->cnt - 1;
+		idx_b = type_b->cnt;
 	}
 
-	for ( ; mi >= 0; mi--) {
-		struct memblock_region *m = &mem->regions[mi];
+	for (; idx_a >= 0; idx_a--) {
+		struct memblock_region *m = &type_a->regions[idx_a];
+
 		phys_addr_t m_start = m->base;
 		phys_addr_t m_end = m->base + m->size;
 
@@ -1042,14 +975,22 @@ void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
 		/* skip hotpluggable memory regions if needed */
 		if (movable_node_is_enabled() && memblock_is_hotpluggable(m))
 			continue;
+		/* scan areas before each reservation */
+		for (; idx_b >= 0; idx_b--) {
+			struct memblock_region *r;
+			phys_addr_t r_start;
+			phys_addr_t r_end;
+			int m_nid = memblock_get_region_node(m);
 
-		/* scan areas before each reservation for intersection */
-		for ( ; ri >= 0; ri--) {
-			struct memblock_region *r = &rsv->regions[ri];
-			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
-			phys_addr_t r_end = ri < rsv->cnt ? r->base : ULLONG_MAX;
+			r = &type_b->regions[idx_b];
+			r_start = idx_b ? r[-1].base + r[-1].size : 0;
+			r_end = idx_b < type_b->cnt ?
+				r->base : ULLONG_MAX;
+			/*
+			 * if idx_b advanced past idx_a,
+			 * break out to advance idx_a
+			 */
 
-			/* if ri advanced past mi, break out to advance mi */
 			if (r_end <= m_start)
 				break;
 			/* if the two regions intersect, we're done */
@@ -1059,18 +1000,17 @@ void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
 				if (out_end)
 					*out_end = min(m_end, r_end);
 				if (out_nid)
-					*out_nid = memblock_get_region_node(m);
-
+					*out_nid = m_nid;
 				if (m_start >= r_start)
-					mi--;
+					idx_a--;
 				else
-					ri--;
-				*idx = (u32)mi | (u64)ri << 32;
+					idx_b--;
+				*idx = (u32)idx_a | (u64)idx_b << 32;
 				return;
 			}
 		}
 	}
-
+	/* signal end of iteration */
 	*idx = ULLONG_MAX;
 }
 
