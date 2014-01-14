@@ -186,6 +186,12 @@ static noinline void do_low_address(struct pt_regs *regs)
 {
 	/* Low-address protection hit in kernel mode means
 	   NULL pointer write access in kernel mode.  */
+	if (regs->psw.mask & PSW_MASK_PSTATE) {
+		/* Low-address protection hit in user mode 'cannot happen'. */
+		die (regs, "Low-address protection");
+		do_exit(SIGKILL);
+	}
+
 	do_no_context(regs);
 }
 
@@ -394,15 +400,12 @@ void __kprobes do_protection_exception(struct pt_regs *regs)
 	if (!(regs->int_code & 0x200))
 		regs->psw.addr = __rewind_psw(regs->psw, regs->int_code >> 16);
 	/*
-	 * Check for low-address or key protection.  This needs to be treated
+	 * Check for low-address protection.  This needs to be treated
 	 * as a special case because the translation exception code
 	 * field is not guaranteed to contain valid data in this case.
 	 */
 	if (unlikely(!(trans_exc_code & 4))) {
-		if (user_mode(regs))
-			do_sigbus(regs);
-		else
-			do_low_address(regs);
+		do_low_address(regs);
 		return;
 	}
 	fault = do_exception(regs, VM_WRITE);

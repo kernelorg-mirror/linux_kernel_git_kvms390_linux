@@ -46,7 +46,7 @@ ENTRY(startup_continue)
 .Lctl:	.long	0x04b50000		# cr0: various things
 	.long	0			# cr1: primary space segment table
 	.long	.Lduct			# cr2: dispatchable unit control table
-	.long	0xffff0000		# cr3: instruction authorization
+	.long	0			# cr3: instruction authorization
 	.long	0			# cr4: instruction authorization
 	.long	.Lduct			# cr5: primary-aste origin
 	.long	0			# cr6:	I/O interrupts
