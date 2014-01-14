@@ -16,11 +16,6 @@
 
 #define __KVM_S390
 
-/* Device control API: s390-specific devices */
-#define KVM_DEV_FLIC_DEQUEUE 1
-#define KVM_DEV_FLIC_ENQUEUE 2
-#define KVM_DEV_FLIC_CLEAR_IRQS 3
-
 /* for KVM_GET_REGS and KVM_SET_REGS */
 struct kvm_regs {
 	/* general purpose regs for s390 */
