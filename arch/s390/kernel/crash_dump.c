@@ -11,6 +11,7 @@
 #include <linux/module.h>
 #include <linux/gfp.h>
 #include <linux/slab.h>
+#include <linux/memblock.h>
 #include <linux/bootmem.h>
 #include <linux/elf.h>
 #include <asm/os_info.h>
@@ -264,19 +265,6 @@ static void *kzalloc_panic(int len)
 }
 
 /*
- * Get memory layout and create hole for oldmem
- */
-static struct mem_chunk *get_memory_layout(void)
-{
-	struct mem_chunk *chunk_array;
-
-	chunk_array = kzalloc_panic(MEMORY_CHUNKS * sizeof(struct mem_chunk));
-	detect_memory_layout(chunk_array, 0);
-	create_mem_hole(chunk_array, OLDMEM_BASE, OLDMEM_SIZE);
-	return chunk_array;
-}
-
-/*
  * Initialize ELF note
  */
 static void *nt_init(void *buf, Elf64_Word type, void *desc, int d_len,
@@ -490,52 +478,68 @@ static int get_cpu_cnt(void)
  */
 static int get_mem_chunk_cnt(void)
 {
-	struct mem_chunk *chunk_array, *mem_chunk;
-	int i, cnt = 0;
+	int cnt = 0;
+	u64 idx;
 
-	chunk_array = get_memory_layout();
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		mem_chunk = &chunk_array[i];
-		if (chunk_array[i].type != CHUNK_READ_WRITE &&
-		    chunk_array[i].type != CHUNK_READ_ONLY)
-			continue;
-		if (mem_chunk->size == 0)
-			continue;
+	struct memblock_region oldmem_region = {
+		.base = OLDMEM_BASE,
+		.size = OLDMEM_SIZE,
+	};
+
+	struct memblock_type oldmem = {
+		.cnt = (OLDMEM_SIZE ? 1 : 0),
+		.max = 1,
+		.total_size = (OLDMEM_SIZE),
+		.regions = &oldmem_region,
+	};
+
+	for (idx = 0,
+		     __next_mem_range(&idx, NUMA_NO_NODE, &memblock.memory,
+				      &oldmem, NULL, NULL, NULL);
+	     idx != (u64)ULLONG_MAX;
+	     __next_mem_range(&idx, NUMA_NO_NODE, &memblock.memory,
+			      &oldmem, NULL, NULL, NULL))
 		cnt++;
-	}
-	kfree(chunk_array);
+
 	return cnt;
 }
 
 /*
  * Initialize ELF loads (new kernel)
  */
-static int loads_init(Elf64_Phdr *phdr, u64 loads_offset)
+static void loads_init(Elf64_Phdr *phdr, u64 loads_offset)
 {
-	struct mem_chunk *chunk_array, *mem_chunk;
-	int i;
+	phys_addr_t start, end;
+	u64 idx;
 
-	chunk_array = get_memory_layout();
-	for (i = 0; i < MEMORY_CHUNKS; i++) {
-		mem_chunk = &chunk_array[i];
-		if (mem_chunk->size == 0)
-			continue;
-		if (chunk_array[i].type != CHUNK_READ_WRITE &&
-		    chunk_array[i].type != CHUNK_READ_ONLY)
-			continue;
-		else
-			phdr->p_filesz = mem_chunk->size;
+	struct memblock_region oldmem_region = {
+		.base = OLDMEM_BASE,
+		.size = OLDMEM_SIZE,
+	};
+
+	struct memblock_type oldmem = {
+		.cnt = (OLDMEM_SIZE ? 1 : 0),
+		.max = 1,
+		.total_size = (OLDMEM_SIZE),
+		.regions = &oldmem_region,
+	};
+
+	for (idx = 0,
+		     __next_mem_range(&idx, NUMA_NO_NODE, &memblock.memory,
+				      &oldmem, &start, &end, NULL);
+	     idx != (u64)ULLONG_MAX;
+	     __next_mem_range(&idx, NUMA_NO_NODE, &memblock.memory,
+			      &oldmem, &start, &end, NULL)) {
+		phdr->p_filesz = end - start;
 		phdr->p_type = PT_LOAD;
-		phdr->p_offset = mem_chunk->addr;
-		phdr->p_vaddr = mem_chunk->addr;
-		phdr->p_paddr = mem_chunk->addr;
-		phdr->p_memsz = mem_chunk->size;
+		phdr->p_offset = start;
+		phdr->p_vaddr = start;
+		phdr->p_paddr = start;
+		phdr->p_memsz = end - start;
 		phdr->p_flags = PF_R | PF_W | PF_X;
 		phdr->p_align = PAGE_SIZE;
 		phdr++;
 	}
-	kfree(chunk_array);
-	return i;
 }
 
 /*

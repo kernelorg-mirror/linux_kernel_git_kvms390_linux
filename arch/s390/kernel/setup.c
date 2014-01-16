@@ -415,18 +415,6 @@ static void __init setup_resources(void)
 		res = alloc_bootmem_low(sizeof(*res));
 		res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
 
-/*		switch (memory_chunk[i].type) {
-		case CHUNK_READ_WRITE:
-			res->name = "System RAM";
-			break;
-		case CHUNK_READ_ONLY:
-			res->name = "System ROM";
-			res->flags |= IORESOURCE_READONLY;
-			break;
-		default:
-			res->name = "reserved";
-		}
-*/
 		res->name = "System Memory";
 		res->start = start;
 		res->end = end - 1;
