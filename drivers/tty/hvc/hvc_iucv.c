@@ -1023,8 +1023,7 @@ static ssize_t hvc_iucv_dev_peer_show(struct device *dev,
 				      char *buf)
 {
 	struct hvc_iucv_private *priv = dev_get_drvdata(dev);
-	char vmid[9] = "";
-	char ipuser[9] = "";
+	char vmid[9], ipuser[9];
 
 	memset(vmid, 0, sizeof(vmid));
 	memset(ipuser, 0, sizeof(ipuser));
