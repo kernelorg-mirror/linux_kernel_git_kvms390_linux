@@ -12,11 +12,9 @@
 #include <linux/types.h>
 
 struct hypfs_diag304 {
-	__u8	reserved[3];
-	__u8	cpu_type;
-	__u32	sub_code;
-	__u64	lpib_ptr;
-	__u64	return_code;
+	__u32	args[2];
+	__u64	data;
+	__u64	rc;
 } __attribute__((packed));
 
 #define HYPFS_IOCTL_MAGIC 0x10

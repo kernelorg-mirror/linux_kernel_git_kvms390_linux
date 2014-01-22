@@ -20,16 +20,16 @@
 #define DIAG304_QUERY_PRP	1
 #define DIAG304_SET_CAPPING	2
 
-#define DIAG304_SUBCODE_MAX	2
+#define DIAG304_CMD_MAX		2
 
-static unsigned long hypfs_sprp_diag304(void *lpib, unsigned long cmd)
+static unsigned long hypfs_sprp_diag304(void *data, unsigned long cmd)
 {
-	register unsigned long _lpib asm("2") = (unsigned long) lpib;
+	register unsigned long _data asm("2") = (unsigned long) data;
 	register unsigned long _rc asm("3");
 	register unsigned long _cmd asm("4") = cmd;
 
 	asm volatile("diag %1,%2,0x304\n"
-		     : "=d" (_rc) : "d" (_lpib), "d" (_cmd) : "memory" );
+		     : "=d" (_rc) : "d" (_data), "d" (_cmd) : "memory" );
 
 	return _rc;
 }
@@ -39,22 +39,22 @@ static void hypfs_sprp_free(const void *data)
 	free_page((unsigned long) data);
 }
 
-static int hypfs_sprp_create(void **data, void **data_free_ptr, size_t *size)
+static int hypfs_sprp_create(void **data_ptr, void **free_ptr, size_t *size)
 {
 	unsigned long rc;
-	void *lpib;
+	void *data;
 
-	lpib = (void *) get_zeroed_page(GFP_KERNEL);
-	if (!lpib)
+	data = (void *) get_zeroed_page(GFP_KERNEL);
+	if (!data)
 		return -ENOMEM;
-	rc = hypfs_sprp_diag304(lpib, DIAG304_QUERY_PRP);
+	rc = hypfs_sprp_diag304(data, DIAG304_QUERY_PRP);
 	if (rc != 1) {
-		*data = *data_free_ptr = NULL;
+		*data_ptr = *free_ptr = NULL;
 		*size = 0;
-		free_page((unsigned long) lpib);
+		free_page((unsigned long) data);
 		return -EIO;
 	}
-	*data = *data_free_ptr = lpib;
+	*data_ptr = *free_ptr = data;
 	*size = PAGE_SIZE;
 	return 0;
 }
@@ -63,40 +63,39 @@ static int __hypfs_sprp_ioctl(void __user *user_area)
 {
 	struct hypfs_diag304 diag304;
 	unsigned long cmd;
-	void __user *ulpib;
-	void *lpib;
+	void __user *udata;
+	void *data;
 	int rc;
 
 	if (copy_from_user(&diag304, user_area, sizeof(diag304)))
 		return -EFAULT;
-	if (diag304.reserved[0] || diag304.reserved[1] ||
-	    diag304.reserved[2] || diag304.sub_code > DIAG304_SUBCODE_MAX)
+	if ((diag304.args[0] >> 8) != 0 || diag304.args[1] > DIAG304_CMD_MAX)
 		return -EINVAL;
 
-	lpib = (void *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
-	if (!lpib)
+	data = (void *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
+	if (!data)
 		return -ENOMEM;
 
-	ulpib = (void __user *)(unsigned long) diag304.lpib_ptr;
-	if (diag304.sub_code == DIAG304_SET_WEIGHTS ||
-	    diag304.sub_code == DIAG304_SET_CAPPING)
-		if (copy_from_user(lpib, ulpib, PAGE_SIZE)) {
+	udata = (void __user *)(unsigned long) diag304.data;
+	if (diag304.args[1] == DIAG304_SET_WEIGHTS ||
+	    diag304.args[1] == DIAG304_SET_CAPPING)
+		if (copy_from_user(data, udata, PAGE_SIZE)) {
 			rc = -EFAULT;
 			goto out;
 		}
 
-	cmd = *(unsigned long *) &diag304.reserved;
-	diag304.return_code = hypfs_sprp_diag304(lpib, cmd);
+	cmd = *(unsigned long *) &diag304.args[0];
+	diag304.rc = hypfs_sprp_diag304(data, cmd);
 
-	if (diag304.sub_code == DIAG304_QUERY_PRP)
-		if (copy_to_user(ulpib, lpib, PAGE_SIZE)) {
+	if (diag304.args[1] == DIAG304_QUERY_PRP)
+		if (copy_to_user(udata, data, PAGE_SIZE)) {
 			rc = -EFAULT;
 			goto out;
 		}
 
 	rc = copy_to_user(user_area, &diag304, sizeof(diag304)) ? -EFAULT : 0;
 out:
-	free_page((unsigned long) lpib);
+	free_page((unsigned long) data);
 	return rc;
 }
 
