@@ -29,7 +29,7 @@ static unsigned long hypfs_sprp_diag304(void *data, unsigned long cmd)
 	register unsigned long _cmd asm("4") = cmd;
 
 	asm volatile("diag %1,%2,0x304\n"
-		     : "=d" (_rc) : "d" (_data), "d" (_cmd) : "memory" );
+		     : "=d" (_rc) : "d" (_data), "d" (_cmd) : "memory");
 
 	return _rc;
 }
