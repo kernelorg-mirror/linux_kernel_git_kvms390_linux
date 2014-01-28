@@ -822,7 +822,6 @@ void __init setup_arch(char **cmdline_p)
 	/* Do some memory reservations *before* memory is added to memblock */
 	reserve_oldmem();
 	reserve_kernel();
-	reserve_crashkernel();
 	reserve_initrd();
 	reserve_crash_dump(); /* What's that? */
 
@@ -830,6 +829,7 @@ void __init setup_arch(char **cmdline_p)
 	detect_memory_memblock();
 	memblock_allow_resize();
 
+	reserve_crashkernel();
 #ifdef CONFIG_ZFCPDUMP
 	if (ipl_info.type == IPL_TYPE_FCP_DUMP &&
 	    !OLDMEM_BASE && sclp_get_hsa_size()) {
