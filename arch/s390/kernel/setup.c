@@ -635,12 +635,9 @@ static void __init reserve_kernel(void)
 			 - (unsigned long)_stext);
 }
 
-static void __init reserve_crash_dump(void)
+static void __init reserve_elfcorehdr(void)
 {
 #ifdef CONFIG_CRASH_DUMP
-	if (crashk_res.start)
-		memblock_reserve(crashk_res.start,
-				 crashk_res.end - crashk_res.start + 1);
 	if (is_kdump_kernel())
 		memblock_reserve(elfcorehdr_addr - OLDMEM_BASE,
 				 PAGE_ALIGN(elfcorehdr_size));
@@ -823,7 +820,7 @@ void __init setup_arch(char **cmdline_p)
 	reserve_oldmem();
 	reserve_kernel();
 	reserve_initrd();
-	reserve_crash_dump(); /* What's that? */
+	reserve_elfcorehdr();
 
 	/* Get information about *all* installed memory */
 	detect_memory_memblock();
