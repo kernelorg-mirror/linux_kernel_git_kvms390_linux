@@ -79,7 +79,7 @@ static void find_memory_memblock(void)
  * memblock. Former variant used a maxsize parameter to limit
  * the detection. Limiting memory usage is now done elsewhere.
  */
-void __init detect_memory_memblock()
+void __init detect_memory_memblock(void)
 {
 	unsigned long flags, flags_dat, cr0;
 
