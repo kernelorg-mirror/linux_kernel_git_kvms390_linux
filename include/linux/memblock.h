@@ -137,10 +137,9 @@ void __next_mem_range(u64 *idx, int nid, struct memblock_type *type_a,
  * soon as memblock is initialized.
  */
 #define for_each_free_mem_range(i, nid, p_start, p_end, p_nid)		\
-	for (i = 0,							\
-		     __next_mem_range(&i, nid, &memblock.memory,	\
-				      &memblock.reserved, p_start,	\
-				      p_end, p_nid);			\
+	for (i = 0, __next_mem_range(&i, nid, &memblock.memory,		\
+				     &memblock.reserved, p_start,	\
+				     p_end, p_nid);			\
 	     i != (u64)ULLONG_MAX;					\
 	     __next_mem_range(&i, nid, &memblock.memory,		\
 			      &memblock.reserved,			\
@@ -148,10 +147,9 @@ void __next_mem_range(u64 *idx, int nid, struct memblock_type *type_a,
 
 #ifdef CONFIG_ARCH_MEMBLOCK_EXCLUDE
 #define for_each_usable_mem_range(i, nid, p_start, p_end, p_nid)	\
-	for (i = 0,							\
-		     __next_mem_range(&i, nid, &memblock.memory,	\
-				      &memblock.excluded, p_start,	\
-				      p_end, p_nid);			\
+	for (i = 0, __next_mem_range(&i, nid, &memblock.memory,		\
+				     &memblock.excluded, p_start,	\
+				     p_end, p_nid);			\
 	     i != (u64)ULLONG_MAX;					\
 	     __next_mem_range(&i, nid, &memblock.memory,		\
 			      &memblock.excluded,			\
