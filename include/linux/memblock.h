@@ -156,11 +156,9 @@ void __next_mem_range(u64 *idx, int nid, struct memblock_type *type_a,
 			      p_start, p_end, p_nid))
 #endif
 
-void __next_mem_range_rev(u64 *idx, int nid,
-					  struct memblock_type *type_a,
-					  struct memblock_type *type_b,
-					  phys_addr_t *out_start,
-					  phys_addr_t *out_end, int *out_nid);
+void __next_mem_range_rev(u64 *idx, int nid, struct memblock_type *type_a,
+			  struct memblock_type *type_b, phys_addr_t *out_start,
+			  phys_addr_t *out_end, int *out_nid);
 
 /**
  * for_each_free_mem_range_reverse - rev-iterate through free memblock areas
