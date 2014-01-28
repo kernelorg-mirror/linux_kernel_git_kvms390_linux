@@ -849,7 +849,7 @@ int __init_memblock memblock_excluded_remove(phys_addr_t base, phys_addr_t size)
  * Find the first area from *@idx which matches @nid, fill the out
  * parameters, and update *@idx for the next iteration.  The lower 32bit of
  * *@idx contains index into type_a and the upper 32bit indexes the
- * areas before each region in type_b.  For example, if type_b regions
+ * areas before each region in type_b.	For example, if type_b regions
  * look like the following,
  *
  *	0:[0-16), 1:[32-48), 2:[128-130)
@@ -879,7 +879,7 @@ void __init_memblock __next_mem_range(u64 *idx, int nid,
 
 		phys_addr_t m_start = m->base;
 		phys_addr_t m_end = m->base + m->size;
-		int         m_nid = memblock_get_region_node(m);
+		int	    m_nid = memblock_get_region_node(m);
 
 		/* only memory regions are associated with nodes, check it */
 		if (nid != NUMA_NO_NODE && nid != memblock_get_region_node(m))
