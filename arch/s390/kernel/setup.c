@@ -415,7 +415,7 @@ static void __init setup_resources(void)
 		res = alloc_bootmem_low(sizeof(*res));
 		res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
 
-		res->name = "System Memory";
+		res->name = "System RAM";
 		res->start = start;
 		res->end = end - 1;
 		request_resource(&iomem_resource, res);
