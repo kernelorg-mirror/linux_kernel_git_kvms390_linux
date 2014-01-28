@@ -819,7 +819,6 @@ void __init setup_arch(char **cmdline_p)
 	/* Do some memory reservations *before* memory is added to memblock */
 	reserve_oldmem();
 	reserve_kernel();
-	reserve_initrd();
 	reserve_elfcorehdr();
 
 	/* Get information about *all* installed memory */
@@ -848,6 +847,7 @@ void __init setup_arch(char **cmdline_p)
 	setup_memory_end();
 	setup_memory();
 
+	reserve_initrd();
 	reserve_crashkernel();
 
 	setup_resources();
