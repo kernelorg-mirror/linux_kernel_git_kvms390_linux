@@ -826,7 +826,6 @@ void __init setup_arch(char **cmdline_p)
 	detect_memory_memblock();
 	memblock_allow_resize();
 
-	reserve_crashkernel();
 #ifdef CONFIG_ZFCPDUMP
 	if (ipl_info.type == IPL_TYPE_FCP_DUMP &&
 	    !OLDMEM_BASE && sclp_get_hsa_size()) {
@@ -848,6 +847,8 @@ void __init setup_arch(char **cmdline_p)
 
 	setup_memory_end();
 	setup_memory();
+
+	reserve_crashkernel();
 
 	setup_resources();
 	setup_vmcoreinfo();
