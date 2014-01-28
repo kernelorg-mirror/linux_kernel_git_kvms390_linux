@@ -98,9 +98,9 @@ int __handle_fault(unsigned long, unsigned long, int);
  * __copy_from_user: - Copy a block of data from user space, with less checking.
  * @to:   Destination address, in kernel space.
  * @from: Source address, in user space.
- * @n:    Number of bytes to copy.
+ * @n:	  Number of bytes to copy.
  *
- * Context: User context only.  This function may sleep.
+ * Context: User context only.	This function may sleep.
  *
  * Copy data from user space to kernel space.  Caller must check
  * the specified block with access_ok() before calling this function.
@@ -118,9 +118,9 @@ unsigned long __must_check __copy_from_user(void *to, const void __user *from,
  * __copy_to_user: - Copy a block of data into user space, with less checking.
  * @to:   Destination address, in user space.
  * @from: Source address, in kernel space.
- * @n:    Number of bytes to copy.
+ * @n:	  Number of bytes to copy.
  *
- * Context: User context only.  This function may sleep.
+ * Context: User context only.	This function may sleep.
  *
  * Copy data from kernel space to user space.  Caller must check
  * the specified block with access_ok() before calling this function.
