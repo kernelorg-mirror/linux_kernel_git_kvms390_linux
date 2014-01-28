@@ -23,6 +23,24 @@
 #define PTR_SUB(x, y) (((char *) (x)) - ((unsigned long) (y)))
 #define PTR_DIFF(x, y) ((unsigned long)(((char *) (x)) - ((unsigned long) (y))))
 
+static struct memblock_region oldmem_region;
+
+static struct memblock_type oldmem_type = {
+	.cnt = 1,
+	.max = 1,
+	.total_size = 0,
+	.regions = &oldmem_region,
+};
+
+#define for_each_dump_mem_range(i, nid, p_start, p_end, p_nid)		\
+	for (i = 0, __next_mem_range(&i, nid, &memblock.memory,		\
+				     &oldmem_type, p_start,		\
+				     p_end, p_nid);			\
+	     i != (u64)ULLONG_MAX;					\
+	     __next_mem_range(&i, nid, &memblock.memory,		\
+			      &oldmem_type,				\
+			      p_start, p_end, p_nid))
+
 struct dump_save_areas dump_save_areas;
 
 /*
@@ -481,26 +499,8 @@ static int get_mem_chunk_cnt(void)
 	int cnt = 0;
 	u64 idx;
 
-	struct memblock_region oldmem_region = {
-		.base = OLDMEM_BASE,
-		.size = OLDMEM_SIZE,
-	};
-
-	struct memblock_type oldmem = {
-		.cnt = (OLDMEM_SIZE ? 1 : 0),
-		.max = 1,
-		.total_size = (OLDMEM_SIZE),
-		.regions = &oldmem_region,
-	};
-
-	for (idx = 0,
-		     __next_mem_range(&idx, NUMA_NO_NODE, &memblock.memory,
-				      &oldmem, NULL, NULL, NULL);
-	     idx != (u64)ULLONG_MAX;
-	     __next_mem_range(&idx, NUMA_NO_NODE, &memblock.memory,
-			      &oldmem, NULL, NULL, NULL))
+	for_each_dump_mem_range(idx, NUMA_NO_NODE, NULL, NULL, NULL)
 		cnt++;
-
 	return cnt;
 }
 
@@ -512,24 +512,7 @@ static void loads_init(Elf64_Phdr *phdr, u64 loads_offset)
 	phys_addr_t start, end;
 	u64 idx;
 
-	struct memblock_region oldmem_region = {
-		.base = OLDMEM_BASE,
-		.size = OLDMEM_SIZE,
-	};
-
-	struct memblock_type oldmem = {
-		.cnt = (OLDMEM_SIZE ? 1 : 0),
-		.max = 1,
-		.total_size = (OLDMEM_SIZE),
-		.regions = &oldmem_region,
-	};
-
-	for (idx = 0,
-		     __next_mem_range(&idx, NUMA_NO_NODE, &memblock.memory,
-				      &oldmem, &start, &end, NULL);
-	     idx != (u64)ULLONG_MAX;
-	     __next_mem_range(&idx, NUMA_NO_NODE, &memblock.memory,
-			      &oldmem, &start, &end, NULL)) {
+	for_each_dump_mem_range(idx, NUMA_NO_NODE, &start, &end, NULL) {
 		phdr->p_filesz = end - start;
 		phdr->p_type = PT_LOAD;
 		phdr->p_offset = start;
@@ -588,6 +571,14 @@ int elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size)
 	/* If we cannot get HSA size for zfcpdump return error */
 	if (ipl_info.type == IPL_TYPE_FCP_DUMP && !sclp_get_hsa_size())
 		return -ENODEV;
+
+	/* For kdump, exclude previous crashkernel memory */
+	if (OLDMEM_BASE) {
+		oldmem_region.base = OLDMEM_BASE;
+		oldmem_region.size = OLDMEM_SIZE;
+		oldmem_type.total_size = OLDMEM_SIZE;
+	}
+
 	mem_chunk_cnt = get_mem_chunk_cnt();
 
 	alloc_size = 0x1000 + get_cpu_cnt() * 0x300 +
