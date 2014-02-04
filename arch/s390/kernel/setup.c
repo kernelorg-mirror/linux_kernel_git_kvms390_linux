@@ -538,9 +538,23 @@ static void reserve_oldmem(void)
 #ifdef CONFIG_CRASH_DUMP
 	if (OLDMEM_BASE)
 		/* Forget all memory above the running kdump system */
+		memblock_reserve(OLDMEM_SIZE, (phys_addr_t)ULLONG_MAX);
+#endif
+}
+
+/*
+ * Make sure that oldmem, where the dump is stored, is protected
+ */
+static void remove_oldmem(void)
+{
+#ifdef CONFIG_CRASH_DUMP
+	if (OLDMEM_BASE)
+		/* Forget all memory above the running kdump system */
 		memblock_remove(OLDMEM_SIZE, (phys_addr_t)ULLONG_MAX);
 #endif
 }
+
+
 
 /*
  * Reserve memory for kdump kernel to be loaded with kexec
@@ -843,6 +857,8 @@ void __init setup_arch(char **cmdline_p)
 
 	/* Get information about *all* installed memory */
 	detect_memory_memblock();
+
+	remove_oldmem();
 
 	/*
 	 * Make sure all chunks are MAX_ORDER aligned so we don't need the
