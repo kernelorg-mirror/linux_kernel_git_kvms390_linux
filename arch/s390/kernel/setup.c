@@ -272,6 +272,7 @@ EXPORT_SYMBOL_GPL(pm_power_off);
 static int __init early_parse_mem(char *p)
 {
 	memory_end = memparse(p, &p);
+	memory_end &= PAGE_MASK;
 	memory_end_set = 1;
 	return 0;
 }
@@ -400,9 +401,8 @@ static struct resource __initdata *standard_resources[] = {
 static void __init setup_resources(void)
 {
 	struct resource *res, *std_res, *sub_res;
+	struct memblock_region *reg;
 	int j;
-	phys_addr_t start, end;
-	u64 idx;
 
 	code_resource.start = (unsigned long) &_text;
 	code_resource.end = (unsigned long) &_etext - 1;
@@ -411,13 +411,13 @@ static void __init setup_resources(void)
 	bss_resource.start = (unsigned long) &__bss_start;
 	bss_resource.end = (unsigned long) &__bss_stop - 1;
 
-	for_each_usable_mem_range(idx, NUMA_NO_NODE, &start, &end, NULL) {
+	for_each_memblock(memory, reg) {
 		res = alloc_bootmem_low(sizeof(*res));
 		res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
 
 		res->name = "System RAM";
-		res->start = start;
-		res->end = end - 1;
+		res->start = reg->base;
+		res->end = reg->base + reg->size - 1;
 		request_resource(&iomem_resource, res);
 
 		for (j = 0; j < ARRAY_SIZE(standard_resources); j++) {
@@ -441,16 +441,11 @@ static void __init setup_resources(void)
 static void __init setup_memory_end(void)
 {
 	unsigned long vmax, vmalloc_size, tmp;
-	unsigned long real_memory_size;
 
-	memory_end &= PAGE_MASK;
-
-	real_memory_size = memblock_end_of_DRAM();
-	pr_notice("Real memory size: %#lx\n", real_memory_size);
 	/* Choose kernel address space layout: 2, 3, or 4 levels. */
 #ifdef CONFIG_64BIT
 	vmalloc_size = VMALLOC_END ?: (128UL << 30) - MODULES_LEN;
-	tmp = (memory_end ?: real_memory_size) / PAGE_SIZE;
+	tmp = (memory_end ?: max_physmem_end) / PAGE_SIZE;
 	tmp = tmp * (sizeof(struct page) + PAGE_SIZE) + vmalloc_size;
 	if (tmp <= (1UL << 42))
 		vmax = 1UL << 42;	/* 3-level kernel page table */
@@ -478,9 +473,11 @@ static void __init setup_memory_end(void)
 	vmemmap = (struct page *) tmp;
 
 	/* Take care that memory_end is set and <= vmemmap */
-	memory_end = min(memory_end ?: real_memory_size, tmp);
-
+	memory_end = min(memory_end ?: max_physmem_end, tmp);
 	max_pfn = max_low_pfn = PFN_DOWN(memory_end);
+	memblock_remove(memory_end, ULLONG_MAX);
+
+	pr_notice("Max memory size: %luMB\n", memory_end >> 20);
 }
 
 static void __init setup_vmcoreinfo(void)
@@ -550,6 +547,24 @@ static struct notifier_block kdump_mem_nb = {
 #endif
 
 /*
+ * Make sure that the area behind memory_end is protected
+ */
+static void reserve_memory_end(void)
+{
+#ifdef CONFIG_ZFCPDUMP
+	if (ipl_info.type == IPL_TYPE_FCP_DUMP &&
+	    !OLDMEM_BASE && sclp_get_hsa_size()) {
+		memory_end = sclp_get_hsa_size();
+		memory_end &= PAGE_MASK;
+		memory_end_set = 1;
+	}
+#endif
+	if (!memory_end_set)
+		return;
+	memblock_reserve(memory_end, ULLONG_MAX);
+}
+
+/*
  * Make sure that oldmem, where the dump is stored, is protected
  */
 static void reserve_oldmem(void)
@@ -557,7 +572,7 @@ static void reserve_oldmem(void)
 #ifdef CONFIG_CRASH_DUMP
 	if (OLDMEM_BASE)
 		/* Forget all memory above the running kdump system */
-		memblock_excluded_add(OLDMEM_SIZE, (phys_addr_t)ULLONG_MAX);
+		memblock_remove(OLDMEM_SIZE, (phys_addr_t)ULLONG_MAX);
 #endif
 }
 
@@ -591,10 +606,11 @@ static void __init reserve_crashkernel(void)
 	crashk_res.start = crash_base;
 	crashk_res.end = crash_base + crash_size - 1;
 	insert_resource(&iomem_resource, &crashk_res);
-	memblock_excluded_add(crash_base, crash_size);
+	memblock_remove(crash_base, crash_size);
 	pr_info("Reserving %lluMB of memory at %lluMB "
 		"for crashkernel (System RAM: %luMB)\n",
-		crash_size >> 20, crash_base >> 20, memory_end >> 20);
+		crash_size >> 20, crash_base >> 20,
+		(unsigned long)memblock.memory.total_size >> 20);
 	os_info_crashkernel_add(crash_base, crash_size);
 #endif
 }
@@ -605,16 +621,23 @@ static void __init reserve_crashkernel(void)
 static void __init reserve_initrd(void)
 {
 #ifdef CONFIG_BLK_DEV_INITRD
-	if (INITRD_START && INITRD_SIZE) {
-		if (INITRD_START + INITRD_SIZE <= memory_end) {
-			memblock_reserve(INITRD_START, INITRD_SIZE);
-			initrd_start = INITRD_START;
-			initrd_end = initrd_start + INITRD_SIZE;
-		} else {
-			pr_err("initrd extends beyond end of memory (0x%08lx > 0x%08lx), disabling initrd\n",
-			       initrd_start + INITRD_SIZE, memory_end);
-			initrd_start = initrd_end = 0;
-		}
+	initrd_start = INITRD_START;
+	initrd_end = initrd_start + INITRD_SIZE;
+	memblock_reserve(INITRD_START, INITRD_SIZE);
+#endif
+}
+
+/*
+ * Check for initrd being in usable memory
+ */
+static void __init check_initrd(void)
+{
+#ifdef CONFIG_BLK_DEV_INITRD
+	if (INITRD_START && INITRD_SIZE &&
+	    !memblock_is_region_memory(INITRD_START, INITRD_SIZE)) {
+		pr_err("initrd does not fit memory.\n");
+		memblock_free(INITRD_START, INITRD_SIZE);
+		initrd_start = initrd_end = 0;
 	}
 #endif
 }
@@ -817,24 +840,15 @@ void __init setup_arch(char **cmdline_p)
 	setup_ipl();
 
 	/* Do some memory reservations *before* memory is added to memblock */
+	reserve_memory_end();
 	reserve_oldmem();
 	reserve_kernel();
+	reserve_initrd();
 	reserve_elfcorehdr();
+	memblock_allow_resize();
 
 	/* Get information about *all* installed memory */
 	detect_memory_memblock();
-	memblock_allow_resize();
-
-#ifdef CONFIG_ZFCPDUMP
-	if (ipl_info.type == IPL_TYPE_FCP_DUMP &&
-	    !OLDMEM_BASE && sclp_get_hsa_size()) {
-		memory_end = sclp_get_hsa_size();
-		memory_end_set = 1;
-	}
-#endif
-
-	if (memory_end_set)
-		memblock_excluded_add(memory_end, ULLONG_MAX);
 
 	/*
 	 * Make sure all chunks are MAX_ORDER aligned so we don't need the
@@ -847,13 +861,12 @@ void __init setup_arch(char **cmdline_p)
 	setup_memory_end();
 	setup_memory();
 
-	reserve_initrd();
+	check_initrd();
 	reserve_crashkernel();
 
 	setup_resources();
 	setup_vmcoreinfo();
 	setup_lowcore();
-
 	smp_fill_possible_mask();
         cpu_init();
 	s390_init_cpu_topology();

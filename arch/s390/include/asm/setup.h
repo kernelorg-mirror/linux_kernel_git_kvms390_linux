@@ -33,6 +33,7 @@
 extern int memory_end_set;
 extern unsigned long memory_end;
 extern unsigned long max_physmem_end;
+extern struct memblock_type s390_physmem;
 
 extern void detect_memory_memblock(void);
 

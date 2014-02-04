@@ -373,12 +373,14 @@ out:
 void __init vmem_map_init(void)
 {
 	unsigned long ro_start, ro_end;
+	struct memblock_region *reg;
 	phys_addr_t start, end;
-	u64 idx;
 
 	ro_start = PFN_ALIGN((unsigned long)&_stext);
 	ro_end = (unsigned long)&_eshared & PAGE_MASK;
-	for_each_usable_mem_range(idx, NUMA_NO_NODE, &start, &end, NULL) {
+	for_each_memblock(memory, reg) {
+		start = reg->base;
+		end = reg->base + reg->size - 1;
 		if (start >= ro_end || end <= ro_start)
 			vmem_add_mem(start, end - start, 0);
 		else if (start >= ro_start && end <= ro_end)
@@ -403,17 +405,16 @@ void __init vmem_map_init(void)
  */
 static int __init vmem_convert_memory_chunk(void)
 {
-	phys_addr_t start, end;
+	struct memblock_region *reg;
 	struct memory_segment *seg;
-	u64 idx;
 
 	mutex_lock(&vmem_mutex);
-	for_each_usable_mem_range(idx, NUMA_NO_NODE, &start, &end, NULL) {
+	for_each_memblock(memory, reg) {
 		seg = kzalloc(sizeof(*seg), GFP_KERNEL);
 		if (!seg)
 			panic("Out of memory...\n");
-		seg->start = start;
-		seg->size = end - start;
+		seg->start = reg->base;
+		seg->size = reg->size;
 		insert_memory_segment(seg);
 	}
 	mutex_unlock(&vmem_mutex);

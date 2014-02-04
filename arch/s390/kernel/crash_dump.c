@@ -11,9 +11,9 @@
 #include <linux/module.h>
 #include <linux/gfp.h>
 #include <linux/slab.h>
-#include <linux/memblock.h>
 #include <linux/bootmem.h>
 #include <linux/elf.h>
+#include <linux/memblock.h>
 #include <asm/os_info.h>
 #include <asm/elf.h>
 #include <asm/ipl.h>
@@ -33,11 +33,11 @@ static struct memblock_type oldmem_type = {
 };
 
 #define for_each_dump_mem_range(i, nid, p_start, p_end, p_nid)		\
-	for (i = 0, __next_mem_range(&i, nid, &memblock.memory,		\
+	for (i = 0, __next_mem_range(&i, nid, &s390_physmem,		\
 				     &oldmem_type, p_start,		\
 				     p_end, p_nid);			\
 	     i != (u64)ULLONG_MAX;					\
-	     __next_mem_range(&i, nid, &memblock.memory,		\
+	     __next_mem_range(&i, nid, &s390_physmem,			\
 			      &oldmem_type,				\
 			      p_start, p_end, p_nid))
 
