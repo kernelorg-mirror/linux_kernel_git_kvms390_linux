@@ -488,40 +488,6 @@ static void __init setup_vmcoreinfo(void)
 #ifdef CONFIG_CRASH_DUMP
 
 /*
- * Find suitable location for crashkernel memory
- */
-static unsigned long __init find_crash_base(unsigned long crash_size,
-					    char **msg)
-{
-	unsigned long crash_base;
-	u64 i;
-	phys_addr_t start, end;
-
-	if (memblock.memory.regions[0].size < crash_size) {
-		*msg = "first memory chunk must be at least crashkernel size";
-		return 0;
-	}
-
-	if (OLDMEM_BASE && crash_size == OLDMEM_SIZE)
-		return OLDMEM_BASE;
-
-	for_each_free_mem_range_reverse(i, NUMA_NO_NODE, &start, &end, NULL) {
-		if (end - start < crash_size)
-			continue;
-		crash_base = end - crash_size;
-		if (crash_base < crash_size)
-			continue;
-		if (crash_base < sclp_get_hsa_size())
-			continue;
-		if (crash_base < (unsigned long) INITRD_START + INITRD_SIZE)
-			continue;
-		return crash_base;
-	}
-	*msg = "no suitable area found";
-	return 0;
-}
-
-/*
  * When kdump is enabled, we have to ensure that no memory from
  * the area [0 - crashkernel memory size] and
  * [crashk_res.start - crashk_res.end] is set offline.
@@ -583,24 +549,52 @@ static void __init reserve_crashkernel(void)
 {
 #ifdef CONFIG_CRASH_DUMP
 	unsigned long long crash_base, crash_size;
-	char *msg = NULL;
+	phys_addr_t low, high;
 	int rc;
 
 	rc = parse_crashkernel(boot_command_line, memory_end, &crash_size,
 			       &crash_base);
-	if (rc || crash_size == 0)
-		return;
+
 	crash_base = ALIGN(crash_base, KEXEC_CRASH_MEM_ALIGN);
 	crash_size = ALIGN(crash_size, KEXEC_CRASH_MEM_ALIGN);
-	if (register_memory_notifier(&kdump_mem_nb))
+	if (rc || crash_size == 0)
 		return;
-	if (!crash_base)
-		crash_base = find_crash_base(crash_size, &msg);
-	if (!crash_base) {
-		pr_info("crashkernel reservation failed: %s\n", msg);
-		unregister_memory_notifier(&kdump_mem_nb);
+
+	if (memblock.memory.regions[0].size < crash_size) {
+		pr_info("crashkernel reservation failed: %s\n",
+			"first memory chunk must be at least crashkernel size");
 		return;
 	}
+
+	low = crash_base ?: OLDMEM_BASE;
+	high = low + crash_size;
+	if (low >= OLDMEM_BASE && high <= OLDMEM_BASE + OLDMEM_SIZE) {
+		/* The crashkernel fits into OLDMEM, reuse OLDMEM */
+		crash_base = low;
+	} else {
+		/* Find suitable area in free memory */
+		low = max_t(unsigned long, crash_size, sclp_get_hsa_size());
+		high = crash_base ? crash_base + crash_size : ULLONG_MAX;
+
+		if (crash_base && crash_base < low) {
+			pr_info("crashkernel reservation failed: %s\n",
+				"crash_base too low");
+			return;
+		}
+		low = crash_base ?: low;
+		crash_base = memblock_find_in_range(low, high, crash_size,
+						    KEXEC_CRASH_MEM_ALIGN);
+	}
+
+	if (!crash_base) {
+		pr_info("crashkernel reservation failed: %s\n",
+			"no suitable area found");
+		return;
+	}
+
+	if (register_memory_notifier(&kdump_mem_nb))
+		return;
+
 	if (!OLDMEM_BASE && MACHINE_IS_VM)
 		diag10_range(PFN_DOWN(crash_base), PFN_DOWN(crash_size));
 	crashk_res.start = crash_base;
