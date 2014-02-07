@@ -1660,7 +1660,6 @@ int qeth_qdio_clear_card(struct qeth_card *card, int use_halt)
 				QDIO_FLAG_CLEANUP_USING_CLEAR);
 		if (rc)
 			QETH_CARD_TEXT_(card, 3, "1err%d", rc);
-		qdio_free(CARD_DDEV(card));
 		atomic_set(&card->qdio.state, QETH_QDIO_ALLOCATED);
 		break;
 	case QETH_QDIO_CLEANING:
@@ -2605,6 +2604,7 @@ static int qeth_mpc_initialize(struct qeth_card *card)
 	return 0;
 out_qdio:
 	qeth_qdio_clear_card(card, card->info.type != QETH_CARD_TYPE_IQD);
+	qdio_free(CARD_DDEV(card));
 	return rc;
 }
 
@@ -4919,6 +4919,7 @@ retry:
 	if (rc)
 		goto retriable;
 	rc = qeth_qdio_clear_card(card, card->info.type != QETH_CARD_TYPE_IQD);
+	qdio_free(CARD_DDEV(card));
 retriable:
 	if (rc == -ERESTARTSYS) {
 		QETH_DBF_TEXT(SETUP, 2, "break1");
