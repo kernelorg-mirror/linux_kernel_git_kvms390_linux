@@ -8,6 +8,8 @@
 #include <linux/export.h>
 #include <linux/sched.h>
 
+#include <asm/mmu_context.h>
+
 /*
  * use_mm
  *	Makes the calling kernel thread take on the specified
@@ -29,7 +31,9 @@ void use_mm(struct mm_struct *mm)
 	tsk->mm = mm;
 	switch_mm(active_mm, mm, tsk);
 	task_unlock(tsk);
+#ifdef finish_arch_post_lock_switch
 	finish_arch_post_lock_switch();
+#endif
 
 	if (active_mm != mm)
 		mmdrop(active_mm);
