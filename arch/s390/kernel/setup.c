@@ -554,8 +554,6 @@ static void remove_oldmem(void)
 #endif
 }
 
-
-
 /*
  * Reserve memory for kdump kernel to be loaded with kexec
  */
