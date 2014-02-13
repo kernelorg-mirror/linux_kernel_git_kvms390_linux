@@ -1426,6 +1426,8 @@ static inline void pgtable_page_dtor(struct page *page)
 
 static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
 {
+	unsigned long mask = ~(PTRS_PER_PMD * sizeof(pmd_t) - 1);
+	pmd = (pmd_t *)((unsigned long) pmd & mask);
 	return ptlock_ptr(virt_to_page(pmd));
 }
 
