@@ -70,7 +70,7 @@ static ssize_t dbfs_read(struct file *file, char __user *buf,
 			return rc;
 		}
 		df->data = data;
-		schedule_delayed_work(&df->data_free_work, HZ);
+		schedule_delayed_work(&df->data_free_work, HZ / 10);
 	}
 	data = df->data;
 	kref_get(&data->kref);
