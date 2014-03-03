@@ -170,9 +170,6 @@ static int __init appldata_os_init(void)
 {
 	int rc, max_size;
 
-	if (!MACHINE_IS_VM)
-		return -ENODEV;
-
 	max_size = sizeof(struct appldata_os_data) +
 		   (num_possible_cpus() * sizeof(struct appldata_os_per_cpu));
 	if (max_size > APPLDATA_MAX_REC_SIZE) {
