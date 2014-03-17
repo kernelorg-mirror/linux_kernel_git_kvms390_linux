@@ -857,7 +857,7 @@ static inline int qeth_get_ip_version(struct sk_buff *skb)
 	__be16 *p = &((struct ethhdr *)skb->data)->h_proto;
 
 	if (*p == ETH_P_8021Q)
-	        p += 2;
+		p += 2;
 	switch (*p) {
 	case ETH_P_IPV6:
 		return 6;
