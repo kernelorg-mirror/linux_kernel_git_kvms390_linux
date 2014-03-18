@@ -475,7 +475,7 @@ static void __init setup_memory_end(void)
 	/* Take care that memory_end is set and <= vmemmap */
 	memory_end = min(memory_end ?: max_physmem_end, tmp);
 	max_pfn = max_low_pfn = PFN_DOWN(memory_end);
-	memblock_remove(memory_end, ULLONG_MAX);
+	memblock_remove(memory_end, ULONG_MAX);
 
 	pr_notice("Max memory size: %luMB\n", memory_end >> 20);
 }
@@ -527,7 +527,7 @@ static void reserve_memory_end(void)
 #endif
 	if (!memory_end_set)
 		return;
-	memblock_reserve(memory_end, ULLONG_MAX);
+	memblock_reserve(memory_end, ULONG_MAX);
 }
 
 /*
@@ -538,7 +538,7 @@ static void reserve_oldmem(void)
 #ifdef CONFIG_CRASH_DUMP
 	if (OLDMEM_BASE)
 		/* Forget all memory above the running kdump system */
-		memblock_reserve(OLDMEM_SIZE, (phys_addr_t)ULLONG_MAX);
+		memblock_reserve(OLDMEM_SIZE, (phys_addr_t)ULONG_MAX);
 #endif
 }
 
@@ -550,7 +550,7 @@ static void remove_oldmem(void)
 #ifdef CONFIG_CRASH_DUMP
 	if (OLDMEM_BASE)
 		/* Forget all memory above the running kdump system */
-		memblock_remove(OLDMEM_SIZE, (phys_addr_t)ULLONG_MAX);
+		memblock_remove(OLDMEM_SIZE, (phys_addr_t)ULONG_MAX);
 #endif
 }
 
@@ -586,7 +586,7 @@ static void __init reserve_crashkernel(void)
 	} else {
 		/* Find suitable area in free memory */
 		low = max_t(unsigned long, crash_size, sclp_get_hsa_size());
-		high = crash_base ? crash_base + crash_size : ULLONG_MAX;
+		high = crash_base ? crash_base + crash_size : ULONG_MAX;
 
 		if (crash_base && crash_base < low) {
 			pr_info("crashkernel reservation failed: %s\n",
