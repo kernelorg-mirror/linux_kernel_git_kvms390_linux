@@ -348,10 +348,11 @@ static inline unsigned long memblock_region_reserved_end_pfn(const struct memblo
 	return PFN_UP(reg->base + reg->size);
 }
 
-#define for_each_memblock(type_name, region)				\
-	for (region = memblock.type_name.regions;			\
-	     region < (memblock.type_name.regions + memblock.type_name.cnt); \
+#define for_each_memblock(memblock_type, region)					\
+	for (region = memblock.memblock_type.regions;				\
+	     region < (memblock.memblock_type.regions + memblock.memblock_type.cnt);	\
 	     region++)
+
 
 #ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
 #define __init_memblock __meminit
