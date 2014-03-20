@@ -36,7 +36,9 @@
  * Description:
  * The LCS device driver could not initialize a network adapter.
  * User action:
- * Note the return codes from the error message and contact IBM support.
+ * Ensure that the physical connection from the port to the network is
+ * in place. If the error persists, note the return code from the error
+ * message and contact IBM support.
  */
 
 /*?
