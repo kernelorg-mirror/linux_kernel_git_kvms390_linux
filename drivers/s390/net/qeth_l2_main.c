@@ -231,8 +231,6 @@ static void qeth_l2_del_all_mc(struct qeth_card *card, int del)
 static inline int qeth_l2_get_cast_type(struct qeth_card *card,
 			struct sk_buff *skb)
 {
-	if (card->info.type == QETH_CARD_TYPE_OSN)
-		return RTN_UNSPEC;
 	if (is_broadcast_ether_addr(skb->data))
 		return RTN_BROADCAST;
 	if (is_multicast_ether_addr(skb->data))
