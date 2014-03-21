@@ -108,7 +108,7 @@ void crst_table_downgrade(struct mm_struct *mm, unsigned long limit)
 	pgd_t *pgd;
 
 	if (current->active_mm == mm) {
-		clear_user_asce(mm);
+		clear_user_asce(mm, 1);
 		__tlb_flush_mm(mm);
 	}
 	while (mm->context.asce_limit > limit) {
