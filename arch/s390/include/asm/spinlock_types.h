@@ -16,7 +16,7 @@ typedef struct arch_spinlock {
 			u8 head;
 		} tickets;
 	};
-} __packed __aligned(4) arch_spinlock_t;
+} arch_spinlock_t;
 
 #define TL_TAIL_INC (1 << 24)
 

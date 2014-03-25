@@ -1,7 +1,8 @@
 /*
  *  S390 version
- *    Copyright IBM Corp. 1999
+ *    Copyright IBM Corp. 1999, 2014
  *    Author(s): Martin Schwidefsky (schwidefsky@de.ibm.com)
+ *               Philipp Hachtmann (phacht@linux.vnet.ibm.com)
  *
  *  Derived from "include/asm-i386/spinlock.h"
  */
@@ -36,22 +37,15 @@ _raw_compare_and_swap(volatile unsigned int *lock,
 
 #ifdef CONFIG_S390_TICKET_SPINLOCK
 
-void arch_spin_lock_wait(arch_spinlock_t *);
-void arch_spin_lock_wait_flags(arch_spinlock_t *lp,
-				      unsigned long flags);
+void arch_spin_lock_wait(arch_spinlock_t *lp);
+void arch_spin_lock_wait_flags(arch_spinlock_t *lp, unsigned long flags);
 int arch_spin_trylock_retry(arch_spinlock_t *);
 void arch_spin_relax(arch_spinlock_t *lock);
 void arch_spin_unlock_slow(arch_spinlock_t *lp);
 
-#define arch_spin_unlock_wait(lock)				\
-	do { while (arch_spin_is_locked(lock))			\
-			arch_spin_relax(lock); } while (0)
 #else
 
 #define arch_spin_is_locked(x) ((x)->owner_cpu != 0)
-#define arch_spin_unlock_wait(lock) \
-	do { while (arch_spin_is_locked(lock)) \
-		 arch_spin_relax(lock); } while (0)
 
 extern void arch_spin_lock_wait(arch_spinlock_t *);
 extern void arch_spin_lock_wait_flags(arch_spinlock_t *, unsigned long flags);
@@ -80,7 +74,7 @@ static inline int arch_spinlock_try_once(arch_spinlock_t *lp)
 	new.tickets.head = 0;
 	new.tickets.tail = 0;
 
-	return ACCESS_ONCE(lp->lock) == 0 &&
+	return lp->lock == 0 &&
 		_raw_compare_and_swap(&lp->lock, 0, new.lock) == 0;
 }
 
@@ -160,6 +154,12 @@ static inline void arch_spin_unlock(arch_spinlock_t *lp)
 }
 
 #endif /* CONFIG_S390_TICKET_SPINLOCK */
+
+static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
+{
+	while (arch_spin_is_locked(lock))
+		arch_spin_relax(lock);
+}
 
 /*
  * Read-write spinlocks, allowing multiple readers
