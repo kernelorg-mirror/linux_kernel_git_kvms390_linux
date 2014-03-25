@@ -3,7 +3,7 @@
  *
  *    Copyright IBM Corp. 2004, 2014
  *    Author(s): Martin Schwidefsky (schwidefsky@de.ibm.com)
- *               Philipp Hachtmann (phacht@linux.vnet.ibm.com)
+ *		 Philipp Hachtmann (phacht@linux.vnet.ibm.com)
  */
 
 #include <linux/types.h>

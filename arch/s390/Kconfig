@@ -336,7 +336,7 @@ config S390_TICKET_SPINLOCK
 	  This enables support for ticket spinlocks. Ticket spinlocks
 	  are more fair by means that waiting CPUs will get the lock
 	  in the order they tried to obtain it.
-          The tradeoff is more complex code that could impact performance.
+	  The tradeoff is more complex code that could impact performance.
 
 config SMP
 	def_bool y
