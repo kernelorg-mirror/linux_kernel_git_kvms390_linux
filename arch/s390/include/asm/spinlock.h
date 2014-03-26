@@ -2,7 +2,7 @@
  *  S390 version
  *    Copyright IBM Corp. 1999, 2014
  *    Author(s): Martin Schwidefsky (schwidefsky@de.ibm.com)
- *               Philipp Hachtmann (phacht@linux.vnet.ibm.com)
+ *		 Philipp Hachtmann (phacht@linux.vnet.ibm.com)
  *
  *  Derived from "include/asm-i386/spinlock.h"
  */
