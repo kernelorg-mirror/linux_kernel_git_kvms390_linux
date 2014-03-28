@@ -27,7 +27,7 @@ __setup("spin_retry=", spin_retry_setup);
 
 #ifdef CONFIG_S390_TICKET_SPINLOCK
 
-static void __arch_spin_lock_wait(arch_spinlock_t *lp, unsigned long *flags)
+void arch_spin_lock_wait(arch_spinlock_t *lp)
 {
 	arch_spinlock_t cur, new;
 	int cpu, owner, count;
@@ -35,8 +35,6 @@ static void __arch_spin_lock_wait(arch_spinlock_t *lp, unsigned long *flags)
 
 	cpu = smp_processor_id();
 	count = spin_retry;
-	if (flags)
-		local_irq_restore(*flags);
 	while (1) {
 		new.lock = cur.lock = ACCESS_ONCE(lp->lock);
 		if (new.lock == 0) {
@@ -51,8 +49,6 @@ static void __arch_spin_lock_wait(arch_spinlock_t *lp, unsigned long *flags)
 		} else if (new.tickets.head == ticket)
 			new.tickets.owner = (u16) ~cpu;
 		/* Do the atomic update. */
-		if (!ticket && flags)
-			local_irq_disable();
 		if (cur.lock != new.lock &&
 		    cur.lock == _raw_compare_and_swap(&lp->lock,
 						      cur.lock, new.lock)) {
@@ -62,8 +58,6 @@ static void __arch_spin_lock_wait(arch_spinlock_t *lp, unsigned long *flags)
 			ticket = new.tickets.tail; /* Got a ticket. */
 			count = 0;
 		}
-		if (!ticket && flags)
-			local_irq_restore(*flags);
 		/* Lock could not be acquired yet. */
 		if (count--)
 			continue;
@@ -83,18 +77,7 @@ static void __arch_spin_lock_wait(arch_spinlock_t *lp, unsigned long *flags)
 			smp_yield();
 	}
 }
-
-void arch_spin_lock_wait(arch_spinlock_t *lp)
-{
-	__arch_spin_lock_wait(lp, NULL);
-}
 EXPORT_SYMBOL(arch_spin_lock_wait);
-
-void arch_spin_lock_wait_flags(arch_spinlock_t *lp, unsigned long flags)
-{
-	__arch_spin_lock_wait(lp, &flags);
-}
-EXPORT_SYMBOL(arch_spin_lock_wait_flags);
 
 int arch_spin_trylock_retry(arch_spinlock_t *lp)
 {

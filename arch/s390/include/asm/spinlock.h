@@ -38,23 +38,9 @@ _raw_compare_and_swap(volatile unsigned int *lock,
 #ifdef CONFIG_S390_TICKET_SPINLOCK
 
 void arch_spin_lock_wait(arch_spinlock_t *lp);
-void arch_spin_lock_wait_flags(arch_spinlock_t *lp, unsigned long flags);
 int arch_spin_trylock_retry(arch_spinlock_t *);
 void arch_spin_relax(arch_spinlock_t *lock);
 void arch_spin_unlock_slow(arch_spinlock_t *lp);
-
-#else
-
-#define arch_spin_is_locked(x) ((x)->owner_cpu != 0)
-
-extern void arch_spin_lock_wait(arch_spinlock_t *);
-extern void arch_spin_lock_wait_flags(arch_spinlock_t *, unsigned long flags);
-extern int arch_spin_trylock_retry(arch_spinlock_t *);
-extern void arch_spin_relax(arch_spinlock_t *lock);
-
-#endif
-
-#ifdef CONFIG_S390_TICKET_SPINLOCK
 
 static inline int arch_spin_value_unlocked(arch_spinlock_t lock)
 {
@@ -85,10 +71,9 @@ static inline void arch_spin_lock(arch_spinlock_t *lp)
 }
 
 static inline void arch_spin_lock_flags(arch_spinlock_t *lp,
-					 unsigned long flags)
+					unsigned long flags)
 {
-	if (!arch_spinlock_try_once(lp))
-		arch_spin_lock_wait_flags(lp, flags);
+	arch_spin_lock(lp);
 }
 
 static inline int arch_spin_trylock(arch_spinlock_t *lp)
@@ -111,6 +96,13 @@ static inline void arch_spin_unlock(arch_spinlock_t *lp)
 }
 
 #else /* CONFIG_S390_TICKET_SPINLOCK */
+
+#define arch_spin_is_locked(x) ((x)->owner_cpu != 0)
+
+extern void arch_spin_lock_wait(arch_spinlock_t *);
+extern void arch_spin_lock_wait_flags(arch_spinlock_t *, unsigned long flags);
+extern int arch_spin_trylock_retry(arch_spinlock_t *);
+extern void arch_spin_relax(arch_spinlock_t *lock);
 
 static inline int arch_spin_value_unlocked(arch_spinlock_t lock)
 {
