@@ -29,7 +29,7 @@ __setup("spin_retry=", spin_retry_setup);
 
 static void __arch_spin_lock_wait(arch_spinlock_t *lp, unsigned long *flags)
 {
-	arch_spinlock_t cur, old, new;
+	arch_spinlock_t cur, new;
 	int cpu, owner, count;
 	u8 ticket = 0;
 
@@ -44,30 +44,25 @@ static void __arch_spin_lock_wait(arch_spinlock_t *lp, unsigned long *flags)
 			new.tickets.owner = (u16) ~cpu;
 		} else if (!ticket) {
 			/* Try to get a tickets. */
-			new.tickets.tail = new.tickets.tail + 1 ? : 1;
+			new.tickets.tail = (u8)(new.tickets.tail + 1) ? : 1;
 			if (new.tickets.tail == new.tickets.head)
 				/* Overflow, can't get a ticket. */
 				new.tickets.tail = cur.tickets.tail;
 		} else if (new.tickets.head == ticket)
 			new.tickets.owner = (u16) ~cpu;
 		/* Do the atomic update. */
-		if (flags)
+		if (!ticket && flags)
 			local_irq_disable();
-		old.lock = cur.lock;
-		if (old.lock != new.lock) {
-			cur.lock = _raw_compare_and_swap(&lp->lock,
-							 old.lock, new.lock);
-		}
-		if (cur.lock == old.lock) {	/* Update successful. */
-			if (old.tickets.owner == 0 &&
-			    new.tickets.owner == (u16) ~cpu)
+		if (cur.lock != new.lock &&
+		    cur.lock == _raw_compare_and_swap(&lp->lock,
+						      cur.lock, new.lock)) {
+			/* Update successful. */
+			if (new.tickets.owner == (u16) ~cpu)
 				return;		/* Got the lock. */
-			if (old.tickets.tail != new.tickets.tail) {
-				ticket = new.tickets.tail; /* Got a ticket. */
-				count = 0;
-			}
+			ticket = new.tickets.tail; /* Got a ticket. */
+			count = 0;
 		}
-		if (flags)
+		if (!ticket && flags)
 			local_irq_restore(*flags);
 		/* Lock could not be acquired yet. */
 		if (count--)
@@ -122,7 +117,7 @@ void arch_spin_unlock_slow(arch_spinlock_t *lp)
 		new.lock = 0;
 		if (cur.tickets.head != cur.tickets.tail) {
 			new.tickets.tail = cur.tickets.tail;
-			new.tickets.head = cur.tickets.head + 1 ? : 1;
+			new.tickets.head = (u8)(cur.tickets.head + 1) ? : 1;
 			new.tickets.owner = 0;
 		}
 	} while (cur.lock != _raw_compare_and_swap(&lp->lock,
