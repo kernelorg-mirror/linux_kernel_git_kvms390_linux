@@ -5655,7 +5655,7 @@ EXPORT_SYMBOL_GPL(qeth_core_get_drvinfo);
 /* Helper function to fill 'advertizing' and 'supported' which are the same. */
 /* Autoneg and full-duplex are supported and advertized uncondionally.	     */
 /* Always advertize and support all speeds up to specified, and only one     */
-/* specified port type. 						     */
+/* specified port type.							     */
 static void qeth_set_ecmd_adv_sup(struct ethtool_cmd *ecmd,
 				int maxspeed, int porttype)
 {

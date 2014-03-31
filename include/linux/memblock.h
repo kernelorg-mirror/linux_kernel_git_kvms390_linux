@@ -51,7 +51,6 @@ struct memblock {
 
 extern struct memblock memblock;
 extern int memblock_debug;
-
 #ifdef CONFIG_MOVABLE_NODE
 /* If movable_node boot option specified */
 extern bool movable_node_enabled;
@@ -154,18 +153,6 @@ static inline bool movable_node_is_enabled(void)
 }
 #endif
 
-static inline void memblock_set_region_flags(struct memblock_region *r,
-					     unsigned long flags)
-{
-	r->flags |= flags;
-}
-
-static inline void memblock_clear_region_flags(struct memblock_region *r,
-					       unsigned long flags)
-{
-	r->flags &= ~flags;
-}
-
 #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
 int memblock_search_pfn_nid(unsigned long pfn, unsigned long *start_pfn,
 			    unsigned long  *end_pfn);
@@ -216,6 +203,18 @@ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
 #define for_each_free_mem_range_reverse(i, nid, p_start, p_end, p_nid)	\
 	for_each_mem_range_rev(i, &memblock.memory, &memblock.reserved,	\
 			       nid, p_start, p_end, p_nid)
+
+static inline void memblock_set_region_flags(struct memblock_region *r,
+					     unsigned long flags)
+{
+	r->flags |= flags;
+}
+
+static inline void memblock_clear_region_flags(struct memblock_region *r,
+					       unsigned long flags)
+{
+	r->flags &= ~flags;
+}
 
 #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
 int memblock_set_node(phys_addr_t base, phys_addr_t size,
