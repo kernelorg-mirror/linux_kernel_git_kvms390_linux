@@ -91,8 +91,8 @@ struct ext_code {
 
 typedef void (*ext_int_handler_t)(struct ext_code, unsigned int, unsigned long);
 
-int register_external_interrupt(u16 code, ext_int_handler_t handler);
-int unregister_external_interrupt(u16 code, ext_int_handler_t handler);
+int register_external_irq(u16 code, ext_int_handler_t handler);
+int unregister_external_irq(u16 code, ext_int_handler_t handler);
 
 enum irq_subclass {
 	IRQ_SUBCLASS_MEASUREMENT_ALERT = 5,

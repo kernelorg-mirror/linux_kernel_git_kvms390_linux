@@ -219,7 +219,7 @@ int diag_ftp_startup(void)
 {
 	int rc;
 
-	rc = register_external_interrupt(0x2603, diag_ftp_handler);
+	rc = register_external_irq(EXT_IRQ_CP_SERVICE, diag_ftp_handler);
 	if (rc)
 		return rc;
 
@@ -233,5 +233,5 @@ int diag_ftp_startup(void)
 void diag_ftp_shutdown(void)
 {
 	ctl_clear_bit(0, 63 - 22);
-	unregister_external_interrupt(0x2603, diag_ftp_handler);
+	unregister_external_irq(EXT_IRQ_CP_SERVICE, diag_ftp_handler);
 }
