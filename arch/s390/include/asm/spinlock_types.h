@@ -9,7 +9,7 @@
 
 typedef struct arch_spinlock {
 	union {
-		u32 lock;
+		unsigned int lock;
 		struct __raw_tickets {
 			u16 owner;
 			u8 tail;
@@ -25,7 +25,7 @@ typedef struct arch_spinlock {
 #else /* CONFIG_S390_TICKET_SPINLOCK */
 
 typedef struct {
-	volatile unsigned int owner_cpu;
+	volatile u32 lock;
 } __attribute__ ((aligned (4))) arch_spinlock_t;
 
 #define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
@@ -33,7 +33,7 @@ typedef struct {
 #endif /* CONFIG_S390_TICKET_SPINLOCK */
 
 typedef struct {
-	volatile unsigned int lock;
+	unsigned int lock;
 } arch_rwlock_t;
 
 #define __ARCH_RW_LOCK_UNLOCKED		{ 0 }
