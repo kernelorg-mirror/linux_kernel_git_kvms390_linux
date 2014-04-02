@@ -30,11 +30,13 @@ static inline int init_new_context(struct task_struct *tsk,
 
 #define destroy_context(mm)             do { } while (0)
 
-static inline void update_user_asce(struct mm_struct *mm)
+static inline void update_user_asce(struct mm_struct *mm, int load_primary)
 {
 	pgd_t *pgd = mm->pgd;
 
 	S390_lowcore.user_asce = mm->context.asce_bits | __pa(pgd);
+	if (load_primary)
+		__ctl_load(S390_lowcore.user_asce, 1, 1);
 	set_fs(current->thread.mm_segment);
 }
 
@@ -74,7 +76,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		clear_user_asce(next, 0);
 	} else {
 		cpumask_set_cpu(cpu, mm_cpumask(next));
-		update_user_asce(next);
+		update_user_asce(next, 0);
 		if (next->context.flush_mm)
 			/* Flush pending TLBs */
 			__tlb_flush_mm(next);
@@ -99,7 +101,7 @@ static inline void finish_arch_post_lock_switch(void)
 		cpu_relax();
 
 	cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
-	update_user_asce(mm);
+	update_user_asce(mm, 0);
 	if (mm->context.flush_mm)
 		__tlb_flush_mm(mm);
 	preempt_enable();
