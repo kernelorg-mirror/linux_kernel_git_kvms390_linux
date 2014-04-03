@@ -101,7 +101,10 @@ static inline void __tlb_flush_asce(struct mm_struct *mm, unsigned long asce)
 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
 		__tlb_flush_idte_local(asce);
 	} else {
-		__tlb_flush_idte(asce);
+		if (MACHINE_HAS_IDTE)
+			__tlb_flush_idte(asce);
+		else
+			__tlb_flush_global();
 		/* Reset TLB flush mask */
 		if (MACHINE_HAS_TLB_LC)
 			cpumask_copy(mm_cpumask(mm),
@@ -109,6 +112,15 @@ static inline void __tlb_flush_asce(struct mm_struct *mm, unsigned long asce)
 	}
 	atomic_sub(0x10000, &mm->context.attach_count);
 	preempt_enable();
+}
+
+static inline void __tlb_flush_kernel(void)
+{
+	if (MACHINE_HAS_IDTE)
+		__tlb_flush_idte((unsigned long) init_mm.pgd |
+				 init_mm.context.asce_bits);
+	else
+		__tlb_flush_global();
 }
 #else
 #define __tlb_flush_global()	__tlb_flush_local()
@@ -121,6 +133,15 @@ static inline void __tlb_flush_asce(struct mm_struct *mm, unsigned long asce)
 {
 	if (MACHINE_HAS_TLB_LC)
 		__tlb_flush_idte_local(asce);
+	else
+		__tlb_flush_local();
+}
+
+static inline void __tlb_flush_kernel(void)
+{
+	if (MACHINE_HAS_TLB_LC)
+		__tlb_flush_idte_local((unsigned long) init_mm.pgd |
+				       init_mm.context.asce_bits);
 	else
 		__tlb_flush_local();
 }
@@ -184,8 +205,7 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
 static inline void flush_tlb_kernel_range(unsigned long start,
 					  unsigned long end)
 {
-	__tlb_flush_idte((unsigned long) init_mm.pgd |
-			 init_mm.context.asce_bits);
+	__tlb_flush_kernel();
 }
 
 #endif /* _S390_TLBFLUSH_H */
