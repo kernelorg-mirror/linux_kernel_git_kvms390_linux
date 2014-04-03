@@ -14,7 +14,7 @@
 #include <asm/sclp.h>
 #include <asm/setup.h>
 
-#define ADDR2G (1UL << 31)
+#define ADDR2G (1ULL << 31)
 
 #define CHUNK_READ_WRITE 0
 #define CHUNK_READ_ONLY  1
@@ -27,20 +27,21 @@ static inline void memblock_physmem_add(phys_addr_t start, phys_addr_t size)
 
 void __init detect_memory_memblock(void)
 {
-	unsigned long long rnmax, rzm;
+	unsigned long long memsize, rnmax, rzm;
 	unsigned long addr, size;
 	int type;
 
 	rzm = sclp_get_rzm();
 	rnmax = sclp_get_rnmax();
-	max_physmem_end = rzm * rnmax;
+	memsize = rzm * rnmax;
 	if (!rzm)
 		rzm = 1ULL << 17;
 	if (IS_ENABLED(CONFIG_32BIT)) {
-		rzm = min_t(unsigned long, ADDR2G, rzm);
-		if (!max_physmem_end || max_physmem_end > ADDR2G)
-			max_physmem_end = min(ADDR2G, max_physmem_end);
+		rzm = min(ADDR2G, rzm);
+		if (!memsize || memsize > ADDR2G)
+			memsize = min(ADDR2G, memsize);
 	}
+	max_physmem_end = memsize;
 	addr = 0;
 	/* keep memblock lists close to the kernel */
 	memblock_set_bottom_up(true);
