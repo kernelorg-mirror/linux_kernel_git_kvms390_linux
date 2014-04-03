@@ -38,8 +38,7 @@ void __init detect_memory_memblock(void)
 		rzm = 1ULL << 17;
 	if (IS_ENABLED(CONFIG_32BIT)) {
 		rzm = min(ADDR2G, rzm);
-		if (!memsize || memsize > ADDR2G)
-			memsize = min(ADDR2G, memsize);
+		memsize = min(ADDR2G, memsize);
 	}
 	max_physmem_end = memsize;
 	addr = 0;
