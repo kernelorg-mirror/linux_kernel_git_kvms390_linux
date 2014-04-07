@@ -41,7 +41,7 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 			/* The lock is free with no waiter, try to get it. */
 			new.tickets.owner = (u16) ~cpu;
 		} else if (!ticket) {
-			/* Try to get a tickets. */
+			/* Try to get a ticket. */
 			new.tickets.tail = (u8)(new.tickets.tail + 1) ? : 1;
 			if (new.tickets.tail == new.tickets.head)
 				/* Overflow, can't get a ticket. */
@@ -106,9 +106,9 @@ void arch_spin_unlock_slow(arch_spinlock_t *lp)
 }
 EXPORT_SYMBOL(arch_spin_unlock_slow);
 
-void arch_spin_relax(arch_spinlock_t *lock)
+void arch_spin_relax(arch_spinlock_t *lp)
 {
-	unsigned int cpu = lock->tickets.owner;
+	unsigned int cpu = lp->tickets.owner;
 
 	if (cpu != 0) {
 		if (MACHINE_IS_VM || MACHINE_IS_KVM ||
@@ -194,9 +194,9 @@ int arch_spin_trylock_retry(arch_spinlock_t *lp)
 }
 EXPORT_SYMBOL(arch_spin_trylock_retry);
 
-void arch_spin_relax(arch_spinlock_t *lock)
+void arch_spin_relax(arch_spinlock_t *lp)
 {
-	unsigned int cpu = lock->lock;
+	unsigned int cpu = lp->lock;
 	if (cpu != 0) {
 		if (MACHINE_IS_VM || MACHINE_IS_KVM ||
 		    !smp_vcpu_scheduled(~cpu))

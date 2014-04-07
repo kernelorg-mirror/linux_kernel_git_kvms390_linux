@@ -18,19 +18,15 @@ typedef struct arch_spinlock {
 	};
 } arch_spinlock_t;
 
-#define TL_TAIL_INC (1 << 24)
-
-#define __ARCH_SPIN_LOCK_UNLOCKED { .lock = 0, }
-
 #else /* CONFIG_S390_TICKET_SPINLOCK */
 
 typedef struct {
-	volatile u32 lock;
+	unsigned int lock;
 } __attribute__ ((aligned (4))) arch_spinlock_t;
 
-#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
-
 #endif /* CONFIG_S390_TICKET_SPINLOCK */
+
+#define __ARCH_SPIN_LOCK_UNLOCKED { .lock = 0, }
 
 typedef struct {
 	unsigned int lock;
