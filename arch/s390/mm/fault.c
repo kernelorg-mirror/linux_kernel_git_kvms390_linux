@@ -215,17 +215,40 @@ bad:
 
 static void dump_fault_info(struct pt_regs *regs)
 {
-	unsigned long asce, cr7, cr13;
+	unsigned long asce;
 
-	asce = 0;
-	__ctl_store(cr7, 7, 7);
-	__ctl_store(cr13, 13, 13);
-	pr_alert("CR7:%016lx CR13:%016lx\n", cr7, cr13);
-	if (current->mm) {
-		asce = __pa(current->mm->pgd);
-		asce |= current->mm->context.asce_bits;
+	pr_alert("Fault in ");
+	switch (regs->int_parm_long & 3) {
+	case 3:
+		pr_cont("home space ");
+		break;
+	case 2:
+		pr_cont("secondary space ");
+		break;
+	case 1:
+		pr_cont("access register ");
+		break;
+	case 0:
+		pr_cont("primary space ");
+		break;
 	}
-	asce = user_space_fault(regs) ? asce : cr13;
+	pr_cont("mode while using ");
+	if (!user_space_fault(regs)) {
+		asce = S390_lowcore.kernel_asce;
+		pr_cont("kernel ");
+	}
+#ifdef CONFIG_PGSTE
+	else if ((current->flags & PF_VCPU) && S390_lowcore.gmap) {
+		struct gmap *gmap = (struct gmap *)S390_lowcore.gmap;
+		asce = gmap->asce;
+		pr_cont("gmap ");
+	}
+#endif
+	else {
+		asce = S390_lowcore.user_asce;
+		pr_cont("user ");
+	}
+	pr_cont("ASCE.\n");
 	dump_pagetable(asce, regs->int_parm_long & __FAIL_ADDR_MASK);
 }
 
