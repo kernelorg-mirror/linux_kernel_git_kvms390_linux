@@ -78,18 +78,6 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 }
 EXPORT_SYMBOL(arch_spin_lock_wait);
 
-int arch_spin_trylock_retry(arch_spinlock_t *lp)
-{
-	int count;
-
-	for (count = spin_retry; count > 0; count--) {
-		if (arch_spin_trylock_once(lp))
-			return 1;
-	}
-	return 0;
-}
-EXPORT_SYMBOL(arch_spin_trylock_retry);
-
 void arch_spin_unlock_slow(arch_spinlock_t *lp)
 {
 	arch_spinlock_t cur, new;
@@ -179,21 +167,6 @@ void arch_spin_lock_wait_flags(arch_spinlock_t *lp, unsigned long flags)
 }
 EXPORT_SYMBOL(arch_spin_lock_wait_flags);
 
-int arch_spin_trylock_retry(arch_spinlock_t *lp)
-{
-	unsigned int cpu = SPINLOCK_LOCKVAL;
-	int count;
-
-	for (count = spin_retry; count > 0; count--) {
-		if (arch_spin_is_locked(lp))
-			continue;
-		if (_raw_compare_and_swap(&lp->lock, 0, cpu))
-			return 1;
-	}
-	return 0;
-}
-EXPORT_SYMBOL(arch_spin_trylock_retry);
-
 void arch_spin_relax(arch_spinlock_t *lp)
 {
 	unsigned int cpu = lp->lock;
@@ -206,6 +179,20 @@ void arch_spin_relax(arch_spinlock_t *lp)
 EXPORT_SYMBOL(arch_spin_relax);
 
 #endif /* CONFIG_S390_TICKET_SPINLOCK */
+
+int arch_spin_trylock_retry(arch_spinlock_t *lp)
+{
+	int count;
+
+	for (count = spin_retry; count > 0; count--) {
+		if (arch_spin_is_locked(lp))
+			continue;
+		if (arch_spin_trylock_once(lp))
+			return 1;
+	}
+	return 0;
+}
+EXPORT_SYMBOL(arch_spin_trylock_retry);
 
 void _raw_read_lock_wait(arch_rwlock_t *rw)
 {
