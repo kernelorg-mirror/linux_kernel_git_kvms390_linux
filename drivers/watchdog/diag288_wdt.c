@@ -69,7 +69,7 @@ module_param_named(nowayout, nowayout_info, bool, 0444);
 MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default = CONFIG_WATCHDOG_NOWAYOUT)");
 
 MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-
+MODULE_ALIAS("vmwatchdog");
 
 static int __diag288(unsigned int func, unsigned int timeout,
 		     unsigned long action, unsigned int len)
