@@ -1,6 +1,6 @@
 /*?
  * Text: "The watchdog was deactivated\n"
- * Severity: Error
+ * Severity: Informational
  * Description:
  * Diagnose instruction 0x288 was called to activate the diag288 watchdog.
  * The diagnose call returned an error that cannot be handled by the device driver.
@@ -22,6 +22,8 @@
 
 /*?
  * Text: "The watchdog cannot be initialized\n"
+ * Severity: Error
+ * Description:
  * Diagnose instruction 0x288 was called to initialize the diag288 watchdog.
  * The diagnose call returned an error that cannot be handled by the device driver.
  * The watchdog stays inactive.
@@ -40,6 +42,7 @@
  * If the watchdog times out, the watchdog device driver will trigger the configured timeout action.
  * User action:
  * None.
+ */
 
 /*?
  * Text: "Linux runs in an environment that does not support the diag288 watchdog\n"
