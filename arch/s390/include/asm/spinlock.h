@@ -33,8 +33,6 @@ _raw_compare_and_swap(unsigned int *lock, unsigned int old, unsigned int new)
  * Simple spin lock operations.  There are two variants, one clears IRQ's
  * on the local processor, one does not.
  *
- * We make no fairness assumptions. They have a cost.
- *
  * (the type definitions are in asm/spinlock_types.h)
  */
 
@@ -62,12 +60,6 @@ static inline void arch_spin_lock_wait_flags(arch_spinlock_t *lp,
 	arch_spin_lock_wait(lp);
 }
 
-static inline void arch_spin_unlock(arch_spinlock_t *lp)
-{
-	if (!_raw_compare_and_swap(&lp->lock, SPINLOCK_LOCKVAL, 0))
-		arch_spin_unlock_slow(lp);
-}
-
 #else /* CONFIG_S390_TICKET_SPINLOCK */
 
 void arch_spin_lock_wait_flags(arch_spinlock_t *, unsigned long flags);
@@ -77,9 +69,8 @@ static inline u32 arch_spin_lockval(int cpu)
 	return ~cpu;
 }
 
-static inline void arch_spin_unlock(arch_spinlock_t *lp)
+static inline void arch_spin_unlock_slow(arch_spinlock_t *lp)
 {
-	_raw_compare_and_swap(&lp->lock, lp->lock, 0);
 }
 
 #endif /* CONFIG_S390_TICKET_SPINLOCK */
@@ -97,10 +88,11 @@ static inline int arch_spin_is_locked(arch_spinlock_t *lp)
 static inline int arch_spin_trylock_once(arch_spinlock_t *lp)
 {
 	return _raw_compare_and_swap(&lp->lock, 0, SPINLOCK_LOCKVAL);
+}
 
-	/* Alternative solution
-	 * return lp->lock == 0 %% __raw_...();
-	 */
+static inline int arch_spin_tryrelease_once(arch_spinlock_t *lp)
+{
+	return _raw_compare_and_swap(&lp->lock, SPINLOCK_LOCKVAL, 0);
 }
 
 static inline void arch_spin_lock(arch_spinlock_t *lp)
@@ -121,6 +113,12 @@ static inline int arch_spin_trylock(arch_spinlock_t *lp)
 	if (unlikely(!arch_spin_trylock_once(lp)))
 		return arch_spin_trylock_retry(lp);
 	return 1;
+}
+
+static inline void arch_spin_unlock(arch_spinlock_t *lp)
+{
+	if (unlikely(!arch_spin_tryrelease_once(lp)))
+		arch_spin_unlock_slow(lp);
 }
 
 static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
