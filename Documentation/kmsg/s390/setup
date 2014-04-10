@@ -1,13 +1,9 @@
 /*?
- * Text: "initrd extends beyond end of memory (0x%08lx > 0x%08lx) disabling initrd\n"
+ * Text: "The initial RAM disk does not fit into the memory\n"
  * Severity: Error
- * Parameter:
- *   @1: start address of the initial RAM disk
- *   @2: memory end address
  * Description:
- * The load address and the size of the initial RAM disk result in an end
- * address of the initial RAM disk that is beyond the end of the system
- * memory.
+ * The load address and the size of the initial RAM disk specify a memory
+ * area that is not available.
  * User action:
  * Lower the load address of the initial RAM disk, reduce the size of the
  * initial RAM disk, or increase the size of the system memory to make the
@@ -15,16 +11,15 @@
  */
 
 /*?
- * Text: "Moving initrd (0x%08lx -> 0x%08lx, size: %ld)\n"
- * Severity: Informational
+ * Text: "The maximum memory size is %luMB\n"
+ * Severity: Notice
  * Parameter:
- *   @1: old start address of the initial RAM disk
- *   @2: new start address of the initial RAM disk
- *   @3: size of the initial RAM disk
+ *   @1: size in MB
  * Description:
- * The location of the initial RAM disk conflicted with the boot memory bitmap.
- * To resolve the conflict the initial RAM disk has been moved to a new
- * location.
+ * The system memory size cannot exceed the amount of memory that is
+ * provided by the real or virtual hardware. It can be further reduced
+ * through an upper memory address limit that is specified with the
+ * mem= kernel parameter.
  * User action:
  * None.
  */
