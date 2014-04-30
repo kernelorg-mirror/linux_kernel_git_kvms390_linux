@@ -215,7 +215,6 @@ static struct watchdog_device wdt_dev = {
 	.timeout = WDT_DEFAULT_TIMEOUT,
 	.min_timeout = MIN_INTERVAL,
 	.max_timeout = MAX_INTERVAL,
-	.status = WATCHDOG_NOWAYOUT_INIT_STATUS,
 };
 
 /*
@@ -271,8 +270,7 @@ static int __init diag288_init(void)
 		194, 197, 199, 201, 213
 	};
 
-	if (nowayout_info)
-		wdt_dev.status = (1 << WDOG_NO_WAY_OUT);
+	watchdog_set_nowayout(&wdt_dev, nowayout_info);
 
 	if (MACHINE_IS_VM) {
 		pr_info("The watchdog device driver detected a z/VM environment\n");
