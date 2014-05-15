@@ -87,6 +87,7 @@ static inline int arch_spin_is_locked(arch_spinlock_t *lp)
 
 static inline int arch_spin_trylock_once(arch_spinlock_t *lp)
 {
+	barrier();
 	return arch_spin_value_unlocked(*lp) &&
 		_raw_compare_and_swap(&lp->lock, 0, SPINLOCK_LOCKVAL);
 }
