@@ -186,12 +186,9 @@ int arch_spin_trylock_retry(arch_spinlock_t *lp)
 {
 	int count;
 
-	for (count = spin_retry; count > 0; count--) {
-		if (arch_spin_is_locked(lp))
-			continue;
+	for (count = spin_retry; count > 0; count--)
 		if (arch_spin_trylock_once(lp))
 			return 1;
-	}
 	return 0;
 }
 EXPORT_SYMBOL(arch_spin_trylock_retry);
