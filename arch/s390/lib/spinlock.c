@@ -113,7 +113,7 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 	unsigned int cpu = SPINLOCK_LOCKVAL;
 	unsigned int owner;
 	int count;
-	
+
 	while (1) {
 		owner = ACCESS_ONCE(lp->lock);
 		/* Try to get the lock if it is free. */
