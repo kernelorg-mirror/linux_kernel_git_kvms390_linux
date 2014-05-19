@@ -55,9 +55,11 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 			if (new.tickets.owner == (u16) ~cpu)
 				return;		/* Got the lock. */
 			ticket = new.tickets.tail; /* Got a ticket. */
-		} else	/* Lock or ticket could not be acquired. */
-			if (count--)
-				continue;
+		} else if (count) {
+			/* Lock or ticket could not be acquired, retry. */
+			count--;
+			continue;
+		}
 		/* Out of retries or just got a ticket. */
 		owner = cur.tickets.owner;
 		if (owner && !smp_vcpu_scheduled(~owner)) {
