@@ -119,7 +119,7 @@ static inline int arch_spin_trylock(arch_spinlock_t *lp)
 
 static inline void arch_spin_unlock(arch_spinlock_t *lp)
 {
-	if (arch_spin_tryrelease_once(lp))
+	if (!arch_spin_tryrelease_once(lp))
 		arch_spin_unlock_slow(lp);
 }
 
