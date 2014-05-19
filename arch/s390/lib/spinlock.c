@@ -55,25 +55,21 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 			if (new.tickets.owner == (u16) ~cpu)
 				return;		/* Got the lock. */
 			ticket = new.tickets.tail; /* Got a ticket. */
-			count = 0;
-		}
-		/* Lock could not be acquired yet. */
-		if (count--)
-			continue;
-		count = spin_retry;
+		} else	/* Lock or ticket could not be acquired. */
+			if (count--)
+				continue;
+		/* Out of retries or just got a ticket. */
 		owner = cur.tickets.owner;
-		if (ticket) {
-			if (owner && smp_vcpu_scheduled(~owner)) {
-				if (MACHINE_IS_LPAR)
-					continue;
-			} else
-				count = 0;
-		}
-		/* Yield the cpu. */
-		if (owner)
+		if (owner && !smp_vcpu_scheduled(~owner)) {
 			smp_yield_cpu(~owner);
-		else
-			smp_yield();
+		} else if (!count) {
+			/* Out of retries. */
+			if (!owner)
+				smp_yield();
+			else if (!MACHINE_IS_LPAR)
+				smp_yield_cpu(~owner);
+		}
+		count = spin_retry;
 	}
 }
 EXPORT_SYMBOL(arch_spin_lock_wait);
