@@ -34,7 +34,7 @@ static ssize_t ctcm_buffer_write(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct net_device *ndev;
-	int bs1;
+	unsigned int bs1;
 	struct ctcm_priv *priv = dev_get_drvdata(dev);
 
 	ndev = priv->channel[CTCM_READ]->netdev;
@@ -148,7 +148,7 @@ static ssize_t ctcm_proto_store(struct device *dev,
 
 	if (!priv)
 		return -ENODEV;
-	sscanf(buf, "%u", &value);
+	sscanf(buf, "%d", &value);
 	if (!((value == CTCM_PROTO_S390)  ||
 	      (value == CTCM_PROTO_LINUX) ||
 	      (value == CTCM_PROTO_MPC) ||
