@@ -44,9 +44,9 @@ static ssize_t ctcm_buffer_write(struct device *dev,
 		return -ENODEV;
 	}
 
-	rc =  sscanf(buf, "%u", &bs1);
+	rc = sscanf(buf, "%u", &bs1);
 	if (rc != 1)
-					goto einval;
+		goto einval;
 	if (bs1 > CTCM_BUFSIZE_LIMIT)
 					goto einval;
 	if (bs1 < (576 + LL_HEADER_LENGTH + 2))
