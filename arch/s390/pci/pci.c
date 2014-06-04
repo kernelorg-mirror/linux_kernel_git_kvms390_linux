@@ -566,7 +566,7 @@ static int zpci_alloc_iomap(struct zpci_dev *zdev)
 
 	spin_lock(&zpci_iomap_lock);
 	entry = find_first_zero_bit(zpci_iomap, ZPCI_IOMAP_MAX_ENTRIES);
-	if (entry == ZPCI_IOMAP_MAX_ENTRIES) {
+	if (entry >= ZPCI_IOMAP_MAX_ENTRIES) {
 		spin_unlock(&zpci_iomap_lock);
 		return -ENOSPC;
 	}
@@ -760,7 +760,7 @@ static int zpci_alloc_domain(struct zpci_dev *zdev)
 {
 	spin_lock(&zpci_domain_lock);
 	zdev->domain = find_first_zero_bit(zpci_domain, ZPCI_NR_DEVICES);
-	if (zdev->domain == ZPCI_NR_DEVICES) {
+	if (zdev->domain >= ZPCI_NR_DEVICES) {
 		spin_unlock(&zpci_domain_lock);
 		return -ENOSPC;
 	}
