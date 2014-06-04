@@ -32,10 +32,9 @@ static inline int init_new_context(struct task_struct *tsk,
 
 static inline void set_user_asce(struct mm_struct *mm)
 {
-	pgd_t *pgd = mm->pgd;
-
-	S390_lowcore.user_asce = mm->context.asce_bits | __pa(pgd);
-	set_fs(current->thread.mm_segment);
+	S390_lowcore.user_asce = mm->context.asce_bits | __pa(mm->pgd);
+	if (current->thread.mm_segment.ar4)
+		__ctl_load(S390_lowcore.user_asce, 7, 7);
 	set_cpu_flag(CIF_ASCE);
 }
 
@@ -73,6 +72,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	atomic_dec(&prev->context.attach_count);
 	if (MACHINE_HAS_TLB_LC)
 		cpumask_clear_cpu(cpu, &prev->context.cpu_attach_mask);
+	S390_lowcore.user_asce = next->context.asce_bits | __pa(next->pgd);
 }
 
 #define finish_arch_post_lock_switch finish_arch_post_lock_switch
@@ -82,17 +82,17 @@ static inline void finish_arch_post_lock_switch(void)
 	struct mm_struct *mm = tsk->mm;
 
 	load_kernel_asce();
-	if (!mm)
-		return;
-	preempt_disable();
-	while (atomic_read(&mm->context.attach_count) >> 16)
-		cpu_relax();
+	if (mm) {
+		preempt_disable();
+		while (atomic_read(&mm->context.attach_count) >> 16)
+			cpu_relax();
 
-	cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
-	set_user_asce(mm);
-	if (mm->context.flush_mm)
-		__tlb_flush_mm(mm);
-	preempt_enable();
+		cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
+		if (mm->context.flush_mm)
+			__tlb_flush_mm(mm);
+		preempt_enable();
+	}
+	set_fs(current->thread.mm_segment);
 }
 
 #define enter_lazy_tlb(mm,tsk)	do { } while (0)
