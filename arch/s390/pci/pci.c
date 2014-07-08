@@ -263,7 +263,7 @@ static int zpci_msi_set_mask_bits(struct msi_desc *msi, u32 mask, u32 flag)
 	} else
 		return 0;
 
-	msi->masked = !!flag;
+	msi->msi_attrib.maskbit = !!flag;
 	return 1;
 }
 
