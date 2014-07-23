@@ -46,8 +46,8 @@ struct irq_class {
  * up with having a sum which accounts each interrupt twice.
  */
 static const struct irq_class irqclass_main_desc[NR_IRQS_BASE] = {
-	{.irq = EXT_INTERRUPT,  .name = "EXT"},
-	{.irq = IO_INTERRUPT,   .name = "I/O"},
+	{.irq = EXT_INTERRUPT,	.name = "EXT"},
+	{.irq = IO_INTERRUPT,	.name = "I/O"},
 	{.irq = THIN_INTERRUPT, .name = "AIO"},
 };
 
