@@ -287,7 +287,14 @@ extern unsigned long MODULES_END;
 #define _SEGMENT_ENTRY_INVALID	0x20	/* invalid segment table entry	    */
 #define _SEGMENT_ENTRY_COMMON	0x10	/* common segment bit		    */
 #define _SEGMENT_ENTRY_PTL	0x0f	/* page table length		    */
-#define _SEGMENT_ENTRY_NONE	_SEGMENT_ENTRY_PROTECT
+
+#define _SEGMENT_ENTRY_DIRTY	0	/* No sw dirty bit for 31-bit */
+#define _SEGMENT_ENTRY_YOUNG	0	/* No sw young bit for 31-bit */
+#define _SEGMENT_ENTRY_READ	0	/* No sw read bit for 31-bit */
+#define _SEGMENT_ENTRY_WRITE	0	/* No sw write bit for 31-bit */
+#define _SEGMENT_ENTRY_LARGE 	0	/* No large pages for 31-bit */
+#define _SEGMENT_ENTRY_BITS_LARGE 0
+#define _SEGMENT_ENTRY_ORIGIN_LARGE 0
 
 #define _SEGMENT_ENTRY		(_SEGMENT_ENTRY_PTL)
 #define _SEGMENT_ENTRY_EMPTY	(_SEGMENT_ENTRY_INVALID)
@@ -562,11 +569,7 @@ static inline int pmd_none(pmd_t pmd)
 
 static inline int pmd_large(pmd_t pmd)
 {
-#ifdef CONFIG_64BIT
 	return (pmd_val(pmd) & _SEGMENT_ENTRY_LARGE) != 0;
-#else
-	return 0;
-#endif
 }
 
 static inline int pmd_pfn(pmd_t pmd)
@@ -574,19 +577,15 @@ static inline int pmd_pfn(pmd_t pmd)
 	unsigned long origin_mask;
 
 	origin_mask = _SEGMENT_ENTRY_ORIGIN;
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd))
 		origin_mask = _SEGMENT_ENTRY_ORIGIN_LARGE;
-#endif
 	return (pmd_val(pmd) & origin_mask) >> PAGE_SHIFT;
 }
 
 static inline int pmd_bad(pmd_t pmd)
 {
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd))
 		return (pmd_val(pmd) & ~_SEGMENT_ENTRY_BITS_LARGE) != 0;
-#endif
 	return (pmd_val(pmd) & ~_SEGMENT_ENTRY_BITS) != 0;
 }
 
@@ -612,20 +611,16 @@ static inline int pmd_write(pmd_t pmd)
 static inline int pmd_dirty(pmd_t pmd)
 {
 	int dirty = 1;
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd))
 		dirty = (pmd_val(pmd) & _SEGMENT_ENTRY_DIRTY) != 0;
-#endif
 	return dirty;
 }
 
 static inline int pmd_young(pmd_t pmd)
 {
 	int young = 1;
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd))
 		young = (pmd_val(pmd) & _SEGMENT_ENTRY_YOUNG) != 0;
-#endif
 	return young;
 }
 
@@ -1448,63 +1443,52 @@ static inline pmd_t pmd_wrprotect(pmd_t pmd)
 static inline pmd_t pmd_mkwrite(pmd_t pmd)
 {
 	pmd_val(pmd) |= _SEGMENT_ENTRY_WRITE;
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd) && !(pmd_val(pmd) & _SEGMENT_ENTRY_DIRTY))
 		return pmd;
-#endif
 	pmd_val(pmd) &= ~_SEGMENT_ENTRY_PROTECT;
 	return pmd;
 }
 
 static inline pmd_t pmd_mkclean(pmd_t pmd)
 {
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd)) {
 		pmd_val(pmd) &= ~_SEGMENT_ENTRY_DIRTY;
 		pmd_val(pmd) |= _SEGMENT_ENTRY_PROTECT;
 	}
-#endif
 	return pmd;
 }
 
 static inline pmd_t pmd_mkdirty(pmd_t pmd)
 {
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd)) {
 		pmd_val(pmd) |= _SEGMENT_ENTRY_DIRTY;
 		if (pmd_val(pmd) & _SEGMENT_ENTRY_WRITE)
 			pmd_val(pmd) &= ~_SEGMENT_ENTRY_PROTECT;
 	}
-#endif
 	return pmd;
 }
 
 static inline pmd_t pmd_mkyoung(pmd_t pmd)
 {
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd)) {
 		pmd_val(pmd) |= _SEGMENT_ENTRY_YOUNG;
 		if (pmd_val(pmd) & _SEGMENT_ENTRY_READ)
 			pmd_val(pmd) &= ~_SEGMENT_ENTRY_INVALID;
 	}
-#endif
 	return pmd;
 }
 
 static inline pmd_t pmd_mkold(pmd_t pmd)
 {
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd)) {
 		pmd_val(pmd) &= ~_SEGMENT_ENTRY_YOUNG;
 		pmd_val(pmd) |= _SEGMENT_ENTRY_INVALID;
 	}
-#endif
 	return pmd;
 }
 
 static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
 {
-#ifdef CONFIG_64BIT
 	if (pmd_large(pmd)) {
 		pmd_val(pmd) &= _SEGMENT_ENTRY_ORIGIN_LARGE |
 			_SEGMENT_ENTRY_DIRTY | _SEGMENT_ENTRY_YOUNG |
@@ -1516,7 +1500,6 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
 			pmd_val(pmd) |= _SEGMENT_ENTRY_INVALID;
 		return pmd;
 	}
-#endif
 	pmd_val(pmd) &= _SEGMENT_ENTRY_ORIGIN;
 	pmd_val(pmd) |= massage_pgprot_pmd(newprot);
 	return pmd;
@@ -1632,10 +1615,8 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
 static inline pmd_t pmd_mkhuge(pmd_t pmd)
 {
 	pmd_val(pmd) |= _SEGMENT_ENTRY_LARGE;
-#ifdef CONFIG_64BIT
 	pmd_val(pmd) |= _SEGMENT_ENTRY_YOUNG;
 	pmd_val(pmd) |= _SEGMENT_ENTRY_PROTECT;
-#endif
 	return pmd;
 }
 

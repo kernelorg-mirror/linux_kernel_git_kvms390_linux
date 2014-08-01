@@ -35,10 +35,8 @@ static inline pmd_t __pte_to_pmd(pte_t pte)
 		pmd_val(pmd) |= (pte_val(pte) & _PAGE_WRITE) >> 4;
 		pmd_val(pmd) |=	(pte_val(pte) & _PAGE_INVALID) >> 5;
 		pmd_val(pmd) |= (pte_val(pte) & _PAGE_PROTECT);
-#ifdef CONFIG_64BIT
 		pmd_val(pmd) |= (pte_val(pte) & _PAGE_DIRTY) << 10;
 		pmd_val(pmd) |= (pte_val(pte) & _PAGE_YOUNG) << 10;
-#endif
 	} else
 		pmd_val(pmd) = _SEGMENT_ENTRY_INVALID;
 	return pmd;
@@ -72,10 +70,8 @@ static inline pte_t __pmd_to_pte(pmd_t pmd)
 		pte_val(pte) |= (pmd_val(pmd) & _SEGMENT_ENTRY_WRITE) << 4;
 		pte_val(pte) |= (pmd_val(pmd) & _SEGMENT_ENTRY_INVALID) << 5;
 		pte_val(pte) |= (pmd_val(pmd) & _SEGMENT_ENTRY_PROTECT);
-#ifdef CONFIG_64BIT
 		pmd_val(pmd) |= (pte_val(pte) & _PAGE_DIRTY) << 10;
 		pmd_val(pmd) |= (pte_val(pte) & _PAGE_YOUNG) << 10;
-#endif
 	} else
 		pte_val(pte) = _PAGE_INVALID;
 	return pte;
@@ -106,10 +102,8 @@ pte_t huge_ptep_get(pte_t *ptep)
 		origin = pmd_val(pmd) & _SEGMENT_ENTRY_ORIGIN;
 		pmd_val(pmd) &= ~_SEGMENT_ENTRY_ORIGIN;
 		pmd_val(pmd) |= *(unsigned long *) origin;
-#ifdef CONFIG_64BIT
 		/* Emulated huge ptes are young and dirty by definition */
 		pmd_val(pmd) |= _SEGMENT_ENTRY_YOUNG | _SEGMENT_ENTRY_DIRTY;
-#endif
 	}
 	return __pmd_to_pte(pmd);
 }
