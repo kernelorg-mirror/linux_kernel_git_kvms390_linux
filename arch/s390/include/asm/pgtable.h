@@ -392,7 +392,7 @@ extern unsigned long MODULES_END;
  * read-write, old segment table entries (origin!=0)
  */
 
-#define _SEGMENT_ENTRY_SPLIT_BIT 0	/* THP splitting bit number */
+#define _SEGMENT_ENTRY_SPLIT_BIT 11	/* THP splitting bit number */
 
 /* Page status table bits for virtualization */
 #define PGSTE_ACC_BITS	0xf000000000000000UL
