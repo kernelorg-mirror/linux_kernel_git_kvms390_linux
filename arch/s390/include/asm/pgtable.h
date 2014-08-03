@@ -292,7 +292,7 @@ extern unsigned long MODULES_END;
 #define _SEGMENT_ENTRY_YOUNG	0	/* No sw young bit for 31-bit */
 #define _SEGMENT_ENTRY_READ	0	/* No sw read bit for 31-bit */
 #define _SEGMENT_ENTRY_WRITE	0	/* No sw write bit for 31-bit */
-#define _SEGMENT_ENTRY_LARGE 	0	/* No large pages for 31-bit */
+#define _SEGMENT_ENTRY_LARGE	0	/* No large pages for 31-bit */
 #define _SEGMENT_ENTRY_BITS_LARGE 0
 #define _SEGMENT_ENTRY_ORIGIN_LARGE 0
 
