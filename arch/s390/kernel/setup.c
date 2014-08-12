@@ -62,6 +62,7 @@
 #include <asm/diag.h>
 #include <asm/os_info.h>
 #include <asm/sclp.h>
+#include <asm/sysinfo.h>
 #include "entry.h"
 
 /*
@@ -806,6 +807,19 @@ static void __init setup_hwcaps(void)
 }
 
 /*
+ * Add system information as device randomness
+ */
+static void __init setup_randomness(void)
+{
+	struct sysinfo_3_2_2 *vmms;
+
+	vmms = (struct sysinfo_3_2_2 *) alloc_page(GFP_KERNEL);
+	if (vmms && stsi(vmms, 3, 2, 2) == 0 && vmms->count)
+		add_device_randomness(&vmms, vmms->count);
+	free_page((unsigned long) vmms);
+}
+
+/*
  * Setup function called from init/main.c just after the banner
  * was printed.
  */
@@ -903,6 +917,9 @@ void __init setup_arch(char **cmdline_p)
 
 	/* Setup zfcpdump support */
 	setup_zfcpdump();
+
+	/* Add system specific data to the random pool */
+	setup_randomness();
 }
 
 #ifdef CONFIG_32BIT

@@ -16,7 +16,6 @@
 #include <linux/lockdep.h>
 #include <linux/module.h>
 #include <linux/pfn.h>
-#include <linux/random.h>
 #include <linux/uaccess.h>
 #include <linux/kernel.h>
 #include <asm/ebcdic.h>
@@ -232,7 +231,6 @@ static noinline __init void detect_machine_type(void)
 	/* Get virtual-machine cpu information. */
 	if (stsi(vmms, 3, 2, 2) || !vmms->count)
 		return;
-	add_device_randomness(&vmms, sizeof(vmms));
 
 	/* Running under KVM? If not we assume z/VM */
 	if (!memcmp(vmms->vm[0].cpi, "\xd2\xe5\xd4", 3))
