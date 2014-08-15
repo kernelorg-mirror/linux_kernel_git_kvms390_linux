@@ -22,13 +22,11 @@ ENTRY(ftrace_stub)
 #define STACK_PTREGS_PSW  (STACK_PTREGS + __PT_PSW)
 
 ENTRY(_mcount)
-#ifdef CONFIG_DYNAMIC_FTRACE
 	br	%r14
 
 ENTRY(ftrace_caller)
 	.globl	ftrace_regs_caller
 	.set	ftrace_regs_caller,ftrace_caller
-#endif
 	larl	%r1,function_trace_stop
 	icm	%r1,0xf,0(%r1)
 	bnzr	%r14
