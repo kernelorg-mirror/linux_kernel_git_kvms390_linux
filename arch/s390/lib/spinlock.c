@@ -1,9 +1,8 @@
 /*
  *    Out of line spinlock code.
  *
- *    Copyright IBM Corp. 2004, 2014
+ *    Copyright IBM Corp. 2004, 2006
  *    Author(s): Martin Schwidefsky (schwidefsky@de.ibm.com)
- *		 Philipp Hachtmann (phacht@linux.vnet.ibm.com)
  */
 
 #include <linux/types.h>
@@ -24,87 +23,6 @@ static int __init spin_retry_setup(char *str)
 	return 1;
 }
 __setup("spin_retry=", spin_retry_setup);
-
-#ifdef CONFIG_S390_TICKET_SPINLOCK
-
-void arch_spin_lock_wait(arch_spinlock_t *lp)
-{
-	arch_spinlock_t cur, new;
-	int cpu, owner, count;
-	u8 ticket = 0;
-
-	cpu = smp_processor_id();
-	count = spin_retry;
-	while (1) {
-		new.lock = cur.lock = ACCESS_ONCE(lp->lock);
-		if (new.lock == 0) {
-			/* The lock is free with no waiter, try to get it. */
-			new.tickets.owner = (u16) ~cpu;
-		} else if (!ticket) {
-			/* Try to get a ticket. */
-			new.tickets.tail = (u8)(new.tickets.tail + 1) ? : 1;
-			if (new.tickets.tail == new.tickets.head)
-				/* Overflow, can't get a ticket. */
-				new.tickets.tail = cur.tickets.tail;
-		} else if (new.tickets.head == ticket)
-			new.tickets.owner = (u16) ~cpu;
-		/* Do the atomic update. */
-		if (cur.lock != new.lock &&
-		    _raw_compare_and_swap(&lp->lock, cur.lock, new.lock)) {
-			/* Update successful. */
-			if (new.tickets.owner == (u16) ~cpu)
-				return;		/* Got the lock. */
-			ticket = new.tickets.tail; /* Got a ticket. */
-		} else if (count) {
-			/* Lock or ticket could not be acquired, retry. */
-			count--;
-			continue;
-		}
-		/* Out of retries or just got a ticket. */
-		owner = cur.tickets.owner;
-		if (owner && !smp_vcpu_scheduled(~owner)) {
-			smp_yield_cpu(~owner);
-		} else if (!count) {
-			/* Out of retries. */
-			if (!owner)
-				smp_yield();
-			else if (!MACHINE_IS_LPAR)
-				smp_yield_cpu(~owner);
-		}
-		count = spin_retry;
-	}
-}
-EXPORT_SYMBOL(arch_spin_lock_wait);
-
-void arch_spin_unlock_slow(arch_spinlock_t *lp)
-{
-	arch_spinlock_t cur, new;
-
-	do {
-		cur.lock = ACCESS_ONCE(lp->lock);
-		new.lock = 0;
-		if (cur.tickets.head != cur.tickets.tail) {
-			new.tickets.tail = cur.tickets.tail;
-			new.tickets.head = (u8)(cur.tickets.head + 1) ? : 1;
-			new.tickets.owner = 0;
-		}
-	} while (!_raw_compare_and_swap(&lp->lock, cur.lock, new.lock));
-}
-EXPORT_SYMBOL(arch_spin_unlock_slow);
-
-void arch_spin_relax(arch_spinlock_t *lp)
-{
-	unsigned int cpu = lp->tickets.owner;
-
-	if (cpu != 0) {
-		if (MACHINE_IS_VM || MACHINE_IS_KVM ||
-		    !smp_vcpu_scheduled(~cpu))
-			smp_yield_cpu(~cpu);
-	}
-}
-EXPORT_SYMBOL(arch_spin_relax);
-
-#else /* CONFIG_S390_TICKET_SPINLOCK */
 
 void arch_spin_lock_wait(arch_spinlock_t *lp)
 {
@@ -190,8 +108,6 @@ void arch_spin_relax(arch_spinlock_t *lp)
 	}
 }
 EXPORT_SYMBOL(arch_spin_relax);
-
-#endif /* CONFIG_S390_TICKET_SPINLOCK */
 
 int arch_spin_trylock_retry(arch_spinlock_t *lp)
 {

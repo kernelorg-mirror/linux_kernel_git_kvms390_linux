@@ -1,8 +1,7 @@
 /*
  *  S390 version
- *    Copyright IBM Corp. 1999, 2014
+ *    Copyright IBM Corp. 1999
  *    Author(s): Martin Schwidefsky (schwidefsky@de.ibm.com)
- *		 Philipp Hachtmann (phacht@linux.vnet.ibm.com)
  *
  *  Derived from "include/asm-i386/spinlock.h"
  */
@@ -33,47 +32,20 @@ _raw_compare_and_swap(unsigned int *lock, unsigned int old, unsigned int new)
  * Simple spin lock operations.  There are two variants, one clears IRQ's
  * on the local processor, one does not.
  *
+ * We make no fairness assumptions. They have a cost.
+ *
  * (the type definitions are in asm/spinlock_types.h)
  */
 
 void arch_spin_lock_wait(arch_spinlock_t *);
 int arch_spin_trylock_retry(arch_spinlock_t *);
 void arch_spin_relax(arch_spinlock_t *);
-
-#ifdef CONFIG_S390_TICKET_SPINLOCK
-
-void arch_spin_unlock_slow(arch_spinlock_t *lp);
-
-static inline u32 arch_spin_lockval(u32 cpu)
-{
-	arch_spinlock_t new;
-
-	new.tickets.owner = ~cpu;
-	new.tickets.head = 0;
-	new.tickets.tail = 0;
-	return new.lock;
-}
-
-static inline void arch_spin_lock_wait_flags(arch_spinlock_t *lp,
-					     unsigned long flags)
-{
-	arch_spin_lock_wait(lp);
-}
-
-#else /* CONFIG_S390_TICKET_SPINLOCK */
-
 void arch_spin_lock_wait_flags(arch_spinlock_t *, unsigned long flags);
 
 static inline u32 arch_spin_lockval(int cpu)
 {
 	return ~cpu;
 }
-
-static inline void arch_spin_unlock_slow(arch_spinlock_t *lp)
-{
-}
-
-#endif /* CONFIG_S390_TICKET_SPINLOCK */
 
 static inline int arch_spin_value_unlocked(arch_spinlock_t lock)
 {
@@ -119,8 +91,7 @@ static inline int arch_spin_trylock(arch_spinlock_t *lp)
 
 static inline void arch_spin_unlock(arch_spinlock_t *lp)
 {
-	if (!arch_spin_tryrelease_once(lp))
-		arch_spin_unlock_slow(lp);
+	arch_spin_tryrelease_once(lp);
 }
 
 static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
