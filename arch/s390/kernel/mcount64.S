@@ -44,7 +44,7 @@ ENTRY(ftrace_caller)
 	larl	%r1,ftrace_trace_function
 	lg	%r1,0(%r1)
 #endif
-	lg	%r3,%r14
+	lgr	%r3,%r14
 	la	%r5,STACK_PTREGS(%r15)
 	basr	%r14,%r1
 #ifdef CONFIG_FUNCTION_GRAPH_TRACER
