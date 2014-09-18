@@ -343,13 +343,11 @@ struct zcrypt_ops *__ops_lookup(unsigned char *name, int variant)
 			break;
 		}
 	}
-	if (found && !try_module_get(zops->owner))
+	if (!found || !try_module_get(zops->owner))
 		zops = NULL;
 
 	spin_unlock_bh(&zcrypt_ops_list_lock);
 
-	if (!found)
-		return NULL;
 	return zops;
 }
 
@@ -362,8 +360,6 @@ struct zcrypt_ops *zcrypt_msgtype_request(unsigned char *name, int variant)
 		request_module("%s", name);
 		zops = __ops_lookup(name, variant);
 	}
-	if (!zops)
-		return NULL;
 	return zops;
 }
 EXPORT_SYMBOL(zcrypt_msgtype_request);
