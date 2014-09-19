@@ -170,17 +170,21 @@ static inline void arch_write_lock(arch_rwlock_t *rw)
 {
 	if (!arch_write_trylock_once(rw))
 		_raw_write_lock_wait(rw);
+	rw->owner = SPINLOCK_LOCKVAL;
 }
 
 static inline void arch_write_lock_flags(arch_rwlock_t *rw, unsigned long flags)
 {
 	if (!arch_write_trylock_once(rw))
 		_raw_write_lock_wait_flags(rw, flags);
+	rw->owner = SPINLOCK_LOCKVAL;
 }
 
 static inline void arch_write_unlock(arch_rwlock_t *rw)
 {
 	typecheck(unsigned int, rw->lock);
+
+	rw->owner = 0;
 	asm volatile(
 		__ASM_BARRIER
 		"st	%1,%0\n"
@@ -198,12 +202,15 @@ static inline int arch_read_trylock(arch_rwlock_t *rw)
 
 static inline int arch_write_trylock(arch_rwlock_t *rw)
 {
-	if (!arch_write_trylock_once(rw))
-		return _raw_write_trylock_retry(rw);
+	if (!arch_write_trylock_once(rw) && !_raw_write_trylock_retry(rw))
+		return 0;
+	rw->owner = SPINLOCK_LOCKVAL;
 	return 1;
 }
 
-#define arch_read_relax(lock)	cpu_relax()
-#define arch_write_relax(lock)	cpu_relax()
+void arch_rwlock_relax(arch_rwlock_t *);
+
+#define arch_read_relax(lock)	arch_rwlock_relax(lock)
+#define arch_write_relax(lock)	arch_rwlock_relax(lock)
 
 #endif /* __ASM_SPINLOCK_H */
