@@ -185,7 +185,6 @@ EXPORT_SYMBOL(_raw_read_trylock_retry);
 
 void _raw_write_lock_wait(arch_rwlock_t *rw)
 {
-	unsigned int cpu = SPINLOCK_LOCKVAL;
 	unsigned int owner, old;
 	int count = spin_retry;
 
@@ -208,7 +207,6 @@ EXPORT_SYMBOL(_raw_write_lock_wait);
 
 void _raw_write_lock_wait_flags(arch_rwlock_t *rw, unsigned long flags)
 {
-	unsigned int cpu = SPINLOCK_LOCKVAL;
 	unsigned int owner, old;
 	int count = spin_retry;
 
