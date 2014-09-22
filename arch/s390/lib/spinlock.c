@@ -98,17 +98,6 @@ void arch_spin_lock_wait_flags(arch_spinlock_t *lp, unsigned long flags)
 }
 EXPORT_SYMBOL(arch_spin_lock_wait_flags);
 
-void arch_spin_relax(arch_spinlock_t *lp)
-{
-	unsigned int cpu = lp->lock;
-	if (cpu != 0) {
-		if (MACHINE_IS_VM || MACHINE_IS_KVM ||
-		    !smp_vcpu_scheduled(~cpu))
-			smp_yield_cpu(~cpu);
-	}
-}
-EXPORT_SYMBOL(arch_spin_relax);
-
 int arch_spin_trylock_retry(arch_spinlock_t *lp)
 {
 	int count;
@@ -246,13 +235,12 @@ int _raw_write_trylock_retry(arch_rwlock_t *rw)
 }
 EXPORT_SYMBOL(_raw_write_trylock_retry);
 
-void arch_rwlock_relax(arch_rwlock_t *rw)
+void arch_lock_relax(unsigned int cpu)
 {
-	unsigned int cpu = rw->owner;
-	if (cpu != 0) {
-		if (MACHINE_IS_VM || MACHINE_IS_KVM ||
-		    !smp_vcpu_scheduled(~cpu))
-			smp_yield_cpu(~cpu);
-	}
+	if (!cpu)
+		return;
+	if (MACHINE_IS_LPAR && smp_vcpu_scheduled(~cpu))
+		return;
+	smp_yield_cpu(~cpu);
 }
-EXPORT_SYMBOL(arch_rwlock_relax);
+EXPORT_SYMBOL(arch_lock_relax);

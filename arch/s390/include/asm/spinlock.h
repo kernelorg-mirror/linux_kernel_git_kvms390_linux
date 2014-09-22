@@ -37,10 +37,16 @@ _raw_compare_and_swap(unsigned int *lock, unsigned int old, unsigned int new)
  * (the type definitions are in asm/spinlock_types.h)
  */
 
+void arch_lock_relax(unsigned int cpu);
+
 void arch_spin_lock_wait(arch_spinlock_t *);
 int arch_spin_trylock_retry(arch_spinlock_t *);
-void arch_spin_relax(arch_spinlock_t *);
 void arch_spin_lock_wait_flags(arch_spinlock_t *, unsigned long flags);
+
+static inline void arch_spin_relax(arch_spinlock_t *lock)
+{
+	arch_lock_relax(lock->lock);
+}
 
 static inline u32 arch_spin_lockval(int cpu)
 {
@@ -208,9 +214,14 @@ static inline int arch_write_trylock(arch_rwlock_t *rw)
 	return 1;
 }
 
-void arch_rwlock_relax(arch_rwlock_t *);
+static inline void arch_read_relax(arch_rwlock_t *rw)
+{
+	arch_lock_relax(rw->owner);
+}
 
-#define arch_read_relax(lock)	arch_rwlock_relax(lock)
-#define arch_write_relax(lock)	arch_rwlock_relax(lock)
+static inline void arch_write_relax(arch_rwlock_t *rw)
+{
+	arch_lock_relax(rw->owner);
+}
 
 #endif /* __ASM_SPINLOCK_H */
