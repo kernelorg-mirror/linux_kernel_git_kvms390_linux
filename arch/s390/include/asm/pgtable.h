@@ -615,6 +615,19 @@ static inline pmd_t pmd_clear_soft_dirty(pmd_t pmd)
 	return pmd;
 }
 
+#ifdef CONFIG_NUMA_BALANCING
+static inline int pte_protnone(pte_t pte)
+{
+	return pte_present(pte) && !(pte_val(pte) & _PAGE_READ);
+}
+
+static inline int pmd_protnone(pmd_t pmd)
+{
+	/* pmd_large(pmd) implies pmd_present(pmd) */
+	return pmd_large(pmd) && !(pmd_val(pmd) & _SEGMENT_ENTRY_READ);
+}
+#endif
+
 static inline pgste_t pgste_get_lock(pte_t *ptep)
 {
 	unsigned long new = 0;
