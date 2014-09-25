@@ -22,7 +22,7 @@ unsigned long *page_table_alloc(struct mm_struct *, unsigned long);
 void page_table_free(struct mm_struct *, unsigned long *);
 void page_table_free_rcu(struct mmu_gather *, unsigned long *);
 
-void walk_pgste(struct mm_struct *, unsigned long, unsigned long, bool);
+int walk_pgste(struct mm_struct *, unsigned long, unsigned long, bool);
 int set_guest_storage_key(struct mm_struct *mm, unsigned long addr,
 			  unsigned long key, bool nq);
 

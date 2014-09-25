@@ -885,6 +885,18 @@ static inline void page_table_free_pgste(unsigned long *table)
 	__free_page(page);
 }
 
+static inline pte_t *__test_back_zero_page(struct mm_struct *mm, pmd_t *pmd,
+			unsigned long addr, pte_t *pte, spinlock_t **ptl)
+{
+	if (is_zero_pfn(pte_pfn(*pte))) {
+		pte_unmap_unlock(pte, *ptl);
+		if (fixup_user_fault(NULL, mm, addr, FAULT_FLAG_WRITE))
+			return NULL;
+		pte = pte_offset_map_lock(mm, pmd, addr, ptl);
+	}
+	return pte;
+}
+
 static inline pgste_t __clear_storage_key(pgste_t pgste, pte_t pte)
 {
 	unsigned long address;
@@ -904,13 +916,17 @@ static inline pgste_t __clear_storage_key(pgste_t pgste, pte_t pte)
 static inline unsigned long __walk_pte_pgste(struct mm_struct *mm, pmd_t *pmd,
 			unsigned long addr, unsigned long end, bool prepare_skey)
 {
-	pte_t *start_pte, *pte;
 	spinlock_t *ptl;
 	pgste_t pgste;
+	pte_t *pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
 
-	start_pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-	pte = start_pte;
 	do {
+		if (prepare_skey) {
+			pte = __test_back_zero_page(mm, pmd, addr, pte, &ptl);
+			if (!pte)
+				return 0;
+		}
+
 		pgste = pgste_get_lock(pte);
 		pgste_val(pgste) &= ~_PGSTE_GPS_USAGE_MASK;
 
@@ -919,7 +935,7 @@ static inline unsigned long __walk_pte_pgste(struct mm_struct *mm, pmd_t *pmd,
 
 		pgste_set_unlock(pte, pgste);
 	} while (pte++, addr += PAGE_SIZE, addr != end);
-	pte_unmap_unlock(start_pte, ptl);
+	pte_unmap_unlock(pte, ptl);
 
 	return addr;
 }
@@ -936,6 +952,8 @@ static inline unsigned long __walk_pmd_pgste(struct mm_struct *mm, pud_t *pud,
 		if (pmd_none_or_clear_bad(pmd))
 			continue;
 		next = __walk_pte_pgste(mm, pmd, addr, next, prepare_skey);
+		if (next == 0)
+			return 0;
 	} while (pmd++, addr = next, addr != end);
 
 	return addr;
@@ -953,12 +971,14 @@ static inline unsigned long __walk_pud_pgste(struct mm_struct *mm, pgd_t *pgd,
 		if (pud_none_or_clear_bad(pud))
 			continue;
 		next = __walk_pmd_pgste(mm, pud, addr, next, prepare_skey);
+		if (next == 0)
+			return 0;
 	} while (pud++, addr = next, addr != end);
 
 	return addr;
 }
 
-void walk_pgste(struct mm_struct *mm, unsigned long start, unsigned long end,
+int walk_pgste(struct mm_struct *mm, unsigned long start, unsigned long end,
 		bool prepare_skey)
 {
 	unsigned long addr, next;
@@ -971,7 +991,10 @@ void walk_pgste(struct mm_struct *mm, unsigned long start, unsigned long end,
 		if (pgd_none_or_clear_bad(pgd))
 			continue;
 		next = __walk_pud_pgste(mm, pgd, addr, next, prepare_skey);
+		if (next == 0)
+			return -ENOMEM;
 	} while (pgd++, addr = next, addr != end);
+	return 0;
 }
 EXPORT_SYMBOL(walk_pgste);
 
@@ -1400,17 +1423,23 @@ EXPORT_SYMBOL_GPL(s390_enable_sie);
 int s390_enable_skey(void)
 {
 	struct mm_struct *mm = current->mm;
+	struct vm_area_struct *vma;
+	int rc = 0;
 
 	down_write(&mm->mmap_sem);
 	if (mm_use_skey(mm))
 		goto out_up;
 
-	walk_pgste(mm, 0, TASK_SIZE, true);
+	for (vma = mm->mmap; vma; vma = vma->vm_next)
+		vma->vm_flags |= VM_NONZERO;
+	mm->def_flags |= VM_NONZERO;
+
+	rc = walk_pgste(mm, 0, TASK_SIZE, true);
 	mm->context.use_skey = 1;
 
 out_up:
 	up_write(&mm->mmap_sem);
-	return 0;
+	return rc;
 }
 EXPORT_SYMBOL_GPL(s390_enable_skey);
 
