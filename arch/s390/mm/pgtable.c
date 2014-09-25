@@ -1397,7 +1397,7 @@ EXPORT_SYMBOL_GPL(s390_enable_sie);
  * Enable storage key handling from now on and initialize the storage
  * keys with the default key.
  */
-void s390_enable_skey(void)
+int s390_enable_skey(void)
 {
 	struct mm_struct *mm = current->mm;
 
@@ -1410,6 +1410,7 @@ void s390_enable_skey(void)
 
 out_up:
 	up_write(&mm->mmap_sem);
+	return 0;
 }
 EXPORT_SYMBOL_GPL(s390_enable_skey);
 
