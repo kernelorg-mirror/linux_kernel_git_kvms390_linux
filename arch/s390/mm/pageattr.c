@@ -110,11 +110,11 @@ static void ipte_range(pte_t *pte, unsigned long address, int nr)
 	int i;
 
 	if (test_facility(13) && IS_ENABLED(CONFIG_64BIT)) {
-		ipte(pte, address, nr - 1, 0);
+		__ptep_ipte_range(address, nr - 1, pte);
 		return;
 	}
 	for (i = 0; i < nr; i++) {
-		ipte(pte, address, 0, 0);
+		__ptep_ipte(address, pte);
 		address += PAGE_SIZE;
 		pte++;
 	}

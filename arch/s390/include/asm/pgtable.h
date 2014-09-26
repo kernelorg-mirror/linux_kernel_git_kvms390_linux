@@ -1025,35 +1025,48 @@ static inline pte_t pte_mkhuge(pte_t pte)
 }
 #endif
 
-#define ipte(ptep, address, nr, flags)					       \
-{									       \
-	pte_t *__ptep = (ptep);						       \
-	unsigned long __pto = (unsigned long)__ptep;			       \
-	int __nr = (nr);						       \
-									       \
-	if (IS_ENABLED(CONFIG_32BIT))					       \
-		__pto &= 0x7ffffc00;					       \
-	if (__builtin_constant_p(__nr) && (__nr == 0)) {		       \
-		asm volatile(						       \
-			" .insn rrf,0xb2210000,%1,%2,0,"__stringify(flags)"\n" \
-			: "+m" (*__ptep) : "d" (__pto), "d" (address));	       \
-	} else {							       \
-		asm volatile(						       \
-			" .insn rrf,0xb2210000,%0,%1,%2,"__stringify(flags)"\n"\
-			: : "d" (__pto), "d" (address), "a" (__nr) : "memory");\
-	}								       \
-}
-
 static inline void __ptep_ipte(unsigned long address, pte_t *ptep)
 {
+	unsigned long pto = (unsigned long) ptep;
+
+#ifndef CONFIG_64BIT
+	/* pto in ESA mode must point to the start of the segment table */
+	pto &= 0x7ffffc00;
+#endif
 	/* Invalidation + global TLB flush for the pte */
-	ipte(ptep, address, 0, 0);
+	asm volatile(
+		"	ipte	%2,%3"
+		: "=m" (*ptep) : "m" (*ptep), "a" (pto), "a" (address));
 }
 
 static inline void __ptep_ipte_local(unsigned long address, pte_t *ptep)
 {
+	unsigned long pto = (unsigned long) ptep;
+
+#ifndef CONFIG_64BIT
+	/* pto in ESA mode must point to the start of the segment table */
+	pto &= 0x7ffffc00;
+#endif
 	/* Invalidation + local TLB flush for the pte */
-	ipte(ptep, address, 0, 1);
+	asm volatile(
+		"	.insn rrf,0xb2210000,%2,%3,0,1"
+		: "=m" (*ptep) : "m" (*ptep), "a" (pto), "a" (address));
+}
+
+static inline void __ptep_ipte_range(unsigned long address, int nr, pte_t *ptep)
+{
+	unsigned long pto = (unsigned long) ptep;
+
+#ifndef CONFIG_64BIT
+	/* pto in ESA mode must point to the start of the segment table */
+	pto &= 0x7ffffc00;
+#endif
+	/* Invalidate a range of ptes + global TLB flush of the ptes */
+	do {
+		asm volatile(
+			"	.insn rrf,0xb2210000,%2,%0,%1,0"
+			: "+a" (address), "+a" (nr) : "a" (pto) : "memory");
+	} while (nr != 255);
 }
 
 static inline void ptep_flush_direct(struct mm_struct *mm,
