@@ -472,7 +472,8 @@ static int __init topology_init(void)
 }
 device_initcall(topology_init);
 
-static int __init early_topology_init(void) {
+static int __init early_topology_init(void)
+{
 	set_sched_topology(s390_topology);
 	return 0;
 }
