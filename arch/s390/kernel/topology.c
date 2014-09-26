@@ -464,12 +464,10 @@ static struct sched_domain_topology_level s390_topology[] = {
 
 static int __init topology_init(void)
 {
-	if (!MACHINE_HAS_TOPOLOGY) {
+	if (MACHINE_HAS_TOPOLOGY)
+		set_topology_timer();
+	else
 		topology_update_polarization_simple();
-		goto out;
-	}
-	set_topology_timer();
-out:
 	return device_create_file(cpu_subsys.dev_root, &dev_attr_dispatching);
 }
 device_initcall(topology_init);
