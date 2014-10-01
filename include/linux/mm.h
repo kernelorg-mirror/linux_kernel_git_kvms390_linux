@@ -112,7 +112,7 @@ extern unsigned int kobjsize(const void *objp);
 #define VM_GROWSDOWN	0x00000100	/* general info on the segment */
 #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
 #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
-
+#define VM_NONZERO	0x00001000	/* forbid new zero page mappings */
 #define VM_LOCKED	0x00002000
 #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
 
@@ -1246,6 +1246,18 @@ static inline int stack_guard_page_end(struct vm_area_struct *vma,
 		(vma->vm_end == addr) &&
 		!vma_growsup(vma->vm_next, addr);
 }
+
+#ifdef CONFIG_NONZEROMAP
+static inline int vma_forbids_zeromaps(struct vm_area_struct *vma)
+{
+	return vma->vm_flags & VM_NONZERO;
+}
+#else
+static inline int vma_forbids_zeromaps(struct vm_area_struct *vma)
+{
+	return 0;
+}
+#endif
 
 extern pid_t
 vm_is_stack(struct task_struct *task, struct vm_area_struct *vma, int in_group);
