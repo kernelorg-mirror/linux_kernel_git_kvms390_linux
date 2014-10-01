@@ -290,7 +290,7 @@ static inline unsigned long __rewind_psw(psw_t psw, unsigned long ilc)
 
 /*
  * Function to stop a processor until the next interrupt occurs
- */ 
+ */
 void enabled_wait(void);
 
 /*
