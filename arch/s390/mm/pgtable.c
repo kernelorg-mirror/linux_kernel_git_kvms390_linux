@@ -18,6 +18,8 @@
 #include <linux/rcupdate.h>
 #include <linux/slab.h>
 #include <linux/swapops.h>
+#include <linux/ksm.h>
+#include <linux/mman.h>
 
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
@@ -1430,8 +1432,15 @@ int s390_enable_skey(void)
 	if (mm_use_skey(mm))
 		goto out_up;
 
-	for (vma = mm->mmap; vma; vma = vma->vm_next)
+	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+		if (ksm_madvise(vma, vma->vm_start, vma->vm_end,
+				MADV_UNMERGEABLE, &vma->vm_flags)) {
+			rc = -ENOMEM;
+			goto out_up;
+		}
 		vma->vm_flags |= VM_NONZERO;
+	}
+	mm->def_flags &= ~VM_MERGEABLE;
 	mm->def_flags |= VM_NONZERO;
 
 	rc = walk_pgste(mm, 0, TASK_SIZE, true);
