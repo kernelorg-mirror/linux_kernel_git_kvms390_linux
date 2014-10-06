@@ -75,8 +75,6 @@
 #define CUIR_QUIESCE			 0x01
 #define CUIR_RESUME			 0x02
 
-
-
 /*
  * attention message definitions
  */
@@ -367,10 +365,9 @@ struct dasd_gneq {
 	__u8 reserved2[22];
 } __attribute__ ((packed));
 
-
 struct dasd_rssd_features {
 	char feature[256];
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct dasd_rssd_messages {
 	__u16 length;

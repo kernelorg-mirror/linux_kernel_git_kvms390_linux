@@ -383,7 +383,7 @@ struct dasd_path {
 	__u8 tbvpm;
 	__u8 ppm;
 	__u8 npm;
-	/* paths that are not used because of a special condtition */
+	/* paths that are not used because of a special condition */
 	__u8 cablepm; /* miss-cabled */
 	__u8 hpfpm;   /* the HPF requirements of the other paths are not met */
 	__u8 cuirpm;  /* CUIR varied offline */

@@ -4578,7 +4578,6 @@ static int dasd_eckd_read_message_buffer(struct dasd_device *device,
 	return rc;
 }
 
-
 /*
  * Perform Subsystem Function - CUIR response
  */
@@ -4606,7 +4605,8 @@ dasd_eckd_psf_cuir_response(struct dasd_device *device, int response,
 	psf_cuir = (struct dasd_psf_cuir_response *)cqr->data;
 	psf_cuir->order = PSF_ORDER_CUIR_RESPONSE;
 	psf_cuir->cc = response;
-	psf_cuir->chpid = desc->chpid;
+	if (desc)
+		psf_cuir->chpid = desc->chpid;
 	psf_cuir->message_id = message_id;
 	psf_cuir->cssid = sch_id.cssid;
 	psf_cuir->ssid = sch_id.ssid;
@@ -4701,12 +4701,11 @@ static int dasd_eckd_cuir_quiesce(struct dasd_device *device, __u8 lpum,
 	}
 
 	pr_warn("Service on the storage server caused path %x.%02x to go offline",
-		sch_id.cssid, desc->chpid);
+		sch_id.cssid, desc ? desc->chpid : 0);
 	rc = PSF_CUIR_COMPLETED;
 out:
 	return rc;
 }
-
 
 static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
 				 struct channel_path_desc *desc,
@@ -4717,7 +4716,7 @@ static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
 	struct dasd_device *dev, *n;
 
 	pr_info("Path %x.%02x is back online after service on the storage server",
-		sch_id.cssid, desc->chpid);
+		sch_id.cssid, desc ? desc->chpid : 0);
 	private = (struct dasd_eckd_private *) device->private;
 
 	/*
@@ -4770,24 +4769,16 @@ static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
 static void dasd_eckd_handle_cuir(struct dasd_device *device, void *messages,
 				 __u8 lpum)
 {
-	struct dasd_cuir_message *cuir;
+	struct dasd_cuir_message *cuir = messages;
 	struct channel_path_desc *desc;
 	struct subchannel_id sch_id;
-	int i, response;
-
-	cuir = (struct dasd_cuir_message *)messages;
-
-	/* get subchannel ID */
+	int pos, response;
 	ccw_device_get_schid(device->cdev, &sch_id);
 
 	/* get position of path in mask */
-	for (i = 0; i < 8; i++) {
-		if (lpum & (0x80 >> i))
-			break;
-	}
+	pos = 8 - ffs(lpum);
 	/* get channel path descriptor from this position */
-	desc = (struct channel_path_desc *)
-		ccw_device_get_chp_desc(device->cdev, i);
+	desc = ccw_device_get_chp_desc(device->cdev, pos);
 
 	if (cuir->code == CUIR_QUIESCE) {
 		/* quiesce */
@@ -4816,6 +4807,12 @@ static void dasd_eckd_check_attention_work(struct work_struct *work)
 	device = data->device;
 
 	messages = kzalloc(sizeof(*messages), GFP_KERNEL);
+	if (!messages) {
+		DBF_DEV_EVENT(DBF_WARNING, device, "%s",
+			      "Could not allocate attention message buffer");
+		goto out;
+	}
+
 	rc = dasd_eckd_read_message_buffer(device, messages, data->lpum);
 	if (rc)
 		goto out;
