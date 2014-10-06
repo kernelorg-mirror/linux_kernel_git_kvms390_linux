@@ -368,7 +368,7 @@ static int setup_frame(int sig, struct k_sigaction *ka,
 	/* Set up to return from userspace.  If provided, use a stub
 	   already in userspace.  */
 	if (ka->sa.sa_flags & SA_RESTORER) {
-                restorer = (unsigned long) ka->sa.sa_restorer | PSW_ADDR_AMODE;
+		restorer = (unsigned long) ka->sa.sa_restorer | PSW_ADDR_AMODE;
 	} else {
 		/* Signal frame without vector registers are short ! */
 		__u16 __user *svc = (void *) frame + frame_size - 2;

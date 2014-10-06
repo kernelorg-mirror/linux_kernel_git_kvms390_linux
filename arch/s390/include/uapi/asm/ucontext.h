@@ -20,11 +20,11 @@ struct ucontext_extended {
 	unsigned long	  uc_flags;
 	struct ucontext  *uc_link;
 	stack_t		  uc_stack;
-	_sigregs          uc_mcontext;
+	_sigregs	  uc_mcontext;
 	sigset_t	  uc_sigmask;
 	/* Allow for uc_sigmask growth.  Glibc uses a 1024-bit sigset_t.  */
 	unsigned char	  __unused[128 - sizeof(sigset_t)];
-	_sigregs_ext      uc_mcontext_ext;
+	_sigregs_ext	  uc_mcontext_ext;
 };
 
 struct ucontext {
