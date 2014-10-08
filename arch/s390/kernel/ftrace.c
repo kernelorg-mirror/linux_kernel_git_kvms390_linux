@@ -142,7 +142,7 @@ out:
  * block, we simply patch the mask field of the instruction to zero and
  * turn the instruction into a nop.
  * To disable the ftrace graph code the mask field will be patched to
- * all ones, which turns the instruction into an uncondtional branch.
+ * all ones, which turns the instruction into an unconditional branch.
  */
 int ftrace_enable_ftrace_graph_caller(void)
 {
