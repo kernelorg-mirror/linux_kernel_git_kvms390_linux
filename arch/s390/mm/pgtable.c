@@ -885,8 +885,24 @@ static inline void page_table_free_pgste(unsigned long *table)
 	__free_page(page);
 }
 
-static inline unsigned long page_table_reset_pte(struct mm_struct *mm, pmd_t *pmd,
-			unsigned long addr, unsigned long end, bool init_skey)
+static inline pgste_t __clear_storage_key(pgste_t pgste, pte_t pte)
+{
+	unsigned long address;
+
+	pgste_val(pgste) &= ~(PGSTE_ACC_BITS | PGSTE_FP_BIT |
+			      PGSTE_GR_BIT | PGSTE_GC_BIT);
+
+	if (pte_val(pte) & _PAGE_INVALID || !(pte_val(pte) & _PAGE_WRITE))
+		return pgste;
+
+	address = pte_val(pte) & PAGE_MASK;
+	page_set_storage_key(address, PAGE_DEFAULT_KEY, 1);
+
+	return pgste;
+}
+
+static inline unsigned long __walk_pte_pgste(struct mm_struct *mm, pmd_t *pmd,
+			unsigned long addr, unsigned long end, bool prepare_skey)
 {
 	pte_t *start_pte, *pte;
 	spinlock_t *ptl;
@@ -897,22 +913,10 @@ static inline unsigned long page_table_reset_pte(struct mm_struct *mm, pmd_t *pm
 	do {
 		pgste = pgste_get_lock(pte);
 		pgste_val(pgste) &= ~_PGSTE_GPS_USAGE_MASK;
-		if (init_skey) {
-			unsigned long address;
 
-			pgste_val(pgste) &= ~(PGSTE_ACC_BITS | PGSTE_FP_BIT |
-					      PGSTE_GR_BIT | PGSTE_GC_BIT);
+		if (prepare_skey)
+			pgste = __clear_storage_key(pgste, *pte);
 
-			/* skip invalid and not writable pages */
-			if (pte_val(*pte) & _PAGE_INVALID ||
-			    !(pte_val(*pte) & _PAGE_WRITE)) {
-				pgste_set_unlock(pte, pgste);
-				continue;
-			}
-
-			address = pte_val(*pte) & PAGE_MASK;
-			page_set_storage_key(address, PAGE_DEFAULT_KEY, 1);
-		}
 		pgste_set_unlock(pte, pgste);
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 	pte_unmap_unlock(start_pte, ptl);
@@ -920,8 +924,8 @@ static inline unsigned long page_table_reset_pte(struct mm_struct *mm, pmd_t *pm
 	return addr;
 }
 
-static inline unsigned long page_table_reset_pmd(struct mm_struct *mm, pud_t *pud,
-			unsigned long addr, unsigned long end, bool init_skey)
+static inline unsigned long __walk_pmd_pgste(struct mm_struct *mm, pud_t *pud,
+			unsigned long addr, unsigned long end, bool prepare_skey)
 {
 	unsigned long next;
 	pmd_t *pmd;
@@ -931,14 +935,14 @@ static inline unsigned long page_table_reset_pmd(struct mm_struct *mm, pud_t *pu
 		next = pmd_addr_end(addr, end);
 		if (pmd_none_or_clear_bad(pmd))
 			continue;
-		next = page_table_reset_pte(mm, pmd, addr, next, init_skey);
+		next = __walk_pte_pgste(mm, pmd, addr, next, prepare_skey);
 	} while (pmd++, addr = next, addr != end);
 
 	return addr;
 }
 
-static inline unsigned long page_table_reset_pud(struct mm_struct *mm, pgd_t *pgd,
-			unsigned long addr, unsigned long end, bool init_skey)
+static inline unsigned long __walk_pud_pgste(struct mm_struct *mm, pgd_t *pgd,
+			unsigned long addr, unsigned long end, bool prepare_skey)
 {
 	unsigned long next;
 	pud_t *pud;
@@ -948,35 +952,28 @@ static inline unsigned long page_table_reset_pud(struct mm_struct *mm, pgd_t *pg
 		next = pud_addr_end(addr, end);
 		if (pud_none_or_clear_bad(pud))
 			continue;
-		next = page_table_reset_pmd(mm, pud, addr, next, init_skey);
+		next = __walk_pmd_pgste(mm, pud, addr, next, prepare_skey);
 	} while (pud++, addr = next, addr != end);
 
 	return addr;
 }
 
-void page_table_reset_pgste(struct mm_struct *mm, unsigned long start,
-			    unsigned long end, bool init_skey)
+void walk_pgste(struct mm_struct *mm, unsigned long start, unsigned long end,
+		bool prepare_skey)
 {
 	unsigned long addr, next;
 	pgd_t *pgd;
 
-	down_write(&mm->mmap_sem);
-	if (init_skey && mm_use_skey(mm))
-		goto out_up;
 	addr = start;
 	pgd = pgd_offset(mm, addr);
 	do {
 		next = pgd_addr_end(addr, end);
 		if (pgd_none_or_clear_bad(pgd))
 			continue;
-		next = page_table_reset_pud(mm, pgd, addr, next, init_skey);
+		next = __walk_pud_pgste(mm, pgd, addr, next, prepare_skey);
 	} while (pgd++, addr = next, addr != end);
-	if (init_skey)
-		current->mm->context.use_skey = 1;
-out_up:
-	up_write(&mm->mmap_sem);
 }
-EXPORT_SYMBOL(page_table_reset_pgste);
+EXPORT_SYMBOL(walk_pgste);
 
 int set_guest_storage_key(struct mm_struct *mm, unsigned long addr,
 			  unsigned long key, bool nq)
@@ -1044,8 +1041,8 @@ static inline unsigned long *page_table_alloc_pgste(struct mm_struct *mm,
 	return NULL;
 }
 
-void page_table_reset_pgste(struct mm_struct *mm, unsigned long start,
-			    unsigned long end, bool init_skey)
+void walk_pgste(struct mm_struct *mm, unsigned long start, unsigned long end,
+		bool init_skey)
 {
 }
 
@@ -1402,7 +1399,17 @@ EXPORT_SYMBOL_GPL(s390_enable_sie);
  */
 void s390_enable_skey(void)
 {
-	page_table_reset_pgste(current->mm, 0, TASK_SIZE, true);
+	struct mm_struct *mm = current->mm;
+
+	down_write(&mm->mmap_sem);
+	if (mm_use_skey(mm))
+		goto out_up;
+
+	walk_pgste(mm, 0, TASK_SIZE, true);
+	mm->context.use_skey = 1;
+
+out_up:
+	up_write(&mm->mmap_sem);
 }
 EXPORT_SYMBOL_GPL(s390_enable_skey);
 
