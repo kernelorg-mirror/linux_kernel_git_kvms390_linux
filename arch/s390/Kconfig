@@ -1,8 +1,8 @@
 config MMU
 	def_bool y
 
-config NONZEROMAP
-        def_bool y
+config NOZEROPAGE
+	def_bool y
 
 config ZONE_DMA
 	def_bool y
