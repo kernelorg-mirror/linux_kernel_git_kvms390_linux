@@ -1066,9 +1066,10 @@ static inline unsigned long *page_table_alloc_pgste(struct mm_struct *mm,
 	return NULL;
 }
 
-void walk_pgste(struct mm_struct *mm, unsigned long start, unsigned long end,
-		bool init_skey)
+int walk_pgste(struct mm_struct *mm, unsigned long start, unsigned long end,
+	       bool init_skey)
 {
+	return 0;
 }
 
 static inline void page_table_free_pgste(unsigned long *table)
