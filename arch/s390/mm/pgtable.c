@@ -1312,7 +1312,7 @@ static int __s390_enable_skey(pte_t *pte, unsigned long addr,
 
 	pgste = pgste_get_lock(pte);
 	/*
-	 * Remove all zero page mappings, 
+	 * Remove all zero page mappings,
 	 * after establishing a policy to forbid zero page mappings
 	 * following faults for that page will get fresh anonymous pages
 	 */
