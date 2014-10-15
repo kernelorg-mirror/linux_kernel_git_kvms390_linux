@@ -790,8 +790,7 @@ int gmap_ipte_notify(struct gmap *gmap, unsigned long start, unsigned long len)
 		}
 		/* Walk the process page table, lock and get pte pointer */
 		ptep = get_locked_pte(gmap->mm, addr, &ptl);
-		if (unlikely(!ptep))
-			continue;
+		VM_BUG_ON(!ptep);
 		/* Set notification bit in the pgste of the pte */
 		entry = *ptep;
 		if ((pte_val(entry) & (_PAGE_INVALID | _PAGE_PROTECT)) == 0) {
