@@ -156,25 +156,21 @@ static int handle_store_cpu_address(struct kvm_vcpu *vcpu)
 	return 0;
 }
 
-static int __skey_check_enable(struct kvm_vcpu *vcpu)
+static void __skey_check_enable(struct kvm_vcpu *vcpu)
 {
-	int rc = 0;
 	if (!(vcpu->arch.sie_block->ictl & (ICTL_ISKE | ICTL_SSKE | ICTL_RRBE)))
-		return rc;
+		return;
 
-	rc = s390_enable_skey();
+	s390_enable_skey();
 	trace_kvm_s390_skey_related_inst(vcpu);
 	vcpu->arch.sie_block->ictl &= ~(ICTL_ISKE | ICTL_SSKE | ICTL_RRBE);
-	return rc;
 }
 
 
 static int handle_skey(struct kvm_vcpu *vcpu)
 {
-	int rc = __skey_check_enable(vcpu);
+	__skey_check_enable(vcpu);
 
-	if (rc)
-		return rc;
 	vcpu->stat.instruction_storage_key++;
 
 	if (vcpu->arch.sie_block->gpsw.mask & PSW_MASK_PSTATE)
@@ -696,10 +692,7 @@ static int handle_pfmf(struct kvm_vcpu *vcpu)
 		}
 
 		if (vcpu->run->s.regs.gprs[reg1] & PFMF_SK) {
-			int rc = __skey_check_enable(vcpu);
-
-			if (rc)
-				return rc;
+			__skey_check_enable(vcpu);
 			if (set_guest_storage_key(current->mm, useraddr,
 					vcpu->run->s.regs.gprs[reg1] & PFMF_KEY,
 					vcpu->run->s.regs.gprs[reg1] & PFMF_NQ))
