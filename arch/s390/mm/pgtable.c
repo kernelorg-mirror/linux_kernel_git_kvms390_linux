@@ -1437,10 +1437,10 @@ int s390_enable_skey(void)
 			rc = -ENOMEM;
 			goto out_up;
 		}
-		vma->vm_flags |= VM_NOZEROPAGE;
+		vma->vm_flags |= VM_NONZERO;
 	}
 	mm->def_flags &= ~VM_MERGEABLE;
-	mm->def_flags |= VM_NOZEROPAGE;
+	mm->def_flags |= VM_NONZERO;
 
 	rc = walk_pgste(mm, 0, TASK_SIZE, true);
 	mm->context.use_skey = 1;
