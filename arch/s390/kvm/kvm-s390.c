@@ -281,7 +281,9 @@ static int kvm_s390_mem_control(struct kvm *kvm, struct kvm_device_attr *attr)
 	case KVM_S390_VM_MEM_CLR_CMMA:
 		mutex_lock(&kvm->lock);
 		idx = srcu_read_lock(&kvm->srcu);
-		s390_reset_cmma(kvm->arch.gmap->mm);
+		down_write(&kvm->arch.gmap->mm->mmap_sem);
+		walk_pgste(kvm->arch.gmap->mm, 0, TASK_SIZE, false);
+		up_write(&kvm->arch.gmap->mm->mmap_sem);
 		srcu_read_unlock(&kvm->srcu, idx);
 		mutex_unlock(&kvm->lock);
 		ret = 0;
