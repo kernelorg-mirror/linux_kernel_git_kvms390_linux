@@ -63,7 +63,7 @@ extern int sysctl_legacy_va_layout;
  * related to the physical page in case of virtualization.
  */
 #ifndef mm_forbids_zeropage
-#define mm_forbids_zeropage(X)  (0)
+#define mm_forbids_zeropage(X)	(0)
 #endif
 
 extern unsigned long sysctl_user_reserve_kbytes;
