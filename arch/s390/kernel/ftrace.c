@@ -156,6 +156,8 @@ unsigned long prepare_ftrace_return(unsigned long parent, unsigned long ip)
 {
 	struct ftrace_graph_ent trace;
 
+	if (unlikely(ftrace_graph_is_dead()))
+		goto out;
 	if (unlikely(atomic_read(&current->tracing_graph_pause)))
 		goto out;
 	ip = (ip & PSW_ADDR_INSN) - MCOUNT_INSN_SIZE;
