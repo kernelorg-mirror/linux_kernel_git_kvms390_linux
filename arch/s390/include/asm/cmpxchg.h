@@ -11,13 +11,18 @@
 #include <linux/types.h>
 #include <linux/bug.h>
 
-#define cmpxchg		__sync_val_compare_and_swap
-#define cmpxchg64	__sync_val_compare_and_swap
+#define cmpxchg(ptr, o, n)						\
+({									\
+	__typeof__(*(ptr)) __o = (o);					\
+	__typeof__(*(ptr)) __n = (n);					\
+	(__typeof__(*(ptr))) __sync_val_compare_and_swap((ptr),__o,__n);\
+})
 
-#define cmpxchg_local	__sync_val_compare_and_swap
-#define cmpxchg64_local	__sync_val_compare_and_swap
+#define cmpxchg64	cmpxchg
+#define cmpxchg_local	cmpxchg
+#define cmpxchg64_local	cmpxchg
 
-#define xchg(ptr, x) 							\
+#define xchg(ptr, x)							\
 ({									\
 	__typeof__(ptr) __ptr = (ptr);					\
 	__typeof__(*(ptr)) __old;					\
