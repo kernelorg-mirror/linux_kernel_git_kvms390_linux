@@ -800,7 +800,7 @@ int gmap_ipte_notify(struct gmap *gmap, unsigned long start, unsigned long len)
 			start += PAGE_SIZE;
 			len -= PAGE_SIZE;
 		}
-		spin_unlock(ptl);
+		pte_unmap_unlock(ptep, ptl);
 	}
 	up_read(&gmap->mm->mmap_sem);
 	return rc;
