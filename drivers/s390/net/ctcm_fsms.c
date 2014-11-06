@@ -255,7 +255,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
 
 	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
 
-	duration = jiffies_to_usecs(done_stamp - ch->prof.send_stamp);
+	duration = done_stamp - ch->prof.send_stamp;
 	if (duration > ch->prof.tx_time)
 		ch->prof.tx_time = duration;
 
@@ -1232,7 +1232,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
 	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
 			__func__, dev->name, smp_processor_id());
 
-	duration = jiffies_to_usecs(done_stamp - ch->prof.send_stamp);
+	duration = done_stamp - ch->prof.send_stamp;
 	if (duration > ch->prof.tx_time)
 		ch->prof.tx_time = duration;
 
