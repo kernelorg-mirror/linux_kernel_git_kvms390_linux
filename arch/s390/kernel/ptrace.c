@@ -644,7 +644,7 @@ static u32 __peek_user_compat(struct task_struct *child, addr_t addr)
 		 * floating point regs. are either in child->thread.fp_regs
 		 * or the child->thread.vxrs array
 		 */
-	        offset = addr - (addr_t) &dummy32->regs.fp_regs.fprs;
+		offset = addr - (addr_t) &dummy32->regs.fp_regs.fprs;
 		if (child->thread.vxrs)
 			tmp = *(__u32 *)
 			       ((addr_t) child->thread.vxrs + 2*offset);
@@ -760,7 +760,7 @@ static int __poke_user_compat(struct task_struct *child,
 		/*
 		 * floating point control reg. is in the thread structure
 		 */
- 		if (test_fp_ctl(tmp))
+		if (test_fp_ctl(tmp))
 			return -EINVAL;
 		child->thread.fp_regs.fpc = data;
 
@@ -769,7 +769,7 @@ static int __poke_user_compat(struct task_struct *child,
 		 * floating point regs. are either in child->thread.fp_regs
 		 * or the child->thread.vxrs array
 		 */
-	        offset = addr - (addr_t) &dummy32->regs.fp_regs.fprs;
+		offset = addr - (addr_t) &dummy32->regs.fp_regs.fprs;
 		if (child->thread.vxrs)
 			*(__u32 *)((addr_t)
 				child->thread.vxrs + 2*offset) = tmp;
