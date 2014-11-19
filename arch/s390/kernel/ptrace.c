@@ -261,10 +261,12 @@ static unsigned long __peek_user(struct task_struct *child, addr_t addr)
 		 * or the child->thread.vxrs array
 		 */
 		offset = addr - (addr_t) &dummy->regs.fp_regs.fprs;
+#ifdef CONFIG_64BIT
 		if (child->thread.vxrs)
 			tmp = *(addr_t *)
 			       ((addr_t) child->thread.vxrs + 2*offset);
 		else
+#endif
 			tmp = *(addr_t *)
 			       ((addr_t) &child->thread.fp_regs.fprs + offset);
 
@@ -409,10 +411,12 @@ static int __poke_user(struct task_struct *child, addr_t addr, addr_t data)
 		 * or the child->thread.vxrs array
 		 */
 		offset = addr - (addr_t) &dummy->regs.fp_regs.fprs;
+#ifdef CONFIG_64BIT
 		if (child->thread.vxrs)
 			*(addr_t *)((addr_t)
 				child->thread.vxrs + 2*offset) = data;
 		else
+#endif
 			*(addr_t *)((addr_t)
 				&child->thread.fp_regs.fprs + offset) = data;
 
@@ -645,10 +649,12 @@ static u32 __peek_user_compat(struct task_struct *child, addr_t addr)
 		 * or the child->thread.vxrs array
 		 */
 		offset = addr - (addr_t) &dummy32->regs.fp_regs.fprs;
+#ifdef CONFIG_64BIT
 		if (child->thread.vxrs)
 			tmp = *(__u32 *)
 			       ((addr_t) child->thread.vxrs + 2*offset);
 		else
+#endif
 			tmp = *(__u32 *)
 			       ((addr_t) &child->thread.fp_regs.fprs + offset);
 
@@ -770,10 +776,12 @@ static int __poke_user_compat(struct task_struct *child,
 		 * or the child->thread.vxrs array
 		 */
 		offset = addr - (addr_t) &dummy32->regs.fp_regs.fprs;
+#ifdef CONFIG_64BIT
 		if (child->thread.vxrs)
 			*(__u32 *)((addr_t)
 				child->thread.vxrs + 2*offset) = tmp;
 		else
+#endif
 			*(__u32 *)((addr_t)
 				&child->thread.fp_regs.fprs + offset) = tmp;
 
