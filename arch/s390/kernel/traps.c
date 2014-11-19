@@ -49,8 +49,8 @@ static inline void report_user_fault(struct pt_regs *regs, int signr)
 		return;
 	if (!printk_ratelimit())
 		return;
-	printk("User process fault: interruption code %04x ",
-	       regs->int_code & 0xffff);
+	printk("User process fault: interruption code %04x ilc:%d ",
+	       regs->int_code & 0xffff, regs->int_code >> 17);
 	print_vma_addr("in ", regs->psw.addr & PSW_ADDR_INSN);
 	printk("\n");
 	show_regs(regs);
