@@ -109,25 +109,25 @@ s/390 z/Architecture
 
 16-17 16-17   Address Space Control
 
-              00 Primary Space Mode:
-              The register CR1 contains the primary address-space control ele-
-              ment (PASCE), which points to the primary space region/segment
-              table origin.
+	      00 Primary Space Mode:
+	      The register CR1 contains the primary address-space control ele-
+	      ment (PASCE), which points to the primary space region/segment
+	      table origin.
 
-              01 Access register mode
+	      01 Access register mode
 
-              10 Secondary Space Mode:
-              The register CR7 contains the secondary address-space control
-              element (SASCE), which points to the secondary space region or
-              segment table origin.
+	      10 Secondary Space Mode:
+	      The register CR7 contains the secondary address-space control
+	      element (SASCE), which points to the secondary space region or
+	      segment table origin.
 
-              11 Home Space Mode:
-              The register CR13 contains the home space address-space control
-              element (HASCE), which points to the home space region/segment
-              table origin.
+	      11 Home Space Mode:
+	      The register CR13 contains the home space address-space control
+	      element (HASCE), which points to the home space region/segment
+	      table origin.
 
-              See "Address Spaces on Linux for s/390 & z/Architecture" below
-              for more information about address space usage in Linux.
+	      See "Address Spaces on Linux for s/390 & z/Architecture" below
+	      for more information about address space usage in Linux.
 
 18-19 18-19   Condition codes (CC)
 
@@ -243,7 +243,7 @@ Address Spaces on Linux for s/390 & z/Architecture
 
 Our addressing scheme is basically as follows:
 
-                                   Primary Space               Home Space
+				   Primary Space	       Home Space
 Himem 0x7fffffff 2GB on s/390    *****************          ****************
 currently 0x3ffffffffff (2^42)-1 *  User Stack   *          *              *
 on z/Architecture.		 *****************          *              *
