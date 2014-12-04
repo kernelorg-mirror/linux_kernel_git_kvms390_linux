@@ -513,7 +513,7 @@ ENTRY(io_int_handler)
 	TRACE_IRQS_ON
 .Lio_tif:
 	tm	__TI_flags+7(%r12),_TIF_WORK
-	jnz	.Lio_work 		# there is work to do (signals etc.)
+	jnz	.Lio_work		# there is work to do (signals etc.)
 	tm	__LC_CPU_FLAGS+7,_CIF_WORK
 	jnz	.Lio_work
 .Lio_restore:
