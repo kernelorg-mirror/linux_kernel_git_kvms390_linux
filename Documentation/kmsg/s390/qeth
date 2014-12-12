@@ -865,3 +865,19 @@
  * User action:
  * None.
  */
+
+/*?
+ * Text: "%s: The qeth driver ran out of channel command buffers\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * Command buffers can temporarily run out uring periods of
+ * intense network configuration activities.
+ * The device driver recovers from this condition as outstanding
+ * commands are completed.
+ * User action:
+ * Wait for a short time. If the problem persists,
+ * initiate a recovery process by writing '1' to the 'recover'
+ * sysfs attribute of the device.
+ */

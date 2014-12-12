@@ -153,6 +153,8 @@ static int qeth_setdel_makerc(struct qeth_card *card, int retcode)
 	case IPA_RC_L2_MAC_NOT_FOUND:
 		rc = -ENOENT;
 		break;
+	case -ENOMEM:
+		break;
 	default:
 		rc = -EIO;
 		break;
@@ -324,6 +326,7 @@ static int qeth_l2_vlan_rx_add_vid(struct net_device *dev,
 {
 	struct qeth_card *card = dev->ml_priv;
 	struct qeth_vlan_vid *id;
+	int rc;
 
 	QETH_CARD_TEXT_(card, 4, "aid:%d", vid);
 	if (!vid)
@@ -339,7 +342,11 @@ static int qeth_l2_vlan_rx_add_vid(struct net_device *dev,
 	id = kmalloc(sizeof(struct qeth_vlan_vid), GFP_ATOMIC);
 	if (id) {
 		id->vid = vid;
-		qeth_l2_send_setdelvlan(card, vid, IPA_CMD_SETVLAN);
+		rc = qeth_l2_send_setdelvlan(card, vid, IPA_CMD_SETVLAN);
+		if (rc) {
+			kfree(id);
+			return rc;
+		}
 		spin_lock_bh(&card->vlanlock);
 		list_add_tail(&id->list, &card->vid_list);
 		spin_unlock_bh(&card->vlanlock);
@@ -354,6 +361,7 @@ static int qeth_l2_vlan_rx_kill_vid(struct net_device *dev,
 {
 	struct qeth_vlan_vid *id, *tmpid = NULL;
 	struct qeth_card *card = dev->ml_priv;
+	int rc;
 
 	QETH_CARD_TEXT_(card, 4, "kid:%d", vid);
 	if (card->info.type == QETH_CARD_TYPE_OSM) {
@@ -374,11 +382,11 @@ static int qeth_l2_vlan_rx_kill_vid(struct net_device *dev,
 	}
 	spin_unlock_bh(&card->vlanlock);
 	if (tmpid) {
-		qeth_l2_send_setdelvlan(card, vid, IPA_CMD_DELVLAN);
+		rc = qeth_l2_send_setdelvlan(card, vid, IPA_CMD_DELVLAN);
 		kfree(tmpid);
 	}
 	qeth_l2_set_multicast_list(card->dev);
-	return 0;
+	return rc;
 }
 
 static int qeth_l2_stop_card(struct qeth_card *card, int recovery_mode)
@@ -1032,7 +1040,8 @@ contin:
 		/* configure isolation level */
 		rc = qeth_set_access_ctrl_online(card, 0);
 		if (rc) {
-			rc = -ENODEV;
+			if (rc != -ENOMEM)
+				rc = -ENODEV;
 			goto out_remove;
 		}
 	}

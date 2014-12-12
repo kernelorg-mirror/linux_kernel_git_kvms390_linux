@@ -2950,8 +2950,8 @@ struct qeth_cmd_buffer *qeth_get_ipacmd_buffer(struct qeth_card *card,
 		qeth_fill_ipacmd_header(card, cmd, ipacmd, prot);
 	} else {
 		dev_warn(&card->gdev->dev,
-			 "ran out of channel command buffers\n");
-		QETH_DBF_MESSAGE(1, "%s ran out of channel command buffers",
+			 "The qeth driver ran out of channel command buffers\n");
+		QETH_DBF_MESSAGE(1, "%s The qeth driver ran out of channel command buffers",
 				 dev_name(&card->gdev->dev));
 	}
 
@@ -4434,7 +4434,8 @@ int qeth_set_access_ctrl_online(struct qeth_card *card, int fallback)
 				"IPA(SET_ACCESS_CTRL,%s,%d) sent failed\n",
 				card->gdev->dev.kobj.name,
 				rc);
-			rc = -EOPNOTSUPP;
+			if (rc != -ENOMEM)
+				rc = -EOPNOTSUPP;
 		}
 	} else if (card->options.isolation != ISOLATION_MODE_NONE) {
 		card->options.isolation = ISOLATION_MODE_NONE;
@@ -5129,11 +5130,23 @@ retriable:
 	card->options.adp.supported_funcs = 0;
 	card->options.sbp.supported_funcs = 0;
 	card->info.diagass_support = 0;
-	qeth_query_ipassists(card, QETH_PROT_IPV4);
-	if (qeth_is_supported(card, IPA_SETADAPTERPARMS))
-		qeth_query_setadapterparms(card);
-	if (qeth_adp_supported(card, IPA_SETADP_SET_DIAG_ASSIST))
-		qeth_query_setdiagass(card);
+	rc = qeth_query_ipassists(card, QETH_PROT_IPV4);
+	if (rc == -ENOMEM)
+		goto out;
+	if (qeth_is_supported(card, IPA_SETADAPTERPARMS)) {
+		rc = qeth_query_setadapterparms(card);
+		if (rc) {
+			QETH_DBF_TEXT_(SETUP, 2, "6err%d", rc);
+			goto out;
+		}
+	}
+	if (qeth_adp_supported(card, IPA_SETADP_SET_DIAG_ASSIST)) {
+		rc = qeth_query_setdiagass(card);
+		if (rc) {
+			QETH_DBF_TEXT_(SETUP, 2, "7err%d", rc);
+			goto out;
+		}
+	}
 	return 0;
 out:
 	dev_warn(&card->gdev->dev, "The qeth device driver failed to recover "
