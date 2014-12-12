@@ -154,6 +154,7 @@ static int qeth_setdel_makerc(struct qeth_card *card, int retcode)
 		rc = -ENOENT;
 		break;
 	case -ENOMEM:
+		rc = -ENOMEM;
 		break;
 	default:
 		rc = -EIO;
@@ -361,7 +362,7 @@ static int qeth_l2_vlan_rx_kill_vid(struct net_device *dev,
 {
 	struct qeth_vlan_vid *id, *tmpid = NULL;
 	struct qeth_card *card = dev->ml_priv;
-	int rc;
+	int rc = 0;
 
 	QETH_CARD_TEXT_(card, 4, "kid:%d", vid);
 	if (card->info.type == QETH_CARD_TYPE_OSM) {
