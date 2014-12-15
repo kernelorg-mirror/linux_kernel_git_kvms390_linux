@@ -5142,7 +5142,12 @@ retriable:
 	}
 	if (qeth_adp_supported(card, IPA_SETADP_SET_DIAG_ASSIST)) {
 		rc = qeth_query_setdiagass(card);
-		if (rc) {
+		if (rc < 0) {
+			/*
+			 * Errors lower than 0 are Linux errors such as
+			 * no buffers or timeout. Errors > 0 are from the
+			 * hardware and are handled via driver.
+			 */
 			QETH_DBF_TEXT_(SETUP, 2, "7err%d", rc);
 			goto out;
 		}
