@@ -196,21 +196,21 @@ Address Spaces on Intel Linux
 
 The traditional Intel Linux is approximately mapped as follows forgive
 the ascii art.
-0xFFFFFFFF 4GB Himem            *****************
-                                *               *
-                                * Kernel Space  *
-                                *               *
-                                *****************         ****************
-User Space Himem                *  User Stack   *         *              *
-(typically 0xC0000000 3GB )     *****************         *              *
-                                *  Shared Libs  *         * Next Process *
-                                *****************         *     to       *
-                                *               *   <==   *     Run      *  <==
-                                *  User Program *         *              *
-                                *   Data BSS    *         *              *
-                                *    Text       *         *              *
-                                *   Sections    *         *              *
-0x00000000                      *****************         ****************
+0xFFFFFFFF 4GB Himem		*****************
+				*		*
+				* Kernel Space	*
+				*		*
+				*****************	  ****************
+User Space Himem		*  User Stack	*	  *		 *
+(typically 0xC0000000 3GB )	*****************	  *		 *
+				*  Shared Libs	*	  * Next Process *
+				*****************	  *	to	 *
+				*		*   <==   *	Run	 *  <==
+				*  User Program *	  *		 *
+				*   Data BSS	*	  *		 *
+				*    Text	*	  *		 *
+				*   Sections	*	  *		 *
+0x00000000			*****************	  ****************
 
 Now it is easy to see that on Intel it is quite easy to recognise a kernel
 address as being one greater than user space himem (in this case 0xC0000000),
@@ -749,7 +749,7 @@ Notes
 Addresses & values in the VM debugger are always hex never decimal
 Address ranges are of the format <HexValue1>-<HexValue2> or
 <HexValue1>.<HexValue2>
-For example, the address range  0x2000 to 0x3000 can be described as 2000-3000
+For example, the address range	0x2000 to 0x3000 can be described as 2000-3000
 or 2000.1000
 
 The VM Debugger is case insensitive.
