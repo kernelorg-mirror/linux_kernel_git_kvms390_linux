@@ -113,7 +113,6 @@ static void __do_machine_kdump(void *image)
 #ifdef CONFIG_CRASH_DUMP
 	int (*start_kdump)(int) = (void *)((struct kimage *) image)->start;
 
-	setup_regs();
 	__load_psw_mask(PSW_MASK_BASE | PSW_DEFAULT_KEY | PSW_MASK_EA | PSW_MASK_BA);
 	start_kdump(1);
 #endif
@@ -257,9 +256,9 @@ static void __machine_kexec(void *data)
 	debug_locks_off();
 	if (image->type == KEXEC_TYPE_CRASH) {
 		lgr_info_log();
-		s390_reset_system(__do_machine_kdump, data);
+		s390_reset_system(setup_regs, __do_machine_kdump, data);
 	} else {
-		s390_reset_system(__do_machine_kexec, data);
+		s390_reset_system(NULL, __do_machine_kexec, data);
 	}
 	disabled_wait((unsigned long) __builtin_return_address(0));
 }
