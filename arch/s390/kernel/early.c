@@ -401,7 +401,7 @@ static __init void detect_machine_facilities(void)
 static int __init nocad_setup(char *str)
 {
 	S390_lowcore.machine_flags &= ~MACHINE_FLAG_CAD;
-        return 0;
+	return 0;
 }
 early_param("nocad", nocad_setup);
 

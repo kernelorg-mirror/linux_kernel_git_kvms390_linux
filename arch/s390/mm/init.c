@@ -74,7 +74,7 @@ static void __init setup_zero_pages(void)
 		order = 5;
 		break;
 	case 0x2964:	/* z13 */
- 	default:
+	default:
 		order = 7;
 		break;
 	}
