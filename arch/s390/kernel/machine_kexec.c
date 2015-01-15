@@ -251,8 +251,7 @@ static void __machine_kexec(void *data)
 	tracing_off();
 	debug_locks_off();
 #ifdef CONFIG_CRASH_DUMP
-	if (image->type == KEXEC_TYPE_CRASH) {
-		struct kimage *image = data;
+	if (((struct kimage *) data)->type == KEXEC_TYPE_CRASH) {
 
 		lgr_info_log();
 		s390_reset_system(setup_regs, __do_machine_kdump, data);
