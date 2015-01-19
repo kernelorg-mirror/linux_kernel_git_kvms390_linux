@@ -131,7 +131,7 @@ static int qeth_setdel_makerc(struct qeth_card *card, int retcode)
 	int rc;
 
 	if (retcode)
-		QETH_CARD_TEXT_(card, 2, "err%d", retcode);
+		QETH_CARD_TEXT_(card, 2, "err%04x", retcode);
 	switch (retcode) {
 	case IPA_RC_SUCCESS:
 		rc = 0;
@@ -642,7 +642,7 @@ static int qeth_l2_request_initial_mac(struct qeth_card *card)
 		if (rc) {
 			QETH_DBF_MESSAGE(2, "couldn't get MAC address on "
 				"device %s: x%x\n", CARD_BUS_ID(card), rc);
-			QETH_DBF_TEXT_(SETUP, 2, "1err%d", rc);
+			QETH_DBF_TEXT_(SETUP, 2, "1err%04x", rc);
 			return rc;
 		}
 		QETH_DBF_HEX(SETUP, 2, card->dev->dev_addr, OSA_ADDR_LEN);
@@ -987,7 +987,7 @@ static int __qeth_l2_set_online(struct ccwgroup_device *gdev, int recovery_mode)
 	recover_flag = card->state;
 	rc = qeth_core_hardsetup_card(card);
 	if (rc) {
-		QETH_DBF_TEXT_(SETUP, 2, "2err%d", rc);
+		QETH_DBF_TEXT_(SETUP, 2, "2err%04x", rc);
 		rc = -ENODEV;
 		goto out_remove;
 	}
@@ -1041,8 +1041,7 @@ contin:
 		/* configure isolation level */
 		rc = qeth_set_access_ctrl_online(card, 0);
 		if (rc) {
-			if (rc != -ENOMEM)
-				rc = -ENODEV;
+			rc = -ENODEV;
 			goto out_remove;
 		}
 	}
@@ -1812,9 +1811,7 @@ int qeth_bridgeport_query_ports(struct qeth_card *card,
 	if (rc)
 		return rc;
 	rc = qeth_bridgeport_makerc(card, &cbctl, IPA_SBP_QUERY_BRIDGE_PORTS);
-	if (rc)
-		return rc;
-	return 0;
+	return rc;
 }
 EXPORT_SYMBOL_GPL(qeth_bridgeport_query_ports);
 
@@ -1868,6 +1865,8 @@ int qeth_bridgeport_setrole(struct qeth_card *card, enum qeth_sbp_roles role)
 	if (!(card->options.sbp.supported_funcs & setcmd))
 		return -EOPNOTSUPP;
 	iob = qeth_get_ipacmd_buffer(card, IPA_CMD_SETBRIDGEPORT, 0);
+	if (!iob)
+		return -ENOMEM;
 	cmd = (struct qeth_ipa_cmd *)(iob->data+IPA_PDU_HEADER_SIZE);
 	cmd->data.sbp.hdr.cmdlength = cmdlength;
 	cmd->data.sbp.hdr.command_code = setcmd;

@@ -4434,8 +4434,7 @@ int qeth_set_access_ctrl_online(struct qeth_card *card, int fallback)
 				"IPA(SET_ACCESS_CTRL,%s,%d) sent failed\n",
 				card->gdev->dev.kobj.name,
 				rc);
-			if (rc != -ENOMEM)
-				rc = -EOPNOTSUPP;
+			rc = -EOPNOTSUPP;
 		}
 	} else if (card->options.isolation != ISOLATION_MODE_NONE) {
 		card->options.isolation = ISOLATION_MODE_NONE;
@@ -4652,8 +4651,10 @@ int qeth_snmp_command(struct qeth_card *card, char __user *udata)
 
 	iob = qeth_get_adapter_cmd(card, IPA_SETADP_SET_SNMP_CONTROL,
 				   QETH_SNMP_SETADP_CMDLENGTH + req_len);
-	if (!iob)
-		return -ENOMEM;
+	if (!iob) {
+		rc = -ENOMEM;
+		goto out;
+	}
 	cmd = (struct qeth_ipa_cmd *)(iob->data+IPA_PDU_HEADER_SIZE);
 	memcpy(&cmd->data.setadapterparms.data.snmp, &ureq->cmd, req_len);
 	rc = qeth_send_ipa_snmp_cmd(card, iob, QETH_SETADP_BASE_LEN + req_len,
@@ -4665,7 +4666,7 @@ int qeth_snmp_command(struct qeth_card *card, char __user *udata)
 		if (copy_to_user(udata, qinfo.udata, qinfo.udata_len))
 			rc = -EFAULT;
 	}
-
+out:
 	kfree(ureq);
 	kfree(qinfo.udata);
 	return rc;
@@ -4736,8 +4737,10 @@ int qeth_query_oat_command(struct qeth_card *card, char __user *udata)
 	iob = qeth_get_adapter_cmd(card, IPA_SETADP_QUERY_OAT,
 				   sizeof(struct qeth_ipacmd_setadpparms_hdr) +
 				   sizeof(struct qeth_query_oat));
-	if (!iob)
-		return -ENOMEM;
+	if (!iob) {
+		rc = -ENOMEM;
+		goto out_free;
+	}
 	cmd = (struct qeth_ipa_cmd *)(iob->data+IPA_PDU_HEADER_SIZE);
 	oat_req = &cmd->data.setadapterparms.data.query_oat;
 	oat_req->subcmd_code = oat_data.command;
@@ -5135,7 +5138,7 @@ retriable:
 		goto out;
 	if (qeth_is_supported(card, IPA_SETADAPTERPARMS)) {
 		rc = qeth_query_setadapterparms(card);
-		if (rc) {
+		if (rc < 0) {
 			QETH_DBF_TEXT_(SETUP, 2, "6err%d", rc);
 			goto out;
 		}
@@ -5143,11 +5146,6 @@ retriable:
 	if (qeth_adp_supported(card, IPA_SETADP_SET_DIAG_ASSIST)) {
 		rc = qeth_query_setdiagass(card);
 		if (rc < 0) {
-			/*
-			 * Errors lower than 0 are Linux errors such as
-			 * no buffers or timeout. Errors > 0 are from the
-			 * hardware and are handled via driver.
-			 */
 			QETH_DBF_TEXT_(SETUP, 2, "7err%d", rc);
 			goto out;
 		}
