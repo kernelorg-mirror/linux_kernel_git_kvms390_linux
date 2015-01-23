@@ -1025,7 +1025,7 @@ EXPORT_SYMBOL(ap_bus_force_rescan);
 
 /*
  * ap_test_config(): helper function to extract the nrth bit
- *                   within the unsigned int array field.
+ *		     within the unsigned int array field.
  */
 static inline int ap_test_config(unsigned int *field, unsigned int nr)
 {
