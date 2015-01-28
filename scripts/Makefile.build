@@ -236,7 +236,7 @@ recordmcount_source := $(srctree)/scripts/recordmcount.pl
 endif
 cmd_record_mcount =						\
 	if [ "$(findstring $(CC_FLAGS_FTRACE),$(_c_flags))" =	\
-	     "$(CC_FLAGS_FTRACE)" ]; then 		    	\
+	     "$(CC_FLAGS_FTRACE)" ]; then			\
 		$(sub_cmd_record_mcount)			\
 	fi;
 endif
