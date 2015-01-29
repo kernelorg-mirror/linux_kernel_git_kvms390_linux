@@ -8,13 +8,13 @@
 
 #include <linux/kernel.h>
 #include <linux/init.h>
-#include <linux/smp.h>
 #include <linux/seq_file.h>
 #include <linux/delay.h>
 #include <linux/cpu.h>
 #include <asm/elf.h>
 #include <asm/lowcore.h>
 #include <asm/param.h>
+#include <asm/smp.h>
 
 static DEFINE_PER_CPU(struct cpuid, cpu_id);
 
