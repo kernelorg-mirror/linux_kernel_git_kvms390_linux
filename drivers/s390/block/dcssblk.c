@@ -1014,7 +1014,6 @@ static const struct dev_pm_ops dcssblk_pm_ops = {
 static struct platform_driver dcssblk_pdrv = {
 	.driver = {
 		.name	= "dcssblk",
-		.owner	= THIS_MODULE,
 		.pm	= &dcssblk_pm_ops,
 	},
 };

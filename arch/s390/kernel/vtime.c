@@ -89,7 +89,7 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 		u64 cycles_new[32], *cycles_old;
 		u64 delta, mult, div;
 
-		cycles_old = __get_cpu_var(mt_cycles);
+		cycles_old = this_cpu_ptr(mt_cycles);
 		if (stcctm5(smp_cpu_mtid + 1, cycles_new) < 2) {
 			mult = div = 0;
 			for (i = 0; i <= smp_cpu_mtid; i++) {
@@ -99,8 +99,8 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 			}
 			if (mult > 0) {
 				/* Update scaling factor */
-				__get_cpu_var(mt_scaling_mult) = mult;
-				__get_cpu_var(mt_scaling_div) = div;
+				__this_cpu_write(mt_scaling_mult, mult);
+				__this_cpu_write(mt_scaling_div, div);
 				memcpy(cycles_old, cycles_new,
 				       sizeof(u64) * (smp_cpu_mtid + 1));
 			}
@@ -119,8 +119,8 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 	system_scaled = system;
 	/* Do MT utilization scaling */
 	if (smp_cpu_mtid) {
-		u64 mult = __get_cpu_var(mt_scaling_mult);
-		u64 div = __get_cpu_var(mt_scaling_div);
+		u64 mult = __this_cpu_read(mt_scaling_mult);
+		u64 div = __this_cpu_read(mt_scaling_div);
 
 		user_scaled = (user_scaled * mult) / div;
 		system_scaled = (system_scaled * mult) / div;
@@ -180,8 +180,8 @@ void vtime_account_irq_enter(struct task_struct *tsk)
 	system_scaled = system;
 	/* Do MT utilization scaling */
 	if (smp_cpu_mtid) {
-		u64 mult = __get_cpu_var(mt_scaling_mult);
-		u64 div = __get_cpu_var(mt_scaling_div);
+		u64 mult = __this_cpu_read(mt_scaling_mult);
+		u64 div = __this_cpu_read(mt_scaling_div);
 
 		system_scaled = (system_scaled * mult) / div;
 	}
