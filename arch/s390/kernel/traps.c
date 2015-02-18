@@ -311,7 +311,7 @@ void data_exception(struct pt_regs *regs)
 		signal = SIGFPE;
 	else
 		signal = SIGILL;
-        if (signal == SIGFPE)
+	if (signal == SIGFPE)
 		do_fp_trap(regs, current->thread.fp_regs.fpc);
 	else if (signal)
 		do_trap(regs, signal, ILL_ILLOPN, "data exception");
