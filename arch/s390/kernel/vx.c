@@ -1,0 +1,206 @@
+/*
+ * In-kernel vector extension support functions
+ *
+ * Copyright IBM Corp. 2015
+ * Author(s): Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+ */
+#include <linux/kernel.h>
+#include <linux/cpu.h>
+#include <linux/sched.h>
+#include <uapi/asm/sigcontext.h>
+#include <asm/fpu-internal.h>
+#include <asm/ctl_reg.h>
+#include <asm/vx.h>
+
+
+/* VX address type declaration for inline assemblies */
+struct vx_addr { __vector128 _[__NUM_VXRS]; };
+
+/*
+ * Per-CPU variable to indicate use of vector register ranges that are
+ * in use by the kernel.
+ */
+static DEFINE_PER_CPU(u32, kernel_vx_state);
+
+#define KERNEL_VX_STATE_MASK	(KERNEL_VXR_MASK|KERNEL_VX_FPC)
+
+
+void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
+{
+	if (!__this_cpu_read(kernel_vx_state)) {
+		/*
+		 * Save user space FPU state and register contents.  Multiple
+		 * calls because of interruptions do not matter and return
+		 * immediately.  This also sets CIF_FPU to lazy restore FP/VX
+		 * register contents when returning to user space.
+		 */
+		save_fpu_regs(&current->thread.fpu);
+
+		/*
+		 * Set the vector-enablement control and properly handle
+		 * interrupts that might change the control register too.
+		 * At return to user space, the vector-enablement control
+		 * is restored.
+		 */
+		__ctl_set_vx();
+	}
+
+	/* Save and update current kernel VX state */
+	state->mask = __this_cpu_read(kernel_vx_state);
+	__this_cpu_or(kernel_vx_state, flags & KERNEL_VX_STATE_MASK);
+
+	/*
+	 * If this is the first call to __kernel_vx_begin(), no additional
+	 * work is required.
+	 */
+	if (!(state->mask & KERNEL_VX_STATE_MASK))
+		return;
+
+	/*
+	 * If this is a nested call to __kernel_vx_begin(), check the saved
+	 * state mask to save and later restore the vector registers that
+	 * are already in use.  Let's start with checking floating-point
+	 * controls.
+	 */
+	if (state->mask & KERNEL_VX_FPC)
+		asm volatile("stfpc %0" : "=m" (state->fpc));
+
+	/* Test and save vector registers */
+	asm volatile (
+		/*
+		 * Test if any vector register must be saved and, if so,
+		 * test if all register can be saved.
+		 */
+		"	tmll	%[m],15\n"	/* KERNEL_VXR_MASK */
+		"	jz	20f\n"		/* no work -> done */
+		"	la	1,%[vxrs]\n"	/* load save area */
+		"	jo	18f\n"		/* -> save V0..V31 */
+
+		/*
+		 * Test if V8..V23 can be saved at once... this speeds up
+		 * for KERNEL_VX_MID only. Otherwise continue to split the
+		 * range of vector registers into two halves and test them
+		 * separately.
+		 */
+		"	tmll	%[m],6\n"	/* KERNEL_VXR_MID */
+		"	jo	17f\n"		/* -> save V8..V23 */
+
+		/* Test and save the first half of 16 vector registers */
+		"1:	tmll	%[m],3\n"	/* KERNEL_VXR_LOW */
+		"	jz	10f\n"		/* -> KERNEL_VXR_HIGH */
+		"	jo	2f\n"		/* 11 -> save V0..V15 */
+		"	brc	4,3f\n"		/* 01 -> save V0..V7  */
+		"	brc	2,4f\n"		/* 10 -> save V8..V15 */
+
+		/* Test and save the second half of 16 vector registers */
+		"10:	tmll	%[m],12\n"	/* KERNEL_VXR_HIGH */
+		"	jo	19f\n"		/* 11 -> save V16..V31 */
+		"	brc	4,11f\n"	/* 01 -> save V16..V23  */
+		"	brc	2,12f\n"	/* 10 -> save V24..V31 */
+		"	j	20f\n"		/* 00 -> done */
+
+		/*
+		 * Below are the vstm combinations to save multiple vector
+		 * registers at once.
+		 */
+		"2:	.word	0xe70f,0x1000,0x003e\n"	/* vstm 0,15,0(1) */
+		"	j	10b\n"			/* -> VXR_HIGH */
+		"3:	.word	0xe707,0x1000,0x003e\n" /* vstm 0,7,0(1) */
+		"	j	10b\n"			/* -> VXR_HIGH */
+		"4:	.word	0xe78f,0x1080,0x003e\n" /* vstm 8,15,128(1) */
+		"	j	10b\n"			/* -> VXR_HIGH */
+		"\n"
+		"11:	.word	0xe707,0x1100,0x0c3e\n"	/* vstm 16,23,256(1) */
+		"	j	20f\n"			/* -> done */
+		"12:	.word	0xe78f,0x1180,0x0c3e\n" /* vstm 24,31,384(1) */
+		"	j	20f\n"			/* -> done */
+		"\n"
+		"17:	.word	0xe787,0x1080,0x043e\n"	/* vstm 8,23,128(1) */
+		"	nill	%[m],249\n"		/* m &= ~VXR_MID    */
+		"	j	1b\n"			/* -> VXR_LOW */
+		"\n"
+		"18:	.word	0xe70f,0x1000,0x003e\n"	/* vstm 0,15,0(1) */
+		"19:	.word	0xe70f,0x1100,0x0c3e\n"	/* vstm 16,31,256(1) */
+		"20:"
+		: [vxrs] "=Q" (*(struct vx_addr *) &state->vxrs)
+		: [m] "d" (state->mask)
+		: "1", "cc");
+}
+EXPORT_SYMBOL(__kernel_vx_begin);
+
+void __kernel_vx_end(struct kernel_vx *state)
+{
+	/* Just update the per-CPU state if there is nothing to restore */
+	if (!(state->mask & KERNEL_VX_STATE_MASK))
+		goto update_kvx_state;
+
+	/* Test and restore floating-point controls */
+	if (state->mask & KERNEL_VX_FPC)
+		asm volatile("stfpc %0" : : "Q" (state->fpc));
+
+	/* Test and restore (load) vector registers */
+	asm volatile (
+		/*
+		 * Test if any vector registers must be loaded and, if so,
+		 * test if all registers can be loaded at once.
+		 */
+		"	tmll	%[m],15\n"	/* KERNEL_VXR_MASK */
+		"	jz	20f\n"		/* no work -> done */
+		"	la	1,%[vxrs]\n"	/* load load area */
+		"	jo	18f\n"		/* -> load V0..V31 */
+
+		/*
+		 * Test if V8..V23 can be restored at once... this speeds up
+		 * for KERNEL_VX_MID only. Otherwise continue to split the
+		 * range of vector registers into two halves and test them
+		 * separately.
+		 */
+		"	tmll	%[m],6\n"	/* KERNEL_VXR_MID */
+		"	jo	17f\n"		/* -> load V8..V23 */
+
+		/* Test and load the first half of 16 vector registers */
+		"1:	tmll	%[m],3\n"	/* KERNEL_VXR_LOW */
+		"	jz	10f\n"		/* -> KERNEL_VXR_HIGH */
+		"	jo	2f\n"		/* 11 -> load V0..V15 */
+		"	brc	4,3f\n"		/* 01 -> load V0..V7  */
+		"	brc	2,4f\n"		/* 10 -> load V8..V15 */
+
+		/* Test and load the second half of 16 vector registers */
+		"10:	tmll	%[m],12\n"	/* KERNEL_VXR_HIGH */
+		"	jo	19f\n"		/* 11 -> load V16..V31 */
+		"	brc	4,11f\n"	/* 01 -> load V16..V23  */
+		"	brc	2,12f\n"	/* 10 -> load V24..V31 */
+		"	j	20f\n"		/* 00 -> done */
+
+		/*
+		 * Below are the vstm combinations to load multiple vector
+		 * registers at once.
+		 */
+		"2:	.word	0xe70f,0x1000,0x0036\n"	/* vlm 0,15,0(1) */
+		"	j	10b\n"			/* -> VXR_HIGH */
+		"3:	.word	0xe707,0x1000,0x0036\n" /* vlm 0,7,0(1) */
+		"	j	10b\n"			/* -> VXR_HIGH */
+		"4:	.word	0xe78f,0x1080,0x0036\n" /* vlm 8,15,128(1) */
+		"	j	10b\n"			/* -> VXR_HIGH */
+		"\n"
+		"11:	.word	0xe707,0x1100,0x0c36\n"	/* vlm 16,23,256(1) */
+		"	j	20f\n"			/* -> done */
+		"12:	.word	0xe78f,0x1180,0x0c36\n" /* vlm 24,31,384(1) */
+		"	j	20f\n"			/* -> done */
+		"\n"
+		"17:	.word	0xe787,0x1080,0x0436\n"	/* vlm 8,23,128(1) */
+		"	nill	%[m],249\n"		/* m &= ~VXR_MID    */
+		"	j	1b\n"			/* -> VXR_LOW */
+		"\n"
+		"18:	.word	0xe70f,0x1000,0x0036\n"	/* vlm 0,15,0(1) */
+		"19:	.word	0xe70f,0x1100,0x0c36\n"	/* vlm 16,31,256(1) */
+		"20:"
+		: [vxrs] "=Q" (*(struct vx_addr *) &state->vxrs)
+		: [m] "d" (state->mask)
+		: "1", "cc");
+
+update_kvx_state:
+	/* Update current kernel VX state */
+	__this_cpu_write(kernel_vx_state, state->mask);
+}
+EXPORT_SYMBOL(__kernel_vx_end);
