@@ -110,7 +110,7 @@ config S390
 	select GENERIC_TIME_VSYSCALL
 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
 	select HAVE_ARCH_AUDITSYSCALL
-	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
+	select HAVE_ARCH_JUMP_LABEL
 	select HAVE_ARCH_SECCOMP_FILTER
 	select HAVE_ARCH_TRACEHOOK
 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
@@ -189,7 +189,7 @@ config HAVE_MARCH_Z13_FEATURES
 
 choice
 	prompt "Processor type"
-	default MARCH_G5
+	default MARCH_Z900
 
 config MARCH_Z900
 	bool "IBM zSeries model z800 and z900"
@@ -249,9 +249,6 @@ config MARCH_Z13
 
 endchoice
 
-config MARCH_G5_TUNE
-	def_bool TUNE_G5 || MARCH_G5 && TUNE_DEFAULT
-
 config MARCH_Z900_TUNE
 	def_bool TUNE_Z900 || MARCH_Z900 && TUNE_DEFAULT
 
@@ -289,9 +286,6 @@ config TUNE_DEFAULT
 	help
 	  Tune the generated code for the target processor for which the kernel
 	  will be compiled.
-
-config TUNE_G5
-	bool "System/390 model G5 and G6"
 
 config TUNE_Z900
 	bool "IBM zSeries model z800 and z900"
