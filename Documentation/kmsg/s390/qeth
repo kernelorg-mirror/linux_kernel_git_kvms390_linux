@@ -872,7 +872,7 @@
  * Parameter:
  *   @1: bus ID of the qeth device
  * Description:
- * Command buffers can temporarily run out uring periods of
+ * Command buffers can temporarily run out during periods of
  * intense network configuration activities.
  * The device driver recovers from this condition as outstanding
  * commands are completed.
