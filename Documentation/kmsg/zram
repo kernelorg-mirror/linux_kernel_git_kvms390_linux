@@ -24,3 +24,5 @@
 /*? Text: "Can't change algorithm for initialized device\n" */
 /*? Text: "Cannot initialise %s compressing backend\n" */
 /*? Text: "Cannot change max compression streams\n" */
+/*? Text: "Destroyed %u device(s)\n" */
+/*? Text: "Created %u device(s)\n" */
