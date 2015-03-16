@@ -562,7 +562,6 @@ struct kvm_arch{
 	int css_support;
 	int use_irqchip;
 	int use_cmma;
-	int use_vectors;
 	int user_cpu_state_ctrl;
 	int user_sigp;
 	struct s390_io_adapter *adapters[MAX_S390_IO_ADAPTERS];
