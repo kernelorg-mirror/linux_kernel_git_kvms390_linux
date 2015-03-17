@@ -3,7 +3,7 @@
  *
  * Support for s390 cryptographic instructions.
  *
- *   Copyright IBM Corp. 2003, 2007, 2015
+ *   Copyright IBM Corp. 2003, 2015
  *   Author(s): Thomas Spatzier
  *		Jan Glauber (jan.glauber@de.ibm.com)
  *		Harald Freudenberger (freude@de.ibm.com)
@@ -383,13 +383,13 @@ static inline int crypt_s390_kmctr(long func, void *param, u8 *dest,
  */
 static inline int crypt_s390_ppno(long func, void *param,
 				  u8 *dest, long dest_len,
-				  u8 *seed, long seed_len)
+				  const u8 *seed, long seed_len)
 {
 	register long  __func     asm("0") = func & CRYPT_S390_FUNC_MASK;
 	register void *__param    asm("1") = param;    /* param block (240 bytes) */
 	register u8   *__dest     asm("2") = dest;     /* buf for recv random bytes */
 	register long  __dest_len asm("3") = dest_len; /* requested random bytes */
-	register u8   *__seed     asm("4") = seed;     /* buf with seed data */
+	register const u8 *__seed asm("4") = seed;     /* buf with seed data */
 	register long  __seed_len asm("5") = seed_len; /* bytes in seed buf */
 	int ret = -1;
 
@@ -399,7 +399,7 @@ static inline int crypt_s390_ppno(long func, void *param,
 		"	la	%0,0\n"
 		"2:\n"
 		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "=d" (ret), "+a"(__dest), "+d"(__dest_len)
+		: "+d" (ret), "+a"(__dest), "+d"(__dest_len)
 		: "d"(__func), "a"(__param), "a"(__seed), "d"(__seed_len)
 		: "cc", "memory");
 	if (ret < 0)
