@@ -35,7 +35,7 @@ MODULE_DESCRIPTION("s390 PRNG interface");
 #define PRNG_MODE_SHA512  2
 
 static unsigned int prng_mode = PRNG_MODE_AUTO;
-module_param_named(mode, prng_mode, int, S_IRUSR | S_IRGRP | S_IROTH);
+module_param_named(mode, prng_mode, int, 0);
 MODULE_PARM_DESC(prng_mode, "PRNG mode: 0 - auto, 1 - TDES, 2 - SHA512");
 
 
@@ -45,7 +45,7 @@ MODULE_PARM_DESC(prng_mode, "PRNG mode: 0 - auto, 1 - TDES, 2 - SHA512");
 #define PRNG_CHUNKSIZE_SHA512_MAX (64*1024)
 
 static unsigned int prng_chunk_size = 256;
-module_param_named(chunksize, prng_chunk_size, int, S_IRUSR | S_IRGRP | S_IROTH);
+module_param_named(chunksize, prng_chunk_size, int, 0);
 MODULE_PARM_DESC(prng_chunk_size, "PRNG read chunk size in bytes");
 
 
@@ -55,7 +55,7 @@ MODULE_PARM_DESC(prng_chunk_size, "PRNG read chunk size in bytes");
 #define PRNG_RESEED_LIMIT_SHA512_LOWER  10000
 
 static unsigned int prng_reseed_limit;
-module_param_named(reseed_limit, prng_reseed_limit, int, S_IRUSR | S_IRGRP | S_IROTH);
+module_param_named(reseed_limit, prng_reseed_limit, int, 0);
 MODULE_PARM_DESC(prng_reseed_limit, "PRNG reseed limit");
 
 
@@ -197,9 +197,9 @@ static int __init prng_tdes_instantiate(void)
 {
 	int datalen;
 
-	pr_info("prng runs in TDES mode with "
-		"chunksize=%d and reseed_limit=%u\n",
-		prng_chunk_size, prng_reseed_limit);
+	pr_debug("prng runs in TDES mode with "
+		 "chunksize=%d and reseed_limit=%u\n",
+		 prng_chunk_size, prng_reseed_limit);
 
 	/* memory allocation, prng_data struct init, mutex init */
 	datalen = sizeof(struct prng_data_s) + prng_chunk_size;
@@ -221,8 +221,8 @@ static int __init prng_tdes_instantiate(void)
 
 static void prng_tdes_deinstantiate(void)
 {
-	pr_info("The prng module stopped "
-		"after running in triple DES mode\n");
+	pr_debug("The prng module stopped "
+		 "after running in triple DES mode\n");
 	kzfree(prng_data);
 }
 
@@ -366,9 +366,9 @@ static int __init prng_sha512_instantiate(void)
 	int ret, datalen;
 	u8 seed[64];
 
-	pr_info("prng runs in SHA-512 mode "
-		"with chunksize=%d and reseed_limit=%u\n",
-		prng_chunk_size, prng_reseed_limit);
+	pr_debug("prng runs in SHA-512 mode "
+		 "with chunksize=%d and reseed_limit=%u\n",
+		 prng_chunk_size, prng_reseed_limit);
 
 	/* memory allocation, prng_data struct init, mutex init */
 	datalen = sizeof(struct prng_data_s) + prng_chunk_size;
@@ -430,7 +430,7 @@ outfree:
 
 static void prng_sha512_deinstantiate(void)
 {
-	pr_info("The prng module stopped after running in SHA-512 mode\n");
+	pr_debug("The prng module stopped after running in SHA-512 mode\n");
 	kzfree(prng_data);
 }
 
