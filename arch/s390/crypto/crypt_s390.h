@@ -33,8 +33,8 @@
 
 /* s390 cryptographic operations */
 enum crypt_s390_operations {
-	CRYPT_S390_KM    = 0x0100,
-	CRYPT_S390_KMC   = 0x0200,
+	CRYPT_S390_KM	 = 0x0100,
+	CRYPT_S390_KMC	 = 0x0200,
 	CRYPT_S390_KIMD  = 0x0300,
 	CRYPT_S390_KLMD  = 0x0400,
 	CRYPT_S390_KMAC  = 0x0500,
@@ -146,7 +146,7 @@ enum crypt_s390_kmac_func {
  * OPERATION) instruction
  */
 enum crypt_s390_ppno_func {
-	PPNO_QUERY            = CRYPT_S390_PPNO | 0,
+	PPNO_QUERY	      = CRYPT_S390_PPNO | 0,
 	PPNO_SHA512_DRNG_GEN  = CRYPT_S390_PPNO | 3,
 	PPNO_SHA512_DRNG_SEED = CRYPT_S390_PPNO | 0x83
 };
@@ -385,9 +385,9 @@ static inline int crypt_s390_ppno(long func, void *param,
 				  u8 *dest, long dest_len,
 				  const u8 *seed, long seed_len)
 {
-	register long  __func     asm("0") = func & CRYPT_S390_FUNC_MASK;
-	register void *__param    asm("1") = param;    /* param block (240 bytes) */
-	register u8   *__dest     asm("2") = dest;     /* buf for recv random bytes */
+	register long  __func	  asm("0") = func & CRYPT_S390_FUNC_MASK;
+	register void *__param	  asm("1") = param;    /* param block (240 bytes) */
+	register u8   *__dest	  asm("2") = dest;     /* buf for recv random bytes */
 	register long  __dest_len asm("3") = dest_len; /* requested random bytes */
 	register const u8 *__seed asm("4") = seed;     /* buf with seed data */
 	register long  __seed_len asm("5") = seed_len; /* bytes in seed buf */

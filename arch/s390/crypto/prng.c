@@ -1,7 +1,7 @@
 /*
  * Copyright IBM Corp. 2006, 2015
  * Author(s): Jan Glauber <jan.glauber@de.ibm.com>
- *            Harald Freudenberger <freude@de.ibm.com>
+ *	      Harald Freudenberger <freude@de.ibm.com>
  * Driver for the s390 pseudo random number generator
  */
 
@@ -30,8 +30,8 @@ MODULE_AUTHOR("IBM Corporation");
 MODULE_DESCRIPTION("s390 PRNG interface");
 
 
-#define PRNG_MODE_AUTO    0
-#define PRNG_MODE_TDES    1
+#define PRNG_MODE_AUTO	  0
+#define PRNG_MODE_TDES	  1
 #define PRNG_MODE_SHA512  2
 
 static unsigned int prng_mode = PRNG_MODE_AUTO;
@@ -49,10 +49,10 @@ module_param_named(chunksize, prng_chunk_size, int, 0);
 MODULE_PARM_DESC(prng_chunk_size, "PRNG read chunk size in bytes");
 
 
-#define PRNG_RESEED_LIMIT_TDES           4096
-#define PRNG_RESEED_LIMIT_TDES_LOWER     4096
+#define PRNG_RESEED_LIMIT_TDES		 4096
+#define PRNG_RESEED_LIMIT_TDES_LOWER	 4096
 #define PRNG_RESEED_LIMIT_SHA512       100000
-#define PRNG_RESEED_LIMIT_SHA512_LOWER  10000
+#define PRNG_RESEED_LIMIT_SHA512_LOWER	10000
 
 static unsigned int prng_reseed_limit;
 module_param_named(reseed_limit, prng_reseed_limit, int, 0);
@@ -67,11 +67,11 @@ MODULE_PARM_DESC(prng_reseed_limit, "PRNG reseed limit");
 static int prng_errorflag;
 
 #define PRNG_GEN_ENTROPY_FAILED  1
-#define PRNG_SELFTEST_FAILED     2
+#define PRNG_SELFTEST_FAILED	 2
 #define PRNG_INSTANTIATE_FAILED  3
-#define PRNG_SEED_FAILED         4
-#define PRNG_RESEED_FAILED       5
-#define PRNG_GEN_FAILED          6
+#define PRNG_SEED_FAILED	 4
+#define PRNG_RESEED_FAILED	 5
+#define PRNG_GEN_FAILED		 6
 
 struct prng_ws_s {
 	u8  parm_block[32];
