@@ -1,0 +1,13 @@
+/*?  Text: "flen=%u proglen=%u pass=%u image=%pK\n" */
+
+/*?
+ * Text: "Unknown opcode %02x\n"
+ * Severity: Error
+ * Parameter:
+ *   @1: Instruction opcode
+ * Description:
+ * The BPF JIT compiler has found an unknown instruction in the BPF program. It
+ * stops the compilation and the interpreter is used as fallback.
+ * User action:
+ * Report problem together with the error message to your support organization.
+ */
