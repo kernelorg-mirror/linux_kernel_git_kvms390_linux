@@ -12,7 +12,7 @@
  * Copyright IBM Corp. 2012,2015
  *
  * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
- *            Michael Holzheu <holzheu@linux.vnet.ibm.com>
+ *	      Michael Holzheu <holzheu@linux.vnet.ibm.com>
  */
 
 #define KMSG_COMPONENT "bpf_jit"
@@ -960,15 +960,15 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct bpf_prog *fp, int i)
 	 *
 	 * Condition code to mask mapping:
 	 *
-	 * CC | Description        | Mask
+	 * CC | Description	   | Mask
 	 * ------------------------------
-	 * 0  | Operands equal     |    8
-	 * 1  | First operand low  |    4
-	 * 2  | First operand high |    2
-	 * 3  | Unused             |    1
+	 * 0  | Operands equal	   |	8
+	 * 1  | First operand low  |	4
+	 * 2  | First operand high |	2
+	 * 3  | Unused		   |	1
 	 *
 	 * For s390x relative branches: ip = ip + off_bytes
-	 * For BPF relative branches:   insn = insn + off_insns + 1
+	 * For BPF relative branches:	insn = insn + off_insns + 1
 	 *
 	 * For example for s390x with offset 0 we jump to the branch
 	 * instruction itself (loop) and for BPF with offset 0 we
@@ -1081,15 +1081,15 @@ call_fn:
 
 		/*
 		 * Implicit input:
-		 *  BPF_REG_6    (R7) : skb pointer
+		 *  BPF_REG_6	 (R7) : skb pointer
 		 *  REG_SKB_DATA (R12): skb data pointer
 		 *
 		 * Calculated input:
-		 *  BPF_REG_2    (R3) : offset of byte(s) to fetch in skb
-		 *  BPF_REG_5    (R6) : return address
+		 *  BPF_REG_2	 (R3) : offset of byte(s) to fetch in skb
+		 *  BPF_REG_5	 (R6) : return address
 		 *
 		 * Output:
-		 *  BPF_REG_0    (R14): data read from skb
+		 *  BPF_REG_0	 (R14): data read from skb
 		 *
 		 * Scratch registers (BPF_REG_1-5)
 		 */

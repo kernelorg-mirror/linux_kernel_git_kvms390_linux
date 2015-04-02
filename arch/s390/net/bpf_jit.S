@@ -4,7 +4,7 @@
  * Copyright IBM Corp. 2012,2015
  *
  * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
- *            Michael Holzheu <holzheu@linux.vnet.ibm.com>
+ *	      Michael Holzheu <holzheu@linux.vnet.ibm.com>
  */
 
 #include <linux/linkage.h>

@@ -4,7 +4,7 @@
  * Copyright IBM Corp. 2012,2015
  *
  * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
- *            Michael Holzheu <holzheu@linux.vnet.ibm.com>
+ *	      Michael Holzheu <holzheu@linux.vnet.ibm.com>
  */
 
 #ifndef __ARCH_S390_NET_BPF_JIT_H
@@ -23,27 +23,27 @@ extern u8 sk_load_word[], sk_load_half[], sk_load_byte[];
 /*
  * Stackframe layout (packed stack):
  *
- *                                  ^ high
- *            +---------------+     |
- *            | old backchain |     |
- *            +---------------+     |
- *            |   r15 - r6    |     |
- * BFP     -> +===============+     |
- *            |               |     |
- *            |   BPF stack   |     |
- *            |               |     |
- *            +---------------+     |
- *            | 8 byte hlen   |     |
+ *				    ^ high
+ *	      +---------------+     |
+ *	      | old backchain |     |
+ *	      +---------------+     |
+ *	      |   r15 - r6    |     |
+ * BFP	   -> +===============+     |
+ *	      |		      |     |
+ *	      |   BPF stack   |     |
+ *	      |		      |     |
+ *	      +---------------+     |
+ *	      | 8 byte hlen   |     |
  * R15+168 -> +---------------+     |
- *            | 4 byte align  |     |
- *            +---------------+     |
- *            | 4 byte temp   |     |
- *            | for bpf_jit.S |     |
+ *	      | 4 byte align  |     |
+ *	      +---------------+     |
+ *	      | 4 byte temp   |     |
+ *	      | for bpf_jit.S |     |
  * R15+160 -> +---------------+     |
- *            | new backchain |     |
+ *	      | new backchain |     |
  * R15+152 -> +---------------+     |
- *            | + 152 byte SA |     |
- * R15     -> +---------------+     + low
+ *	      | + 152 byte SA |     |
+ * R15	   -> +---------------+     + low
  *
  * We get 160 bytes stack space from calling function, but only use
  * 11 * 8 byte (old backchain + r15 - r6) for storing registers.
