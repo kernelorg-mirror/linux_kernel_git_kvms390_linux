@@ -59,7 +59,7 @@ config KVM_S390_PGSTE_DEFAULT
 	  to be allocated with the page status table extension.
 
 	  The system control 'vm.allocate_pgste' is queried at process
-          creation if 4K page tables with the PGSTE are required or if
+	  creation if 4K page tables with the PGSTE are required or if
 	  2K page tables are sufficient.
 
 	  This option sets the default for 'vm.allocate_pgste'. If
