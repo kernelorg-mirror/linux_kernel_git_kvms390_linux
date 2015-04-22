@@ -14,7 +14,7 @@ static inline pmd_t __pte_to_pmd(pte_t pte)
 
 	/*
 	 * Convert encoding		  pte bits	   pmd bits
-	 *				lIR.uswrdy.p    dy..R...I...wr
+	 *				lIR.uswrdy.p	dy..R...I...wr
 	 * empty			010.000000.0 -> 00..0...1...00
 	 * prot-none, clean, old	111.000000.1 -> 00..1...1...00
 	 * prot-none, clean, young	111.000001.1 -> 01..1...1...00
@@ -30,7 +30,7 @@ static inline pmd_t __pte_to_pmd(pte_t pte)
 	 * read-write, dirty, young	100.001111.1 -> 11..0...0...11
 	 * HW-bits: R read-only, I invalid
 	 * SW-bits: p present, y young, d dirty, r read, w write, s special,
-	 * 	    u unused, l large
+	 *	    u unused, l large
 	 */
 	if (pte_present(pte)) {
 		pmd_val(pmd) = pte_val(pte) & PAGE_MASK;
@@ -67,7 +67,7 @@ static inline pte_t __pmd_to_pte(pmd_t pmd)
 	 * read-write, dirty, young	11..0...0...11 -> 100.001111.1
 	 * HW-bits: R read-only, I invalid
 	 * SW-bits: p present, y young, d dirty, r read, w write, s special,
-	 * 	    u unused, l large
+	 *	    u unused, l large
 	 */
 	if (pmd_present(pmd)) {
 		pte_val(pte) = pmd_val(pmd) & _SEGMENT_ENTRY_ORIGIN_LARGE;

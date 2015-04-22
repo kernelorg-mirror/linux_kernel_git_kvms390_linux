@@ -228,7 +228,7 @@ static inline int is_module_addr(void *addr)
  * read-write, dirty, young	.00.xx1111.1
  * HW-bits: R read-only, I invalid
  * SW-bits: p present, y young, d dirty, r read, w write, s special,
- * 	    u unused, l large
+ *	    u unused, l large
  *
  * pte_none    is true for the bit pattern .10.00000000, pte == 0x400
  * pte_swap    is true for the bit pattern .11..ooooo.0, (pte & 0x201) == 0x200
@@ -594,25 +594,25 @@ static inline pte_t pte_mksoft_dirty(pte_t pte)
 static inline pte_t pte_clear_soft_dirty(pte_t pte)
 {
 	pte_val(pte) &= ~_PAGE_SOFT_DIRTY;
-        return pte;
+	return pte;
 }
 #define pte_swp_clear_soft_dirty pte_clear_soft_dirty
 
 static inline int pmd_soft_dirty(pmd_t pmd)
 {
-        return pmd_val(pmd) & _SEGMENT_ENTRY_SOFT_DIRTY;
+	return pmd_val(pmd) & _SEGMENT_ENTRY_SOFT_DIRTY;
 }
 
 static inline pmd_t pmd_mksoft_dirty(pmd_t pmd)
 {
 	pmd_val(pmd) |= _SEGMENT_ENTRY_SOFT_DIRTY;
-        return pmd;
+	return pmd;
 }
 
 static inline pmd_t pmd_clear_soft_dirty(pmd_t pmd)
 {
 	pmd_val(pmd) &= ~_SEGMENT_ENTRY_SOFT_DIRTY;
-        return pmd;
+	return pmd;
 }
 
 static inline pgste_t pgste_get_lock(pte_t *ptep)
@@ -1613,7 +1613,7 @@ static inline int has_transparent_hugepage(void)
  * This leaves the bits 0-51 and bits 56-62 to store type and offset.
  * We use the 5 bits from 57-61 for the type and the 52 bits from 0-51
  * for the offset.
- * |                      offset                        |01100|type |00|
+ * |			  offset			|01100|type |00|
  * |0000000000111111111122222222223333333333444444444455|55555|55566|66|
  * |0123456789012345678901234567890123456789012345678901|23456|78901|23|
  */
