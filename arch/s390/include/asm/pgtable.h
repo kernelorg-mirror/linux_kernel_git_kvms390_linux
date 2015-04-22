@@ -185,6 +185,7 @@ static inline int is_module_addr(void *addr)
 
 /* Software bits in the page table entry */
 #define _PAGE_PRESENT	0x001		/* SW pte present bit */
+#define _PAGE_SOFT_DIRTY 0x002		/* SW pte soft dirty bit */
 #define _PAGE_YOUNG	0x004		/* SW pte young bit */
 #define _PAGE_DIRTY	0x008		/* SW pte dirty bit */
 #define _PAGE_READ	0x010		/* SW pte read bit */
@@ -195,7 +196,7 @@ static inline int is_module_addr(void *addr)
 
 /* Set of bits not changed in pte_modify */
 #define _PAGE_CHG_MASK		(PAGE_MASK | _PAGE_SPECIAL | _PAGE_DIRTY | \
-				 _PAGE_YOUNG)
+				 _PAGE_YOUNG | _PAGE_SOFT_DIRTY)
 
 /*
  * handle_pte_fault uses pte_present and pte_none to find out the pte type
@@ -278,6 +279,7 @@ static inline int is_module_addr(void *addr)
 #define _SEGMENT_ENTRY		(0)
 #define _SEGMENT_ENTRY_EMPTY	(_SEGMENT_ENTRY_INVALID)
 
+#define _SEGMENT_ENTRY_SOFT_DIRTY 0x4000 /* SW segment soft dirty bit */
 #define _SEGMENT_ENTRY_DIRTY	0x2000	/* SW segment dirty bit */
 #define _SEGMENT_ENTRY_YOUNG	0x1000	/* SW segment young bit */
 #define _SEGMENT_ENTRY_SPLIT	0x0800	/* THP splitting bit */
@@ -574,6 +576,43 @@ static inline int pte_special(pte_t pte)
 static inline int pte_same(pte_t a, pte_t b)
 {
 	return pte_val(a) == pte_val(b);
+}
+
+static inline int pte_soft_dirty(pte_t pte)
+{
+	return pte_val(pte) & _PAGE_SOFT_DIRTY;
+}
+#define pte_swp_soft_dirty pte_soft_dirty
+
+static inline pte_t pte_mksoft_dirty(pte_t pte)
+{
+	pte_val(pte) |= _PAGE_SOFT_DIRTY;
+	return pte;
+}
+#define pte_swp_mksoft_dirty pte_mksoft_dirty
+
+static inline pte_t pte_clear_soft_dirty(pte_t pte)
+{
+	pte_val(pte) &= ~_PAGE_SOFT_DIRTY;
+        return pte;
+}
+#define pte_swp_clear_soft_dirty pte_clear_soft_dirty
+
+static inline int pmd_soft_dirty(pmd_t pmd)
+{
+        return pmd_val(pmd) & _SEGMENT_ENTRY_SOFT_DIRTY;
+}
+
+static inline pmd_t pmd_mksoft_dirty(pmd_t pmd)
+{
+	pmd_val(pmd) |= _SEGMENT_ENTRY_SOFT_DIRTY;
+        return pmd;
+}
+
+static inline pmd_t pmd_clear_soft_dirty(pmd_t pmd)
+{
+	pmd_val(pmd) &= ~_SEGMENT_ENTRY_SOFT_DIRTY;
+        return pmd;
 }
 
 static inline pgste_t pgste_get_lock(pte_t *ptep)
@@ -876,7 +915,7 @@ static inline pte_t pte_mkclean(pte_t pte)
 
 static inline pte_t pte_mkdirty(pte_t pte)
 {
-	pte_val(pte) |= _PAGE_DIRTY;
+	pte_val(pte) |= _PAGE_DIRTY | _PAGE_SOFT_DIRTY;
 	if (pte_val(pte) & _PAGE_WRITE)
 		pte_val(pte) &= ~_PAGE_PROTECT;
 	return pte;
