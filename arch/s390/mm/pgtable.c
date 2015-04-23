@@ -923,7 +923,7 @@ EXPORT_SYMBOL(get_guest_storage_key);
 
 static int page_table_allocate_pgste_min = 0;
 static int page_table_allocate_pgste_max = 1;
-int page_table_allocate_pgste = IS_ENABLED(CONFIG_KVM_S390_PGSTE_DEFAULT);
+int page_table_allocate_pgste = 0;
 EXPORT_SYMBOL(page_table_allocate_pgste);
 
 static struct ctl_table page_table_sysctl[] = {
