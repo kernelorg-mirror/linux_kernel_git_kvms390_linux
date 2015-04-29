@@ -444,7 +444,11 @@ static void bpf_jit_epilogue(struct bpf_jit *jit)
 /*
  * Compile one eBPF instruction into s390x code
  */
-static int bpf_jit_insn(struct bpf_jit *jit, struct bpf_prog *fp, int i)
+static
+#ifdef CONFIG_GCOV_KERNEL
+noinline
+#endif
+int bpf_jit_insn(struct bpf_jit *jit, struct bpf_prog *fp, int i)
 {
 	struct bpf_insn *insn = &fp->insnsi[i];
 	int jmp_off, last, insn_count = 1;
