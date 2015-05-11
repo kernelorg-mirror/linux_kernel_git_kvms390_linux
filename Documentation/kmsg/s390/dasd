@@ -672,3 +672,20 @@
  * place. If the 'failfast' attribute of the DASD is set to 1,
  * verify that this setting is intentional and change it to 0 if required.
  */
+
+/*?
+ * Text: "%s Setting the DASD online failed because the required module %s could not be loaded (rc=%d)\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: kernel module name
+ *   @3: return code
+ * Description:
+ * The DASD was to be set online with discipline DIAG but this discipline of
+ * the DASD device driver is not available and an attempt to load the
+ * corresponding kernel module failed with the specified return code.
+ *
+ * User action:
+ * Ensure that the kernel module with the specified name is correctly installed
+ * or set the sysfs 'use_diag' attribute of the DASD to 0 to switch off DIAG.
+ */
