@@ -115,6 +115,7 @@
 
 /*?
  * Text: "The prng self test data test for the SHA-512 mode failed\n"
+ * Severity: Error
  * Description:
  * The pseudo-random number device driver is not operational because the self test failed.
  * After processing a published National Institute of Standards and Technology (NIST) test vector for the
