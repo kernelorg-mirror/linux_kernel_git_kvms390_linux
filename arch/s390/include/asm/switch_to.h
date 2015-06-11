@@ -20,7 +20,7 @@ static inline int test_fp_ctl(u32 fpc)
 
 	asm volatile(
 		"	efpc    %1\n"
-		"	sfpc	%2\n"
+		"	lfpc	%2\n"
 		"0:	sfpc	%1\n"
 		"	la	%0,0\n"
 		"1:\n"
