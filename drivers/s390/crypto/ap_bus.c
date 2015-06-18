@@ -1688,9 +1688,8 @@ static inline int ap_poll_queue(struct ap_device *ap_dev, unsigned long *flags)
 				if (!rc)
 					ap_dev->interrupt = AP_INTR_IN_PROGRESS;
 				else if (rc == -ENODEV) {
-					pr_err("Registering adapter interrupts"
-					" for AP %d failed with %x\n",
-					AP_QID_DEVICE(ap_dev->qid), rc);
+					pr_err("Registering adapter interrupts for "
+					"AP %d failed\n", AP_QID_DEVICE(ap_dev->qid));
 					return rc;
 				}
 			}
