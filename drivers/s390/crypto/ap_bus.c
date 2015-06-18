@@ -318,25 +318,25 @@ static int ap_query_functions(ap_qid_t qid, unsigned int *functions)
 
 	status = __ap_query_functions(qid, functions);
 
-		if (ap_queue_status_invalid_test(&status))
-			return -ENODEV;
+	if (ap_queue_status_invalid_test(&status))
+		return -ENODEV;
 
-		switch (status.response_code) {
-		case AP_RESPONSE_NORMAL:
-			return 0;
-		case AP_RESPONSE_RESET_IN_PROGRESS:
-		case AP_RESPONSE_BUSY:
-			break;
-		case AP_RESPONSE_Q_NOT_AVAIL:
-		case AP_RESPONSE_DECONFIGURED:
-		case AP_RESPONSE_CHECKSTOPPED:
-		case AP_RESPONSE_INVALID_ADDRESS:
-			return -ENODEV;
-		case AP_RESPONSE_OTHERWISE_CHANGED:
-			break;
-		default:
-			break;
-		}
+	switch (status.response_code) {
+	case AP_RESPONSE_NORMAL:
+		return 0;
+	case AP_RESPONSE_RESET_IN_PROGRESS:
+	case AP_RESPONSE_BUSY:
+		break;
+	case AP_RESPONSE_Q_NOT_AVAIL:
+	case AP_RESPONSE_DECONFIGURED:
+	case AP_RESPONSE_CHECKSTOPPED:
+	case AP_RESPONSE_INVALID_ADDRESS:
+		return -ENODEV;
+	case AP_RESPONSE_OTHERWISE_CHANGED:
+		break;
+	default:
+		break;
+	}
 	return -EBUSY;
 }
 
@@ -355,25 +355,24 @@ static int ap_queue_enable_interruption(struct ap_device *ap_dev, void *ind)
 	int rc = -EBUSY;
 
 	status = ap_queue_interruption_control(ap_dev->qid, ind);
-
-		switch (status.response_code) {
-		case AP_RESPONSE_NORMAL:
-			return 0;
-			break;
-		case AP_RESPONSE_RESET_IN_PROGRESS:
-		case AP_RESPONSE_BUSY:
-			break;
-		case AP_RESPONSE_Q_NOT_AVAIL:
-		case AP_RESPONSE_DECONFIGURED:
-		case AP_RESPONSE_CHECKSTOPPED:
-		case AP_RESPONSE_INVALID_ADDRESS:
-			return -ENODEV;
-		case AP_RESPONSE_OTHERWISE_CHANGED:
-			return 0;
-			break;
-		default:
-			break;
-		}
+	switch (status.response_code) {
+	case AP_RESPONSE_NORMAL:
+		return 0;
+		break;
+	case AP_RESPONSE_RESET_IN_PROGRESS:
+	case AP_RESPONSE_BUSY:
+		break;
+	case AP_RESPONSE_Q_NOT_AVAIL:
+	case AP_RESPONSE_DECONFIGURED:
+	case AP_RESPONSE_CHECKSTOPPED:
+	case AP_RESPONSE_INVALID_ADDRESS:
+		return -ENODEV;
+	case AP_RESPONSE_OTHERWISE_CHANGED:
+		return 0;
+		break;
+	default:
+		break;
+	}
 	return rc;
 }
 
@@ -537,34 +536,34 @@ static int ap_query_queue(ap_qid_t qid, int *queue_depth, int *device_type)
 	int t_depth, t_device_type, rc;
 
 	rc = -EBUSY;
-		status = ap_test_queue(qid, &t_depth, &t_device_type);
-		switch (status.response_code) {
-		case AP_RESPONSE_NORMAL:
-			*queue_depth = t_depth + 1;
-			*device_type = t_device_type;
-			rc = 0;
-			break;
-		case AP_RESPONSE_Q_NOT_AVAIL:
-			rc = -ENODEV;
-			break;
-		case AP_RESPONSE_RESET_IN_PROGRESS:
-			break;
-		case AP_RESPONSE_DECONFIGURED:
-			rc = -ENODEV;
-			break;
-		case AP_RESPONSE_CHECKSTOPPED:
-			rc = -ENODEV;
-			break;
-		case AP_RESPONSE_INVALID_ADDRESS:
-			rc = -ENODEV;
-			break;
-		case AP_RESPONSE_OTHERWISE_CHANGED:
-			break;
-		case AP_RESPONSE_BUSY:
-			break;
-		default:
-			BUG();
-		}
+	status = ap_test_queue(qid, &t_depth, &t_device_type);
+	switch (status.response_code) {
+	case AP_RESPONSE_NORMAL:
+		*queue_depth = t_depth + 1;
+		*device_type = t_device_type;
+		rc = 0;
+		break;
+	case AP_RESPONSE_Q_NOT_AVAIL:
+		rc = -ENODEV;
+		break;
+	case AP_RESPONSE_RESET_IN_PROGRESS:
+		break;
+	case AP_RESPONSE_DECONFIGURED:
+		rc = -ENODEV;
+		break;
+	case AP_RESPONSE_CHECKSTOPPED:
+		rc = -ENODEV;
+		break;
+	case AP_RESPONSE_INVALID_ADDRESS:
+		rc = -ENODEV;
+		break;
+	case AP_RESPONSE_OTHERWISE_CHANGED:
+		break;
+	case AP_RESPONSE_BUSY:
+		break;
+	default:
+		BUG();
+	}
 	return rc;
 }
 
@@ -583,23 +582,22 @@ static int ap_init_queue(struct ap_device *ap_dev)
 
 	rc = -ENODEV;
 	status = ap_reset_queue(ap_dev->qid);
-
-		switch (status.response_code) {
-		case AP_RESPONSE_NORMAL:
-			ap_dev->interrupt = AP_INTR_DISABLED;
-			ap_dev->reset = AP_RESET_IN_PROGRESS;
-			rc = 0;
-			break;
-		case AP_RESPONSE_Q_NOT_AVAIL:
-		case AP_RESPONSE_DECONFIGURED:
-		case AP_RESPONSE_CHECKSTOPPED:
-			break;
-		case AP_RESPONSE_RESET_IN_PROGRESS:
-		case AP_RESPONSE_BUSY:
-			rc = -EBUSY;
-		default:
-			break;
-		}
+	switch (status.response_code) {
+	case AP_RESPONSE_NORMAL:
+		ap_dev->interrupt = AP_INTR_DISABLED;
+		ap_dev->reset = AP_RESET_IN_PROGRESS;
+		rc = 0;
+		break;
+	case AP_RESPONSE_Q_NOT_AVAIL:
+	case AP_RESPONSE_DECONFIGURED:
+	case AP_RESPONSE_CHECKSTOPPED:
+		break;
+	case AP_RESPONSE_RESET_IN_PROGRESS:
+	case AP_RESPONSE_BUSY:
+		rc = -EBUSY;
+	default:
+		break;
+	}
 	return rc;
 }
 
