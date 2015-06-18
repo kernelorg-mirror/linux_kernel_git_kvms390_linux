@@ -28,7 +28,6 @@
 #include <asm/checksum.h>
 #include <asm/debug.h>
 #include <asm/os_info.h>
-#include <asm/sigp.h>
 #include "entry.h"
 
 #define IPL_PARM_BLOCK_VERSION 0
@@ -1609,23 +1608,12 @@ static struct shutdown_action vmcmd_action = {SHUTDOWN_ACTION_VMCMD_STR,
  * stop shutdown action: Stop Linux on shutdown.
  */
 
-static void __stop_run(void *data)
+static void stop_run(struct shutdown_trigger *trigger)
 {
-	struct shutdown_trigger *trigger = data;
-
 	if (strcmp(trigger->name, ON_PANIC_STR) == 0 ||
 	    strcmp(trigger->name, ON_RESTART_STR) == 0)
 		disabled_wait((unsigned long) __builtin_return_address(0));
-	if (diag308_set_works) {
-		diag308_reset();
-		__pcpu_sigp(0, SIGP_SET_MULTI_THREADING, 0, NULL);
-	}
 	smp_stop_cpu();
-}
-
-static void stop_run(struct shutdown_trigger *trigger)
-{
-	smp_call_ipl_cpu(__stop_run, trigger);
 }
 
 static struct shutdown_action stop_action = {SHUTDOWN_ACTION_STOP_STR,
