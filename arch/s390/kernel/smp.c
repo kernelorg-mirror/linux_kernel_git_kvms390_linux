@@ -649,7 +649,7 @@ int smp_store_status(int cpu)
 }
 
 #else
-void smp_save_cpu_states(void)
+void smp_save_dump_cpus(void)
 {
 }
 #endif /* CONFIG_CRASH_DUMP */
