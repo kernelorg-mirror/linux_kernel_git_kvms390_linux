@@ -177,8 +177,8 @@ ENTRY(sie64a)
 	stg	%r2,__SF_EMPTY(%r15)		# save control block pointer
 	stg	%r3,__SF_EMPTY+8(%r15)		# save guest register save area
 	xc	__SF_EMPTY+16(16,%r15),__SF_EMPTY+16(%r15) # host id & reason
-	tm      __LC_CPU_FLAGS+7,_CIF_FPU	# load guest fp/vx registers ?
-	jno     .Lsie_load_guest_gprs
+	tm	__LC_CPU_FLAGS+7,_CIF_FPU	# load guest fp/vx registers ?
+	jno	.Lsie_load_guest_gprs
 	lg	%r12,__LC_THREAD_INFO		# load fp/vx regs save area
 	brasl	%r14,load_fpu_regs		# load guest fp/vx regs
 .Lsie_load_guest_gprs:
@@ -192,7 +192,7 @@ ENTRY(sie64a)
 	oi	__SIE_PROG0C+3(%r14),1		# we are going into SIE now
 	tm	__SIE_PROG20+3(%r14),1		# last exit...
 	jnz	.Lsie_skip
-	tm      __LC_CPU_FLAGS+7,_CIF_FPU
+	tm	__LC_CPU_FLAGS+7,_CIF_FPU
 	jo	.Lsie_skip			# exit if fp/vx regs changed
 	tm	__LC_MACHINE_FLAGS+6,0x20	# MACHINE_FLAG_LPP
 	jz	.Lsie_enter
@@ -738,8 +738,8 @@ ENTRY(psw_idle)
 
 /* Store floating-point controls and floating-point or vector extension
  * registers instead.  A critical section cleanup assures that the registers
- * are stored even if interrupted for some other work.  The register %r2
- * designates a struct fpu to store register contents.  If the specified
+ * are stored even if interrupted for some other work.	The register %r2
+ * designates a struct fpu to store register contents.	If the specified
  * structure does not contain a register save area, the register store is
  * omitted (see also comments in arch_dup_task_struct()).
  *
@@ -785,7 +785,7 @@ ENTRY(save_fpu_regs)
 
 /* Load floating-point controls and floating-point or vector extension
  * registers.  A critical section cleanup assures that the register contents
- * are loaded even if interrupted for some other work.  Depending on the saved
+ * are loaded even if interrupted for some other work.	Depending on the saved
  * FP/VX state, the vector-enablement control, CR0.46, is either set or cleared.
  *
  * There are special calling conventions to fit into sysc and io return work:
@@ -1173,7 +1173,7 @@ cleanup_critical:
 	.quad	.Lpsw_idle_lpsw
 
 .Lcleanup_save_fpu_regs:
-	tm      __LC_CPU_FLAGS+7,_CIF_FPU
+	tm	__LC_CPU_FLAGS+7,_CIF_FPU
 	bor	%r14
 	clg	%r9,BASED(.Lcleanup_save_fpu_regs_done)
 	jhe	5f
