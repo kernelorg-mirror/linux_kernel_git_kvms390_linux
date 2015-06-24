@@ -1318,10 +1318,12 @@ cleanup_critical:
 	.quad	.L__critical_start
 .Lcritical_length:
 	.quad	.L__critical_end - .L__critical_start
+#if IS_ENABLED(CONFIG_KVM)
 .Lsie_critical_start:
 	.quad	.Lsie_gmap
 .Lsie_critical_length:
 	.quad	.Lsie_done - .Lsie_gmap
+#endif
 
 	.section .rodata, "a"
 #define SYSCALL(esame,emu)	.long esame
