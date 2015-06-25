@@ -97,14 +97,14 @@ _PIF_WORK	= (_PIF_PER_TRAP)
 0:	lg	%r14,__LC_ASYNC_STACK	# are we already on the async stack?
 	slgr	%r14,%r15
 	srag	%r14,%r14,STACK_SHIFT
-	jnz	1f
+	jnz	2f
 	CHECK_STACK 1<<STACK_SHIFT,\savearea
 	aghi	%r15,-(STACK_FRAME_OVERHEAD + __PT_SIZE)
-	j	2f
+	j	3f
 1:	LAST_BREAK %r14
 	UPDATE_VTIME %r14,%r15,\timer
-	lg	%r15,__LC_ASYNC_STACK	# load async stack
-2:	la	%r11,STACK_FRAME_OVERHEAD(%r15)
+2:	lg	%r15,__LC_ASYNC_STACK	# load async stack
+3:	la	%r11,STACK_FRAME_OVERHEAD(%r15)
 	.endm
 
 	.macro UPDATE_VTIME w1,w2,enter_timer
