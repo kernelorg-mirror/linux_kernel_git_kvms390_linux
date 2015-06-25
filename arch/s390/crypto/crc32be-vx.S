@@ -165,15 +165,15 @@ ENTRY(crc32_be_vgfm_16)
 	 * Further reduce the remaining 96-bit value to a 64-bit value using a
 	 * single VGFMG, the rightmost doubleword is multiplied with 0x1. The
 	 * intermediate result is then XORed with the product of the leftmost
-	 * doubleword with R6.  The result is a 64-bit value and is subject to
+	 * doubleword with R6.	The result is a 64-bit value and is subject to
 	 * the Barret reduction.
 	 */
-	VGFMG   %v1,CONST_R6,%v1
+	VGFMG	%v1,CONST_R6,%v1
 
 	/*
 	 * The input values to the Barret reduction are the degree-63 polynomial
 	 * in V1 (R(x)), degree-32 generator polynomial, and the reduction
-	 * constant u.  The Barret reduction result is the CRC value of R(x) mod
+	 * constant u.	The Barret reduction result is the CRC value of R(x) mod
 	 * P(x).
 	 *
 	 * The Barret reduction algorithm is defined as:

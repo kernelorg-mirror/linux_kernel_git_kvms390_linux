@@ -12,10 +12,10 @@
  *     use with the KERNEL_VXR_* constants. Consider these usage guidelines:
  *
  *     a) If your function typically runs in process-context, use the lower
- *        half of the vector registers, for example, specify KERNEL_VXR_LOW.
+ *	  half of the vector registers, for example, specify KERNEL_VXR_LOW.
  *     b) If your function typically runs in soft-irq or hard-irq context,
- *        prefer using the upper half of the vector registers, for example,
- *        specify KERNEL_VXR_HIGH.
+ *	  prefer using the upper half of the vector registers, for example,
+ *	  specify KERNEL_VXR_HIGH.
  *
  *     If you adhere to these guidelines, an interrupted process context
  *     does not require to save and restore vector registers because of

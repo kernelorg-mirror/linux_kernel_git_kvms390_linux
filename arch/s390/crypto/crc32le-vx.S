@@ -37,8 +37,8 @@
  *	R2 = [(x4*128-32 mod P'(x) << 32)]' << 1
  *	R3 = [(x128+32 mod P'(x) << 32)]'   << 1
  *	R4 = [(x128-32 mod P'(x) << 32)]'   << 1
- *	R5 = [(x64 mod P'(x) << 32)]'       << 1
- *	R6 = [(x32 mod P'(x) << 32)]'       << 1
+ *	R5 = [(x64 mod P'(x) << 32)]'	    << 1
+ *	R6 = [(x32 mod P'(x) << 32)]'	    << 1
  *
  *	The bitreflected Barret reduction constant, u', is defined as
  *	the bit reversal of floor(x**64 / P(x)).
@@ -120,7 +120,7 @@ crc32_le_vgfm_generic:
 	 * of the loaded input data.
 	 */
 	VZERO	%v0			/* Clear V0 */
-	VLVGF	%v0,%r2,3	      	/* Load CRC into rightmost word */
+	VLVGF	%v0,%r2,3		/* Load CRC into rightmost word */
 
 	/* Load a 64-byte data chunk and XOR with CRC */
 	VLM	%v1,%v4,0,%r3		/* 64-bytes into V1..V4 */
@@ -205,7 +205,7 @@ crc32_le_vgfm_generic:
 	VLEIG	%v0,1,0
 
 	/*
-	 * Compute GF(2) product of V1 and V0.  The rightmost doubleword
+	 * Compute GF(2) product of V1 and V0.	The rightmost doubleword
 	 * of V1 is multiplied with R4.  The leftmost doubleword of V1 is
 	 * multiplied by 0x1 and is then XORed with rightmost product.
 	 * Implicitly, the intermediate leftmost product becomes padded
@@ -235,7 +235,7 @@ crc32_le_vgfm_generic:
 	 *
 	 * The input values to the Barret reduction are the degree-63 polynomial
 	 * in V1 (R(x)), degree-32 generator polynomial, and the reduction
-	 * constant u.  The Barret reduction result is the CRC value of R(x) mod
+	 * constant u.	The Barret reduction result is the CRC value of R(x) mod
 	 * P(x).
 	 *
 	 * The Barret reduction algorithm is defined as:

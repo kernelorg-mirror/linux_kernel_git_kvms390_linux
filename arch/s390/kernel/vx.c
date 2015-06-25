@@ -59,7 +59,7 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 	/*
 	 * If this is a nested call to __kernel_vx_begin(), check the saved
 	 * state mask to save and later restore the vector registers that
-	 * are already in use.  Let's start with checking floating-point
+	 * are already in use.	Let's start with checking floating-point
 	 * controls.
 	 */
 	if (state->mask & KERNEL_VX_FPC)
@@ -95,7 +95,7 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 		/* Test and save the second half of 16 vector registers */
 		"10:	tmll	%[m],12\n"	/* KERNEL_VXR_HIGH */
 		"	jo	19f\n"		/* 11 -> save V16..V31 */
-		"	brc	4,11f\n"	/* 01 -> save V16..V23  */
+		"	brc	4,11f\n"	/* 01 -> save V16..V23	*/
 		"	brc	2,12f\n"	/* 10 -> save V24..V31 */
 		"	j	20f\n"		/* 00 -> done */
 
@@ -168,7 +168,7 @@ void __kernel_vx_end(struct kernel_vx *state)
 		/* Test and load the second half of 16 vector registers */
 		"10:	tmll	%[m],12\n"	/* KERNEL_VXR_HIGH */
 		"	jo	19f\n"		/* 11 -> load V16..V31 */
-		"	brc	4,11f\n"	/* 01 -> load V16..V23  */
+		"	brc	4,11f\n"	/* 01 -> load V16..V23	*/
 		"	brc	2,12f\n"	/* 10 -> load V24..V31 */
 		"	j	20f\n"		/* 00 -> done */
 
