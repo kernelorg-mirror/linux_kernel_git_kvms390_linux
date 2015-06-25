@@ -134,16 +134,9 @@ void __kernel_vx_end(struct kernel_vx *state)
 	if (!(state->mask & KERNEL_VX_STATE_MASK))
 		goto update_kvx_state;
 
-	/*
-	 * Test and restore floating-point controls.  Clear the floating-point
-	 * control if the saved FPC value is invalid.  This does not affect
-	 * the user-space FPC contents.
-	 */
-	if (state->mask & KERNEL_VX_FPC) {
-		if (test_fp_ctl(state->fpc))
-			state->fpc = 0;
+	/* Test and restore floating-point controls */
+	if (state->mask & KERNEL_VX_FPC)
 		asm volatile("lfpc %0" : : "Q" (state->fpc));
-	}
 
 	/* Test and restore (load) vector registers */
 	asm volatile (
