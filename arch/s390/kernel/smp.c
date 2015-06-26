@@ -648,10 +648,6 @@ int smp_store_status(int cpu)
 	return 0;
 }
 
-#else
-void smp_save_dump_cpus(void)
-{
-}
 #endif /* CONFIG_CRASH_DUMP */
 
 void smp_cpu_set_polarization(int cpu, int val)
