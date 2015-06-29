@@ -13,9 +13,6 @@
 #include <asm/vx.h>
 
 
-/* VX address type declaration for inline assemblies */
-struct vx_addr { __vector128 _[__NUM_VXRS]; };
-
 /*
  * Per-CPU variable to indicate use of vector register ranges that are
  * in use by the kernel.
@@ -122,7 +119,7 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 		"18:	.word	0xe70f,0x1000,0x003e\n"	/* vstm 0,15,0(1) */
 		"19:	.word	0xe70f,0x1100,0x0c3e\n"	/* vstm 16,31,256(1) */
 		"20:"
-		: [vxrs] "=Q" (*(struct vx_addr *) &state->vxrs)
+		: [vxrs] "=Q" (*(struct vx_array *) &state->vxrs)
 		: [m] "d" (state->mask)
 		: "1", "cc");
 }
@@ -195,8 +192,9 @@ void __kernel_vx_end(struct kernel_vx *state)
 		"18:	.word	0xe70f,0x1000,0x0036\n"	/* vlm 0,15,0(1) */
 		"19:	.word	0xe70f,0x1100,0x0c36\n"	/* vlm 16,31,256(1) */
 		"20:"
-		: [vxrs] "=Q" (*(struct vx_addr *) &state->vxrs)
-		: [m] "d" (state->mask)
+		:
+		: [vxrs] "Q" (*(struct vx_array *) &state->vxrs),
+		  [m] "d" (state->mask)
 		: "1", "cc");
 
 update_kvx_state:
