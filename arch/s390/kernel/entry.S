@@ -179,7 +179,6 @@ ENTRY(sie64a)
 	xc	__SF_EMPTY+16(16,%r15),__SF_EMPTY+16(%r15) # host id & reason
 	tm	__LC_CPU_FLAGS+7,_CIF_FPU	# load guest fp/vx registers ?
 	jno	.Lsie_load_guest_gprs
-	lg	%r12,__LC_THREAD_INFO		# load fp/vx regs save area
 	brasl	%r14,load_fpu_regs		# load guest fp/vx regs
 .Lsie_load_guest_gprs:
 	lmg	%r0,%r13,0(%r3)			# load guest gprs 0-13
@@ -749,12 +748,13 @@ ENTRY(psw_idle)
 ENTRY(save_fpu_regs)
 	tm	__LC_CPU_FLAGS+7,_CIF_FPU
 	bor	%r14
-	stfpc	__FPU_fpc(%r2)
+	lg	%r2,__LC_CURRENT
+	stfpc	__THREAD_FPU_fpc(%r2)
 .Lsave_fpu_regs_fpc_end:
-	lg	%r3,__FPU_regs(%r2)
+	lg	%r3,__THREAD_FPU_regs(%r2)
 	ltgr	%r3,%r3
 	jz	.Lsave_fpu_regs_done	  # no save area -> set CIF_FPU
-	tm	__FPU_flags+3(%r2),FPU_USE_VX
+	tm	__THREAD_FPU_flags+3(%r2),FPU_USE_VX
 	jz	.Lsave_fpu_regs_fp	  # no -> store FP regs
 .Lsave_fpu_regs_vx_low:
 	VSTM	%v0,%v15,0,%r3		  # vstm 0,15,0(3)
@@ -789,7 +789,6 @@ ENTRY(save_fpu_regs)
  * FP/VX state, the vector-enablement control, CR0.46, is either set or cleared.
  *
  * There are special calling conventions to fit into sysc and io return work:
- *	%r12:	__LC_THREAD_INFO
  *	%r15:	<kernel stack>
  * The function requires:
  *	%r4 and __SF_EMPTY+32(%r15)
@@ -797,12 +796,11 @@ ENTRY(save_fpu_regs)
 load_fpu_regs:
 	tm	__LC_CPU_FLAGS+7,_CIF_FPU
 	bnor	%r14
-	lg	%r4,__TI_task(%r12)
-	la	%r4,__THREAD_fpu(%r4)
-	lfpc	__FPU_fpc(%r4)
+	lg	%r4,__LC_CURRENT
+	lfpc	__THREAD_FPU_fpc(%r4)
 	stctg	%c0,%c0,__SF_EMPTY+32(%r15)	# store CR0
-	tm	__FPU_flags+3(%r4),FPU_USE_VX	# VX-enabled task ?
-	lg	%r4,__FPU_regs(%r4)		# %r4 <- reg save area
+	tm	__THREAD_FPU_flags+3(%r4),FPU_USE_VX	# VX-enabled task ?
+	lg	%r4,__THREAD_FPU_regs(%r4)    	# %r4 <- reg save area
 	jz	.Lload_fpu_regs_fp_ctl		# -> no VX, load FP regs
 .Lload_fpu_regs_vx_ctl:
 	tm	__SF_EMPTY+32+5(%r15),2		# test VX control
@@ -1185,13 +1183,14 @@ cleanup_critical:
 	jhe	2f
 	clg	%r9,BASED(.Lcleanup_save_fpu_fpc_end)
 	jhe	1f
+	lg	%r2,__LC_CURRENT
 0:	# Store floating-point controls
-	stfpc	__FPU_fpc(%r2)
+	stfpc	__THREAD_FPU_fpc(%r2)
 1:	# Load register save area and check if VX is active
-	lg	%r3,__FPU_regs(%r2)
+	lg	%r3,__THREAD_FPU_regs(%r2)
 	ltgr	%r3,%r3
 	jz	5f			  # no save area -> set CIF_FPU
-	tm	__FPU_flags+3(%r2),FPU_USE_VX
+	tm	__THREAD_FPU_flags+3(%r2),FPU_USE_VX
 	jz	4f			  # no VX -> store FP regs
 2:	# Store vector registers (V0-V15)
 	VSTM	%v0,%v15,0,%r3		  # vstm 0,15,0(3)
@@ -1245,12 +1244,11 @@ cleanup_critical:
 	jhe	5f
 	clg	%r9,BASED(.Lcleanup_load_fpu_regs_vx_ctl)
 	jhe	6f
-	lg	%r4,__TI_task(%r12)
-	la	%r4,__THREAD_fpu(%r4)
-	lfpc	__FPU_fpc(%r4)
+	lg	%r4,__LC_CURRENT
+	lfpc	__THREAD_FPU_fpc(%r4)
 	stctg	%c0,%c0,__SF_EMPTY+32(%r15)	# store CR0
-	tm	__FPU_flags+3(%r4),FPU_USE_VX	# VX-enabled task ?
-	lg	%r4,__FPU_regs(%r4)		# %r4 <- reg save area
+	tm	__THREAD_FPU_flags+3(%r4),FPU_USE_VX	# VX-enabled task ?
+	lg	%r4,__THREAD_FPU_regs(%r4)    	# %r4 <- reg save area
 	jz	3f				# -> no VX, load FP regs
 6:	# Set VX-enablement control
 	tm	__SF_EMPTY+32+5(%r15),2		# test VX control

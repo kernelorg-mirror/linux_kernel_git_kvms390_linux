@@ -31,7 +31,7 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 		 * immediately.  This also sets CIF_FPU to lazy restore FP/VX
 		 * register contents when returning to user space.
 		 */
-		save_fpu_regs(&current->thread.fpu);
+		save_fpu_regs();
 
 		/*
 		 * Set the vector-enablement control and properly handle

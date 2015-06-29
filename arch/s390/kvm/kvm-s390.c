@@ -1218,7 +1218,7 @@ static inline void load_fpu_from(struct fpu *from)
 void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
 {
 	/* Save host register state */
-	save_fpu_regs(&current->thread.fpu);
+	save_fpu_regs();
 	save_fpu_to(&vcpu->arch.host_fpregs);
 
 	if (test_kvm_facility(vcpu->kvm, 129)) {
@@ -1250,7 +1250,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
 	atomic_clear_mask(CPUSTAT_RUNNING, &vcpu->arch.sie_block->cpuflags);
 	gmap_disable(vcpu->arch.gmap);
 
-	save_fpu_regs(&current->thread.fpu);
+	save_fpu_regs();
 
 	if (test_kvm_facility(vcpu->kvm, 129))
 		/*
@@ -1649,7 +1649,7 @@ int kvm_arch_vcpu_ioctl_set_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
 		return -EINVAL;
 	memcpy(vcpu->arch.guest_fpregs.fprs, &fpu->fprs, sizeof(fpu->fprs));
 	vcpu->arch.guest_fpregs.fpc = fpu->fpc;
-	save_fpu_regs(&current->thread.fpu);
+	save_fpu_regs();
 	load_fpu_from(&vcpu->arch.guest_fpregs);
 	return 0;
 }
@@ -2215,7 +2215,7 @@ int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr)
 	 * copying in vcpu load/put. Lets update our copies before we save
 	 * it into the save area
 	 */
-	save_fpu_regs(&current->thread.fpu);
+	save_fpu_regs();
 	if (test_kvm_facility(vcpu->kvm, 129)) {
 		/*
 		 * If the vector extension is available, the vector registers
@@ -2262,7 +2262,7 @@ int kvm_s390_vcpu_store_adtl_status(struct kvm_vcpu *vcpu, unsigned long addr)
 	 *
 	 * Let's update our copies before we save it into the save area.
 	 */
-	save_fpu_regs(&current->thread.fpu);
+	save_fpu_regs();
 
 	return kvm_s390_store_adtl_status_unloaded(vcpu, addr);
 }
