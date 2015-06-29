@@ -120,6 +120,7 @@ static char *dump_type_str(enum dump_type type)
  * Must be in data section since the bss section
  * is not cleared when these are accessed.
  */
+static u8 ipl_ssid __attribute__((__section__(".data"))) = 0;
 static u16 ipl_devno __attribute__((__section__(".data"))) = 0;
 u32 ipl_flags __attribute__((__section__(".data"))) = 0;
 
@@ -388,7 +389,7 @@ static ssize_t sys_ipl_device_show(struct kobject *kobj,
 
 	switch (ipl_info.type) {
 	case IPL_TYPE_CCW:
-		return sprintf(page, "0.0.%04x\n", ipl_devno);
+		return sprintf(page, "0.%x.%04x\n", ipl_ssid, ipl_devno);
 	case IPL_TYPE_FCP:
 	case IPL_TYPE_FCP_DUMP:
 		return sprintf(page, "0.0.%04x\n", ipl->ipl_info.fcp.devno);
@@ -807,9 +808,30 @@ static struct attribute_group reipl_fcp_attr_group = {
 };
 
 /* CCW reipl device attributes */
+IPL_ATTR_SHOW_FN(reipl_ccw, device, "0.%x.%04x\n",
+		 reipl_block_ccw->ipl_info.ccw.ssid,
+		 reipl_block_ccw->ipl_info.ccw.devno);
 
-DEFINE_IPL_ATTR_RW(reipl_ccw, device, "0.0.%04llx\n", "0.0.%llx\n",
-	reipl_block_ccw->ipl_info.ccw.devno);
+static ssize_t sys_reipl_ccw_device_store(struct kobject *kobj,
+					  struct kobj_attribute *attr,
+					  const char *buf, size_t len)
+{
+	unsigned long long ssid, devno;
+
+	if (sscanf(buf, "0.%llx.%llx\n", &ssid, &devno) != 2)
+		return -EINVAL;
+
+	if (ssid > __MAX_SSID || devno > __MAX_SUBCHANNEL)
+		return -EINVAL;
+
+	reipl_block_ccw->ipl_info.ccw.ssid = ssid;
+	reipl_block_ccw->ipl_info.ccw.devno = devno;
+	return len;
+}
+static struct kobj_attribute sys_reipl_ccw_device_attr =
+	__ATTR(device, (S_IRUGO | S_IWUSR), sys_reipl_ccw_device_show,
+	       sys_reipl_ccw_device_store);
+
 
 /* NSS wrapper */
 static ssize_t reipl_nss_loadparm_show(struct kobject *kobj,
@@ -1049,8 +1071,8 @@ static void __reipl_run(void *unused)
 
 	switch (reipl_method) {
 	case REIPL_METHOD_CCW_CIO:
+		devid.ssid  = reipl_block_ccw->ipl_info.ccw.ssid;
 		devid.devno = reipl_block_ccw->ipl_info.ccw.devno;
-		devid.ssid  = 0;
 		reipl_ccw_dev(&devid);
 		break;
 	case REIPL_METHOD_CCW_VM:
@@ -1185,6 +1207,7 @@ static int __init reipl_ccw_init(void)
 
 	reipl_block_ccw_init(reipl_block_ccw);
 	if (ipl_info.type == IPL_TYPE_CCW) {
+		reipl_block_ccw->ipl_info.ccw.ssid = ipl_ssid;
 		reipl_block_ccw->ipl_info.ccw.devno = ipl_devno;
 		reipl_block_ccw_fill_parms(reipl_block_ccw);
 	}
@@ -1411,8 +1434,8 @@ static void __dump_run(void *unused)
 
 	switch (dump_method) {
 	case DUMP_METHOD_CCW_CIO:
-		devid.devno = dump_block_ccw->ipl_info.ccw.devno;
 		devid.ssid  = 0;
+		devid.devno = dump_block_ccw->ipl_info.ccw.devno;
 		reipl_ccw_dev(&devid);
 		break;
 	case DUMP_METHOD_CCW_VM:
@@ -1932,14 +1955,14 @@ void __init setup_ipl(void)
 	ipl_info.type = get_ipl_type();
 	switch (ipl_info.type) {
 	case IPL_TYPE_CCW:
+		ipl_info.data.ccw.dev_id.ssid = ipl_ssid;
 		ipl_info.data.ccw.dev_id.devno = ipl_devno;
-		ipl_info.data.ccw.dev_id.ssid = 0;
 		break;
 	case IPL_TYPE_FCP:
 	case IPL_TYPE_FCP_DUMP:
+		ipl_info.data.fcp.dev_id.ssid = 0;
 		ipl_info.data.fcp.dev_id.devno =
 			IPL_PARMBLOCK_START->ipl_info.fcp.devno;
-		ipl_info.data.fcp.dev_id.ssid = 0;
 		ipl_info.data.fcp.wwpn = IPL_PARMBLOCK_START->ipl_info.fcp.wwpn;
 		ipl_info.data.fcp.lun = IPL_PARMBLOCK_START->ipl_info.fcp.lun;
 		break;
@@ -1971,6 +1994,7 @@ void __init ipl_save_parameters(void)
 	if (cio_get_iplinfo(&iplinfo))
 		return;
 
+	ipl_ssid = iplinfo.ssid;
 	ipl_devno = iplinfo.devno;
 	ipl_flags |= IPL_DEVNO_VALID;
 	if (!iplinfo.is_qdio)
