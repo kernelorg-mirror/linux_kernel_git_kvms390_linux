@@ -33,6 +33,9 @@ void save_fpu_regs(struct fpu *fpu);
 #define is_vx_fpu(fpu) (!!((fpu)->flags & FPU_USE_VX))
 #define is_vx_task(tsk) (!!((tsk)->thread.fpu.flags & FPU_USE_VX))
 
+/* VX array structure for address operand constraints in inline assemblies */
+struct vx_array { __vector128 _[__NUM_VXRS]; };
+
 static inline int test_fp_ctl(u32 fpc)
 {
 	u32 orig_fpc;
@@ -52,7 +55,6 @@ static inline int test_fp_ctl(u32 fpc)
 
 static inline void save_vx_regs_safe(__vector128 *vxrs)
 {
-	typedef struct { __vector128 _[__NUM_VXRS]; } addrtype;
 	unsigned long cr0, flags;
 
 	flags = arch_local_irq_save();
@@ -63,7 +65,7 @@ static inline void save_vx_regs_safe(__vector128 *vxrs)
 		"	la	1,%0\n"
 		"	.word	0xe70f,0x1000,0x003e\n"	/* vstm 0,15,0(1) */
 		"	.word	0xe70f,0x1100,0x0c3e\n"	/* vstm 16,31,256(1) */
-		: "=Q" (*(addrtype *) vxrs) : : "1");
+		: "=Q" (*(struct vx_array *) vxrs) : : "1");
 	__ctl_load(cr0, 0, 0);
 	arch_local_irq_restore(flags);
 }

@@ -157,10 +157,12 @@ static int notrace s390_revalidate_registers(struct mci *mci)
 			 */
 			kill_task = 1;
 		}
-		memcpy(current->thread.fpu.vxrs,
-		       (void *)S390_lowcore.vector_save_area_addr,
-		       __NUM_VXRS * sizeof(__vector128));
-		set_cpu_flag(CIF_FPU);
+		asm volatile(
+			"	la	1,%0\n"
+			"	.word	0xe70f,0x1000,0x0036\n"	/* vlm 0,15,0(1) */
+			"	.word	0xe70f,0x1100,0x0c36\n"	/* vlm 16,31,256(1) */
+			: : "Q" (*(struct vx_array *)
+				S390_lowcore.vector_save_area_addr) : "1");
 	}
 	/* Revalidate access registers */
 	asm volatile(
