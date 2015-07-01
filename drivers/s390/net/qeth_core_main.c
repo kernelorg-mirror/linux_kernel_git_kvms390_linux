@@ -6156,7 +6156,7 @@ int qeth_start_ipa_tx_checksum(struct qeth_card *card)
 	if (rc)
 		goto err_out;
 
-	dev_info(&card->gdev->dev, "TX HW Checksumming enabled\n");
+	dev_info(&card->gdev->dev, "HW TX Checksumming enabled\n");
 	return rc;
 err_out:
 	dev_warn(&card->gdev->dev, "Enabling HW TX checksumming for %s "
