@@ -49,22 +49,24 @@
 struct kernel_vx {
 	u32	    mask;
 	u32	    fpc;
-	__vector128 vxrs[__NUM_VXRS];
+	union {
+		freg_t fprs[__NUM_FPRS];
+		__vector128 vxrs[__NUM_VXRS];
+	};
 };
 
 #define KERNEL_VXR_V0V7		1
 #define KERNEL_VXR_V8V15	2
 #define KERNEL_VXR_V16V23	4
 #define KERNEL_VXR_V24V31	8
+#define KERNEL_FPR		16
 #define KERNEL_VX_FPC		256
 
 #define KERNEL_VXR_LOW		(KERNEL_VXR_V0V7|KERNEL_VXR_V8V15)
 #define KERNEL_VXR_MID		(KERNEL_VXR_V8V15|KERNEL_VXR_V16V23)
 #define KERNEL_VXR_HIGH		(KERNEL_VXR_V16V23|KERNEL_VXR_V24V31)
 
-#define KERNEL_FPR		(KERNEL_VXR_LOW|KERNEL_VX_FPC)
-
-#define KERNEL_VXR_MASK		(KERNEL_VXR_LOW|KERNEL_VXR_HIGH)
+#define KERNEL_VXR_MASK		(KERNEL_VXR_LOW|KERNEL_VXR_HIGH|KERNEL_FPR)
 
 /* Note the functions must be called with preempt disabled.  Do not
  * enable preemption before calling __kernel_vx_end() to not corrupt

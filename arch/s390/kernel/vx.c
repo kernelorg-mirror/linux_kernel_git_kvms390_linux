@@ -39,7 +39,14 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 		 * At return to user space, the vector-enablement control
 		 * is restored.
 		 */
-		__ctl_set_vx();
+		if (MACHINE_HAS_VX)
+			__ctl_set_vx();
+	}
+
+	/* Update flags to use the vector extension for KERNEL_FPR */
+	if (MACHINE_HAS_VX && (state->mask & KERNEL_FPR)) {
+		flags |= KERNEL_VXR_LOW|KERNEL_VXR_HIGH|KERNEL_VX_FPC;
+		flags &= ~KERNEL_FPR;
 	}
 
 	/* Save and update current kernel VX state */
@@ -52,6 +59,31 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 	 */
 	if (!(state->mask & KERNEL_VX_STATE_MASK))
 		return;
+
+	/*
+	 * If KERNEL_FPR is still set, the vector extension is not available
+	 * and, thus, save floating-point control and registers only.
+	 */
+	if (state->mask & KERNEL_FPR) {
+		asm volatile("stfpc %0" : "=Q" (state->fpc));
+		asm volatile("std 0,%0" : "=Q" (state->fprs[0]));
+		asm volatile("std 1,%0" : "=Q" (state->fprs[1]));
+		asm volatile("std 2,%0" : "=Q" (state->fprs[2]));
+		asm volatile("std 3,%0" : "=Q" (state->fprs[3]));
+		asm volatile("std 4,%0" : "=Q" (state->fprs[4]));
+		asm volatile("std 5,%0" : "=Q" (state->fprs[5]));
+		asm volatile("std 6,%0" : "=Q" (state->fprs[6]));
+		asm volatile("std 7,%0" : "=Q" (state->fprs[7]));
+		asm volatile("std 8,%0" : "=Q" (state->fprs[8]));
+		asm volatile("std 9,%0" : "=Q" (state->fprs[9]));
+		asm volatile("std 10,%0" : "=Q" (state->fprs[10]));
+		asm volatile("std 11,%0" : "=Q" (state->fprs[11]));
+		asm volatile("std 12,%0" : "=Q" (state->fprs[12]));
+		asm volatile("std 13,%0" : "=Q" (state->fprs[13]));
+		asm volatile("std 14,%0" : "=Q" (state->fprs[14]));
+		asm volatile("std 15,%0" : "=Q" (state->fprs[15]));
+		return;
+	}
 
 	/*
 	 * If this is a nested call to __kernel_vx_begin(), check the saved
@@ -130,6 +162,31 @@ void __kernel_vx_end(struct kernel_vx *state)
 	/* Just update the per-CPU state if there is nothing to restore */
 	if (!(state->mask & KERNEL_VX_STATE_MASK))
 		goto update_kvx_state;
+
+	/*
+	 * If KERNEL_FPR is specified, the vector extension is not available
+	 * and, thus, restore floating-point control and registers only.
+	 */
+	if (state->mask & KERNEL_FPR) {
+		asm volatile("lfpc %0" : : "Q" (state->fpc));
+		asm volatile("ld 0,%0" : : "Q" (state->fprs[0]));
+		asm volatile("ld 1,%0" : : "Q" (state->fprs[1]));
+		asm volatile("ld 2,%0" : : "Q" (state->fprs[2]));
+		asm volatile("ld 3,%0" : : "Q" (state->fprs[3]));
+		asm volatile("ld 4,%0" : : "Q" (state->fprs[4]));
+		asm volatile("ld 5,%0" : : "Q" (state->fprs[5]));
+		asm volatile("ld 6,%0" : : "Q" (state->fprs[6]));
+		asm volatile("ld 7,%0" : : "Q" (state->fprs[7]));
+		asm volatile("ld 8,%0" : : "Q" (state->fprs[8]));
+		asm volatile("ld 9,%0" : : "Q" (state->fprs[9]));
+		asm volatile("ld 10,%0" : : "Q" (state->fprs[10]));
+		asm volatile("ld 11,%0" : : "Q" (state->fprs[11]));
+		asm volatile("ld 12,%0" : : "Q" (state->fprs[12]));
+		asm volatile("ld 13,%0" : : "Q" (state->fprs[13]));
+		asm volatile("ld 14,%0" : : "Q" (state->fprs[14]));
+		asm volatile("ld 15,%0" : : "Q" (state->fprs[15]));
+		goto update_kvx_state;
+	}
 
 	/* Test and restore floating-point controls */
 	if (state->mask & KERNEL_VX_FPC)
