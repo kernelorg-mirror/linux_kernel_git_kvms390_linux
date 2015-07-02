@@ -862,7 +862,7 @@
  */
 
 /*?
- * Text: "%s: Address notification from the HiperSockets Bridge Port stopped %s (%s)\n"
+ * Text: "%s: Address notification from the Bridge Port stopped %s (%s)\n"
  * Severity: Informational
  * Parameter:
  *   @1: bus ID of the qeth device
