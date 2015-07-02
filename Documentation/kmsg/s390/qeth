@@ -574,10 +574,22 @@
  * Then try again to set the device online.
  */
 
+/*?
+ * Text: "%s: portname is deprecated and is ignored\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * An OSA-Express port name was required to identify a shared OSA port.
+ * All operating system instances that shared the port had to use the same port name.
+ * This requirement no longer applies, and the specified portname attribute is ignored.
+ * User action:
+ * For future upgrades, remove OSA port name specifications from your
+ * network configuration.
+ */
+
 /*? Text: "core functions removed\n" */
 /*? Text: "%s: Device is a%s card%s%s%s\nwith link type %s.\n" */
-/*? Text: "%s: Device is a%s card%s%s%s\nwith link type %s (no portname needed by interface).\n" */
-/*? Text: "%s: Device is a%s card%s%s%s\nwith link type %s (portname: %s)\n" */
 /*? Text: "%s: issue_next_read failed: no iob available!\n" */
 /*? Text: "%s: Priority Queueing not supported\n" */
 /*? Text: "%s: sense data available. cstat 0x%X dstat 0x%X\n" */
