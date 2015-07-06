@@ -800,7 +800,7 @@ load_fpu_regs:
 	lfpc	__THREAD_FPU_fpc(%r4)
 	stctg	%c0,%c0,__SF_EMPTY+32(%r15)	# store CR0
 	tm	__THREAD_FPU_flags+3(%r4),FPU_USE_VX	# VX-enabled task ?
-	lg	%r4,__THREAD_FPU_regs(%r4)    	# %r4 <- reg save area
+	lg	%r4,__THREAD_FPU_regs(%r4)	# %r4 <- reg save area
 	jz	.Lload_fpu_regs_fp_ctl		# -> no VX, load FP regs
 .Lload_fpu_regs_vx_ctl:
 	tm	__SF_EMPTY+32+5(%r15),2		# test VX control
@@ -1248,7 +1248,7 @@ cleanup_critical:
 	lfpc	__THREAD_FPU_fpc(%r4)
 	stctg	%c0,%c0,__SF_EMPTY+32(%r15)	# store CR0
 	tm	__THREAD_FPU_flags+3(%r4),FPU_USE_VX	# VX-enabled task ?
-	lg	%r4,__THREAD_FPU_regs(%r4)    	# %r4 <- reg save area
+	lg	%r4,__THREAD_FPU_regs(%r4)	# %r4 <- reg save area
 	jz	3f				# -> no VX, load FP regs
 6:	# Set VX-enablement control
 	tm	__SF_EMPTY+32+5(%r15),2		# test VX control
