@@ -188,7 +188,7 @@ int copy_thread(unsigned long clone_flags, unsigned long new_stackp,
 asmlinkage void execve_tail(void)
 {
 	current->thread.fpu.fpc = 0;
-	asm volatile("sfpc %0,%0" : : "d" (0));
+	asm volatile("sfpc %0" : : "d" (0));
 }
 
 /*
