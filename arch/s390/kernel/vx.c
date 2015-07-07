@@ -45,7 +45,7 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 
 	/* Update flags to use the vector extension for KERNEL_FPR */
 	if (MACHINE_HAS_VX && (state->mask & KERNEL_FPR)) {
-		flags |= KERNEL_VXR_LOW|KERNEL_VXR_HIGH|KERNEL_VX_FPC;
+		flags |= KERNEL_VXR_LOW | KERNEL_VX_FPC;
 		flags &= ~KERNEL_FPR;
 	}
 
