@@ -1919,25 +1919,30 @@ static void __dasd_device_check_expire(struct dasd_device *device)
 }
 
 /*
- * return 1 when device is not eligible for IO because it is
- * - set offline (DASD_FLAG_OFFLINE)
- * - stopped (device->stopped)
- *
- * exception:
- * The device is stopped but the request is needed to get it
- * operational again.
- * So the CQR is a path verification request (DASD_CQR_VERIFY_PATH)
- * and only the disconnected or unresumed stop bit is set
- * (DASD_STOPPED_DC_WAIT | DASD_UNRESUMED_PM)
+ * return 1 when device is not eligible for IO
  */
 static int __dasd_device_is_unusable(struct dasd_device *device,
 				     struct dasd_ccw_req *cqr)
 {
-	return test_bit(DASD_FLAG_OFFLINE, &device->flags) ||
-		(device->stopped &&
-		 !(!(device->stopped &
-		     ~(DASD_STOPPED_DC_WAIT | DASD_UNRESUMED_PM)) &&
-		   test_bit(DASD_CQR_VERIFY_PATH, &cqr->flags)));
+	int mask = ~(DASD_STOPPED_DC_WAIT | DASD_UNRESUMED_PM);
+
+	if (test_bit(DASD_FLAG_OFFLINE, &device->flags)) {
+		/* dasd is being set offline. */
+		return 1;
+	}
+	if (device->stopped) {
+		if (device->stopped & mask) {
+			/* stopped and CQR will not change that. */
+			return 1;
+		}
+		if (!test_bit(DASD_CQR_VERIFY_PATH, &cqr->flags)) {
+			/* CQR is not able to change device to
+			 * operational. */
+			return 1;
+		}
+		/* CQR required to get device operational. */
+	}
+	return 0;
 }
 
 /*
