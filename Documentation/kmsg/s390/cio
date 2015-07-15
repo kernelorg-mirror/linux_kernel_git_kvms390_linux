@@ -191,3 +191,56 @@
  * User action:
  * Make sure that the device is working correctly and try the action again.
  */
+
+/*?
+ * Text: "Link stopped: RS=%02x RSID=%04x IC=%02x IUPARAMS=%s IUNODEID=%s AUPARAMS=%s AUNODEID=%s\n"
+ * Severity: Error
+ * Parameter:
+ *   @1: reporting source
+ *   @2: reporting source ID
+ *   @3: incident code
+ *   @4: incident unit parameters
+ *   @5: incident unit node ID
+ *   @6: attached unit parameters
+ *   @7: attached unit node ID
+ *
+ * Description:
+ * A hardware error has occurred. A unit at one end of an interface
+ * link has detected a failure in the link or in one of the units attached to
+ * the link. As a result, data transfer across the link has stopped. In the
+ * message text, the node IDs of involved units are represented in the
+ * following format: TTTTTT/MDL,MMM.PPSSSSSSSSSSSS,XXXX where TTTTTT refers to
+ * the machine type, MDL the model number, MMM the manufacturer, PP the
+ * manufacturing plant, SSSSSSSSSSSS the unit sequence number and XXXX the
+ * machine type-dependent physical interface number. If no data is available
+ * for the unit parameters or node ID field, "n/a" is used instead.
+ *
+ * User action:
+ * Report the problem to your support organization.
+ */
+
+/*?
+ * Text: "Link degraded: RS=%02x RSID=%04x IC=%02x IUPARAMS=%s IUNODEID=%s AUPARAMS=%s AUNODEID=%s\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: reporting source
+ *   @2: reporting source ID
+ *   @3: incident code
+ *   @4: incident unit parameters
+ *   @5: incident unit node ID
+ *   @6: attached unit parameters
+ *   @7: attached unit node ID
+ * Description:
+ * A hardware error has occurred. A unit at one end of an interface
+ * link has detected a failure in the link or in one of the units attached to
+ * the link. As a result, data transfer across the link is degraded. In the
+ * message text, the node IDs of involved units are represented in the
+ * following format: TTTTTT/MDL,MMM.PPSSSSSSSSSSSS,XXXX where TTTTTT refers to
+ * the machine type, MDL the model number, MMM the manufacturer, PP the
+ * manufacturing plant, SSSSSSSSSSSS the unit sequence number and XXXX the
+ * machine type-dependent physical interface number. If no data is available
+ * for the unit parameters or node ID field, "n/a" is used instead.
+ *
+ * User action:
+ * Report the problem to your support organization.
+ */
