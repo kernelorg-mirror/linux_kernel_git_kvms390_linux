@@ -109,7 +109,7 @@ static int _sclp_print(char *str)
 		0x00, 0x00,					/* 80 */
 	};
 	static unsigned char write_mto[] = {
-		/* mto  */
+		/* mto	*/
 		0x00, 0x0a,					/* 0 */
 		0x00, 0x04,					/* 2 */
 		0x10, 0x00,					/* 4 */
