@@ -37,6 +37,7 @@ ifneq ($(CC_FLAGS_MARCH),-march=z900)
 CFLAGS_REMOVE_sclp.o += $(CC_FLAGS_MARCH)
 CFLAGS_sclp.o	+= -march=z900
 endif
+GCOV_PROFILE_sclp.o := n
 
 obj-y	:= traps.o time.o process.o base.o early.o setup.o idle.o vtime.o
 obj-y	+= processor.o sys_s390.o ptrace.o signal.o cpcmd.o ebcdic.o nmi.o
