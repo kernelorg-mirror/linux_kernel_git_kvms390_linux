@@ -7,6 +7,7 @@
 #include <asm/irq.h>
 #include <asm/lowcore.h>
 #include <asm/processor.h>
+#include <asm/sclp.h>
 
 static char _sclp_work_area[4096] __aligned(PAGE_SIZE);
 
@@ -86,7 +87,7 @@ static int _sclp_setup(int disable)
 	return 0;
 }
 
-static int _sclp_print(char *str)
+static int _sclp_print(const char *str)
 {
 	static unsigned char write_head[] = {
 		/* sccb header */
@@ -144,7 +145,7 @@ static int _sclp_print(char *str)
 	return _sclp_servc(0x00760005, _sclp_work_area);
 }
 
-int _sclp_print_early(char *str)
+int _sclp_print_early(const char *str)
 {
 	int rc;
 
