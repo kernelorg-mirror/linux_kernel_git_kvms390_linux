@@ -12,29 +12,34 @@ static char _sclp_work_area[4096] __aligned(PAGE_SIZE);
 
 static void _sclp_wait_int(void)
 {
-	psw_t ext_psw, psw;
-	unsigned long cr0, cr0_new;
-	unsigned long psw_mask;
-
-	ext_psw = S390_lowcore.external_new_psw;
-	psw_mask = __extract_psw() & (PSW_MASK_EA | PSW_MASK_BA);
+	unsigned long cr0, cr0_new, psw_mask, addr;
+	psw_t psw_ext_save, psw_wait;
 
 	__ctl_store(cr0, 0, 0);
 	cr0_new = cr0 | 0x200;
 	__ctl_load(cr0_new, 0, 0);
 
+	psw_ext_save = S390_lowcore.external_new_psw;
+	psw_mask = __extract_psw() & (PSW_MASK_EA | PSW_MASK_BA);
 	S390_lowcore.external_new_psw.mask = psw_mask;
-	S390_lowcore.external_new_psw.addr = (unsigned long) &&wakeup;
-	psw.mask = psw_mask | PSW_MASK_EXT | PSW_MASK_WAIT;
-	psw.addr = (unsigned long) &&wakeup;
+	psw_wait.mask = psw_mask | PSW_MASK_EXT | PSW_MASK_WAIT;
+
 	do {
-		asm_volatile_goto("lpswe %0"
-				  : : "Q" (psw) : "cc", "memory" : wakeup);
-wakeup:;
+		asm volatile(
+			"	larl	%[addr],0f\n"
+			"	stg	%[addr],%[psw_wait_addr]\n"
+			"	stg	%[addr],%[psw_ext_addr]\n"
+			"	lpswe	%[psw_wait]\n"
+			"0:\n"
+			: [addr] "=&d" (addr),
+			  [psw_wait_addr] "=&Q" (psw_wait.addr),
+			  [psw_ext_addr] "=&Q" (S390_lowcore.external_new_psw.addr)
+			: [psw_wait] "Q" (psw_wait)
+			: "cc", "memory");
 	} while (S390_lowcore.ext_int_code != EXT_IRQ_SERVICE_SIG);
 
 	__ctl_load(cr0, 0, 0);
-	S390_lowcore.external_new_psw = ext_psw;
+	S390_lowcore.external_new_psw = psw_ext_save;
 }
 
 static int _sclp_servc(unsigned int cmd, char *sccb)
