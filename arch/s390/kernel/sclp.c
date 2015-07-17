@@ -25,7 +25,7 @@ static void _sclp_wait_int(void)
 
 	S390_lowcore.external_new_psw.mask = psw_mask;
 	S390_lowcore.external_new_psw.addr = (unsigned long) &&wakeup;
-	psw.mask = psw_mask | PSW_MASK_EXT;
+	psw.mask = psw_mask | PSW_MASK_EXT | PSW_MASK_WAIT;
 	psw.addr = (unsigned long) &&wakeup;
 	do {
 		asm_volatile_goto("lpswe %0"
