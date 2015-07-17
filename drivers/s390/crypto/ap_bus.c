@@ -37,6 +37,7 @@
 #include <linux/notifier.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
+#include <linux/suspend.h>
 #include <asm/reset.h>
 #include <asm/airq.h>
 #include <linux/atomic.h>
@@ -482,7 +483,7 @@ static inline void __ap_schedule_poll_timer(void)
 	ktime_t hr_time;
 
 	spin_lock_bh(&ap_poll_timer_lock);
-	if (!hrtimer_is_queued(&ap_poll_timer) && !ap_suspend_flag) {
+	if (!hrtimer_is_queued(&ap_poll_timer)) {
 		hr_time = ktime_set(0, poll_timeout);
 		hrtimer_forward_now(&ap_poll_timer, hr_time);
 		hrtimer_restart(&ap_poll_timer);
@@ -827,25 +828,11 @@ static int ap_uevent (struct device *dev, struct kobj_uevent_env *env)
 	return retval;
 }
 
-static int ap_bus_suspend(struct device *dev, pm_message_t state)
+static int ap_dev_suspend(struct device *dev, pm_message_t state)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
 	unsigned long flags;
 
-	if (!ap_suspend_flag) {
-		ap_suspend_flag = 1;
-
-		/* Disable scanning for devices, thus we do not want to scan
-		 * for them after removing.
-		 */
-		del_timer_sync(&ap_config_timer);
-		if (ap_work_queue != NULL) {
-			destroy_workqueue(ap_work_queue);
-			ap_work_queue = NULL;
-		}
-
-		tasklet_disable(&ap_tasklet);
-	}
 	/* Poll on the device until all requests are finished. */
 	do {
 		flags = 0;
@@ -861,65 +848,78 @@ static int ap_bus_suspend(struct device *dev, pm_message_t state)
 	return 0;
 }
 
-static int ap_bus_resume(struct device *dev)
+static int ap_dev_resume(struct device *dev)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
-	int rc;
 
-	if (ap_suspend_flag) {
-		ap_suspend_flag = 0;
-		if (ap_interrupts_available()) {
-			if (!ap_using_interrupts()) {
-				rc = register_adapter_interrupt(&ap_airq);
-				ap_airq_flag = (rc == 0);
-			}
-		} else {
-			if (ap_using_interrupts()) {
-				unregister_adapter_interrupt(&ap_airq);
-				ap_airq_flag = 0;
-			}
-		}
-		ap_query_configuration();
-		if (!user_set_domain) {
-			ap_domain_index = -1;
-			ap_select_domain();
-		}
-		init_timer(&ap_config_timer);
-		ap_config_timer.function = ap_config_timeout;
-		ap_config_timer.data = 0;
-		ap_config_timer.expires = jiffies + ap_config_time * HZ;
-		add_timer(&ap_config_timer);
-		ap_work_queue = create_singlethread_workqueue("kapwork");
-		if (!ap_work_queue)
-			return -ENOMEM;
-		tasklet_enable(&ap_tasklet);
-		if (!ap_using_interrupts())
-			ap_schedule_poll_timer();
-		else
-			tasklet_schedule(&ap_tasklet);
-		if (ap_thread_flag)
-			rc = ap_poll_thread_start();
-		else
-			rc = 0;
-	} else
-		rc = 0;
 	if (AP_QID_QUEUE(ap_dev->qid) != ap_domain_index) {
 		spin_lock_bh(&ap_dev->lock);
 		ap_dev->qid = AP_MKQID(AP_QID_DEVICE(ap_dev->qid),
 				       ap_domain_index);
 		spin_unlock_bh(&ap_dev->lock);
 	}
-	queue_work(ap_work_queue, &ap_config_work);
-
-	return rc;
+	return 0;
 }
+
+static void ap_bus_suspend(void)
+{
+	ap_suspend_flag = 1;
+	/*
+	 * Disable scanning for devices, thus we do not want to scan
+	 * for them after removing.
+	 */
+	del_timer_sync(&ap_config_timer);
+	drain_workqueue(ap_work_queue);
+	tasklet_disable(&ap_tasklet);
+}
+
+static void ap_bus_resume(void)
+{
+	ap_suspend_flag = 0;
+	if (ap_interrupts_available() && !ap_using_interrupts())
+		ap_airq_flag = (register_adapter_interrupt(&ap_airq) == 0);
+	if (!ap_interrupts_available() && ap_using_interrupts()) {
+		unregister_adapter_interrupt(&ap_airq);
+		ap_airq_flag = 0;
+	}
+	ap_query_configuration();
+	if (!user_set_domain) {
+		ap_domain_index = -1;
+		ap_select_domain();
+	}
+	mod_timer(&ap_config_timer, jiffies + ap_config_time * HZ);
+	tasklet_enable(&ap_tasklet);
+	queue_work(ap_work_queue, &ap_config_work);
+	wake_up(&ap_poll_wait);
+}
+
+static int ap_power_event(struct notifier_block *this, unsigned long event,
+			  void *ptr)
+{
+	switch (event) {
+	case PM_HIBERNATION_PREPARE:
+	case PM_SUSPEND_PREPARE:
+		ap_bus_suspend();
+		break;
+	case PM_POST_HIBERNATION:
+	case PM_POST_SUSPEND:
+		ap_bus_resume();
+		break;
+	default:
+		break;
+	}
+	return NOTIFY_DONE;
+}
+static struct notifier_block ap_power_notifier = {
+	.notifier_call = ap_power_event,
+};
 
 static struct bus_type ap_bus_type = {
 	.name = "ap",
 	.match = &ap_bus_match,
 	.uevent = &ap_uevent,
-	.suspend = ap_bus_suspend,
-	.resume = ap_bus_resume
+	.suspend = ap_dev_suspend,
+	.resume = ap_dev_resume,
 };
 
 static int ap_device_probe(struct device *dev)
@@ -1017,6 +1017,8 @@ EXPORT_SYMBOL(ap_driver_unregister);
 
 void ap_bus_force_rescan(void)
 {
+	if (ap_suspend_flag)
+		return;
 	/* reconfigure the AP bus rescan timer. */
 	mod_timer(&ap_config_timer, jiffies + ap_config_time * HZ);
 	/* processing a asynchronous bus rescan */
@@ -1425,6 +1427,8 @@ static void ap_scan_bus(struct work_struct *unused)
 static void
 ap_config_timeout(unsigned long ptr)
 {
+	if (ap_suspend_flag)
+		return;
 	queue_work(ap_work_queue, &ap_config_work);
 	ap_config_timer.expires = jiffies + ap_config_time * HZ;
 	add_timer(&ap_config_timer);
@@ -1796,8 +1800,6 @@ static int ap_poll_thread(void *data)
 
 	set_user_nice(current, MAX_NICE);
 	while (1) {
-		if (ap_suspend_flag)
-			return 0;
 		if (need_resched()) {
 			schedule();
 			continue;
@@ -1807,7 +1809,7 @@ static int ap_poll_thread(void *data)
 		if (kthread_should_stop())
 			break;
 		requests = atomic_read(&ap_poll_requests);
-		if (requests <= 0)
+		if (ap_suspend_flag || requests <= 0)
 			schedule();
 		set_current_state(TASK_RUNNING);
 		remove_wait_queue(&ap_poll_wait, &wait);
@@ -1990,8 +1992,14 @@ int __init ap_module_init(void)
 			goto out_work;
 	}
 
+	rc = register_pm_notifier(&ap_power_notifier);
+	if (rc)
+		goto out_pm;
+
 	return 0;
 
+out_pm:
+	ap_poll_thread_stop();
 out_work:
 	del_timer_sync(&ap_config_timer);
 	hrtimer_cancel(&ap_poll_timer);
@@ -2039,6 +2047,7 @@ void ap_module_exit(void)
 	}
 	for (i = 0; ap_bus_attrs[i]; i++)
 		bus_remove_file(&ap_bus_type, ap_bus_attrs[i]);
+	unregister_pm_notifier(&ap_power_notifier);
 	root_device_unregister(ap_root_device);
 	bus_unregister(&ap_bus_type);
 	kfree(ap_configuration);
