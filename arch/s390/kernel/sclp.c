@@ -33,8 +33,8 @@ static void _sclp_wait_int(void)
 			"	lpswe	%[psw_wait]\n"
 			"0:\n"
 			: [addr] "=&d" (addr),
-			  [psw_wait_addr] "=&Q" (psw_wait.addr),
-			  [psw_ext_addr] "=&Q" (S390_lowcore.external_new_psw.addr)
+			  [psw_wait_addr] "=Q" (psw_wait.addr),
+			  [psw_ext_addr] "=Q" (S390_lowcore.external_new_psw.addr)
 			: [psw_wait] "Q" (psw_wait)
 			: "cc", "memory");
 	} while (S390_lowcore.ext_int_code != EXT_IRQ_SERVICE_SIG);
