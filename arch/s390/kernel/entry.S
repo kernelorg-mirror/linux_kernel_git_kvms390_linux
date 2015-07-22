@@ -1246,11 +1246,11 @@ cleanup_critical:
 	jhe	6f
 	lg	%r4,__LC_CURRENT
 	lfpc	__THREAD_FPU_fpc(%r4)
-	stctg	%c0,%c0,__SF_EMPTY+32(%r15)	# store CR0
 	tm	__THREAD_FPU_flags+3(%r4),FPU_USE_VX	# VX-enabled task ?
 	lg	%r4,__THREAD_FPU_regs(%r4)	# %r4 <- reg save area
 	jz	3f				# -> no VX, load FP regs
 6:	# Set VX-enablement control
+	stctg	%c0,%c0,__SF_EMPTY+32(%r15)	# store CR0
 	tm	__SF_EMPTY+32+5(%r15),2		# test VX control
 	jo	5f
 	oi	__SF_EMPTY+32+5(%r15),2		# set VX control
@@ -1261,6 +1261,7 @@ cleanup_critical:
 	VLM	%v16,%v31,256,%r4
 	j	1f
 3:	# Clear VX-enablement control for FP
+	stctg	%c0,%c0,__SF_EMPTY+32(%r15)	# store CR0
 	tm	__SF_EMPTY+32+5(%r15),2		# test VX control
 	jz	2f
 	ni	__SF_EMPTY+32+5(%r15),253	# clear VX control
