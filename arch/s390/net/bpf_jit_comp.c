@@ -364,7 +364,7 @@ static void save_restore_regs(struct bpf_jit *jit, int op)
  * Save registers and create stack frame if necessary.
  * See stack frame layout desription in "bpf_jit.h"!
  */
-static void bpf_jit_prologue(struct bpf_jit *jit)
+static void bpf_jit_prologue(struct bpf_jit *jit, bool is_classic)
 {
 	/* Save registers */
 	save_restore_regs(jit, REGS_SAVE);
@@ -407,13 +407,15 @@ static void bpf_jit_prologue(struct bpf_jit *jit)
 		EMIT6_DISP_LH(0xe3000000, 0x0004, REG_SKB_DATA, REG_0,
 			      BPF_REG_1, offsetof(struct sk_buff, data));
 	}
-	/* BPF compatibility: clear A (%b0) and X (%b7) registers */
-	if (REG_SEEN(BPF_REG_A))
-		/* lghi %ba,0 */
-		EMIT4_IMM(0xa7090000, BPF_REG_A, 0);
-	if (REG_SEEN(BPF_REG_X))
-		/* lghi %bx,0 */
-		EMIT4_IMM(0xa7090000, BPF_REG_X, 0);
+	/* Clear A (%b0) and X (%b7) registers for converted BPF programs */
+	if (is_classic) {
+		if (REG_SEEN(BPF_REG_A))
+			/* lghi %ba,0 */
+			EMIT4_IMM(0xa7090000, BPF_REG_A, 0);
+		if (REG_SEEN(BPF_REG_X))
+			/* lghi %bx,0 */
+			EMIT4_IMM(0xa7090000, BPF_REG_X, 0);
+	}
 }
 
 /*
@@ -1126,7 +1128,7 @@ static int bpf_jit_prog(struct bpf_jit *jit, struct bpf_prog *fp)
 	jit->lit = jit->lit_start;
 	jit->prg = 0;
 
-	bpf_jit_prologue(jit);
+	bpf_jit_prologue(jit, fp->type == BPF_PROG_TYPE_UNSPEC);
 	for (i = 0; i < fp->len; i += insn_count) {
 		insn_count = bpf_jit_insn(jit, fp, i);
 		if (insn_count < 0)
