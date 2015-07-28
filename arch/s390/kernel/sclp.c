@@ -24,6 +24,7 @@ static void _sclp_wait_int(void)
 	psw_mask = __extract_psw() & (PSW_MASK_EA | PSW_MASK_BA);
 	S390_lowcore.external_new_psw.mask = psw_mask;
 	psw_wait.mask = psw_mask | PSW_MASK_EXT | PSW_MASK_WAIT;
+	S390_lowcore.ext_int_code = 0;
 
 	do {
 		asm volatile(
