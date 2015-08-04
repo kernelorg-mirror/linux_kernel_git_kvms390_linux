@@ -1,26 +1,30 @@
 /*?
- * Text: "Not enough memory for %i nodes\n"
- * Severity: Notice
+ * Text: "Not enough memory for %d nodes, reducing node count\n"
+ * Severity: Warning
  * Parameter:
- *   @1: number of nodes
+ *   @1: requested number of nodes
  * Description:
- * The Linux instance does not have enough memory to emulate the number
- * of NUMA nodes that were specified with the emu_nodes= kernel parameter.
- * The number of nodes is decreased accordingly.
+ * Using the requested memory stripe size for emulating the requested number of
+ * NUMA nodes requires more than the available memory. The number of nodes is
+ * specified with the emu_nodes= kernel parameter. The memory stripe size to
+ * be used for distributing the available memory among the nodes is specified
+ * with the emu_size= kernel parameter. Fewer nodes were created than the
+ * requested number; each node has one memory stripe of the requested size.
  * User action:
- * Specify fewer nodes, reduce memory stripe size, or make more memory
+ * Specify fewer nodes, reduce the memory stripe size, or make more memory
  * available to your Linux instance.
  */
 
 /*?
- * Text: "Emulating %i nodes with memory stripe size %liMB\n"
+ * Text: "Creating %d nodes with memory stripe size %ld MB\n"
  * Severity: Informational
  * Parameter:
  *   @1: number of nodes
  *   @2: stripe size
  * Description:
- * NUMA emulation created several NUMA nodes and assigned memory stripes round
- * robin to the nodes.
+ * NUMA emulation is activated with the reported number of NUMA nodes.
+ * The specified memory stripe size is used to distribute, in round-robin
+ * fashion, the available memory among the nodes.
  * User action:
  * None.
  */

@@ -427,11 +427,10 @@ static int emu_setup_nodes_adjust(int nodes)
 
 	nodes_max = memblock.memory.total_size / emu_size;
 	nodes_max = max(nodes_max, 1);
-	if (nodes_max < nodes) {
-		pr_notice("Not enough memory for %i nodes\n", nodes);
-		nodes = nodes_max;
-	}
-	return nodes;
+	if (nodes_max >= nodes)
+		return nodes;
+	pr_warn("Not enough memory for %d nodes, reducing node count\n", nodes);
+	return nodes_max;
 }
 
 /*
@@ -445,7 +444,7 @@ static void emu_setup(void)
 	emu_nodes = emu_setup_nodes_adjust(emu_nodes);
 	for (i = 0; i < ARRAY_SIZE(cores_to_node_id); i++)
 		cores_to_node_id[i] = NODE_ID_FREE;
-	pr_info("Emulating %i nodes with memory stripe size %liMB\n",
+	pr_info("Creating %d nodes with memory stripe size %ld MB\n",
 		emu_nodes, emu_size >> 20);
 }
 
