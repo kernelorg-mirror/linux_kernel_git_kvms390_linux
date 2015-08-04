@@ -86,7 +86,8 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 	S390_lowcore.steal_timer += S390_lowcore.last_update_clock - clock;
 
 	/* Do MT utilization calculation */
-	if (smp_cpu_mtid && __this_cpu_read(mt_scaling_jiffies) < jiffies) {
+	if (smp_cpu_mtid &&
+	    time_after64(jiffies_64, __this_cpu_read(mt_scaling_jiffies))) {
 		u64 cycles_new[32], *cycles_old;
 		u64 delta, mult, div;
 
@@ -106,7 +107,7 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 				       sizeof(u64) * (smp_cpu_mtid + 1));
 			}
 		}
-		__this_cpu_write(mt_scaling_jiffies, jiffies);
+		__this_cpu_write(mt_scaling_jiffies, jiffies_64);
 	}
 
 	user = S390_lowcore.user_timer - ti->user_timer;
