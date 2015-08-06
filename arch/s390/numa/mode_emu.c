@@ -300,7 +300,7 @@ static void create_core_to_node_map(void)
 
 	emu_cores = kzalloc(sizeof(*emu_cores), GFP_KERNEL);
 	if (emu_cores == NULL)
-		panic("Could not allocate cores to node memory\n");
+		panic("Could not allocate cores to node memory");
 	for (i = 0; i < ARRAY_SIZE(emu_cores->to_node_id); i++)
 		emu_cores->to_node_id[i] = NODE_ID_FREE;
 }
