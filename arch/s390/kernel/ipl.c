@@ -191,6 +191,33 @@ static ssize_t sys_##_prefix##_##_name##_show(struct kobject *kobj,	\
 	return snprintf(page, PAGE_SIZE, _format, ##args);		\
 }
 
+#define IPL_ATTR_CCW_STORE_FN(_prefix, _name, _ipl_blk)			\
+static ssize_t sys_##_prefix##_##_name##_store(struct kobject *kobj,	\
+		struct kobj_attribute *attr,				\
+		const char *buf, size_t len)				\
+{									\
+	unsigned long long ssid, devno;					\
+									\
+	if (sscanf(buf, "0.%llx.%llx\n", &ssid, &devno) != 2)		\
+		return -EINVAL;						\
+									\
+	if (ssid > __MAX_SSID || devno > __MAX_SUBCHANNEL)		\
+		return -EINVAL;						\
+									\
+	_ipl_blk.ssid = ssid;						\
+	_ipl_blk.devno = devno;						\
+	return len;							\
+}
+
+#define DEFINE_IPL_CCW_ATTR_RW(_prefix, _name, _ipl_blk)		\
+IPL_ATTR_SHOW_FN(_prefix, _name, "0.%x.%04x\n",				\
+		 _ipl_blk.ssid, _ipl_blk.devno);			\
+IPL_ATTR_CCW_STORE_FN(_prefix, _name, _ipl_blk);			\
+static struct kobj_attribute sys_##_prefix##_##_name##_attr =		\
+	__ATTR(_name, (S_IRUGO | S_IWUSR),				\
+	       sys_##_prefix##_##_name##_show,				\
+	       sys_##_prefix##_##_name##_store)				\
+
 #define DEFINE_IPL_ATTR_RO(_prefix, _name, _format, _value)		\
 IPL_ATTR_SHOW_FN(_prefix, _name, _format, _value)			\
 static struct kobj_attribute sys_##_prefix##_##_name##_attr =		\
@@ -808,30 +835,7 @@ static struct attribute_group reipl_fcp_attr_group = {
 };
 
 /* CCW reipl device attributes */
-IPL_ATTR_SHOW_FN(reipl_ccw, device, "0.%x.%04x\n",
-		 reipl_block_ccw->ipl_info.ccw.ssid,
-		 reipl_block_ccw->ipl_info.ccw.devno);
-
-static ssize_t sys_reipl_ccw_device_store(struct kobject *kobj,
-					  struct kobj_attribute *attr,
-					  const char *buf, size_t len)
-{
-	unsigned long long ssid, devno;
-
-	if (sscanf(buf, "0.%llx.%llx\n", &ssid, &devno) != 2)
-		return -EINVAL;
-
-	if (ssid > __MAX_SSID || devno > __MAX_SUBCHANNEL)
-		return -EINVAL;
-
-	reipl_block_ccw->ipl_info.ccw.ssid = ssid;
-	reipl_block_ccw->ipl_info.ccw.devno = devno;
-	return len;
-}
-static struct kobj_attribute sys_reipl_ccw_device_attr =
-	__ATTR(device, (S_IRUGO | S_IWUSR), sys_reipl_ccw_device_show,
-	       sys_reipl_ccw_device_store);
-
+DEFINE_IPL_CCW_ATTR_RW(reipl_ccw, device, reipl_block_ccw->ipl_info.ccw);
 
 /* NSS wrapper */
 static ssize_t reipl_nss_loadparm_show(struct kobject *kobj,
@@ -1352,9 +1356,7 @@ static struct attribute_group dump_fcp_attr_group = {
 };
 
 /* CCW dump device attributes */
-
-DEFINE_IPL_ATTR_RW(dump_ccw, device, "0.0.%04llx\n", "0.0.%llx\n",
-		   dump_block_ccw->ipl_info.ccw.devno);
+DEFINE_IPL_CCW_ATTR_RW(dump_ccw, device, dump_block_ccw->ipl_info.ccw);
 
 static struct attribute *dump_ccw_attrs[] = {
 	&sys_dump_ccw_device_attr.attr,
@@ -1434,7 +1436,7 @@ static void __dump_run(void *unused)
 
 	switch (dump_method) {
 	case DUMP_METHOD_CCW_CIO:
-		devid.ssid  = 0;
+		devid.ssid  = dump_block_ccw->ipl_info.ccw.ssid;
 		devid.devno = dump_block_ccw->ipl_info.ccw.devno;
 		reipl_ccw_dev(&devid);
 		break;
