@@ -2,7 +2,7 @@ VERSION = 4
 PATCHLEVEL = 1
 SUBLEVEL = 0
 EXTRAVERSION =
-NAME = Hurr durr I'ma sheep
+NAME = Muhahaha
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
