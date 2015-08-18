@@ -31,9 +31,11 @@
  * A PCI function entered an error state from which it cannot recover
  * automatically.
  * User action:
- * Trigger a recovery action by writing '1' to the 'recovery' sysfs attribute
+ * Trigger a recovery action by writing '1' to the 'recover' sysfs attribute
  * of the PCI function.
  * In sysfs, PCI functions are represented as /sys/bus/pci/devices/<name>,
  * where <name> is the device name of the function.
+ * If the device name of a function is shown as 'n/a', the device
+ * registration with the PCI device driver has not completed.
  * If the problem persists, contact your support organization.
  */
