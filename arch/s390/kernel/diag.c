@@ -6,7 +6,87 @@
  */
 
 #include <linux/module.h>
+#include <linux/cpu.h>
+#include <linux/seq_file.h>
+#include <linux/debugfs.h>
 #include <asm/diag.h>
+
+DEFINE_PER_CPU(struct diag_stat, diag_stat);
+EXPORT_PER_CPU_SYMBOL(diag_stat);
+
+static int show_diag_stat(struct seq_file *m, void *v)
+{
+	static const int map[NR_DIAG_STAT] = {
+		0x008, 0x00c, 0x010, 0x014, 0x044, 0x064, 0x09c, 0x0dc,
+		0x204, 0x210, 0x224, 0x250, 0x258, 0x2c4, 0x2fc, 0x304,
+		0x308, 0x500
+	};
+	struct diag_stat *stat;
+	unsigned long n = (unsigned long) v - 1;
+	int cpu;
+
+	get_online_cpus();
+	if (n == 0) {
+		seq_puts(m, "               ");
+		for_each_online_cpu(cpu)
+			seq_printf(m, "CPU%d       ", cpu);
+		seq_putc(m, '\n');
+	}
+	if (n <= NR_DIAG_STAT) {
+		seq_printf(m, "diag %03x:", map[n-1]);
+		for_each_online_cpu(cpu) {
+			stat = &per_cpu(diag_stat, cpu);
+			seq_printf(m, "%10u ", stat->counter[n-1]);
+		}
+		seq_putc(m, '\n');
+	}
+	put_online_cpus();
+	return 0;
+}
+
+static void *show_diag_stat_start(struct seq_file *m, loff_t *pos)
+{
+	return *pos <= nr_cpu_ids ? (void *)((unsigned long) *pos + 1) : NULL;
+}
+
+static void *show_diag_stat_next(struct seq_file *m, void *v, loff_t *pos)
+{
+	++*pos;
+	return show_diag_stat_start(m, pos);
+}
+
+static void show_diag_stat_stop(struct seq_file *m, void *v)
+{
+}
+
+static const struct seq_operations show_diag_stat_sops = {
+	.start  = show_diag_stat_start,
+	.next   = show_diag_stat_next,
+	.stop   = show_diag_stat_stop,
+	.show   = show_diag_stat,
+};
+
+static int show_diag_stat_open(struct inode *inode, struct file *file)
+{
+	return seq_open(file, &show_diag_stat_sops);
+}
+
+static const struct file_operations show_diag_stat_fops = {
+	.open           = show_diag_stat_open,
+	.read           = seq_read,
+	.llseek         = seq_lseek,
+	.release        = seq_release,
+};
+
+
+static int __init show_diag_stat_init(void)
+{
+	debugfs_create_file("diag_stat", 0400, NULL, NULL,
+			    &show_diag_stat_fops);
+	return 0;
+}
+
+device_initcall(show_diag_stat_init);
 
 /*
  * Diagnose 14: Input spool file manipulation
@@ -17,6 +97,7 @@ int diag14(unsigned long rx, unsigned long ry1, unsigned long subcode)
 	register unsigned long _ry2 asm("3") = subcode;
 	int rc = 0;
 
+	diag_stat_inc(DIAG_STAT_X014);
 	asm volatile(
 		"   sam31\n"
 		"   diag    %2,2,0x14\n"
@@ -48,6 +129,7 @@ int diag210(struct diag210 *addr)
 	spin_lock_irqsave(&diag210_lock, flags);
 	diag210_tmp = *addr;
 
+	diag_stat_inc(DIAG_STAT_X210);
 	asm volatile(
 		"	lhi	%0,-1\n"
 		"	sam31\n"

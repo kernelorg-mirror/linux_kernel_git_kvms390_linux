@@ -27,7 +27,7 @@
 #define __S390_KVM_PARA_H
 
 #include <uapi/asm/kvm_para.h>
-
+#include <asm/diag.h>
 
 
 static inline long kvm_hypercall0(unsigned long nr)
@@ -35,6 +35,7 @@ static inline long kvm_hypercall0(unsigned long nr)
 	register unsigned long __nr asm("1") = nr;
 	register long __rc asm("2");
 
+	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr): "memory", "cc");
 	return __rc;
@@ -46,6 +47,7 @@ static inline long kvm_hypercall1(unsigned long nr, unsigned long p1)
 	register unsigned long __p1 asm("2") = p1;
 	register long __rc asm("2");
 
+	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr), "0" (__p1) : "memory", "cc");
 	return __rc;
@@ -59,6 +61,7 @@ static inline long kvm_hypercall2(unsigned long nr, unsigned long p1,
 	register unsigned long __p2 asm("3") = p2;
 	register long __rc asm("2");
 
+	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr), "0" (__p1), "d" (__p2)
 		      : "memory", "cc");
@@ -74,6 +77,7 @@ static inline long kvm_hypercall3(unsigned long nr, unsigned long p1,
 	register unsigned long __p3 asm("4") = p3;
 	register long __rc asm("2");
 
+	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr), "0" (__p1), "d" (__p2),
 			"d" (__p3) : "memory", "cc");
@@ -92,6 +96,7 @@ static inline long kvm_hypercall4(unsigned long nr, unsigned long p1,
 	register unsigned long __p4 asm("5") = p4;
 	register long __rc asm("2");
 
+	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr), "0" (__p1), "d" (__p2),
 			"d" (__p3), "d" (__p4) : "memory", "cc");
@@ -110,6 +115,7 @@ static inline long kvm_hypercall5(unsigned long nr, unsigned long p1,
 	register unsigned long __p5 asm("6") = p5;
 	register long __rc asm("2");
 
+	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr), "0" (__p1), "d" (__p2),
 			"d" (__p3), "d" (__p4), "d" (__p5)  : "memory", "cc");
@@ -130,6 +136,7 @@ static inline long kvm_hypercall6(unsigned long nr, unsigned long p1,
 	register unsigned long __p6 asm("7") = p6;
 	register long __rc asm("2");
 
+	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr), "0" (__p1), "d" (__p2),
 			"d" (__p3), "d" (__p4), "d" (__p5), "d" (__p6)

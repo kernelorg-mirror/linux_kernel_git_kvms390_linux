@@ -17,6 +17,7 @@
 #include <linux/gfp.h>
 #include <linux/crash_dump.h>
 #include <linux/debug_locks.h>
+#include <asm/diag.h>
 #include <asm/ipl.h>
 #include <asm/smp.h>
 #include <asm/setup.h>
@@ -171,6 +172,7 @@ int diag308(unsigned long subcode, void *addr)
 	register unsigned long _addr asm("0") = (unsigned long) addr;
 	register unsigned long _rc asm("1") = 0;
 
+	diag_stat_inc(DIAG_STAT_X308);
 	asm volatile(
 		"	diag	%0,%2,0x308\n"
 		"0:\n"

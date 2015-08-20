@@ -15,6 +15,7 @@
 #include <linux/string.h>
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
+#include <asm/diag.h>
 #include <asm/ebcdic.h>
 #include "hypfs.h"
 
@@ -341,6 +342,7 @@ static int diag204(unsigned long subcode, unsigned long size, void *addr)
 	register unsigned long _subcode asm("0") = subcode;
 	register unsigned long _size asm("1") = size;
 
+	diag_stat_inc(DIAG_STAT_X204);
 	asm volatile(
 		"	diag	%2,%0,0x204\n"
 		"0:\n"
@@ -505,6 +507,7 @@ static int diag224(void *ptr)
 {
 	int rc = -EOPNOTSUPP;
 
+	diag_stat_inc(DIAG_STAT_X224);
 	asm volatile(
 		"	diag	%1,%2,0x224\n"
 		"0:	lhi	%0,0x0\n"

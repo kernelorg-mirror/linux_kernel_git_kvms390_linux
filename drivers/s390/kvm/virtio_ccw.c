@@ -28,6 +28,7 @@
 #include <linux/io.h>
 #include <linux/kvm_para.h>
 #include <linux/notifier.h>
+#include <asm/diag.h>
 #include <asm/setup.h>
 #include <asm/irq.h>
 #include <asm/cio.h>
@@ -375,6 +376,7 @@ static inline long do_kvm_notify(struct subchannel_id schid,
 	register long __rc asm("2");
 	register long __cookie asm("4") = cookie;
 
+	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr), "d" (__schid), "d" (__index),
 		      "d"(__cookie)

@@ -13,6 +13,7 @@
 #include <linux/types.h>
 #include <linux/uaccess.h>
 #include <asm/compat.h>
+#include <asm/diag.h>
 #include <asm/sclp.h>
 #include "hypfs.h"
 
@@ -28,6 +29,7 @@ static unsigned long hypfs_sprp_diag304(void *data, unsigned long cmd)
 	register unsigned long _rc asm("3");
 	register unsigned long _cmd asm("4") = cmd;
 
+	diag_stat_inc(DIAG_STAT_X304);
 	asm volatile("diag %1,%2,0x304\n"
 		     : "=d" (_rc) : "d" (_data), "d" (_cmd) : "memory");
 
