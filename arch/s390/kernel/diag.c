@@ -10,17 +10,22 @@
 #include <linux/seq_file.h>
 #include <linux/debugfs.h>
 #include <asm/diag.h>
+#include <asm/trace/diag.h>
 
-DEFINE_PER_CPU(struct diag_stat, diag_stat);
-EXPORT_PER_CPU_SYMBOL(diag_stat);
+struct diag_stat {
+	unsigned int counter[NR_DIAG_STAT];
+};
+
+static DEFINE_PER_CPU(struct diag_stat, diag_stat);
+
+static const int diag_map[NR_DIAG_STAT] = {
+	0x008, 0x00c, 0x010, 0x014, 0x044, 0x064, 0x09c, 0x0dc,
+	0x204, 0x210, 0x224, 0x250, 0x258, 0x2c4, 0x2fc, 0x304,
+	0x308, 0x500
+};
 
 static int show_diag_stat(struct seq_file *m, void *v)
 {
-	static const int map[NR_DIAG_STAT] = {
-		0x008, 0x00c, 0x010, 0x014, 0x044, 0x064, 0x09c, 0x0dc,
-		0x204, 0x210, 0x224, 0x250, 0x258, 0x2c4, 0x2fc, 0x304,
-		0x308, 0x500
-	};
 	struct diag_stat *stat;
 	unsigned long n = (unsigned long) v - 1;
 	int cpu;
@@ -32,7 +37,7 @@ static int show_diag_stat(struct seq_file *m, void *v)
 			seq_printf(m, "CPU%d       ", cpu);
 		seq_putc(m, '\n');
 	} else if (n <= NR_DIAG_STAT) {
-		seq_printf(m, "diag %03x:", map[n-1]);
+		seq_printf(m, "diag %03x:", diag_map[n-1]);
 		for_each_online_cpu(cpu) {
 			stat = &per_cpu(diag_stat, cpu);
 			seq_printf(m, "%10u ", stat->counter[n-1]);
@@ -87,16 +92,30 @@ static int __init show_diag_stat_init(void)
 
 device_initcall(show_diag_stat_init);
 
+void diag_stat_inc(enum diag_stat_enum nr)
+{
+	this_cpu_inc(diag_stat.counter[nr]);
+	trace_diagnose(diag_map[nr]);
+}
+EXPORT_SYMBOL(diag_stat_inc);
+
+void diag_stat_inc_norecursion(enum diag_stat_enum nr)
+{
+	this_cpu_inc(diag_stat.counter[nr]);
+	trace_diagnose_norecursion(diag_map[nr]);
+}
+EXPORT_SYMBOL(diag_stat_inc_norecursion);
+
 /*
  * Diagnose 14: Input spool file manipulation
  */
-int diag14(unsigned long rx, unsigned long ry1, unsigned long subcode)
+static inline int __diag14(unsigned long rx, unsigned long ry1,
+			   unsigned long subcode)
 {
 	register unsigned long _ry1 asm("2") = ry1;
 	register unsigned long _ry2 asm("3") = subcode;
 	int rc = 0;
 
-	diag_stat_inc(DIAG_STAT_X014);
 	asm volatile(
 		"   sam31\n"
 		"   diag    %2,2,0x14\n"
@@ -108,6 +127,12 @@ int diag14(unsigned long rx, unsigned long ry1, unsigned long subcode)
 		: "cc");
 
 	return rc;
+}
+
+int diag14(unsigned long rx, unsigned long ry1, unsigned long subcode)
+{
+	diag_stat_inc(DIAG_STAT_X014);
+	return __diag14(rx, ry1, subcode);
 }
 EXPORT_SYMBOL(diag14);
 

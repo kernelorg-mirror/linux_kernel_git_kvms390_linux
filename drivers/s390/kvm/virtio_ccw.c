@@ -366,9 +366,9 @@ static void virtio_ccw_drop_indicator(struct virtio_ccw_device *vcdev,
 	kfree(thinint_area);
 }
 
-static inline long do_kvm_notify(struct subchannel_id schid,
-				 unsigned long queue_index,
-				 long cookie)
+static inline long __do_kvm_notify(struct subchannel_id schid,
+				   unsigned long queue_index,
+				   long cookie)
 {
 	register unsigned long __nr asm("1") = KVM_S390_VIRTIO_CCW_NOTIFY;
 	register struct subchannel_id __schid asm("2") = schid;
@@ -376,12 +376,19 @@ static inline long do_kvm_notify(struct subchannel_id schid,
 	register long __rc asm("2");
 	register long __cookie asm("4") = cookie;
 
-	diag_stat_inc(DIAG_STAT_X500);
 	asm volatile ("diag 2,4,0x500\n"
 		      : "=d" (__rc) : "d" (__nr), "d" (__schid), "d" (__index),
 		      "d"(__cookie)
 		      : "memory", "cc");
 	return __rc;
+}
+
+static inline long do_kvm_notify(struct subchannel_id schid,
+				 unsigned long queue_index,
+				 long cookie)
+{
+	diag_stat_inc(DIAG_STAT_X500);
+	return __do_kvm_notify(schid, queue_index, cookie);
 }
 
 static bool virtio_ccw_kvm_notify(struct virtqueue *vq)
