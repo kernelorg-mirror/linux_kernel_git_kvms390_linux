@@ -60,10 +60,10 @@ static void show_diag_stat_stop(struct seq_file *m, void *v)
 }
 
 static const struct seq_operations show_diag_stat_sops = {
-	.start  = show_diag_stat_start,
-	.next   = show_diag_stat_next,
-	.stop   = show_diag_stat_stop,
-	.show   = show_diag_stat,
+	.start	= show_diag_stat_start,
+	.next	= show_diag_stat_next,
+	.stop	= show_diag_stat_stop,
+	.show	= show_diag_stat,
 };
 
 static int show_diag_stat_open(struct inode *inode, struct file *file)
@@ -72,10 +72,10 @@ static int show_diag_stat_open(struct inode *inode, struct file *file)
 }
 
 static const struct file_operations show_diag_stat_fops = {
-	.open           = show_diag_stat_open,
-	.read           = seq_read,
-	.llseek         = seq_lseek,
-	.release        = seq_release,
+	.open		= show_diag_stat_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= seq_release,
 };
 
 
