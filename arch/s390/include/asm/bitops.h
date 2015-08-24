@@ -51,26 +51,6 @@
 
 #define __BITOPS_NO_BARRIER	"\n"
 
-#define __BITOPS_LOOP_EQ(__addr, __val, __op_string)		\
-({								\
-	unsigned long __old, __new;				\
-								\
-	typecheck(unsigned long *, (__addr));			\
-	asm volatile(						\
-		"	lg	%0,%2\n"			\
-		"0:	lgr	%1,%0\n"			\
-		__op_string "	%1,%3\n"			\
-		"	cgr	%0,%1\n"			\
-		"	je	1f\n"				\
-		"	csg	%0,%1,%2\n"			\
-		"	jl	0b\n"				\
-		"1:"						\
-		: "=&d" (__old), "=&d" (__new), "+Q" (*(__addr))\
-		: "d" (__val)					\
-		: "cc", "memory");				\
-	__old;							\
-})
-
 #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
 
 #define __BITOPS_OR		"laog"
@@ -299,12 +279,9 @@ static inline int test_bit(unsigned long nr, const volatile unsigned long *ptr)
 static inline int test_and_set_bit_lock(unsigned long nr,
 					volatile unsigned long *ptr)
 {
-	unsigned long *addr = __bitops_word(nr, ptr);
-	unsigned long old, mask;
-
-	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	old = __BITOPS_LOOP_EQ(addr, mask, "ogr");
-	return (old & mask) != 0;
+	if (test_bit(nr, ptr))
+		return 1;
+	return test_and_set_bit(nr, ptr);
 }
 
 static inline void clear_bit_unlock(unsigned long nr,
@@ -318,7 +295,7 @@ static inline void __clear_bit_unlock(unsigned long nr,
 				      volatile unsigned long *ptr)
 {
 	smp_mb();
-	clear_bit(nr, ptr);
+	__clear_bit(nr, ptr);
 }
 
 /*
