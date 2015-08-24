@@ -31,8 +31,7 @@ static int show_diag_stat(struct seq_file *m, void *v)
 		for_each_online_cpu(cpu)
 			seq_printf(m, "CPU%d       ", cpu);
 		seq_putc(m, '\n');
-	}
-	if (n <= NR_DIAG_STAT) {
+	} else if (n <= NR_DIAG_STAT) {
 		seq_printf(m, "diag %03x:", map[n-1]);
 		for_each_online_cpu(cpu) {
 			stat = &per_cpu(diag_stat, cpu);
