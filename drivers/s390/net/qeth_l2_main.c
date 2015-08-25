@@ -289,7 +289,7 @@ static void qeth_l2_fill_header(struct qeth_card *card, struct qeth_hdr *hdr,
 	/* VSWITCH relies on the VLAN
 	 * information to be present in
 	 * the QDIO header */
-	if (veth->h_vlan_proto == htons(ETH_P_8021Q)) {
+	if (veth->h_vlan_proto == __constant_htons(ETH_P_8021Q)) {
 		hdr->hdr.l2.flags[2] |= QETH_LAYER2_FLAG_VLAN;
 		hdr->hdr.l2.vlan_id = ntohs(veth->h_vlan_TCI);
 	}

@@ -1781,13 +1781,13 @@ static inline int qeth_l3_rebuild_skb(struct qeth_card *card,
 		case QETH_CAST_MULTICAST:
 			switch (prot) {
 #ifdef CONFIG_QETH_IPV6
-			case htons(ETH_P_IPV6):
+			case __constant_htons(ETH_P_IPV6):
 				ndisc_mc_map((struct in6_addr *)
 				     skb->data + 24,
 				     tg_addr, card->dev, 0);
 				break;
 #endif
-			case htons(ETH_P_IP):
+			case __constant_htons(ETH_P_IP):
 				ip_hdr = (struct iphdr *)skb->data;
 				ip_eth_mc_map(ip_hdr->daddr, tg_addr);
 				break;
