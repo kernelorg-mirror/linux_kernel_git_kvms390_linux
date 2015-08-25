@@ -90,6 +90,15 @@ config QETH_L3
 	  To compile as a module choose M. The module name is qeth_l3.
 	  If unsure, choose Y.
 
+config QETH_PORTNAME
+	def_bool n
+	prompt "qeth offering portname sysfs attribute (DEPRECATED)"
+	depends on QETH
+	help
+	  Portname is nowadays no longer meaningful and deprecated.
+	  To create qeth devices with portname sysfs attribute, choose Y.
+	  If unsure, choose N.
+
 config QETH_IPV6
 	def_bool y if (QETH_L3 = IPV6) || (QETH_L3 && IPV6 = 'y')
 
