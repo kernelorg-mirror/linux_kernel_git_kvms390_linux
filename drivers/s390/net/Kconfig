@@ -91,7 +91,7 @@ config QETH_L3
 	  If unsure, choose Y.
 
 config QETH_PORTNAME
-	def_bool n
+	def_bool y
 	prompt "qeth offering portname sysfs attribute (DEPRECATED)"
 	depends on QETH
 	help
