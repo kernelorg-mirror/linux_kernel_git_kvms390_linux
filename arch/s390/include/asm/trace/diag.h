@@ -31,7 +31,11 @@ TRACE_EVENT(diagnose,
 	TP_printk("nr=0x%x", __entry->nr)
 );
 
+#ifdef CONFIG_TRACEPOINTS
 void trace_diagnose_norecursion(int diag_nr);
+#else
+void trace_diagnose_norecursion(int diag_nr) { }
+#endif
 
 #endif /* _TRACE_S390_DIAG_H */
 
