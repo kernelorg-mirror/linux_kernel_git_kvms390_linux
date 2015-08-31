@@ -26,3 +26,6 @@
 /*? Text: "Cannot change max compression streams\n" */
 /*? Text: "Destroyed %u device(s)\n" */
 /*? Text: "Created %u device(s)\n" */
+/*? Text: "Unable to register zram-control class\n" */
+/*? Text: "Removed device: %s\n" */
+/*? Text: "Added device: %s\n" */

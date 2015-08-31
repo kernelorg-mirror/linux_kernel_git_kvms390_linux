@@ -150,17 +150,21 @@ _PIF_WORK	= (_PIF_PER_TRAP)
  */
 ENTRY(__switch_to)
 	stmg	%r6,%r15,__SF_GPRS(%r15)	# store gprs of prev task
-	stg	%r15,__THREAD_ksp(%r2)		# store kernel stack of prev
-	lg	%r4,__THREAD_info(%r2)		# get thread_info of prev
-	lg	%r5,__THREAD_info(%r3)		# get thread_info of next
+	lgr	%r1,%r2
+	aghi	%r1,__TASK_thread		# thread_struct of prev task
+	lg	%r4,__TASK_thread_info(%r2)	# get thread_info of prev
+	lg	%r5,__TASK_thread_info(%r3)	# get thread_info of next
+	stg	%r15,__THREAD_ksp(%r1)		# store kernel stack of prev
+	lgr	%r1,%r3
+	aghi	%r1,__TASK_thread		# thread_struct of next task
 	lgr	%r15,%r5
 	aghi	%r15,STACK_INIT			# end of kernel stack of next
 	stg	%r3,__LC_CURRENT		# store task struct of next
 	stg	%r5,__LC_THREAD_INFO		# store thread info of next
 	stg	%r15,__LC_KERNEL_STACK		# store end of kernel stack
+	lg	%r15,__THREAD_ksp(%r1)		# load kernel stack of next
 	lctl	%c4,%c4,__TASK_pid(%r3)		# load pid to control reg. 4
 	mvc	__LC_CURRENT_PID+4(4,%r0),__TASK_pid(%r3) # store pid of next
-	lg	%r15,__THREAD_ksp(%r3)		# load kernel stack of next
 	lmg	%r6,%r15,__SF_GPRS(%r15)	# load gprs of next task
 	br	%r14
 
@@ -189,7 +193,7 @@ ENTRY(sie64a)
 .Lsie_gmap:
 	lg	%r14,__SF_EMPTY(%r15)		# get control block pointer
 	oi	__SIE_PROG0C+3(%r14),1		# we are going into SIE now
-	tm	__SIE_PROG20+3(%r14),1		# last exit...
+	tm	__SIE_PROG20+3(%r14),3		# last exit...
 	jnz	.Lsie_skip
 	tm	__LC_CPU_FLAGS+7,_CIF_FPU
 	jo	.Lsie_skip			# exit if fp/vx regs changed
@@ -466,6 +470,7 @@ ENTRY(pgm_check_handler)
 	UPDATE_VTIME %r14,%r15,__LC_SYNC_ENTER_TIMER
 	lg	%r15,__LC_KERNEL_STACK
 	lg	%r14,__TI_task(%r12)
+	aghi	%r14,__TASK_thread	# pointer to thread_struct
 	lghi	%r13,__LC_PGM_TDB
 	tm	__LC_PGM_ILC+2,0x02	# check for transaction abort
 	jz	3f
@@ -746,9 +751,10 @@ ENTRY(psw_idle)
  * of the register contents at system call or io return.
  */
 ENTRY(save_fpu_regs)
+	lg	%r2,__LC_CURRENT
+	aghi	%r2,__TASK_thread
 	tm	__LC_CPU_FLAGS+7,_CIF_FPU
 	bor	%r14
-	lg	%r2,__LC_CURRENT
 	stfpc	__THREAD_FPU_fpc(%r2)
 .Lsave_fpu_regs_fpc_end:
 	lg	%r3,__THREAD_FPU_regs(%r2)
@@ -794,9 +800,10 @@ ENTRY(save_fpu_regs)
  *	%r4 and __SF_EMPTY+32(%r15)
  */
 load_fpu_regs:
+	lg	%r4,__LC_CURRENT
+	aghi	%r4,__TASK_thread
 	tm	__LC_CPU_FLAGS+7,_CIF_FPU
 	bnor	%r14
-	lg	%r4,__LC_CURRENT
 	lfpc	__THREAD_FPU_fpc(%r4)
 	stctg	%c0,%c0,__SF_EMPTY+32(%r15)	# store CR0
 	tm	__THREAD_FPU_flags+3(%r4),FPU_USE_VX	# VX-enabled task ?

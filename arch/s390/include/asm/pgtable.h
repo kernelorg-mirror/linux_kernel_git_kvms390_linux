@@ -578,6 +578,19 @@ static inline int pte_same(pte_t a, pte_t b)
 	return pte_val(a) == pte_val(b);
 }
 
+#ifdef CONFIG_NUMA_BALANCING
+static inline int pte_protnone(pte_t pte)
+{
+	return pte_present(pte) && !(pte_val(pte) & _PAGE_READ);
+}
+
+static inline int pmd_protnone(pmd_t pmd)
+{
+	/* pmd_large(pmd) implies pmd_present(pmd) */
+	return pmd_large(pmd) && !(pmd_val(pmd) & _SEGMENT_ENTRY_READ);
+}
+#endif
+
 static inline int pte_soft_dirty(pte_t pte)
 {
 	return pte_val(pte) & _PAGE_SOFT_DIRTY;
@@ -614,19 +627,6 @@ static inline pmd_t pmd_clear_soft_dirty(pmd_t pmd)
 	pmd_val(pmd) &= ~_SEGMENT_ENTRY_SOFT_DIRTY;
 	return pmd;
 }
-
-#ifdef CONFIG_NUMA_BALANCING
-static inline int pte_protnone(pte_t pte)
-{
-	return pte_present(pte) && !(pte_val(pte) & _PAGE_READ);
-}
-
-static inline int pmd_protnone(pmd_t pmd)
-{
-	/* pmd_large(pmd) implies pmd_present(pmd) */
-	return pmd_large(pmd) && !(pmd_val(pmd) & _SEGMENT_ENTRY_READ);
-}
-#endif
 
 static inline pgste_t pgste_get_lock(pte_t *ptep)
 {
@@ -1550,9 +1550,9 @@ static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
 	return pmd_young(pmd);
 }
 
-#define __HAVE_ARCH_PMDP_GET_AND_CLEAR
-static inline pmd_t pmdp_get_and_clear(struct mm_struct *mm,
-				       unsigned long address, pmd_t *pmdp)
+#define __HAVE_ARCH_PMDP_HUGE_GET_AND_CLEAR
+static inline pmd_t pmdp_huge_get_and_clear(struct mm_struct *mm,
+					    unsigned long address, pmd_t *pmdp)
 {
 	pmd_t pmd = *pmdp;
 
@@ -1561,10 +1561,10 @@ static inline pmd_t pmdp_get_and_clear(struct mm_struct *mm,
 	return pmd;
 }
 
-#define __HAVE_ARCH_PMDP_GET_AND_CLEAR_FULL
-static inline pmd_t pmdp_get_and_clear_full(struct mm_struct *mm,
-					    unsigned long address,
-					    pmd_t *pmdp, int full)
+#define __HAVE_ARCH_PMDP_HUGE_GET_AND_CLEAR_FULL
+static inline pmd_t pmdp_huge_get_and_clear_full(struct mm_struct *mm,
+						 unsigned long address,
+						 pmd_t *pmdp, int full)
 {
 	pmd_t pmd = *pmdp;
 
@@ -1574,11 +1574,11 @@ static inline pmd_t pmdp_get_and_clear_full(struct mm_struct *mm,
 	return pmd;
 }
 
-#define __HAVE_ARCH_PMDP_CLEAR_FLUSH
-static inline pmd_t pmdp_clear_flush(struct vm_area_struct *vma,
-				     unsigned long address, pmd_t *pmdp)
+#define __HAVE_ARCH_PMDP_HUGE_CLEAR_FLUSH
+static inline pmd_t pmdp_huge_clear_flush(struct vm_area_struct *vma,
+					  unsigned long address, pmd_t *pmdp)
 {
-	return pmdp_get_and_clear(vma->vm_mm, address, pmdp);
+	return pmdp_huge_get_and_clear(vma->vm_mm, address, pmdp);
 }
 
 #define __HAVE_ARCH_PMDP_INVALIDATE
@@ -1599,6 +1599,14 @@ static inline void pmdp_set_wrprotect(struct mm_struct *mm,
 		set_pmd_at(mm, address, pmdp, pmd_wrprotect(pmd));
 	}
 }
+
+static inline pmd_t pmdp_collapse_flush(struct vm_area_struct *vma,
+					unsigned long address,
+					pmd_t *pmdp)
+{
+	return pmdp_huge_get_and_clear(vma->vm_mm, address, pmdp);
+}
+#define pmdp_collapse_flush pmdp_collapse_flush
 
 #define pfn_pmd(pfn, pgprot)	mk_pmd_phys(__pa((pfn) << PAGE_SHIFT), (pgprot))
 #define mk_pmd(page, pgprot)	pfn_pmd(page_to_pfn(page), (pgprot))
