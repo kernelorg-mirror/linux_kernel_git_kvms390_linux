@@ -176,7 +176,7 @@
  * Description:
  * You cannot load or query the specified DCSS because it either is not defined
  * in the z/VM hypervisor, or it is a class S DCSS, or it is above 2047 MB
- * and he Linux system is a 31-bit system.
+ * and the Linux system is a 31-bit system.
  * User action:
  * Use the CP command "QUERY NSS" to find out if the DCSS is a valid
  * DCSS that can be loaded.
