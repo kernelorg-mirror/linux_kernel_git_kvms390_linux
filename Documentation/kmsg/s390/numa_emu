@@ -28,3 +28,22 @@
  * User action:
  * None.
  */
+
+/*?
+ * Text: "Increasing memory stripe size from %ld MB to %ld MB\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: requested memory stripe size
+ *   @2: adjusted memory stripe size
+ * Description:
+ * NUMA  emulation  could  not  use  the  requested memory stripe size and
+ * therefore has increased it to the next possible value.
+ * The requested memory stripe size is a default value or it was specified
+ * with the emu_size= kernel parameter.
+ * The memory stripe size must be a multiple of the memory block size that
+ * can be read in hexadecimal notation from
+ * /sys/devices/system/memory/block_size_bytes.
+ * User action:
+ * To avoid this message in the future, specify a valid memory stripe size
+ * with the emu_size= kernel parameter.
+ */
