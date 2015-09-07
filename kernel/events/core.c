@@ -8019,7 +8019,7 @@ SYSCALL_DEFINE5(perf_event_open,
 
 	if (is_sampling_event(event)) {
 		if (event->pmu->capabilities & PERF_PMU_CAP_NO_INTERRUPT) {
-			err = -ENOENT;
+			err = -ENOTSUPP;
 			goto err_alloc;
 		}
 	}
