@@ -18,31 +18,57 @@ struct diag_stat {
 
 static DEFINE_PER_CPU(struct diag_stat, diag_stat);
 
-static const int diag_map[NR_DIAG_STAT] = {
-	0x008, 0x00c, 0x010, 0x014, 0x044, 0x064, 0x09c, 0x0dc,
-	0x204, 0x210, 0x224, 0x250, 0x258, 0x2c4, 0x2fc, 0x304,
-	0x308, 0x500
+struct diag_desc {
+	int code;
+	char *name;
+};
+
+static const struct diag_desc diag_map[NR_DIAG_STAT] = {
+	[DIAG_STAT_X008] = { .code = 0x008, .name = "Console Function" },
+	[DIAG_STAT_X00C] = { .code = 0x00c, .name = "Pseudo Timer" },
+	[DIAG_STAT_X010] = { .code = 0x010, .name = "Release Pages" },
+	[DIAG_STAT_X014] = { .code = 0x014, .name = "Spool File Services" },
+	[DIAG_STAT_X044] = { .code = 0x044, .name = "Voluntary Timeslice End" },
+	[DIAG_STAT_X064] = { .code = 0x064, .name = "NSS Manipulation" },
+	[DIAG_STAT_X09C] = { .code = 0x09c, .name = "Relinquish Timeslice" },
+	[DIAG_STAT_X0DC] = { .code = 0x0dc, .name = "Appldata Control" },
+	[DIAG_STAT_X204] = { .code = 0x204, .name = "Logical-CPU Utilization" },
+	[DIAG_STAT_X210] = { .code = 0x210, .name = "Device Information" },
+	[DIAG_STAT_X224] = { .code = 0x224, .name = "EBCDIC-Name Table" },
+	[DIAG_STAT_X250] = { .code = 0x250, .name = "Block I/O" },
+	[DIAG_STAT_X258] = { .code = 0x258, .name = "Page-Reference Services" },
+	[DIAG_STAT_X288] = { .code = 0x288, .name = "Time Bomb" },
+	[DIAG_STAT_X2C4] = { .code = 0x2c4, .name = "FTP Services" },
+	[DIAG_STAT_X2FC] = { .code = 0x2fc, .name = "Guest Performance Data" },
+	[DIAG_STAT_X304] = { .code = 0x304, .name = "Partition-Resource Service" },
+	[DIAG_STAT_X308] = { .code = 0x308, .name = "List-Directed IPL" },
+	[DIAG_STAT_X500] = { .code = 0x500, .name = "Virtio Service" },
 };
 
 static int show_diag_stat(struct seq_file *m, void *v)
 {
 	struct diag_stat *stat;
 	unsigned long n = (unsigned long) v - 1;
-	int cpu;
+	int cpu, prec, tmp;
 
 	get_online_cpus();
 	if (n == 0) {
-		seq_puts(m, "               ");
-		for_each_online_cpu(cpu)
-			seq_printf(m, "CPU%d       ", cpu);
-		seq_putc(m, '\n');
-	} else if (n <= NR_DIAG_STAT) {
-		seq_printf(m, "diag %03x:", diag_map[n-1]);
+		seq_puts(m, "         ");
+		
 		for_each_online_cpu(cpu) {
-			stat = &per_cpu(diag_stat, cpu);
-			seq_printf(m, "%10u ", stat->counter[n-1]);
+			prec = 10;
+			for (tmp = 10; cpu >= tmp; tmp *= 10)
+				prec--;
+			seq_printf(m, "%*s%d", prec, "CPU", cpu);
 		}
 		seq_putc(m, '\n');
+	} else if (n <= NR_DIAG_STAT) {
+		seq_printf(m, "diag %03x:", diag_map[n-1].code);
+		for_each_online_cpu(cpu) {
+			stat = &per_cpu(diag_stat, cpu);
+			seq_printf(m, " %10u", stat->counter[n-1]);
+		}
+		seq_printf(m, "    %s\n", diag_map[n-1].name);
 	}
 	put_online_cpus();
 	return 0;
@@ -95,14 +121,14 @@ device_initcall(show_diag_stat_init);
 void diag_stat_inc(enum diag_stat_enum nr)
 {
 	this_cpu_inc(diag_stat.counter[nr]);
-	trace_diagnose(diag_map[nr]);
+	trace_diagnose(diag_map[nr].code);
 }
 EXPORT_SYMBOL(diag_stat_inc);
 
 void diag_stat_inc_norecursion(enum diag_stat_enum nr)
 {
 	this_cpu_inc(diag_stat.counter[nr]);
-	trace_diagnose_norecursion(diag_map[nr]);
+	trace_diagnose_norecursion(diag_map[nr].code);
 }
 EXPORT_SYMBOL(diag_stat_inc_norecursion);
 
