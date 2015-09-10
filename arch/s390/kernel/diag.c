@@ -54,7 +54,7 @@ static int show_diag_stat(struct seq_file *m, void *v)
 	get_online_cpus();
 	if (n == 0) {
 		seq_puts(m, "         ");
-		
+
 		for_each_online_cpu(cpu) {
 			prec = 10;
 			for (tmp = 10; cpu >= tmp; tmp *= 10)
