@@ -150,7 +150,6 @@ out:
 
 static DEVICE_ATTR(portno, 0644, qeth_dev_portno_show, qeth_dev_portno_store);
 
-#ifdef CONFIG_QETH_PORTNAME
 static ssize_t qeth_dev_portname_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -162,14 +161,13 @@ static ssize_t qeth_dev_portname_store(struct device *dev,
 {
 	struct qeth_card *card = dev_get_drvdata(dev);
 
-	dev_warn(&card->gdev->dev,
-		 "portname is deprecated and is ignored\n");
+	dev_warn_once(&card->gdev->dev,
+		      "portname is deprecated and is ignored\n");
 	return count;
 }
 
 static DEVICE_ATTR(portname, 0644, qeth_dev_portname_show,
 		qeth_dev_portname_store);
-#endif
 
 static ssize_t qeth_dev_prioqing_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
@@ -713,9 +711,7 @@ static struct attribute *qeth_device_attrs[] = {
 	&dev_attr_card_type.attr,
 	&dev_attr_inbuf_size.attr,
 	&dev_attr_portno.attr,
-#ifdef CONFIG_QETH_PORTNAME
 	&dev_attr_portname.attr,
-#endif
 	&dev_attr_priority_queueing.attr,
 	&dev_attr_buffer_count.attr,
 	&dev_attr_recover.attr,
