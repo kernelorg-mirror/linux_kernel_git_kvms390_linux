@@ -77,6 +77,16 @@
  */
 
 /*?
+ * Text: "Linux is running under KVM in 64-bit mode\n"
+ * Severity: Informational
+ * Description:
+ * The 64-bit Linux kernel detected that it is running as a guest operating
+ * system of the KVM hypervisor.
+ * User action:
+ * None.
+ */
+
+/*?
  * Text: "Linux is running natively in 64-bit mode\n"
  * Severity: Informational
  * Description:
@@ -123,8 +133,6 @@
  * For other return codes, see the help and message documentation for
  * the CP SAVESYS command.
  */
-
-/*? Text: "Linux is running under KVM in 64-bit mode\n" */
 
 /*?
  * Text: "crashkernel reservation failed: %s\n"
