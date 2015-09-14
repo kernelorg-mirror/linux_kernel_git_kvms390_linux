@@ -1092,7 +1092,7 @@ static void __reipl_run(void *unused)
 		break;
 	case REIPL_METHOD_CCW_DIAG:
 		diag308(DIAG308_SET, reipl_block_ccw);
-		diag308(DIAG308_DUMP, NULL);
+		diag308(DIAG308_IPL, NULL);
 		break;
 	case REIPL_METHOD_FCP_RW_DIAG:
 		diag308(DIAG308_SET, reipl_block_fcp);
