@@ -1380,7 +1380,7 @@ static inline pmd_t pmd_mkdirty(pmd_t pmd)
 {
 	if (pmd_large(pmd)) {
 		pmd_val(pmd) |= _SEGMENT_ENTRY_DIRTY |
-			        _SEGMENT_ENTRY_SOFT_DIRTY;
+				_SEGMENT_ENTRY_SOFT_DIRTY;
 		if (pmd_val(pmd) & _SEGMENT_ENTRY_WRITE)
 			pmd_val(pmd) &= ~_SEGMENT_ENTRY_PROTECT;
 	}
