@@ -443,7 +443,7 @@ static unsigned long emu_setup_size_adjust(unsigned long size)
 	if (size_new == size)
 		return size;
 	pr_warn("Increasing memory stripe size from %ld MB to %ld MB\n",
-		size, size_new);
+		size >> 20, size_new >> 20);
 	return size_new;
 }
 
