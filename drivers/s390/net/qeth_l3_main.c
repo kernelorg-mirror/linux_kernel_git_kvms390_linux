@@ -1096,7 +1096,7 @@ static int qeth_l3_start_ipa_arp_processing(struct qeth_card *card)
 		return 0;
 	}
 	rc = qeth_send_simple_setassparms(card, IPA_ARP_PROCESSING,
-					IPA_CMD_ASS_START, 0);
+					  IPA_CMD_ASS_START, 0);
 	if (rc) {
 		dev_warn(&card->gdev->dev,
 			"Starting ARP processing support for %s failed\n",
@@ -1340,7 +1340,7 @@ static int qeth_l3_start_ipa_tso(struct qeth_card *card)
 		rc = -EOPNOTSUPP;
 	} else {
 		rc = qeth_send_simple_setassparms(card, IPA_OUTBOUND_TSO,
-						IPA_CMD_ASS_START, 0);
+						  IPA_CMD_ASS_START, 0);
 		if (rc)
 			dev_warn(&card->gdev->dev, "Starting outbound TCP "
 				"segmentation offload for %s failed\n",

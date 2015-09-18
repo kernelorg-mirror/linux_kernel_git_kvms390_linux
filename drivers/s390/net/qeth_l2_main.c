@@ -253,7 +253,7 @@ static inline int qeth_l2_get_cast_type(struct qeth_card *card,
 }
 
 static inline void qeth_l2_hdr_csum(struct qeth_card *card,
-		struct qeth_hdr *hdr, struct sk_buff *skb)
+				    struct qeth_hdr *hdr, struct sk_buff *skb)
 {
 	struct iphdr *iph = ip_hdr(skb);
 
@@ -408,7 +408,7 @@ static int qeth_l2_vlan_rx_kill_vid(struct net_device *dev,
 }
 
 static netdev_features_t qeth_l2_fix_features(struct net_device *dev,
-	netdev_features_t features)
+					      netdev_features_t features)
 {
 	struct qeth_card *card = dev->ml_priv;
 
@@ -422,7 +422,7 @@ static netdev_features_t qeth_l2_fix_features(struct net_device *dev,
 }
 
 static int qeth_l2_set_features(struct net_device *dev,
-	netdev_features_t features)
+				netdev_features_t features)
 {
 	struct qeth_card *card = dev->ml_priv;
 	netdev_features_t changed = dev->features ^ features;

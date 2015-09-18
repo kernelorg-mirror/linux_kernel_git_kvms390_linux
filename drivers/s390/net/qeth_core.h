@@ -968,11 +968,12 @@ int qeth_query_ipassists(struct qeth_card *, enum qeth_prot_versions prot);
 void qeth_trace_features(struct qeth_card *);
 void qeth_close_dev(struct qeth_card *);
 int qeth_send_simple_setassparms(struct qeth_card *, enum qeth_ipa_funcs,
-	__u16, long);
+				 __u16, long);
 int qeth_send_setassparms(struct qeth_card *, struct qeth_cmd_buffer *, __u16,
-	long,
-	int (*reply_cb)(struct qeth_card *, struct qeth_reply *, unsigned long),
-	void *);
+			  long,
+			  int (*reply_cb)(struct qeth_card *,
+					  struct qeth_reply *, unsigned long),
+			  void *);
 int qeth_start_ipa_tx_checksum(struct qeth_card *);
 int qeth_set_rx_csum(struct qeth_card *, int);
 
