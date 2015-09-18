@@ -185,7 +185,6 @@ static inline int is_module_addr(void *addr)
 
 /* Software bits in the page table entry */
 #define _PAGE_PRESENT	0x001		/* SW pte present bit */
-#define _PAGE_SOFT_DIRTY 0x002		/* SW pte soft dirty bit */
 #define _PAGE_YOUNG	0x004		/* SW pte young bit */
 #define _PAGE_DIRTY	0x008		/* SW pte dirty bit */
 #define _PAGE_READ	0x010		/* SW pte read bit */
@@ -193,6 +192,12 @@ static inline int is_module_addr(void *addr)
 #define _PAGE_SPECIAL	0x040		/* SW associated with special page */
 #define _PAGE_UNUSED	0x080		/* SW bit for pgste usage state */
 #define __HAVE_ARCH_PTE_SPECIAL
+
+#ifdef CONFIG_MEM_SOFT_DIRTY
+#define _PAGE_SOFT_DIRTY 0x002		/* SW pte soft dirty bit */
+#else
+#define _PAGE_SOFT_DIRTY 0x000
+#endif
 
 /* Set of bits not changed in pte_modify */
 #define _PAGE_CHG_MASK		(PAGE_MASK | _PAGE_SPECIAL | _PAGE_DIRTY | \
@@ -279,13 +284,18 @@ static inline int is_module_addr(void *addr)
 #define _SEGMENT_ENTRY		(0)
 #define _SEGMENT_ENTRY_EMPTY	(_SEGMENT_ENTRY_INVALID)
 
-#define _SEGMENT_ENTRY_SOFT_DIRTY 0x4000 /* SW segment soft dirty bit */
 #define _SEGMENT_ENTRY_DIRTY	0x2000	/* SW segment dirty bit */
 #define _SEGMENT_ENTRY_YOUNG	0x1000	/* SW segment young bit */
 #define _SEGMENT_ENTRY_SPLIT	0x0800	/* THP splitting bit */
 #define _SEGMENT_ENTRY_LARGE	0x0400	/* STE-format control, large page */
 #define _SEGMENT_ENTRY_READ	0x0002	/* SW segment read bit */
 #define _SEGMENT_ENTRY_WRITE	0x0001	/* SW segment write bit */
+
+#ifdef CONFIG_MEM_SOFT_DIRTY
+#define _SEGMENT_ENTRY_SOFT_DIRTY 0x4000 /* SW segment soft dirty bit */
+#else
+#define _SEGMENT_ENTRY_SOFT_DIRTY 0x0000 /* SW segment soft dirty bit */
+#endif
 
 /*
  * Segment table entry encoding (R = read-only, I = invalid, y = young bit):

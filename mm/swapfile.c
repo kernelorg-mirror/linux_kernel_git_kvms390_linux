@@ -1071,7 +1071,7 @@ unsigned int count_swap_pages(int type, int free)
 
 static inline int maybe_same_pte(pte_t pte, pte_t swp_pte)
 {
-#ifdef CONFIG_HAVE_ARCH_SOFT_DIRTY
+#ifdef CONFIG_MEM_SOFT_DIRTY
 	/*
 	 * When pte keeps soft dirty bit the pte generated
 	 * from swap entry does not has it, still it's same
