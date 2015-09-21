@@ -325,7 +325,7 @@ static inline pte_t pte_clear_soft_dirty(pte_t pte)
 
 static inline pmd_t pmd_clear_soft_dirty(pmd_t pmd)
 {
-	return pmp_clear_flags(pmd, _PAGE_SOFT_DIRTY);
+	return pmd_clear_flags(pmd, _PAGE_SOFT_DIRTY);
 }
 
 #endif /* CONFIG_HAVE_ARCH_SOFT_DIRTY */
