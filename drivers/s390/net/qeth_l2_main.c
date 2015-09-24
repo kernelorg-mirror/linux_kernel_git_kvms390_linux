@@ -840,8 +840,8 @@ static void qeth_l2_set_rx_mode(struct net_device *dev)
 		} else if (mac->disp_flag == QETH_DISP_MAC_ADD) {
 			rc = qeth_l2_write_mac(card, mac);
 			if (rc) {
-					hash_del(&mac->hnode);
-					kfree(mac);
+				hash_del(&mac->hnode);
+				kfree(mac);
 			} else
 				mac->disp_flag = QETH_DISP_MAC_DELETE;
 		} else
