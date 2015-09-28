@@ -35,7 +35,6 @@
 									\
 	typecheck(atomic_t *, ptr);					\
 	asm volatile(							\
-		__barrier						\
 		op_string "	%0,%2,%1\n"				\
 		__barrier						\
 		: "=d" (old_val), "+Q" ((ptr)->counter)			\
@@ -175,7 +174,6 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
 									\
 	typecheck(atomic64_t *, ptr);					\
 	asm volatile(							\
-		__barrier						\
 		op_string "	%0,%2,%1\n"				\
 		__barrier						\
 		: "=d" (old_val), "+Q" ((ptr)->counter)			\
