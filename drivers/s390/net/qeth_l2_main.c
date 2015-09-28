@@ -771,7 +771,7 @@ static void qeth_promisc_to_bridge(struct qeth_card *card)
  * only if there is not in the hash table storage already
  *
 */
-static  void
+static	void
 qeth_l2_add_mac(struct qeth_card *card, struct netdev_hw_addr *ha, u8 is_uc)
 {
 	struct qeth_mac *mac;
