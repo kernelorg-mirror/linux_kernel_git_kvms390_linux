@@ -32,15 +32,6 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 		 * register contents when returning to user space.
 		 */
 		save_fpu_regs();
-
-		/*
-		 * Set the vector-enablement control and properly handle
-		 * interrupts that might change the control register too.
-		 * At return to user space, the vector-enablement control
-		 * is restored.
-		 */
-		if (MACHINE_HAS_VX)
-			__ctl_set_vx();
 	}
 
 	/* Update flags to use the vector extension for KERNEL_FPR */
