@@ -241,7 +241,6 @@ int alloc_vector_registers(struct task_struct *tsk)
 	convert_fp_to_vx(vxrs, tsk->thread.fpu.fprs);
 	fprs = tsk->thread.fpu.fprs;
 	tsk->thread.fpu.vxrs = vxrs;
-	tsk->thread.fpu.flags |= FPU_USE_VX;
 	kfree(fprs);
 	preempt_enable();
 	return 0;
@@ -280,13 +279,6 @@ void vector_exception(struct pt_regs *regs)
 	}
 	do_trap(regs, SIGFPE, si_code, "vector exception");
 }
-
-static int __init disable_vector_extension(char *str)
-{
-	S390_lowcore.machine_flags &= ~MACHINE_FLAG_VX;
-	return 1;
-}
-__setup("novx", disable_vector_extension);
 
 void data_exception(struct pt_regs *regs)
 {

@@ -1206,7 +1206,6 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
 static inline void save_fpu_to(struct fpu *dst)
 {
 	dst->fpc = current->thread.fpu.fpc;
-	dst->flags = current->thread.fpu.flags;
 	dst->regs = current->thread.fpu.regs;
 }
 
@@ -1217,7 +1216,6 @@ static inline void save_fpu_to(struct fpu *dst)
 static inline void load_fpu_from(struct fpu *from)
 {
 	current->thread.fpu.fpc = from->fpc;
-	current->thread.fpu.flags = from->flags;
 	current->thread.fpu.regs = from->regs;
 }
 
@@ -1229,7 +1227,6 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
 
 	if (test_kvm_facility(vcpu->kvm, 129)) {
 		current->thread.fpu.fpc = vcpu->run->s.regs.fpc;
-		current->thread.fpu.flags = FPU_USE_VX;
 		/*
 		 * Use the register save area in the SIE-control block
 		 * for register restore and save in kvm_arch_vcpu_put()
