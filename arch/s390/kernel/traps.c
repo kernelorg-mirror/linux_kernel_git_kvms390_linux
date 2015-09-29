@@ -224,28 +224,6 @@ NOKPROBE_SYMBOL(illegal_op);
 DO_ERROR_INFO(specification_exception, SIGILL, ILL_ILLOPN,
 	      "specification exception");
 
-int alloc_vector_registers(struct task_struct *tsk)
-{
-	__vector128 *vxrs;
-	freg_t *fprs;
-
-	/* Allocate vector register save area. */
-	vxrs = kzalloc(sizeof(__vector128) * __NUM_VXRS,
-		       GFP_KERNEL|__GFP_REPEAT);
-	if (!vxrs)
-		return -ENOMEM;
-	preempt_disable();
-	if (tsk == current)
-		save_fpu_regs();
-	/* Copy the 16 floating point registers */
-	convert_fp_to_vx(vxrs, tsk->thread.fpu.fprs);
-	fprs = tsk->thread.fpu.fprs;
-	tsk->thread.fpu.vxrs = vxrs;
-	kfree(fprs);
-	preempt_enable();
-	return 0;
-}
-
 void vector_exception(struct pt_regs *regs)
 {
 	int si_code, vic;
@@ -288,15 +266,6 @@ void data_exception(struct pt_regs *regs)
 	location = get_trap_ip(regs);
 
 	save_fpu_regs();
-	/* Check for vector register enablement */
-	if (MACHINE_HAS_VX && !is_vx_task(current) &&
-	    (current->thread.fpu.fpc & FPC_DXC_MASK) == 0xfe00) {
-		alloc_vector_registers(current);
-		/* Vector data exception is suppressing, rewind psw. */
-		regs->psw.addr = __rewind_psw(regs->psw, regs->int_code >> 16);
-		clear_pt_regs_flag(regs, PIF_PER_TRAP);
-		return;
-	}
 	if (current->thread.fpu.fpc & FPC_DXC_MASK)
 		signal = SIGFPE;
 	else

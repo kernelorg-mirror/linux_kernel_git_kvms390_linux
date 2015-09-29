@@ -839,16 +839,6 @@ load_fpu_regs:
 	br	%r14
 .Lload_fpu_regs_end:
 
-/* Test and set the vector enablement control in CR0.46 */
-ENTRY(__ctl_set_vx)
-	stctg	%c0,%c0,__SF_EMPTY(%r15)
-	tm	__SF_EMPTY+5(%r15),2
-	bor	%r14
-	oi	__SF_EMPTY+5(%r15),2
-	lctlg	%c0,%c0,__SF_EMPTY(%r15)
-	br	%r14
-.L__ctl_set_vx_end:
-
 .L__critical_end:
 
 /*
@@ -1004,10 +994,6 @@ cleanup_critical:
 	jl	0f
 	clg	%r9,BASED(.Lcleanup_table+104)	# .Lload_fpu_regs_end
 	jl	.Lcleanup_load_fpu_regs
-	clg	%r9,BASED(.Lcleanup_table+112)	# __ctl_set_vx
-	jl	0f
-	clg	%r9,BASED(.Lcleanup_table+120)	# .L__ctl_set_vx_end
-	jl	.Lcleanup___ctl_set_vx
 0:	br	%r14
 
 	.align	8
@@ -1026,8 +1012,6 @@ cleanup_critical:
 	.quad	.Lsave_fpu_regs_end
 	.quad	load_fpu_regs
 	.quad	.Lload_fpu_regs_end
-	.quad	__ctl_set_vx
-	.quad	.L__ctl_set_vx_end
 
 #if IS_ENABLED(CONFIG_KVM)
 .Lcleanup_table_sie:
@@ -1301,15 +1285,6 @@ cleanup_critical:
 	.quad	.Lload_fpu_regs_fp
 .Lcleanup_load_fpu_regs_done:
 	.quad	.Lload_fpu_regs_done
-
-.Lcleanup___ctl_set_vx:
-	stctg	%c0,%c0,__SF_EMPTY(%r15)
-	tm	__SF_EMPTY+5(%r15),2
-	bor	%r14
-	oi	__SF_EMPTY+5(%r15),2
-	lctlg	%c0,%c0,__SF_EMPTY(%r15)
-	lg	%r9,48(%r11)		# return from __ctl_set_vx
-	br	%r14
 
 /*
  * Integer constants

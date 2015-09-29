@@ -197,7 +197,7 @@ int dump_fpu (struct pt_regs * regs, s390_fp_regs *fpregs)
 	save_fpu_regs();
 	fpregs->fpc = current->thread.fpu.fpc;
 	fpregs->pad = 0;
-	if (is_vx_task(current))
+	if (MACHINE_HAS_VX)
 		convert_vx_to_fp((freg_t *)&fpregs->fprs,
 				 current->thread.fpu.vxrs);
 	else

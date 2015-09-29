@@ -25,9 +25,6 @@ struct fpu {
 
 void save_fpu_regs(void);
 
-#define is_vx_fpu(fpu)		(MACHINE_HAS_VX)
-#define is_vx_task(tsk)		(MACHINE_HAS_VX)
-
 /* VX array structure for address operand constraints in inline assemblies */
 struct vx_array { __vector128 _[__NUM_VXRS]; };
 
@@ -84,7 +81,7 @@ static inline void convert_fp_to_vx(__vector128 *vxrs, freg_t *fprs)
 static inline void fpregs_store(_s390_fp_regs *fpregs, struct fpu *fpu)
 {
 	fpregs->pad = 0;
-	if (is_vx_fpu(fpu))
+	if (MACHINE_HAS_VX)
 		convert_vx_to_fp((freg_t *)&fpregs->fprs, fpu->vxrs);
 	else
 		memcpy((freg_t *)&fpregs->fprs, fpu->fprs,
@@ -93,7 +90,7 @@ static inline void fpregs_store(_s390_fp_regs *fpregs, struct fpu *fpu)
 
 static inline void fpregs_load(_s390_fp_regs *fpregs, struct fpu *fpu)
 {
-	if (is_vx_fpu(fpu))
+	if (MACHINE_HAS_VX)
 		convert_fp_to_vx(fpu->vxrs, (freg_t *)&fpregs->fprs);
 	else
 		memcpy(fpu->fprs, (freg_t *)&fpregs->fprs,

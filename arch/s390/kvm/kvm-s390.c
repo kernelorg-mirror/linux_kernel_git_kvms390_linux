@@ -1233,8 +1233,6 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
 		 */
 		current->thread.fpu.vxrs =
 			(__vector128 *)&vcpu->run->s.regs.vrs;
-		/* Always enable the vector extension for KVM */
-		__ctl_set_vx();
 	} else
 		load_fpu_from(&vcpu->arch.guest_fpregs);
 
@@ -2247,7 +2245,6 @@ int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr)
 		 * registers and the FPC value and store them in the
 		 * guest_fpregs structure.
 		 */
-		WARN_ON(!is_vx_task(current));	  /* XXX remove later */
 		vcpu->arch.guest_fpregs.fpc = current->thread.fpu.fpc;
 		convert_vx_to_fp(vcpu->arch.guest_fpregs.fprs,
 				 current->thread.fpu.vxrs);
