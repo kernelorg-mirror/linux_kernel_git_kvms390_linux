@@ -738,7 +738,6 @@ ENTRY(psw_idle)
 	llgf	%r1,0(%r1)
 	ltgr	%r1,%r1
 	jz	.Lpsw_idle_stcctm
-	aghi	%r1,1
 	.insn	rsy,0xeb0000000017,%r1,5,__SF_EMPTY+16(%r15)
 .Lpsw_idle_stcctm:
 #endif
@@ -1176,7 +1175,6 @@ cleanup_critical:
 	llgf	%r1,0(%r1)
 	ltgr	%r1,%r1
 	jz	3f
-	aghi	%r1,1
 	.insn	rsy,0xeb0000000017,%r1,5,__SF_EMPTY+80(%r15)
 	larl	%r3,mt_cycles
 	ag	%r3,__LC_PERCPU_OFFSET
