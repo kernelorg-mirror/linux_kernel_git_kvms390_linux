@@ -12,7 +12,7 @@
 #include <linux/cpufeature.h>
 #include <linux/crc32.h>
 #include <crypto/internal/hash.h>
-#include <asm/vx.h>
+#include <asm/fpu/api.h>
 
 
 #define CRC32_BLOCK_SIZE	1
@@ -48,7 +48,7 @@ u32 crc32c_le_vgfm_16(u32 crc, unsigned char const *buf, size_t size);
 	static u32 __pure ___fname(u32 crc,				    \
 				unsigned char const *data, size_t datalen)  \
 	{								    \
-		struct kernel_vx vxstate;				    \
+		struct kernel_fpu vxstate;				    \
 		unsigned long prealign, aligned, remaining;		    \
 									    \
 		if ((unsigned long)data & VX_ALIGN_MASK) {		    \
@@ -65,9 +65,9 @@ u32 crc32c_le_vgfm_16(u32 crc, unsigned char const *buf, size_t size);
 		aligned = datalen & ~VX_ALIGN_MASK;			    \
 		remaining = datalen & VX_ALIGN_MASK;			    \
 									    \
-		kernel_vx_begin(&vxstate, KERNEL_VXR_LOW);		    \
+		kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW);		    \
 		crc = ___crc32_vx(crc, data, aligned);			    \
-		kernel_vx_end(&vxstate);				    \
+		kernel_fpu_end(&vxstate);				    \
 									    \
 		if (remaining)						    \
 			crc = ___crc32_sw(crc, data + aligned, remaining);  \
