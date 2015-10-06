@@ -1,5 +1,5 @@
 /*
- * In-kernel vector extension support functions
+ * In-kernel vector facility support functions
  *
  * Copyright IBM Corp. 2015
  * Author(s): Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
@@ -7,24 +7,21 @@
 #include <linux/kernel.h>
 #include <linux/cpu.h>
 #include <linux/sched.h>
-#include <uapi/asm/sigcontext.h>
-#include <asm/fpu-internal.h>
-#include <asm/ctl_reg.h>
-#include <asm/vx.h>
-
+#include <asm/fpu/types.h>
+#include <asm/fpu/api.h>
 
 /*
- * Per-CPU variable to indicate use of vector register ranges that are
- * in use by the kernel.
+ * Per-CPU variable to maintain FPU register ranges that are in use
+ * by the kernel.
  */
-static DEFINE_PER_CPU(u32, kernel_vx_state);
+static DEFINE_PER_CPU(u32, kernel_fpu_state);
 
-#define KERNEL_VX_STATE_MASK	(KERNEL_VXR_MASK|KERNEL_VX_FPC)
+#define KERNEL_FPU_STATE_MASK	(KERNEL_FPU_MASK|KERNEL_FPC)
 
 
-void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
+void __kernel_fpu_begin(struct kernel_fpu *state, u32 flags)
 {
-	if (!__this_cpu_read(kernel_vx_state)) {
+	if (!__this_cpu_read(kernel_fpu_state)) {
 		/*
 		 * Save user space FPU state and register contents.  Multiple
 		 * calls because of interruptions do not matter and return
@@ -34,25 +31,25 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 		save_fpu_regs();
 	}
 
-	/* Update flags to use the vector extension for KERNEL_FPR */
+	/* Update flags to use the vector facility for KERNEL_FPR */
 	if (MACHINE_HAS_VX && (state->mask & KERNEL_FPR)) {
-		flags |= KERNEL_VXR_LOW | KERNEL_VX_FPC;
+		flags |= KERNEL_VXR_LOW | KERNEL_FPC;
 		flags &= ~KERNEL_FPR;
 	}
 
 	/* Save and update current kernel VX state */
-	state->mask = __this_cpu_read(kernel_vx_state);
-	__this_cpu_or(kernel_vx_state, flags & KERNEL_VX_STATE_MASK);
+	state->mask = __this_cpu_read(kernel_fpu_state);
+	__this_cpu_or(kernel_fpu_state, flags & KERNEL_FPU_STATE_MASK);
 
 	/*
-	 * If this is the first call to __kernel_vx_begin(), no additional
+	 * If this is the first call to __kernel_fpu_begin(), no additional
 	 * work is required.
 	 */
-	if (!(state->mask & KERNEL_VX_STATE_MASK))
+	if (!(state->mask & KERNEL_FPU_STATE_MASK))
 		return;
 
 	/*
-	 * If KERNEL_FPR is still set, the vector extension is not available
+	 * If KERNEL_FPR is still set, the vector facility is not available
 	 * and, thus, save floating-point control and registers only.
 	 */
 	if (state->mask & KERNEL_FPR) {
@@ -77,12 +74,12 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 	}
 
 	/*
-	 * If this is a nested call to __kernel_vx_begin(), check the saved
+	 * If this is a nested call to __kernel_fpu_begin(), check the saved
 	 * state mask to save and later restore the vector registers that
 	 * are already in use.	Let's start with checking floating-point
 	 * controls.
 	 */
-	if (state->mask & KERNEL_VX_FPC)
+	if (state->mask & KERNEL_FPC)
 		asm volatile("stfpc %0" : "=m" (state->fpc));
 
 	/* Test and save vector registers */
@@ -98,7 +95,7 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 
 		/*
 		 * Test if V8..V23 can be saved at once... this speeds up
-		 * for KERNEL_VX_MID only. Otherwise continue to split the
+		 * for KERNEL_fpu_MID only. Otherwise continue to split the
 		 * range of vector registers into two halves and test them
 		 * separately.
 		 */
@@ -146,16 +143,16 @@ void __kernel_vx_begin(struct kernel_vx *state, u32 flags)
 		: [m] "d" (state->mask)
 		: "1", "cc");
 }
-EXPORT_SYMBOL(__kernel_vx_begin);
+EXPORT_SYMBOL(__kernel_fpu_begin);
 
-void __kernel_vx_end(struct kernel_vx *state)
+void __kernel_fpu_end(struct kernel_fpu *state)
 {
 	/* Just update the per-CPU state if there is nothing to restore */
-	if (!(state->mask & KERNEL_VX_STATE_MASK))
-		goto update_kvx_state;
+	if (!(state->mask & KERNEL_FPU_STATE_MASK))
+		goto update_fpu_state;
 
 	/*
-	 * If KERNEL_FPR is specified, the vector extension is not available
+	 * If KERNEL_FPR is specified, the vector facility is not available
 	 * and, thus, restore floating-point control and registers only.
 	 */
 	if (state->mask & KERNEL_FPR) {
@@ -176,11 +173,11 @@ void __kernel_vx_end(struct kernel_vx *state)
 		asm volatile("ld 13,%0" : : "Q" (state->fprs[13]));
 		asm volatile("ld 14,%0" : : "Q" (state->fprs[14]));
 		asm volatile("ld 15,%0" : : "Q" (state->fprs[15]));
-		goto update_kvx_state;
+		goto update_fpu_state;
 	}
 
 	/* Test and restore floating-point controls */
-	if (state->mask & KERNEL_VX_FPC)
+	if (state->mask & KERNEL_FPC)
 		asm volatile("lfpc %0" : : "Q" (state->fpc));
 
 	/* Test and restore (load) vector registers */
@@ -196,7 +193,7 @@ void __kernel_vx_end(struct kernel_vx *state)
 
 		/*
 		 * Test if V8..V23 can be restored at once... this speeds up
-		 * for KERNEL_VX_MID only. Otherwise continue to split the
+		 * for KERNEL_VXR_MID only. Otherwise continue to split the
 		 * range of vector registers into two halves and test them
 		 * separately.
 		 */
@@ -245,8 +242,8 @@ void __kernel_vx_end(struct kernel_vx *state)
 		  [m] "d" (state->mask)
 		: "1", "cc");
 
-update_kvx_state:
+update_fpu_state:
 	/* Update current kernel VX state */
-	__this_cpu_write(kernel_vx_state, state->mask);
+	__this_cpu_write(kernel_fpu_state, state->mask);
 }
-EXPORT_SYMBOL(__kernel_vx_end);
+EXPORT_SYMBOL(__kernel_fpu_end);
