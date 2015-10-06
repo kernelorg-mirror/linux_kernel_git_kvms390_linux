@@ -16,7 +16,7 @@
 #include <asm/sysinfo.h>
 #include <asm/cpcmd.h>
 #include <asm/topology.h>
-#include <asm/vx.h>
+#include <asm/fpu/api.h>
 
 int topology_max_mnest;
 
@@ -411,7 +411,7 @@ void s390_adjust_jiffies(void)
 {
 	struct sysinfo_1_2_2 *info;
 	unsigned long capability;
-	struct kernel_vx vx;
+	struct kernel_fpu fpu;
 
 	info = (void *) get_zeroed_page(GFP_KERNEL);
 	if (!info)
@@ -429,7 +429,7 @@ void s390_adjust_jiffies(void)
 		 * by the cpu capability number. Yes, that means a floating
 		 * point division ..
 		 */
-		kernel_vx_begin(&vx, KERNEL_FPR);
+		kernel_fpu_begin(&fpu, KERNEL_FPR);
 		asm volatile(
 			"	sfpc	%3\n"
 			"	l	%0,%1\n"
@@ -445,7 +445,7 @@ void s390_adjust_jiffies(void)
 			: "Q" (info->capability), "d" (10000000), "d" (0)
 			: "cc"
 			);
-		kernel_vx_end(&vx);
+		kernel_fpu_end(&fpu);
 	} else
 		/*
 		 * Really old machine without stsi block for basic
