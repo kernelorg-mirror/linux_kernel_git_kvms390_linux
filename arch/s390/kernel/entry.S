@@ -773,7 +773,7 @@ ENTRY(psw_idle)
 
 /*
  * Store floating-point controls and floating-point or vector register
- * depending whether the vector facility is available.  A critical section
+ * depending whether the vector facility is available.	A critical section
  * cleanup assures that the registers are stored even if interrupted for
  * some other work.  The CIF_FPU flag is set to trigger a lazy restore
  * of the register contents at return from io or a system call.
