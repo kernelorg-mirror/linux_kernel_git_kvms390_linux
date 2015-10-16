@@ -497,11 +497,6 @@ static struct smp_hotplug_thread cpu_stop_threads = {
 	.selfparking		= true,
 };
 
-void cpu_stopper_unpark(unsigned int cpu)
-{
-	kthread_unpark(per_cpu(cpu_stopper.thread, cpu));
-}
-
 static int __init cpu_stop_init(void)
 {
 	unsigned int cpu;

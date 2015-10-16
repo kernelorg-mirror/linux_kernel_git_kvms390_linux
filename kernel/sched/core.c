@@ -5426,19 +5426,14 @@ static void set_cpu_rq_start_time(void)
 	rq->age_stamp = sched_clock_cpu(cpu);
 }
 
-extern void cpu_stopper_unpark(unsigned int cpu);
-
 static int sched_cpu_active(struct notifier_block *nfb,
 				      unsigned long action, void *hcpu)
 {
-	int cpu = (long)hcpu;
-
 	switch (action & ~CPU_TASKS_FROZEN) {
 	case CPU_STARTING:
 		set_cpu_rq_start_time();
 		return NOTIFY_OK;
 	case CPU_ONLINE:
-		cpu_stopper_unpark(cpu);
 		/*
 		 * At this point a starting CPU has marked itself as online via
 		 * set_cpu_online(). But it might not yet have marked itself
@@ -5447,7 +5442,7 @@ static int sched_cpu_active(struct notifier_block *nfb,
 		 * Thus, fall-through and help the starting CPU along.
 		 */
 	case CPU_DOWN_FAILED:
-		set_cpu_active(cpu, true);
+		set_cpu_active((long)hcpu, true);
 		return NOTIFY_OK;
 	default:
 		return NOTIFY_DONE;
