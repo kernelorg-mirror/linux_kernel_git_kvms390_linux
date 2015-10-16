@@ -29,7 +29,7 @@ struct mcck_struct {
 	unsigned int warning : 1;
 	unsigned int etr_queue : 1;
 	unsigned int stp_queue : 1;
-	union mci mci;
+	unsigned long mcck_code;
 };
 
 static DEFINE_PER_CPU(struct mcck_struct, cpu_mcck);
@@ -89,7 +89,7 @@ void s390_handle_mcck(void)
 	if (mcck.kill_task) {
 		local_irq_enable();
 		printk(KERN_EMERG "mcck: Terminating task because of machine "
-		       "malfunction (code 0x%016lx).\n", mcck.mci.val);
+		       "malfunction (code 0x%016lx).\n", mcck.mcck_code);
 		printk(KERN_EMERG "mcck: task: %s, pid: %d.\n",
 		       current->comm, current->pid);
 		do_exit(SIGSEGV);
@@ -309,7 +309,7 @@ void notrace s390_do_machine_check(struct pt_regs *regs)
 			 * user mode -> mark task for termination.
 			 */
 			mcck->kill_task = 1;
-			mcck->mci = mci;
+			mcck->mcck_code = mci.val;
 			set_cpu_flag(CIF_MCCK_PENDING);
 		} else {
 			/*
