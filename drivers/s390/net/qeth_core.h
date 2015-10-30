@@ -678,6 +678,7 @@ struct qeth_card_info {
 	enum qeth_ipa_promisc_modes promisc_mode;
 	__u32 diagass_support;
 	__u32 hwtrap;
+	int osagen;			/* OSA Card Generation */
 };
 
 struct qeth_card_options {

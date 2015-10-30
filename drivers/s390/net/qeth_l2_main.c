@@ -1121,6 +1121,9 @@ static int qeth_l2_setup_netdev(struct qeth_card *card)
 		card->dev->hw_features = NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
 		/* Turn on RX offloading per default */
 		card->dev->features |= NETIF_F_RXCSUM;
+		/* Turn on TX offloading per default for OSA 4 and later */
+		if (card->info.osagen >= 0xf6)
+			card->dev->features |= NETIF_F_IP_CSUM;
 	}
 	card->info.broadcast_capable = 1;
 	qeth_l2_request_initial_mac(card);

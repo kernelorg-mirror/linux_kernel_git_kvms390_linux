@@ -3170,6 +3170,11 @@ static int qeth_l3_setup_netdev(struct qeth_card *card)
 					NETIF_F_RXCSUM | NETIF_F_IP_CSUM |
 					NETIF_F_TSO;
 				card->dev->features = NETIF_F_RXCSUM;
+				/* Turn on TX offloading per default for
+				 * OSA 4 and later
+				 */
+				if (card->info.osagen >= 0xf6)
+					card->dev->features |= NETIF_F_IP_CSUM;
 			}
 		}
 	} else if (card->info.type == QETH_CARD_TYPE_IQD) {
