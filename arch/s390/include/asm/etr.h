@@ -215,6 +215,9 @@ int etr_switch_to_local(void);
 int etr_sync_check(void);
 void etr_queue_work(void);
 
+/* notifier for syncs */
+extern struct atomic_notifier_head s390_epoch_delta_notifier;
+
 /* STP interruption parameter */
 struct stp_irq_parm {
 	unsigned int _pad0	: 14;
