@@ -29,3 +29,4 @@
 /*? Text: "Unable to register zram-control class\n" */
 /*? Text: "Removed device: %s\n" */
 /*? Text: "Added device: %s\n" */
+/*? Text: "Error creating sysfs group for device %d\n" */
