@@ -54,7 +54,7 @@ static LIST_HEAD(dump_save_areas);
 /*
  * Allocate a save area
  */
-struct save_area *save_area_alloc(bool is_boot_cpu)
+struct save_area * __init save_area_alloc(bool is_boot_cpu)
 {
 	struct save_area *sa;
 
@@ -71,7 +71,7 @@ struct save_area *save_area_alloc(bool is_boot_cpu)
 /*
  * Return the address of the save area for the boot CPU
  */
-struct save_area *save_area_boot_cpu(void)
+struct save_area * __init save_area_boot_cpu(void)
 {
 	if (list_empty(&dump_save_areas))
 		return NULL;
@@ -81,7 +81,7 @@ struct save_area *save_area_boot_cpu(void)
 /*
  * Copy CPU registers into the save area
  */
-void save_area_add_regs(struct save_area *sa, void *regs)
+void __init save_area_add_regs(struct save_area *sa, void *regs)
 {
 	struct _lowcore *lc;
 
@@ -101,7 +101,7 @@ void save_area_add_regs(struct save_area *sa, void *regs)
 /*
  * Copy vector registers into the save area
  */
-void save_area_add_vxrs(struct save_area *sa, __vector128 *vxrs)
+void __init save_area_add_vxrs(struct save_area *sa, __vector128 *vxrs)
 {
 	int i;
 
@@ -339,7 +339,7 @@ static inline void *nt_init(void *buf, Elf64_Word type, void *desc, int d_len)
 /*
  * Fill ELF notes for one CPU with save area registers
  */
-void *fill_cpu_elf_notes(void *ptr, int cpu, struct save_area *sa)
+static void *fill_cpu_elf_notes(void *ptr, int cpu, struct save_area *sa)
 {
 	struct elf_prstatus nt_prstatus;
 	elf_fpregset_t nt_fpregset;
