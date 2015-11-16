@@ -148,7 +148,7 @@ __HEAD
 
 iplstart:
 	mvi	__LC_AR_MODE_ID,1	# set esame flag
-	slr	%r0,%r0 		# set cpuid to zero
+	slr	%r0,%r0			# set cpuid to zero
 	lhi	%r1,2			# mode 2 = esame (dump)
 	sigp	%r1,%r0,0x12		# switch to esame mode
 	bras	%r13,0f
