@@ -5,7 +5,7 @@
  *
  *   Copyright IBM Corp. 2003, 2015
  *   Author(s): Thomas Spatzier
- *		Jan Glauber (jan.glauber@de.ibm.com)
+ *		Jan Glauber
  *		Harald Freudenberger (freude@de.ibm.com)
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -161,8 +161,8 @@ enum crypt_s390_ppno_func {
  *
  * Executes the KM (CIPHER MESSAGE) operation of the CPU.
  *
- * Returns -1 for failure, 0 for the query func, number of processed
- * bytes for encryption/decryption funcs
+ * Returns 0 for the query func, number of processed bytes for
+ * encryption/decryption funcs
  */
 static inline int crypt_s390_km(long func, void *param,
 				u8 *dest, const u8 *src, long src_len)
@@ -172,18 +172,14 @@ static inline int crypt_s390_km(long func, void *param,
 	register const u8 *__src asm("2") = src;
 	register long __src_len asm("3") = src_len;
 	register u8 *__dest asm("4") = dest;
-	int ret;
 
 	asm volatile(
-		"0:	.insn	rre,0xb92e0000,%3,%1\n" /* KM opcode */
-		"1:	brc	1,0b\n" /* handle partial completion */
-		"	la	%0,0\n"
-		"2:\n"
-		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "=d" (ret), "+a" (__src), "+d" (__src_len), "+a" (__dest)
-		: "d" (__func), "a" (__param), "0" (-1) : "cc", "memory");
-	if (ret < 0)
-		return ret;
+		"0:	.insn	rre,0xb92e0000,%2,%0\n" /* KM opcode */
+		"	brc	1,0b\n" /* handle partial completion */
+		: "+a" (__src), "+d" (__src_len), "+a" (__dest)
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
 	return (func & CRYPT_S390_FUNC_MASK) ? src_len - __src_len : __src_len;
 }
 
@@ -197,8 +193,8 @@ static inline int crypt_s390_km(long func, void *param,
  *
  * Executes the KMC (CIPHER MESSAGE WITH CHAINING) operation of the CPU.
  *
- * Returns -1 for failure, 0 for the query func, number of processed
- * bytes for encryption/decryption funcs
+ * Returns 0 for the query func, number of processed bytes for
+ * encryption/decryption funcs
  */
 static inline int crypt_s390_kmc(long func, void *param,
 				 u8 *dest, const u8 *src, long src_len)
@@ -208,18 +204,14 @@ static inline int crypt_s390_kmc(long func, void *param,
 	register const u8 *__src asm("2") = src;
 	register long __src_len asm("3") = src_len;
 	register u8 *__dest asm("4") = dest;
-	int ret;
 
 	asm volatile(
-		"0:	.insn	rre,0xb92f0000,%3,%1\n" /* KMC opcode */
-		"1:	brc	1,0b\n" /* handle partial completion */
-		"	la	%0,0\n"
-		"2:\n"
-		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "=d" (ret), "+a" (__src), "+d" (__src_len), "+a" (__dest)
-		: "d" (__func), "a" (__param), "0" (-1) : "cc", "memory");
-	if (ret < 0)
-		return ret;
+		"0:	.insn	rre,0xb92f0000,%2,%0\n" /* KMC opcode */
+		"	brc	1,0b\n" /* handle partial completion */
+		: "+a" (__src), "+d" (__src_len), "+a" (__dest)
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
 	return (func & CRYPT_S390_FUNC_MASK) ? src_len - __src_len : __src_len;
 }
 
@@ -233,8 +225,7 @@ static inline int crypt_s390_kmc(long func, void *param,
  * Executes the KIMD (COMPUTE INTERMEDIATE MESSAGE DIGEST) operation
  * of the CPU.
  *
- * Returns -1 for failure, 0 for the query func, number of processed
- * bytes for digest funcs
+ * Returns 0 for the query func, number of processed bytes for digest funcs
  */
 static inline int crypt_s390_kimd(long func, void *param,
 				  const u8 *src, long src_len)
@@ -243,18 +234,14 @@ static inline int crypt_s390_kimd(long func, void *param,
 	register void *__param asm("1") = param;
 	register const u8 *__src asm("2") = src;
 	register long __src_len asm("3") = src_len;
-	int ret;
 
 	asm volatile(
-		"0:	.insn	rre,0xb93e0000,%1,%1\n" /* KIMD opcode */
-		"1:	brc	1,0b\n" /* handle partial completion */
-		"	la	%0,0\n"
-		"2:\n"
-		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "=d" (ret), "+a" (__src), "+d" (__src_len)
-		: "d" (__func), "a" (__param), "0" (-1) : "cc", "memory");
-	if (ret < 0)
-		return ret;
+		"0:	.insn	rre,0xb93e0000,%0,%0\n" /* KIMD opcode */
+		"	brc	1,0b\n" /* handle partial completion */
+		: "+a" (__src), "+d" (__src_len)
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
 	return (func & CRYPT_S390_FUNC_MASK) ? src_len - __src_len : __src_len;
 }
 
@@ -267,8 +254,7 @@ static inline int crypt_s390_kimd(long func, void *param,
  *
  * Executes the KLMD (COMPUTE LAST MESSAGE DIGEST) operation of the CPU.
  *
- * Returns -1 for failure, 0 for the query func, number of processed
- * bytes for digest funcs
+ * Returns 0 for the query func, number of processed bytes for digest funcs
  */
 static inline int crypt_s390_klmd(long func, void *param,
 				  const u8 *src, long src_len)
@@ -277,18 +263,14 @@ static inline int crypt_s390_klmd(long func, void *param,
 	register void *__param asm("1") = param;
 	register const u8 *__src asm("2") = src;
 	register long __src_len asm("3") = src_len;
-	int ret;
 
 	asm volatile(
-		"0:	.insn	rre,0xb93f0000,%1,%1\n" /* KLMD opcode */
-		"1:	brc	1,0b\n" /* handle partial completion */
-		"	la	%0,0\n"
-		"2:\n"
-		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "=d" (ret), "+a" (__src), "+d" (__src_len)
-		: "d" (__func), "a" (__param), "0" (-1) : "cc", "memory");
-	if (ret < 0)
-		return ret;
+		"0:	.insn	rre,0xb93f0000,%0,%0\n" /* KLMD opcode */
+		"	brc	1,0b\n" /* handle partial completion */
+		: "+a" (__src), "+d" (__src_len)
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
 	return (func & CRYPT_S390_FUNC_MASK) ? src_len - __src_len : __src_len;
 }
 
@@ -302,8 +284,7 @@ static inline int crypt_s390_klmd(long func, void *param,
  * Executes the KMAC (COMPUTE MESSAGE AUTHENTICATION CODE) operation
  * of the CPU.
  *
- * Returns -1 for failure, 0 for the query func, number of processed
- * bytes for digest funcs
+ * Returns 0 for the query func, number of processed bytes for digest funcs
  */
 static inline int crypt_s390_kmac(long func, void *param,
 				  const u8 *src, long src_len)
@@ -312,18 +293,14 @@ static inline int crypt_s390_kmac(long func, void *param,
 	register void *__param asm("1") = param;
 	register const u8 *__src asm("2") = src;
 	register long __src_len asm("3") = src_len;
-	int ret;
 
 	asm volatile(
-		"0:	.insn	rre,0xb91e0000,%1,%1\n" /* KLAC opcode */
-		"1:	brc	1,0b\n" /* handle partial completion */
-		"	la	%0,0\n"
-		"2:\n"
-		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "=d" (ret), "+a" (__src), "+d" (__src_len)
-		: "d" (__func), "a" (__param), "0" (-1) : "cc", "memory");
-	if (ret < 0)
-		return ret;
+		"0:	.insn	rre,0xb91e0000,%0,%0\n" /* KLAC opcode */
+		"	brc	1,0b\n" /* handle partial completion */
+		: "+a" (__src), "+d" (__src_len)
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
 	return (func & CRYPT_S390_FUNC_MASK) ? src_len - __src_len : __src_len;
 }
 
@@ -338,8 +315,8 @@ static inline int crypt_s390_kmac(long func, void *param,
  *
  * Executes the KMCTR (CIPHER MESSAGE WITH COUNTER) operation of the CPU.
  *
- * Returns -1 for failure, 0 for the query func, number of processed
- * bytes for encryption/decryption funcs
+ * Returns 0 for the query func, number of processed bytes for
+ * encryption/decryption funcs
  */
 static inline int crypt_s390_kmctr(long func, void *param, u8 *dest,
 				 const u8 *src, long src_len, u8 *counter)
@@ -350,19 +327,14 @@ static inline int crypt_s390_kmctr(long func, void *param, u8 *dest,
 	register long __src_len asm("3") = src_len;
 	register u8 *__dest asm("4") = dest;
 	register u8 *__ctr asm("6") = counter;
-	int ret = -1;
 
 	asm volatile(
-		"0:	.insn	rrf,0xb92d0000,%3,%1,%4,0\n" /* KMCTR opcode */
-		"1:	brc	1,0b\n" /* handle partial completion */
-		"	la	%0,0\n"
-		"2:\n"
-		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "+d" (ret), "+a" (__src), "+d" (__src_len), "+a" (__dest),
-		  "+a" (__ctr)
-		: "d" (__func), "a" (__param) : "cc", "memory");
-	if (ret < 0)
-		return ret;
+		"0:	.insn	rrf,0xb92d0000,%2,%0,%3,0\n" /* KMCTR opcode */
+		"	brc	1,0b\n" /* handle partial completion */
+		: "+a" (__src), "+d" (__src_len), "+a" (__dest), "+a" (__ctr)
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
 	return (func & CRYPT_S390_FUNC_MASK) ? src_len - __src_len : __src_len;
 }
 
@@ -378,8 +350,8 @@ static inline int crypt_s390_kmctr(long func, void *param, u8 *dest,
  * Executes the PPNO (PERFORM PSEUDORANDOM NUMBER OPERATION)
  * operation of the CPU.
  *
- * Returns -1 for failure, 0 for the query func, number of random
- * bytes stored in dest buffer for generate function
+ * Returns 0 for the query func, number of random bytes stored in
+ * dest buffer for generate function
  */
 static inline int crypt_s390_ppno(long func, void *param,
 				  u8 *dest, long dest_len,
@@ -391,20 +363,39 @@ static inline int crypt_s390_ppno(long func, void *param,
 	register long  __dest_len asm("3") = dest_len; /* requested random bytes */
 	register const u8 *__seed asm("4") = seed;     /* buf with seed data */
 	register long  __seed_len asm("5") = seed_len; /* bytes in seed buf */
-	int ret = -1;
 
 	asm volatile (
-		"0:	.insn	rre,0xb93c0000,%1,%5\n"	/* PPNO opcode */
-		"1:	brc	1,0b\n"	  /* handle partial completion */
-		"	la	%0,0\n"
-		"2:\n"
-		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "+d" (ret), "+a"(__dest), "+d"(__dest_len)
+		"0:	.insn	rre,0xb93c0000,%0,%4\n"	/* PPNO opcode */
+		"	brc	1,0b\n"	  /* handle partial completion */
+		: "+a"(__dest), "+d"(__dest_len)
 		: "d"(__func), "a"(__param), "a"(__seed), "d"(__seed_len)
 		: "cc", "memory");
-	if (ret < 0)
-		return ret;
+
 	return (func & CRYPT_S390_FUNC_MASK) ? dest_len - __dest_len : 0;
+}
+
+/**
+ * crypt_s390_pcc:
+ * @func: the function code passed to KM; see crypt_s390_km_func
+ * @param: address of parameter block; see POP for details on each func
+ *
+ * Executes the PCC (PERFORM CRYPTOGRAPHIC COMPUTATION) operation of the CPU.
+ *
+ * Returns 0.
+ */
+static inline int crypt_s390_pcc(long func, void *param)
+{
+	register long __func asm("0") = func & 0x7f; /* encrypt or decrypt */
+	register void *__param asm("1") = param;
+
+	asm volatile(
+		"0:	.insn	rre,0xb92c0000,0,0\n" /* PCC opcode */
+		"	brc	1,0b\n" /* handle partial completion */
+		:
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
+	return 0;
 }
 
 /**
@@ -462,32 +453,6 @@ static inline int crypt_s390_func_available(int func,
 	func &= CRYPT_S390_FUNC_MASK;
 	func &= 0x7f;		/* mask modifier bit */
 	return (status[func >> 3] & (0x80 >> (func & 7))) != 0;
-}
-
-/**
- * crypt_s390_pcc:
- * @func: the function code passed to KM; see crypt_s390_km_func
- * @param: address of parameter block; see POP for details on each func
- *
- * Executes the PCC (PERFORM CRYPTOGRAPHIC COMPUTATION) operation of the CPU.
- *
- * Returns -1 for failure, 0 for success.
- */
-static inline int crypt_s390_pcc(long func, void *param)
-{
-	register long __func asm("0") = func & 0x7f; /* encrypt or decrypt */
-	register void *__param asm("1") = param;
-	int ret = -1;
-
-	asm volatile(
-		"0:	.insn	rre,0xb92c0000,0,0\n" /* PCC opcode */
-		"1:	brc	1,0b\n" /* handle partial completion */
-		"	la	%0,0\n"
-		"2:\n"
-		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
-		: "+d" (ret)
-		: "d" (__func), "a" (__param) : "cc", "memory");
-	return ret;
 }
 
 #endif	/* _CRYPTO_ARCH_S390_CRYPT_S390_H */
