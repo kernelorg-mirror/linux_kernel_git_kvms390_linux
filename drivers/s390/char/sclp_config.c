@@ -37,7 +37,7 @@ struct sclp_ofb_sccb {
 
 #define EV_QUAL_CPU_CHANGE	1
 #define EV_QUAL_CAP_CHANGE	3
-#define EV_QUAL_OPEN4BUSINESS   5
+#define EV_QUAL_OPEN4BUSINESS	5
 
 static struct work_struct sclp_cpu_capability_work;
 static struct work_struct sclp_cpu_change_work;
@@ -154,12 +154,12 @@ static int __init sclp_ofb_setup(void)
 	if (!ofb_kset)
 		return -ENOMEM;
 	rc = sysfs_create_bin_file(&ofb_kset->kobj, &ofb_bin_attr);
-	if (rc)
+	if (rc) {
 		kset_unregister(ofb_kset);
-	return rc;
-#else
-	return 0;
+		return rc;
+	}
 #endif
+	return 0;
 }
 
 static int __init sclp_conf_init(void)
@@ -171,8 +171,7 @@ static int __init sclp_conf_init(void)
 	rc = sclp_register(&sclp_conf_register);
 	if (rc)
 		return rc;
-	rc = sclp_ofb_setup();
-	return rc;
+	return sclp_ofb_setup();
 }
 
 __initcall(sclp_conf_init);
