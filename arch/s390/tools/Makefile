@@ -3,8 +3,7 @@
 #
 
 hostprogs-y		    += gen_facilities
-HOSTCFLAGS_gen_facilities.o += -Wall -I$(srctree)/include/
-HOSTCFLAGS_gen_facilities.o += -I$(srctree)/arch/s390/include/
+HOSTCFLAGS_gen_facilities.o += -Wall $(LINUXINCLUDE)
 
 define filechk_facilities.h
 	$(obj)/gen_facilities
