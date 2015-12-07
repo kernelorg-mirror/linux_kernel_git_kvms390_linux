@@ -10,11 +10,17 @@
 #include <crypto/internal/hash.h>
 #include <linux/module.h>
 #include <linux/cpufeature.h>
+#include <asm/fpu/api.h>
 
 #include "crypt_s390.h"
 
+void ghash_vx_init(unsigned char *key, unsigned char *key8);
+void ghash_vx(const u8 *src, unsigned int len, const u8 *key, u8 *hash);
+
 #define GHASH_BLOCK_SIZE	16
 #define GHASH_DIGEST_SIZE	16
+
+static int ghash_kimd_available;
 
 struct ghash_ctx {
 	u8 key[GHASH_BLOCK_SIZE];
@@ -24,6 +30,7 @@ struct ghash_desc_ctx {
 	u8 icv[GHASH_BLOCK_SIZE];
 	u8 key[GHASH_BLOCK_SIZE];
 	u8 buffer[GHASH_BLOCK_SIZE];
+	u8 key8[GHASH_BLOCK_SIZE*8];
 	u32 bytes;
 };
 
@@ -31,9 +38,15 @@ static int ghash_init(struct shash_desc *desc)
 {
 	struct ghash_desc_ctx *dctx = shash_desc_ctx(desc);
 	struct ghash_ctx *ctx = crypto_shash_ctx(desc->tfm);
+	struct kernel_fpu vxstate;
 
 	memset(dctx, 0, sizeof(*dctx));
 	memcpy(dctx->key, ctx->key, GHASH_BLOCK_SIZE);
+	if (MACHINE_HAS_VX) {
+		kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW | KERNEL_VXR_HIGH);
+		ghash_vx_init(dctx->key, dctx->key8);
+		kernel_fpu_end(&vxstate);
+	}
 
 	return 0;
 }
@@ -57,8 +70,9 @@ static int ghash_update(struct shash_desc *desc,
 			 const u8 *src, unsigned int srclen)
 {
 	struct ghash_desc_ctx *dctx = shash_desc_ctx(desc);
-	unsigned int n;
 	u8 *buf = dctx->buffer;
+	struct kernel_fpu vxstate;
+	unsigned int n;
 	int ret;
 
 	if (dctx->bytes) {
@@ -72,18 +86,33 @@ static int ghash_update(struct shash_desc *desc,
 		src += n;
 
 		if (!dctx->bytes) {
-			ret = crypt_s390_kimd(KIMD_GHASH, dctx, buf,
-					      GHASH_BLOCK_SIZE);
-			if (ret != GHASH_BLOCK_SIZE)
-				return -EIO;
+			if (!MACHINE_HAS_VX) {
+				ret = crypt_s390_kimd(KIMD_GHASH, dctx, buf,
+						      GHASH_BLOCK_SIZE);
+				if (ret != GHASH_BLOCK_SIZE)
+					return -EIO;
+			} else {
+				kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
+							   KERNEL_VXR_HIGH);
+				ghash_vx(buf, GHASH_BLOCK_SIZE,
+					 dctx->key8, dctx->icv);
+				kernel_fpu_end(&vxstate);
+			}
 		}
 	}
 
 	n = srclen & ~(GHASH_BLOCK_SIZE - 1);
 	if (n) {
-		ret = crypt_s390_kimd(KIMD_GHASH, dctx, src, n);
-		if (ret != n)
-			return -EIO;
+		if (!MACHINE_HAS_VX) {
+			ret = crypt_s390_kimd(KIMD_GHASH, dctx, src, n);
+			if (ret != n)
+				return -EIO;
+		} else {
+			kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
+						   KERNEL_VXR_HIGH);
+			ghash_vx(src, n, dctx->key8, dctx->icv);
+			kernel_fpu_end(&vxstate);
+		}
 		src += n;
 		srclen -= n;
 	}
@@ -98,21 +127,30 @@ static int ghash_update(struct shash_desc *desc,
 
 static int ghash_flush(struct ghash_desc_ctx *dctx)
 {
-	u8 *buf = dctx->buffer;
+	struct kernel_fpu vxstate;
+	u8 *pos, *buf;
 	int ret;
 
-	if (dctx->bytes) {
-		u8 *pos = buf + (GHASH_BLOCK_SIZE - dctx->bytes);
+	if (!dctx->bytes)
+		return 0;
 
+	buf = dctx->buffer;
+	if (!MACHINE_HAS_VX) {
+		pos = buf + (GHASH_BLOCK_SIZE - dctx->bytes);
 		memset(pos, 0, dctx->bytes);
 
 		ret = crypt_s390_kimd(KIMD_GHASH, dctx, buf, GHASH_BLOCK_SIZE);
 		if (ret != GHASH_BLOCK_SIZE)
 			return -EIO;
 
-		dctx->bytes = 0;
+	} else {
+		kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
+					   KERNEL_VXR_HIGH);
+		ghash_vx(buf, GHASH_BLOCK_SIZE - dctx->bytes,
+			 dctx->key8, dctx->icv);
+		kernel_fpu_end(&vxstate);
 	}
-
+	dctx->bytes = 0;
 	return 0;
 }
 
@@ -147,9 +185,12 @@ static struct shash_alg ghash_alg = {
 
 static int __init ghash_mod_init(void)
 {
-	if (!crypt_s390_func_available(KIMD_GHASH,
-				       CRYPT_S390_MSA | CRYPT_S390_MSA4))
-		return -EOPNOTSUPP;
+	unsigned int mask = CRYPT_S390_MSA | CRYPT_S390_MSA4;
+
+	ghash_kimd_available = crypt_s390_func_available(KIMD_GHASH, mask);
+
+	if (!ghash_kimd_available && !MACHINE_HAS_VX)
+		return -ENODEV;
 
 	return crypto_register_shash(&ghash_alg);
 }
@@ -159,7 +200,14 @@ static void __exit ghash_mod_exit(void)
 	crypto_unregister_shash(&ghash_alg);
 }
 
-module_cpu_feature_match(MSA, ghash_mod_init);
+static const struct cpu_feature ghash_cpu_features[] = {
+	{ .feature = cpu_feature(MSA) },
+	{ .feature = cpu_feature(VXRS) },
+	{ },
+};
+MODULE_DEVICE_TABLE(cpu, ghash_cpu_features);
+
+module_init(ghash_mod_init);
 module_exit(ghash_mod_exit);
 
 MODULE_ALIAS_CRYPTO("ghash");
