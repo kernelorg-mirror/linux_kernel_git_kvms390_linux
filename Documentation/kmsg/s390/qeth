@@ -843,6 +843,24 @@
  */
 
 /*?
+ * Text: "%s: A Bridge Port is already configured by a different operating system\n"
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * Linux instances cannot configure the target port as a Bridge Port.
+ * Another operating system already uses a Bridge Port on the HiperSockets
+ * or on the OSA adapter. For example, a z/VM instance might be using
+ * a port in a VSWITCH configuration. Multiple Bridge Ports on the same
+ * HiperSockets or OSA adapter must be configured by instances of the same
+ * operating system, for example, all Linux or all z/VM.
+ * User action:
+ * Reconsider your network topology. Configure Bridge Ports only for ports
+ * on adapters where any other Bridge Ports are configured by other Linux
+ * instances.
+ */
+
+/*?
  * Text: "%s: Setting address notification failed\n"
  * Severity: Error
  * Parameter:
