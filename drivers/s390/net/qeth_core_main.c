@@ -1736,7 +1736,7 @@ static void qeth_configure_unitaddr(struct qeth_card *card, char *prcd)
 	QETH_DBF_TEXT_(SETUP, 2, "osa%x", card->info.osagen);
 }
 
-static void qeth_configure_blkt_default(struct qeth_card *card, char *prcd)
+static void qeth_configure_blkt_default(struct qeth_card *card)
 {
 	QETH_DBF_TEXT(SETUP, 2, "cfgblkt");
 	if (card->info.osagen >= 0xf1 && card->info.osagen <= 0xf4) {
@@ -4803,7 +4803,7 @@ static void qeth_determine_capabilities(struct qeth_card *card)
 	}
 	qeth_configure_unitaddr(card, prcd);
 	if (ddev_offline)
-		qeth_configure_blkt_default(card, prcd);
+		qeth_configure_blkt_default(card);
 	kfree(prcd);
 
 	rc = qdio_get_ssqd_desc(ddev, &card->ssqd);
