@@ -2795,9 +2795,9 @@ static void qeth_tso_fill_header(struct qeth_card *card,
 
 /**
  * qeth_l3_get_elements_no_tso() - find number of SBALEs for skb data for tso
- * @card:                          qeth card structure, to check max. elems.
- * @skb:                           SKB address
- * @extra_elems:                   extra elems needed, to check against max.
+ * @card:			   qeth card structure, to check max. elems.
+ * @skb:			   SKB address
+ * @extra_elems:		   extra elems needed, to check against max.
  *
  * Returns the number of pages, and thus QDIO buffer elements, needed to cover
  * skb data, including linear part and fragments, but excluding TCP header.
