@@ -2961,7 +2961,6 @@ static int qeth_l3_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		goto tx_drop;
 	}
 	elements += hdr_elements;
-	nr_frags = skb_shinfo(new_skb)->nr_frags;
 
 	if (card->info.type != QETH_CARD_TYPE_IQD) {
 		int len;
@@ -2985,6 +2984,7 @@ static int qeth_l3_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		if (new_skb != skb)
 			dev_kfree_skb_any(skb);
 		if (card->options.performance_stats) {
+			nr_frags = skb_shinfo(new_skb)->nr_frags;
 			if (use_tso) {
 				card->perf_stats.large_send_bytes += tx_bytes;
 				card->perf_stats.large_send_cnt++;
