@@ -1731,16 +1731,14 @@ static void qeth_configure_unitaddr(struct qeth_card *card, char *prcd)
 	card->info.cula = prcd[63];
 	card->info.guestlan = ((prcd[0x10] == _ascebc['V']) &&
 			       (prcd[0x11] == _ascebc['M']));
-	card->info.osagen = (prcd[74] == 0xF0 && prcd[75] == 0xF0)
-			    ?  prcd[76] : 0;
-	QETH_DBF_TEXT_(SETUP, 2, "osa%x", card->info.osagen);
 }
 
-static void qeth_configure_blkt_default(struct qeth_card *card)
+static void qeth_configure_blkt_default(struct qeth_card *card, char *prcd)
 {
 	QETH_DBF_TEXT(SETUP, 2, "cfgblkt");
-	if (card->info.osagen >= 0xf1 && card->info.osagen <= 0xf4) {
-		/* OSA and OSA 2 */
+
+	if (prcd[74] == 0xF0 && prcd[75] == 0xF0 &&
+	    prcd[76] >= 0xF1 && prcd[76] <= 0xF4) {
 		card->info.blkt.time_total = 0;
 		card->info.blkt.inter_packet = 0;
 		card->info.blkt.inter_packet_jumbo = 0;
@@ -4816,7 +4814,7 @@ static void qeth_determine_capabilities(struct qeth_card *card)
 	}
 	qeth_configure_unitaddr(card, prcd);
 	if (ddev_offline)
-		qeth_configure_blkt_default(card);
+		qeth_configure_blkt_default(card, prcd);
 	kfree(prcd);
 
 	rc = qdio_get_ssqd_desc(ddev, &card->ssqd);
