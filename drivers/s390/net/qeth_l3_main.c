@@ -2867,9 +2867,8 @@ static int qeth_l3_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	}
 
 	/* Ignore segment size from skb_is_gso(), 1 page is always used. */
-	/* TCP cannot be non-unicast, but check anyway to be safe. */
-	use_tso = (ipv == 4) && (qeth_get_ip_protocol(skb) == IPPROTO_TCP) &&
-		  (cast_type == RTN_UNSPEC) && skb_is_gso(skb);
+	use_tso = skb_is_gso(skb) &&
+		  (qeth_get_ip_protocol(skb) == IPPROTO_TCP) && (ipv == 4);
 
 	if ((card->info.type == QETH_CARD_TYPE_IQD) &&
 	    !skb_is_nonlinear(skb)) {
