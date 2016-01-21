@@ -72,7 +72,7 @@
 
 /*
  * Input: %r2 pointer to hash-key
- *        %r3 pointer to the hash-key array with H,H^2,H^3,H^4 in GCM GF
+ *	  %r3 pointer to the hash-key array with H,H^2,..,H^8 in GCM GF
  */
 	.globl ghash_vx_init
 ghash_vx_init:
