@@ -27,6 +27,7 @@
 #include <asm/cacheflush.h>
 #include <asm/os_info.h>
 #include <asm/switch_to.h>
+#include <asm/nmi.h>
 
 typedef void (*relocate_kernel_t)(kimage_entry_t *, unsigned long);
 
@@ -102,6 +103,7 @@ static void __do_machine_kdump(void *image)
  */
 static noinline void __machine_kdump(void *image)
 {
+	struct mcesa *mcesa;
 	int this_cpu, cpu;
 
 	lgr_info_log();
@@ -114,8 +116,11 @@ static noinline void __machine_kdump(void *image)
 			continue;
 	}
 	/* Store status of the boot CPU */
+	mcesa = (struct mcesa *)(S390_lowcore.mcesad & -4UL);
 	if (MACHINE_HAS_VX)
-		save_vx_regs((void *) &S390_lowcore.vector_save_area);
+		save_vx_regs((__vector128 *) mcesa->vector_save_area);
+	if (MACHINE_HAS_GS)
+		save_gs_cb((struct gs_cb *) mcesa->guarded_storage_save_area);
 	/*
 	 * To create a good backchain for this CPU in the dump store_status
 	 * is passed the address of a function. The address is saved into

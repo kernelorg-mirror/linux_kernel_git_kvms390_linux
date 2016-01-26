@@ -452,8 +452,7 @@ static int __must_check __deliver_machine_check(struct kvm_vcpu *vcpu)
 
 		rc  = kvm_s390_vcpu_store_status(vcpu,
 						 KVM_S390_STORE_STATUS_PREFIXED);
-		rc |= read_guest_lc(vcpu, __LC_VX_SAVE_AREA_ADDR,
-				    &adtl_status_addr,
+		rc |= read_guest_lc(vcpu, __LC_MCESAD, &adtl_status_addr,
 				    sizeof(unsigned long));
 		rc |= kvm_s390_vcpu_store_adtl_status(vcpu,
 						      adtl_status_addr);

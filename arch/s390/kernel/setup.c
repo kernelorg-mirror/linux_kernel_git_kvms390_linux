@@ -338,9 +338,13 @@ static void __init setup_lowcore(void)
 	lc->stfl_fac_list = S390_lowcore.stfl_fac_list;
 	memcpy(lc->stfle_fac_list, S390_lowcore.stfle_fac_list,
 	       MAX_FACILITY_BIT/8);
-	if (MACHINE_HAS_VX)
-		lc->vector_save_area_addr =
-			(unsigned long) &lc->vector_save_area;
+	if (MACHINE_HAS_VX || MACHINE_HAS_GS) {
+		unsigned long bits, size;
+
+		bits = MACHINE_HAS_GS ? 11 : 10;
+		size = 1UL << bits;
+		lc->mcesad = ((__u64) __alloc_bootmem(size, size, 0)) | bits;
+	}
 	lc->vdso_per_cpu_data = (unsigned long) &lc->paste[0];
 	lc->sync_enter_timer = S390_lowcore.sync_enter_timer;
 	lc->async_enter_timer = S390_lowcore.async_enter_timer;
@@ -775,6 +779,12 @@ static int __init setup_hwcaps(void)
 		if (test_facility(135))
 			elf_hwcap |= HWCAP_S390_VXRS_BCD;
 	}
+
+	/*
+	 * Guarded storage support HWCAP_S390_GS is bit 12.
+	 */
+	if (MACHINE_HAS_GS)
+		elf_hwcap |= HWCAP_S390_GS;
 
 	get_cpu_id(&cpu_id);
 	add_device_randomness(&cpu_id, sizeof(cpu_id));
