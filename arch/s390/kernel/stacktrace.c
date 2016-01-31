@@ -61,11 +61,10 @@ static unsigned long save_context_stack(struct stack_trace *trace,
 
 void save_stack_trace(struct stack_trace *trace)
 {
-	register unsigned long sp asm ("15");
 	unsigned long orig_sp, new_sp, frame_size;
 
 	frame_size = STACK_FRAME_OVERHEAD + sizeof(struct pt_regs);
-	orig_sp = sp;
+	orig_sp = current_stack_pointer();
 	new_sp = save_context_stack(trace, orig_sp,
 			S390_lowcore.panic_stack + frame_size - PAGE_SIZE,
 			S390_lowcore.panic_stack + frame_size, 0);
@@ -89,10 +88,8 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
 	unsigned long sp, low, high;
 
 	sp = tsk->thread.ksp;
-	if (tsk == current) {
-		/* Get current stack pointer. */
-		asm volatile("la %0,0(15)" : "=a" (sp));
-	}
+	if (tsk == current)
+		sp = current_stack_pointer();
 	low = (unsigned long) task_stack_page(tsk);
 	high = (unsigned long) task_pt_regs(tsk);
 	save_context_stack(trace, sp, low, high, 1);
