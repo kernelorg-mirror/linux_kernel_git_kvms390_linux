@@ -29,6 +29,6 @@ do {							\
 	xor_speed(&xor_block_xc);			\
 } while (0)
 
-#define XOR_SELECT_TEMPLATE(FASTEST)	&xor_block_xc
+#define XOR_SELECT_TEMPLATE(FASTEST)	(&xor_block_xc)
 
 #endif /* _ASM_S390_XOR_H */
