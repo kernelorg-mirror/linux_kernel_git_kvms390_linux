@@ -124,7 +124,7 @@ static void xor_xc_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
 		: : "0", "1", "cc", "memory");
 }
 
-static struct xor_block_template xor_block_xc = {
+struct xor_block_template xor_block_xc = {
 	.name = "xc",
 	.do_2 = xor_xc_2,
 	.do_3 = xor_xc_3,
