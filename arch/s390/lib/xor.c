@@ -7,8 +7,9 @@
 
 #include <linux/types.h>
 #include <linux/module.h>
+#include <linux/raid/xor.h>
 
-void xor_xc_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
+static void xor_xc_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
 {
 	asm volatile(
 		"	larl	1,2f\n"
@@ -28,10 +29,9 @@ void xor_xc_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
 		: : "d" (bytes), "a" (p1), "a" (p2)
 		: "0", "1", "cc", "memory");
 }
-EXPORT_SYMBOL(xor_xc_2);
 
-void xor_xc_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
-	      unsigned long *p3)
+static void xor_xc_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
+		     unsigned long *p3)
 {
 	asm volatile(
 		"	larl	1,2f\n"
@@ -55,10 +55,9 @@ void xor_xc_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
 		: "+d" (bytes), "+a" (p1), "+a" (p2), "+a" (p3)
 		: : "0", "1", "cc", "memory");
 }
-EXPORT_SYMBOL(xor_xc_3);
 
-void xor_xc_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
-	      unsigned long *p3, unsigned long *p4)
+static void xor_xc_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
+		     unsigned long *p3, unsigned long *p4)
 {
 	asm volatile(
 		"	larl	1,2f\n"
@@ -86,10 +85,9 @@ void xor_xc_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
 		: "+d" (bytes), "+a" (p1), "+a" (p2), "+a" (p3), "+a" (p4)
 		: : "0", "1", "cc", "memory");
 }
-EXPORT_SYMBOL(xor_xc_4);
 
-void xor_xc_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
-	      unsigned long *p3, unsigned long *p4, unsigned long *p5)
+static void xor_xc_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
+		     unsigned long *p3, unsigned long *p4, unsigned long *p5)
 {
 	/* Get around a gcc oddity */
 	register unsigned long *reg7 asm ("7") = p5;
@@ -125,4 +123,12 @@ void xor_xc_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
 		  "+a" (reg7)
 		: : "0", "1", "cc", "memory");
 }
-EXPORT_SYMBOL(xor_xc_5);
+
+static struct xor_block_template xor_block_xc = {
+	.name = "xc",
+	.do_2 = xor_xc_2,
+	.do_3 = xor_xc_3,
+	.do_4 = xor_xc_4,
+	.do_5 = xor_xc_5,
+};
+EXPORT_SYMBOL(xor_block_xc);
