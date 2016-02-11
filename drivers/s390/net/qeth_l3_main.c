@@ -249,7 +249,7 @@ int qeth_l3_delete_ip(struct qeth_card *card, struct qeth_ipaddr *tmp_addr)
 
 	addr = qeth_l3_ip_from_hash(card, tmp_addr);
 	if (!addr)
-		return  -ENOENT;
+		return -ENOENT;
 
 	addr->ref_counter--;
 	if (addr->type == QETH_IP_TYPE_NORMAL && addr->ref_counter > 0)
