@@ -28,6 +28,8 @@ static inline int init_new_context(struct task_struct *tsk,
 		mm->context.asce_bits = _ASCE_TABLE_LENGTH |
 			_ASCE_USER_BITS | _ASCE_TYPE_REGION3;
 		mm->context.asce_limit = STACK_TOP_MAX;
+	} else if (mm->context.asce_limit == (1UL << 31)) {
+		mm_inc_nr_pmds(mm);
 	}
 	crst_table_init((unsigned long *) mm->pgd, pgd_entry_type(mm));
 	return 0;
