@@ -117,7 +117,7 @@ calibrate_xor_blocks(void)
 		printk(KERN_INFO "xor: automatically using best "
 				 "checksumming function   %-10s\n",
 		       fastest->name);
-		return 0;
+		goto out;
 	}
 #endif
 
@@ -153,7 +153,7 @@ calibrate_xor_blocks(void)
 #undef xor_speed
 
 	free_pages((unsigned long)b1, 2);
-
+out:
 	active_template = fastest;
 	return 0;
 }
