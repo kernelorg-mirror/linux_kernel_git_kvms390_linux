@@ -1174,7 +1174,7 @@ static int iucv_sock_sendmsg(struct socket *sock, struct msghdr *msg,
 				kfree_skb(skb);
 			}
 
-			/* this error should never happen since the     */
+			/* this error should never happen since the	*/
 			/* IUCV_IPRMDATA path flag is set... sever path */
 			if (err == 0x15) {
 				pr_iucv->path_sever(iucv->path, NULL);
