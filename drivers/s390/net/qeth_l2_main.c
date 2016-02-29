@@ -1832,7 +1832,7 @@ static int qeth_bridgeport_makerc(struct qeth_card *card,
 			break;
 		case 0x2B10:
 		case 0x0010: /* OS mismatch */
-			rc = -EIO; /* for backward compatibility */
+			rc = -EPERM;
 			dev_err(&card->gdev->dev,
 	"A Bridge Port is already configured by a different operating system\n");
 			break;
