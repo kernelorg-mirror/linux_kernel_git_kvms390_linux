@@ -203,7 +203,7 @@ typedef struct format_check_t {
 	unsigned int num_records;	/* Records in the track in error */
 	unsigned int blksize;		/* Blocksize of first record in error */
 	unsigned int key_length;	/* Key length of first record in error */
-} __attribute__ ((packed)) format_check_t;
+} format_check_t;
 
 /* Values returned in format_check_t when a format error is detected: */
 /* Too few records were found on a single track */

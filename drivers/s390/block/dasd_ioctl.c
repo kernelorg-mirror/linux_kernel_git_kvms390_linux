@@ -316,7 +316,7 @@ static int dasd_ioctl_check_format(struct block_device *bdev, void __user *argp)
 		goto out_err;
 	}
 
-	if (copy_from_user(&cdata, argp, sizeof(struct format_check_t))) {
+	if (copy_from_user(&cdata, argp, sizeof(cdata))) {
 		rc = -EFAULT;
 		goto out_err;
 	}
@@ -325,7 +325,7 @@ static int dasd_ioctl_check_format(struct block_device *bdev, void __user *argp)
 	if (rc)
 		goto out_err;
 
-	if (copy_to_user(argp, &cdata, sizeof(struct format_check_t)))
+	if (copy_to_user(argp, &cdata, sizeof(cdata)))
 		rc = -EFAULT;
 
 out_err:

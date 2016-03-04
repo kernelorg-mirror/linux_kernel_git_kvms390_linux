@@ -2691,7 +2691,7 @@ out_err:
 				 * Only get sense data if called by format
 				 * check
 				 */
-				if (fmt_buffer) {
+				if (fmt_buffer && irb) {
 					sense = dasd_get_sense(&cqr->irb);
 					memcpy(irb, &cqr->irb, sizeof(*irb));
 				}
@@ -2889,7 +2889,7 @@ static int dasd_eckd_check_device_format(struct dasd_device *base,
 {
 	struct dasd_eckd_private *private = base->private;
 	struct eckd_count *fmt_buffer;
-	struct irb *irb = NULL;
+	struct irb irb;
 	int rpt_max, rpt_exp;
 	int fmt_buffer_size;
 	int trk_per_cyl;
@@ -2910,10 +2910,6 @@ static int dasd_eckd_check_device_format(struct dasd_device *base,
 	if (!fmt_buffer)
 		return -ENOMEM;
 
-	irb = kzalloc(sizeof(*irb), GFP_KERNEL);
-	if (!irb)
-		return -ENOMEM;
-
 	/*
 	 * A certain FICON feature subset is needed to operate in transport
 	 * mode. Additionally, the support for transport mode is implicitly
@@ -2927,7 +2923,7 @@ static int dasd_eckd_check_device_format(struct dasd_device *base,
 		tpm = 1;
 
 	rc = dasd_eckd_format_process_data(base, &cdata->expect, enable_pav,
-					   tpm, fmt_buffer, rpt_max, irb);
+					   tpm, fmt_buffer, rpt_max, &irb);
 	if (rc && rc != -EIO)
 		goto out;
 	if (rc == -EIO) {
@@ -2936,12 +2932,12 @@ static int dasd_eckd_check_device_format(struct dasd_device *base,
 		 * with an incorrect length error, we're going to retry the
 		 * check with command mode.
 		 */
-		if (tpm && scsw_cstat(&irb->scsw) == 0x40) {
+		if (tpm && scsw_cstat(&irb.scsw) == 0x40) {
 			tpm = 0;
 			rc = dasd_eckd_format_process_data(base, &cdata->expect,
 							   enable_pav, tpm,
 							   fmt_buffer, rpt_max,
-							   irb);
+							   &irb);
 			if (rc)
 				goto out;
 		} else {
@@ -2954,7 +2950,6 @@ static int dasd_eckd_check_device_format(struct dasd_device *base,
 
 out:
 	kfree(fmt_buffer);
-	kfree(irb);
 
 	return rc;
 }
