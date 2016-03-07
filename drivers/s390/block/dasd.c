@@ -2380,7 +2380,7 @@ retry:
 		/*
 		 * In some cases the 'File Protected' or 'Incorrect Length'
 		 * error might be expected and error recovery would be
-		 * unnecessary in these cases.  Check if the according suppress
+		 * unnecessary in these cases.	Check if the according suppress
 		 * bit is set.
 		 */
 		sense = dasd_get_sense(&cqr->irb);
