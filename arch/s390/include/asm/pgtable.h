@@ -801,7 +801,8 @@ static inline void __ptep_ipte_range(unsigned long address, int nr, pte_t *ptep)
  * On s390 the tlb needs to get flushed with the modification of the pte
  * if the pte is active. The only way how this can be implemented is to
  * have ptep_get_and_clear do the tlb flush. In exchange flush_tlb_range
- * is a nop.                                                                    */
+ * is a nop.
+ */
 pte_t ptep_xchg_direct(struct mm_struct *, unsigned long, pte_t *, pte_t);
 pte_t ptep_xchg_lazy(struct mm_struct *, unsigned long, pte_t *, pte_t);
 
