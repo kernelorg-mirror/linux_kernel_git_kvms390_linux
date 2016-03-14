@@ -67,7 +67,7 @@ struct zpci_fmb {
 		struct zpci_fmb_fmt1 fmt1;
 		struct zpci_fmb_fmt2 fmt2;
 	};
-} __packed __aligned(128);
+} __packed __aligned(16);
 
 enum zpci_state {
 	ZPCI_FN_STATE_RESERVED,
