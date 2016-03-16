@@ -148,7 +148,7 @@
  */
 
 /*? Text: "Query IPAssist failed. Assuming unsupported!\n" */
-/*? Text: "Stoplan for %s initiated by LGW.\n" */
+/*? Text: "Stoplan for %s initiated by LGW\n" */
 /*? Text: "Not enough memory to add new multicast entry!\n" */
 /*? Text: "Not enough memory for debug facility.\n" */
 /*? Text: "Adding multicast address failed. Table possibly full!\n" */
