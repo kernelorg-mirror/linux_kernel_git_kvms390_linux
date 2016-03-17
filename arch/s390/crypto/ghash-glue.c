@@ -11,8 +11,7 @@
 #include <linux/module.h>
 #include <linux/cpufeature.h>
 #include <asm/fpu/api.h>
-
-#include "crypt_s390.h"
+#include <asm/cpacf.h>
 
 void ghash_vx_init(unsigned char *key, unsigned char *key8);
 void ghash_vx(const u8 *src, unsigned int len, const u8 *key, u8 *hash);
@@ -87,8 +86,8 @@ static int ghash_update(struct shash_desc *desc,
 
 		if (!dctx->bytes) {
 			if (!MACHINE_HAS_VX) {
-				ret = crypt_s390_kimd(KIMD_GHASH, dctx, buf,
-						      GHASH_BLOCK_SIZE);
+				ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx,
+						 buf, GHASH_BLOCK_SIZE);
 				if (ret != GHASH_BLOCK_SIZE)
 					return -EIO;
 			} else {
@@ -104,7 +103,7 @@ static int ghash_update(struct shash_desc *desc,
 	n = srclen & ~(GHASH_BLOCK_SIZE - 1);
 	if (n) {
 		if (!MACHINE_HAS_VX) {
-			ret = crypt_s390_kimd(KIMD_GHASH, dctx, src, n);
+			ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx, src, n);
 			if (ret != n)
 				return -EIO;
 		} else {
@@ -139,7 +138,8 @@ static int ghash_flush(struct ghash_desc_ctx *dctx)
 		pos = buf + (GHASH_BLOCK_SIZE - dctx->bytes);
 		memset(pos, 0, dctx->bytes);
 
-		ret = crypt_s390_kimd(KIMD_GHASH, dctx, buf, GHASH_BLOCK_SIZE);
+		ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx,
+				 buf, GHASH_BLOCK_SIZE);
 		if (ret != GHASH_BLOCK_SIZE)
 			return -EIO;
 
@@ -175,7 +175,7 @@ static struct shash_alg ghash_alg = {
 	.base		= {
 		.cra_name		= "ghash",
 		.cra_driver_name	= "ghash-s390",
-		.cra_priority		= CRYPT_S390_PRIORITY,
+		.cra_priority		= 300,
 		.cra_flags		= CRYPTO_ALG_TYPE_SHASH,
 		.cra_blocksize		= GHASH_BLOCK_SIZE,
 		.cra_ctxsize		= sizeof(struct ghash_ctx),
@@ -185,9 +185,7 @@ static struct shash_alg ghash_alg = {
 
 static int __init ghash_mod_init(void)
 {
-	unsigned int mask = CRYPT_S390_MSA | CRYPT_S390_MSA4;
-
-	ghash_kimd_available = crypt_s390_func_available(KIMD_GHASH, mask);
+	ghash_kimd_available = cpacf_query(CPACF_KIMD, CPACF_KIMD_GHASH);
 
 	if (!ghash_kimd_available && !MACHINE_HAS_VX)
 		return -ENODEV;
