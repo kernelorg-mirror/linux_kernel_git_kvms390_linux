@@ -556,7 +556,7 @@ struct dasd_attention_data {
 #define DASD_FLAG_SAFE_OFFLINE_RUNNING	11	/* safe offline running */
 #define DASD_FLAG_ABORTALL	12	/* Abort all noretry requests */
 #define DASD_FLAG_PATH_VERIFY	13	/* Path verification worker running */
-#define DASD_FLAG_SUC           14	/* unhandled summary unit check */
+#define DASD_FLAG_SUC		14	/* unhandled summary unit check */
 
 #define DASD_SLEEPON_START_TAG	((void *) 1)
 #define DASD_SLEEPON_END_TAG	((void *) 2)
