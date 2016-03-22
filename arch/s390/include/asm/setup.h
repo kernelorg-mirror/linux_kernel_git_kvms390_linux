@@ -31,6 +31,7 @@
 #define MACHINE_FLAG_VX		_BITUL(13)
 #define MACHINE_FLAG_CAD	_BITUL(14)
 #define MACHINE_FLAG_TLB_GUEST	_BITUL(15)
+#define MACHINE_FLAG_NX		_BITUL(16)
 
 #define LPP_MAGIC		_BITUL(31)
 #define LPP_PFAULT_PID_MASK	_AC(0xffffffff, UL)
@@ -73,6 +74,7 @@ extern void detect_memory_memblock(void);
 #define MACHINE_HAS_VX		(S390_lowcore.machine_flags & MACHINE_FLAG_VX)
 #define MACHINE_HAS_CAD		(S390_lowcore.machine_flags & MACHINE_FLAG_CAD)
 #define MACHINE_HAS_TLB_GUEST	(S390_lowcore.machine_flags & MACHINE_FLAG_TLB_GUEST)
+#define MACHINE_HAS_NX		(S390_lowcore.machine_flags & MACHINE_FLAG_NX)
 
 /*
  * Console mode. Override with conmode=

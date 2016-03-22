@@ -385,6 +385,7 @@ ENTRY(system_call)
 	brasl	%r14,do_signal
 	TSTMSK	__PT_FLAGS(%r11),_PIF_SYSCALL
 	jno	.Lsysc_return
+.Lsysc_do_syscall:
 	lmg	%r2,%r7,__PT_R2(%r11)	# load svc arguments
 	lg	%r10,__TI_sysc_table(%r12)	# address of system call table
 	lghi	%r8,0			# svc 0 returns -ENOSYS
@@ -534,6 +535,8 @@ ENTRY(pgm_check_handler)
 	LOCKDEP_SYS_EXIT
 	tm	__PT_PSW+1(%r11),0x01	# returning to user ?
 	jno	.Lsysc_restore
+	TSTMSK	__PT_FLAGS(%r11),_PIF_SYSCALL
+	jo	.Lsysc_do_syscall
 	j	.Lsysc_tif
 
 #
