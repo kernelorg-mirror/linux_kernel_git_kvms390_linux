@@ -15,11 +15,11 @@
 /*
  * Instruction opcodes for the CPACF instructions
  */
-#define CPACF_KMAC		0xb91e		/* MSA  */
-#define CPACF_KM		0xb92e		/* MSA  */
-#define CPACF_KMC		0xb92f		/* MSA  */
-#define CPACF_KIMD		0xb93e		/* MSA  */
-#define CPACF_KLMD		0xb93f		/* MSA  */
+#define CPACF_KMAC		0xb91e		/* MSA	*/
+#define CPACF_KM		0xb92e		/* MSA	*/
+#define CPACF_KMC		0xb92f		/* MSA	*/
+#define CPACF_KIMD		0xb93e		/* MSA	*/
+#define CPACF_KLMD		0xb93f		/* MSA	*/
 #define CPACF_PCC		0xb92c		/* MSA4 */
 #define CPACF_KMCTR		0xb92d		/* MSA4 */
 #define CPACF_PPNO		0xb93c		/* MSA5 */
