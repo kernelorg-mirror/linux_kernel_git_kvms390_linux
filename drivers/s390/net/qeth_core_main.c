@@ -6085,6 +6085,7 @@ static int qeth_send_checksum_on(struct qeth_card *card, int cstype)
 static int qeth_set_ipa_csum(struct qeth_card *card, int on, int cstype)
 {
 	int rc;
+
 	if (on) {
 		rc = qeth_send_checksum_on(card, cstype);
 		if (rc)
@@ -6105,7 +6106,6 @@ static int qeth_set_ipa_tso(struct qeth_card *card, int on)
 	QETH_CARD_TEXT(card, 3, "sttso");
 
 	if (on) {
-
 		rc = qeth_send_simple_setassparms(card, IPA_OUTBOUND_TSO,
 						  IPA_CMD_ASS_START, 0);
 		if (rc) {
@@ -6126,7 +6126,7 @@ int qeth_set_features(struct net_device *dev, netdev_features_t features)
 {
 	struct qeth_card *card = dev->ml_priv;
 	netdev_features_t changed = card->dev->features ^ features;
-	int rc = 0;
+	int rc = 0, rc1;
 
 	QETH_DBF_TEXT(SETUP, 2, "setfeat");
 	QETH_DBF_HEX(SETUP, 2, &features, sizeof(features));
@@ -6139,12 +6139,18 @@ int qeth_set_features(struct net_device *dev, netdev_features_t features)
 		rc = qeth_set_ipa_csum(card,
 				       features & NETIF_F_IP_CSUM ? 1 : 0,
 				       IPA_OUTBOUND_CHECKSUM);
-	if ((changed & NETIF_F_RXCSUM))
-		rc |= qeth_set_ipa_csum(card,
+	if ((changed & NETIF_F_RXCSUM)) {
+		rc1 = qeth_set_ipa_csum(card,
 					features & NETIF_F_RXCSUM ? 1 : 0,
 					IPA_INBOUND_CHECKSUM);
-	if ((changed & NETIF_F_TSO))
-		rc |= qeth_set_ipa_tso(card, features & NETIF_F_TSO ? 1 : 0);
+		if (!rc)
+			rc = rc1;
+	}
+	if ((changed & NETIF_F_TSO)) {
+		rc1 = qeth_set_ipa_tso(card, features & NETIF_F_TSO ? 1 : 0);
+		if (!rc)
+			rc = rc1;
+	}
 	return rc;
 }
 EXPORT_SYMBOL_GPL(qeth_set_features);
