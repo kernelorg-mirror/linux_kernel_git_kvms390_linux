@@ -6126,7 +6126,7 @@ int qeth_set_features(struct net_device *dev, netdev_features_t features)
 {
 	struct qeth_card *card = dev->ml_priv;
 	netdev_features_t changed = card->dev->features ^ features;
-	int rc = 0, rc1;
+	int rc = 0;
 
 	QETH_DBF_TEXT(SETUP, 2, "setfeat");
 	QETH_DBF_HEX(SETUP, 2, &features, sizeof(features));
@@ -6139,19 +6139,13 @@ int qeth_set_features(struct net_device *dev, netdev_features_t features)
 		rc = qeth_set_ipa_csum(card,
 				       features & NETIF_F_IP_CSUM ? 1 : 0,
 				       IPA_OUTBOUND_CHECKSUM);
-	if ((changed & NETIF_F_RXCSUM)) {
-		rc1 = qeth_set_ipa_csum(card,
+	if ((changed & NETIF_F_RXCSUM))
+		rc |= qeth_set_ipa_csum(card,
 					features & NETIF_F_RXCSUM ? 1 : 0,
 					IPA_INBOUND_CHECKSUM);
-		if (!rc)
-			rc = rc1;
-	}
-	if ((changed & NETIF_F_TSO)) {
-		rc1 = qeth_set_ipa_tso(card, features & NETIF_F_TSO ? 1 : 0);
-		if (!rc)
-			rc = rc1;
-	}
-	return rc;
+	if ((changed & NETIF_F_TSO))
+		rc |= qeth_set_ipa_tso(card, features & NETIF_F_TSO ? 1 : 0);
+	return rc ? -EIO : 0;
 }
 EXPORT_SYMBOL_GPL(qeth_set_features);
 
