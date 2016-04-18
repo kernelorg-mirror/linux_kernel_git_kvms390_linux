@@ -10,3 +10,5 @@
  * User action:
  * The user can examine /proc/sysinfo for CPU capability values.
  */
+/*? Text: "Open for Business request failed with response code 0x%04x\n" */
+/*? Text: "SCLP receiver did not register to receive Configuration Management Data Events.\n" */
