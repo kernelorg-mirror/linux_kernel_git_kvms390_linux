@@ -66,7 +66,7 @@ static int sclp_ctl_ioctl_sccb(void __user *user_area)
 	sccb = (void *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
 	if (!sccb)
 		return -ENOMEM;
-	copied = PAGE_SIZE - 
+	copied = PAGE_SIZE -
 		copy_from_user(sccb, u64_to_uptr(ctl_sccb.sccb), PAGE_SIZE);
 	if (offsetof(struct sccb_header, length) +
 	    sizeof(sccb->length) > copied || sccb->length > copied) {
