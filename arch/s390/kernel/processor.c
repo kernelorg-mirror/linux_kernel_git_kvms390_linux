@@ -127,8 +127,8 @@ static void show_cpu_mhz(struct seq_file *m, unsigned long n)
 {
 	struct cpu_info *c = per_cpu_ptr(&cpu_info, n);
 
-	seq_printf(m, "cpu Mhz dynamic\t: %d\n", c->cpu_mhz_dynamic);
-	seq_printf(m, "cpu Mhz static\t: %d\n", c->cpu_mhz_static);
+	seq_printf(m, "cpu Mhz dynamic : %d\n", c->cpu_mhz_dynamic);
+	seq_printf(m, "cpu Mhz static  : %d\n", c->cpu_mhz_static);
 }
 
 /*
@@ -142,7 +142,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
 		show_cpu_summary(m, v);
 	if (!machine_has_cpu_mhz)
 		return 0;
-	seq_printf(m, "\ncpu\t\t: %ld\n", n);
+	seq_printf(m, "\ncpu             : %ld\n", n);
 	show_cpu_mhz(m, n);
 	return 0;
 }
