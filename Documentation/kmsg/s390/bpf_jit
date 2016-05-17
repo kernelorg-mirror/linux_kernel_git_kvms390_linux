@@ -8,8 +8,8 @@
  * Parameter:
  *   @1: Instruction opcode
  * Description:
- * The BPF JIT compiler has found an unknown instruction in the BPF program. It
- * stops the compilation and the interpreter is used as fallback.
+ * The BPF JIT compiler has found an unknown instruction in the BPF program
+ * and therefore stops the compilation. As a fallback, the interpreter is used.
  * User action:
- * Report problem together with the error message to your support organization.
+ * Report this problem and the error message to your support organization.
  */
