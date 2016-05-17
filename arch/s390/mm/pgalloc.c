@@ -15,9 +15,9 @@
 
 #ifdef CONFIG_PGSTE
 
-static int page_table_allocate_pgste_min;
+static int page_table_allocate_pgste_min = 0;
 static int page_table_allocate_pgste_max = 1;
-int page_table_allocate_pgste;
+int page_table_allocate_pgste = 0;
 EXPORT_SYMBOL(page_table_allocate_pgste);
 
 static struct ctl_table page_table_sysctl[] = {
@@ -47,7 +47,7 @@ static int __init page_table_register_sysctl(void)
 {
 	return register_sysctl_table(page_table_sysctl_dir) ? 0 : -ENOMEM;
 }
-device_initcall(page_table_register_sysctl);
+__initcall(page_table_register_sysctl);
 
 #endif /* CONFIG_PGSTE */
 
