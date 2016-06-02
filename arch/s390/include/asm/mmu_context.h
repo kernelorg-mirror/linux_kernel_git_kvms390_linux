@@ -19,7 +19,7 @@ static inline int init_new_context(struct task_struct *tsk,
 	INIT_LIST_HEAD(&mm->context.pgtable_list);
 	INIT_LIST_HEAD(&mm->context.gmap_list);
 	cpumask_clear(&mm->context.cpu_attach_mask);
-	atomic_set(&mm->context.flush_count, 0);
+	atomic_set(&mm->context.attach_count, 0);
 	mm->context.flush_mm = 0;
 #ifdef CONFIG_PGSTE
 	mm->context.alloc_pgste = page_table_allocate_pgste;
@@ -90,12 +90,15 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	S390_lowcore.user_asce = next->context.asce;
 	if (prev == next)
 		return;
-	cpumask_set_cpu(cpu, &next->context.cpu_attach_mask);
-	cpumask_set_cpu(cpu, mm_cpumask(next));
+	if (MACHINE_HAS_TLB_LC)
+		cpumask_set_cpu(cpu, &next->context.cpu_attach_mask);
 	/* Clear old ASCE by loading the kernel ASCE. */
 	__ctl_load(S390_lowcore.kernel_asce, 1, 1);
 	__ctl_load(S390_lowcore.kernel_asce, 7, 7);
-	cpumask_clear_cpu(cpu, &prev->context.cpu_attach_mask);
+	atomic_inc(&next->context.attach_count);
+	atomic_dec(&prev->context.attach_count);
+	if (MACHINE_HAS_TLB_LC)
+		cpumask_clear_cpu(cpu, &prev->context.cpu_attach_mask);
 }
 
 #define finish_arch_post_lock_switch finish_arch_post_lock_switch
@@ -107,9 +110,10 @@ static inline void finish_arch_post_lock_switch(void)
 	load_kernel_asce();
 	if (mm) {
 		preempt_disable();
-		while (atomic_read(&mm->context.flush_count))
+		while (atomic_read(&mm->context.attach_count) >> 16)
 			cpu_relax();
 
+		cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
 		if (mm->context.flush_mm)
 			__tlb_flush_mm(mm);
 		preempt_enable();
@@ -124,6 +128,7 @@ static inline void activate_mm(struct mm_struct *prev,
                                struct mm_struct *next)
 {
 	switch_mm(prev, next, current);
+	cpumask_set_cpu(smp_processor_id(), mm_cpumask(next));
 	set_user_asce(next);
 }
 

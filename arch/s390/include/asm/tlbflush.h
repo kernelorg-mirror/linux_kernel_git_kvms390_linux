@@ -57,7 +57,7 @@ static inline void __tlb_flush_global(void)
 static inline void __tlb_flush_full(struct mm_struct *mm)
 {
 	preempt_disable();
-	atomic_inc(&mm->context.flush_count);
+	atomic_add(0x10000, &mm->context.attach_count);
 	if (cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
 		/* Local TLB flush */
 		__tlb_flush_local();
@@ -69,7 +69,7 @@ static inline void __tlb_flush_full(struct mm_struct *mm)
 			cpumask_copy(mm_cpumask(mm),
 				     &mm->context.cpu_attach_mask);
 	}
-	atomic_dec(&mm->context.flush_count);
+	atomic_sub(0x10000, &mm->context.attach_count);
 	preempt_enable();
 }
 
@@ -78,9 +78,12 @@ static inline void __tlb_flush_full(struct mm_struct *mm)
  */
 static inline void __tlb_flush_asce(struct mm_struct *mm, unsigned long asce)
 {
+	int active, count;
+
 	preempt_disable();
-	atomic_inc(&mm->context.flush_count);
-	if (MACHINE_HAS_TLB_LC &&
+	active = (mm == current->active_mm) ? 1 : 0;
+	count = atomic_add_return(0x10000, &mm->context.attach_count);
+	if (MACHINE_HAS_TLB_LC && (count & 0xffff) <= active &&
 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
 		__tlb_flush_idte_local(asce);
 	} else {
@@ -93,7 +96,7 @@ static inline void __tlb_flush_asce(struct mm_struct *mm, unsigned long asce)
 			cpumask_copy(mm_cpumask(mm),
 				     &mm->context.cpu_attach_mask);
 	}
-	atomic_dec(&mm->context.flush_count);
+	atomic_sub(0x10000, &mm->context.attach_count);
 	preempt_enable();
 }
 

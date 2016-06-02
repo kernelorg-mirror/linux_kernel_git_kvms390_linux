@@ -6,7 +6,7 @@
 
 typedef struct {
 	cpumask_t cpu_attach_mask;
-	atomic_t flush_count;
+	atomic_t attach_count;
 	unsigned int flush_mm;
 	spinlock_t list_lock;
 	struct list_head pgtable_list;

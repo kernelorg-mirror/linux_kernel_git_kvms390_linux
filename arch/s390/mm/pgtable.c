@@ -27,37 +27,40 @@
 static inline pte_t ptep_flush_direct(struct mm_struct *mm,
 				      unsigned long addr, pte_t *ptep)
 {
+	int active, count;
 	pte_t old;
 
 	old = *ptep;
 	if (unlikely(pte_val(old) & _PAGE_INVALID))
 		return old;
-	atomic_inc(&mm->context.flush_count);
-	if (MACHINE_HAS_TLB_LC &&
+	active = (mm == current->active_mm) ? 1 : 0;
+	count = atomic_add_return(0x10000, &mm->context.attach_count);
+	if (MACHINE_HAS_TLB_LC && (count & 0xffff) <= active &&
 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id())))
 		__ptep_ipte_local(addr, ptep);
 	else
 		__ptep_ipte(addr, ptep);
-	atomic_dec(&mm->context.flush_count);
+	atomic_sub(0x10000, &mm->context.attach_count);
 	return old;
 }
 
 static inline pte_t ptep_flush_lazy(struct mm_struct *mm,
 				    unsigned long addr, pte_t *ptep)
 {
+	int active, count;
 	pte_t old;
 
 	old = *ptep;
 	if (unlikely(pte_val(old) & _PAGE_INVALID))
 		return old;
-	atomic_inc(&mm->context.flush_count);
-	if (cpumask_equal(&mm->context.cpu_attach_mask,
-			  cpumask_of(smp_processor_id()))) {
+	active = (mm == current->active_mm) ? 1 : 0;
+	count = atomic_add_return(0x10000, &mm->context.attach_count);
+	if ((count & 0xffff) <= active) {
 		pte_val(*ptep) |= _PAGE_INVALID;
 		mm->context.flush_mm = 1;
 	} else
 		__ptep_ipte(addr, ptep);
-	atomic_dec(&mm->context.flush_count);
+	atomic_sub(0x10000, &mm->context.attach_count);
 	return old;
 }
 
@@ -282,6 +285,7 @@ EXPORT_SYMBOL(ptep_modify_prot_commit);
 static inline pmd_t pmdp_flush_direct(struct mm_struct *mm,
 				      unsigned long addr, pmd_t *pmdp)
 {
+	int active, count;
 	pmd_t old;
 
 	old = *pmdp;
@@ -291,34 +295,36 @@ static inline pmd_t pmdp_flush_direct(struct mm_struct *mm,
 		__pmdp_csp(pmdp);
 		return old;
 	}
-	atomic_inc(&mm->context.flush_count);
-	if (MACHINE_HAS_TLB_LC &&
+	active = (mm == current->active_mm) ? 1 : 0;
+	count = atomic_add_return(0x10000, &mm->context.attach_count);
+	if (MACHINE_HAS_TLB_LC && (count & 0xffff) <= active &&
 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id())))
 		__pmdp_idte_local(addr, pmdp);
 	else
 		__pmdp_idte(addr, pmdp);
-	atomic_dec(&mm->context.flush_count);
+	atomic_sub(0x10000, &mm->context.attach_count);
 	return old;
 }
 
 static inline pmd_t pmdp_flush_lazy(struct mm_struct *mm,
 				    unsigned long addr, pmd_t *pmdp)
 {
+	int active, count;
 	pmd_t old;
 
 	old = *pmdp;
 	if (pmd_val(old) & _SEGMENT_ENTRY_INVALID)
 		return old;
-	atomic_inc(&mm->context.flush_count);
-	if (cpumask_equal(&mm->context.cpu_attach_mask,
-			  cpumask_of(smp_processor_id()))) {
+	active = (mm == current->active_mm) ? 1 : 0;
+	count = atomic_add_return(0x10000, &mm->context.attach_count);
+	if ((count & 0xffff) <= active) {
 		pmd_val(*pmdp) |= _SEGMENT_ENTRY_INVALID;
 		mm->context.flush_mm = 1;
 	} else if (MACHINE_HAS_IDTE)
 		__pmdp_idte(addr, pmdp);
 	else
 		__pmdp_csp(pmdp);
-	atomic_dec(&mm->context.flush_count);
+	atomic_sub(0x10000, &mm->context.attach_count);
 	return old;
 }
 
