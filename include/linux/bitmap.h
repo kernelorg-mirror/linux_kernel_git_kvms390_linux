@@ -267,8 +267,6 @@ static inline int bitmap_equal(const unsigned long *src1,
 {
 	if (small_const_nbits(nbits))
 		return ! ((*src1 ^ *src2) & BITMAP_LAST_WORD_MASK(nbits));
-	else if (__builtin_constant_p(nbits) && (nbits % 8) == 0)
-		return !memcmp(src1, src2, nbits / 8);
 	else
 		return __bitmap_equal(src1, src2, nbits);
 }
