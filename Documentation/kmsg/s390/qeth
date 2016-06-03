@@ -44,6 +44,21 @@
  */
 
 /*?
+ * Text: "%s: Device recovery failed to restore all offload features\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * The qeth device driver performed a recovery operation on a qeth device. Part
+ * of the recovery is to restore the offload features that were enabled before
+ * the recovery. At least one of those offload features could not be restored.
+ * User action:
+ * Check which offload features are enabled on the device, for example with
+ * the "ethtool -k" command. Try to explicitly re-enable the missing offload
+ * features for the device, for example with the "ethtool -K" command.
+ */
+
+/*?
  * Text: "%s: The link for interface %s on CHPID 0x%X failed\n"
  * Severity: Warning
  * Parameter:
