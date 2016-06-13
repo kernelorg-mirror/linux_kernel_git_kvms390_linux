@@ -33,6 +33,7 @@ struct gmap *gmap_alloc(struct mm_struct *mm, unsigned long limit)
 	struct page *page;
 	unsigned long *table;
 	unsigned long etype, atype;
+	unsigned long gmap_asce;
 
 	if (limit < (1UL << 31)) {
 		limit = (1UL << 31) - 1;
@@ -72,6 +73,11 @@ struct gmap *gmap_alloc(struct mm_struct *mm, unsigned long limit)
 	gmap->asce_end = limit;
 	down_write(&mm->mmap_sem);
 	list_add(&gmap->list, &mm->context.gmap_list);
+	if (list_is_singular(&mm->context.gmap_list))
+		gmap_asce = gmap->asce;
+	else
+		gmap_asce = -1UL;
+	WRITE_ONCE(mm->context.gmap_asce, gmap_asce);
 	up_write(&mm->mmap_sem);
 	return gmap;
 
@@ -121,6 +127,7 @@ static void gmap_radix_tree_free(struct radix_tree_root *root)
 void gmap_free(struct gmap *gmap)
 {
 	struct page *page, *next;
+	unsigned long gmap_asce;
 
 	/* Flush tlb. */
 	if (MACHINE_HAS_IDTE)
@@ -135,6 +142,14 @@ void gmap_free(struct gmap *gmap)
 	gmap_radix_tree_free(&gmap->host_to_guest);
 	down_write(&gmap->mm->mmap_sem);
 	list_del(&gmap->list);
+	if (list_empty(&gmap->mm->context.gmap_list))
+		gmap_asce = 0;
+	else if (list_is_singular(&gmap->mm->context.gmap_list))
+		gmap_asce = list_first_entry(&gmap->mm->context.gmap_list,
+					     struct gmap, list)->asce;
+	else
+		gmap_asce = -1UL;
+	WRITE_ONCE(gmap->mm->context.gmap_asce, gmap_asce);
 	up_write(&gmap->mm->mmap_sem);
 	kfree(gmap);
 }
