@@ -50,12 +50,12 @@ static inline  u64 qeth_l3_ipaddr_hash(struct qeth_ipaddr *addr)
 		point = (u8 *) &addr->u.a6.addr;
 		ret = get_unaligned((u64 *)point) ^
 			get_unaligned((u64 *) (point + 8));
-	 }
-	 if (addr->proto == QETH_PROT_IPV4) {
+	}
+	if (addr->proto == QETH_PROT_IPV4) {
 		point = (u8 *) &addr->u.a4.addr;
 		ret = get_unaligned((u32 *) point);
-	 }
-	 return ret;
+	}
+	return ret;
 }
 
 struct qeth_ipato_entry {
