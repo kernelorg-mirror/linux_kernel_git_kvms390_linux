@@ -6070,8 +6070,8 @@ static int qeth_send_checksum_on(struct qeth_card *card, int cstype)
 
 	rc = qeth_send_simple_setassparms(card, cstype, IPA_CMD_ASS_START, 0);
 	if (rc) {
-		dev_warn(&card->gdev->dev, "Starting HW checksumming for %s "
-			 "failed, using SW checksumming\n",
+		dev_warn(&card->gdev->dev,
+			 "Starting HW checksumming for %s failed, using SW checksumming\n",
 			 QETH_CARD_IFNAME(card));
 		return rc;
 	}
@@ -6080,8 +6080,8 @@ static int qeth_send_checksum_on(struct qeth_card *card, int cstype)
 	rc = qeth_send_simple_setassparms(card, cstype, IPA_CMD_ASS_ENABLE,
 					  rxtx_arg);
 	if (rc) {
-		dev_warn(&card->gdev->dev, "Enabling HW checksumming for %s "
-			 "failed, using SW checksumming\n",
+		dev_warn(&card->gdev->dev,
+			 "Enabling HW checksumming for %s failed, using SW checksumming\n",
 			 QETH_CARD_IFNAME(card));
 		return rc;
 	}
@@ -6118,8 +6118,8 @@ static int qeth_set_ipa_tso(struct qeth_card *card, int on)
 		rc = qeth_send_simple_setassparms(card, IPA_OUTBOUND_TSO,
 						  IPA_CMD_ASS_START, 0);
 		if (rc) {
-			dev_warn(&card->gdev->dev, "Starting outbound TCP "
-				 "segmentation offload for %s failed\n",
+			dev_warn(&card->gdev->dev,
+			 	 "Starting outbound TCP segmentation offload for %s failed\n",
 				 QETH_CARD_IFNAME(card));
 			return -EIO;
 		}
