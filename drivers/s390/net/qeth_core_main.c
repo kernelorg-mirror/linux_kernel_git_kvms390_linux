@@ -6119,7 +6119,7 @@ static int qeth_set_ipa_tso(struct qeth_card *card, int on)
 						  IPA_CMD_ASS_START, 0);
 		if (rc) {
 			dev_warn(&card->gdev->dev,
-			 	 "Starting outbound TCP segmentation offload for %s failed\n",
+				 "Starting outbound TCP segmentation offload for %s failed\n",
 				 QETH_CARD_IFNAME(card));
 			return -EIO;
 		}
