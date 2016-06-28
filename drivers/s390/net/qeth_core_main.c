@@ -1759,8 +1759,8 @@ qeth_detect_enforced_discipline(struct qeth_card *card)
 		   sizeof(response) - 1, NULL);
 
 	/* Response format:
-	 * Adapter xxxx.Pxx Type: QDIO      Name: Name      Devices: 3
-	 * MAC: xx-xx-xx-xx-xx-xx         VSWITCH: OWNER VSWITCHNAME
+	 * Adapter xxxx.Pxx Type: QDIO	    Name: Name	    Devices: 3
+	 * MAC: xx-xx-xx-xx-xx-xx	  VSWITCH: OWNER VSWITCHNAME
 	 */
 	vswitch_or_lan = strstr(response, "VSWITCH:");
 	if (!vswitch_or_lan) {
