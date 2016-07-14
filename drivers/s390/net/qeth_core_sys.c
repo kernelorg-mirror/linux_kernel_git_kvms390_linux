@@ -411,12 +411,6 @@ static ssize_t qeth_dev_layer2_store(struct device *dev,
 		goto out;
 	}
 
-	if (card->info.guestlan &&
-	    card->options.layer2 != -1) {
-		rc = -EOPNOTSUPP;
-		goto out;
-	}
-
 	if (card->options.layer2 == newdis)
 		goto out;
 	else {
