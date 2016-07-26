@@ -876,6 +876,7 @@ static inline pte_t pte_mkhuge(pte_t pte)
 #define	IPTE_LOCAL	1
 
 #define IPTE_GUEST_ASCE	0x800
+#define IPTE_NODAT	0x400
 
 static inline void __ptep_ipte(unsigned long address, pte_t *ptep,
 			       unsigned long opt, unsigned long asce,
@@ -1241,6 +1242,7 @@ static inline void __pmdp_csp(pmd_t *pmdp)
 
 #define IDTE_PTOA	0x0800
 #define IDTE_GUEST_ASCE	0x2000
+#define IDTE_NODAT	0x1000
 
 static inline void __pmdp_idte(unsigned long addr, pmd_t *pmdp,
 			       unsigned long opt, unsigned long asce,
