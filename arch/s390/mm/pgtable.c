@@ -25,14 +25,14 @@
 #include <asm/mmu_context.h>
 
 static inline void ptep_ipte_local(struct mm_struct *mm, unsigned long addr,
-				   pte_t *ptep)
+				   pte_t *ptep, int nodat)
 {
 	unsigned long opt, asce;
 
 	if (MACHINE_HAS_TLB_GUEST) {
 		opt = 0;
 		asce = READ_ONCE(mm->context.gmap_asce);
-		if (asce == 0UL)
+		if (asce == 0UL || nodat)
 			opt |= IPTE_NODAT;
 		if (asce != -1UL)
 			opt |= IPTE_GUEST_ASCE;
@@ -45,14 +45,14 @@ static inline void ptep_ipte_local(struct mm_struct *mm, unsigned long addr,
 }
 
 static inline void ptep_ipte_global(struct mm_struct *mm, unsigned long addr,
-				    pte_t *ptep)
+				    pte_t *ptep, int nodat)
 {
 	unsigned long opt, asce;
 
 	if (MACHINE_HAS_TLB_GUEST) {
 		opt = 0;
 		asce = READ_ONCE(mm->context.gmap_asce);
-		if (asce == 0UL)
+		if (asce == 0UL || nodat)
 			opt |= IPTE_NODAT;
 		if (asce != -1UL)
 			opt |= IPTE_GUEST_ASCE;
@@ -65,7 +65,8 @@ static inline void ptep_ipte_global(struct mm_struct *mm, unsigned long addr,
 }
 
 static inline pte_t ptep_flush_direct(struct mm_struct *mm,
-				      unsigned long addr, pte_t *ptep)
+				      unsigned long addr, pte_t *ptep,
+				      int nodat)
 {
 	pte_t old;
 
@@ -75,15 +76,16 @@ static inline pte_t ptep_flush_direct(struct mm_struct *mm,
 	atomic_inc(&mm->context.flush_count);
 	if (MACHINE_HAS_TLB_LC &&
 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id())))
-		ptep_ipte_local(mm, addr, ptep);
+		ptep_ipte_local(mm, addr, ptep, nodat);
 	else
-		ptep_ipte_global(mm, addr, ptep);
+		ptep_ipte_global(mm, addr, ptep, nodat);
 	atomic_dec(&mm->context.flush_count);
 	return old;
 }
 
 static inline pte_t ptep_flush_lazy(struct mm_struct *mm,
-				    unsigned long addr, pte_t *ptep)
+				    unsigned long addr, pte_t *ptep,
+				    int nodat)
 {
 	pte_t old;
 
@@ -96,7 +98,7 @@ static inline pte_t ptep_flush_lazy(struct mm_struct *mm,
 		pte_val(*ptep) |= _PAGE_INVALID;
 		mm->context.flush_mm = 1;
 	} else
-		ptep_ipte_global(mm, addr, ptep);
+		ptep_ipte_global(mm, addr, ptep, nodat);
 	atomic_dec(&mm->context.flush_count);
 	return old;
 }
@@ -264,10 +266,12 @@ pte_t ptep_xchg_direct(struct mm_struct *mm, unsigned long addr,
 {
 	pgste_t pgste;
 	pte_t old;
+	int nodat;
 
 	preempt_disable();
 	pgste = ptep_xchg_start(mm, addr, ptep);
-	old = ptep_flush_direct(mm, addr, ptep);
+	nodat = !!(pgste_val(pgste) & _PGSTE_GPS_NODAT);
+	old = ptep_flush_direct(mm, addr, ptep, nodat);
 	ptep_xchg_commit(mm, addr, ptep, pgste, old, new);
 	preempt_enable();
 	return old;
@@ -279,10 +283,12 @@ pte_t ptep_xchg_lazy(struct mm_struct *mm, unsigned long addr,
 {
 	pgste_t pgste;
 	pte_t old;
+	int nodat;
 
 	preempt_disable();
 	pgste = ptep_xchg_start(mm, addr, ptep);
-	old = ptep_flush_lazy(mm, addr, ptep);
+	nodat = !!(pgste_val(pgste) & _PGSTE_GPS_NODAT);
+	old = ptep_flush_lazy(mm, addr, ptep, nodat);
 	ptep_xchg_commit(mm, addr, ptep, pgste, old, new);
 	preempt_enable();
 	return old;
@@ -294,10 +300,12 @@ pte_t ptep_modify_prot_start(struct mm_struct *mm, unsigned long addr,
 {
 	pgste_t pgste;
 	pte_t old;
+	int nodat;
 
 	preempt_disable();
 	pgste = ptep_xchg_start(mm, addr, ptep);
-	old = ptep_flush_lazy(mm, addr, ptep);
+	nodat = !!(pgste_val(pgste) & _PGSTE_GPS_NODAT);
+	old = ptep_flush_lazy(mm, addr, ptep, nodat);
 	if (mm_has_pgste(mm)) {
 		pgste = pgste_update_all(old, pgste, mm);
 		pgste_set(ptep, pgste);
@@ -637,6 +645,7 @@ bool test_and_clear_guest_dirty(struct mm_struct *mm, unsigned long addr)
 	pte_t *ptep;
 	pte_t pte;
 	bool dirty;
+	int nodat;
 
 	ptep = get_locked_pte(mm, addr, &ptl);
 	if (unlikely(!ptep))
@@ -648,7 +657,8 @@ bool test_and_clear_guest_dirty(struct mm_struct *mm, unsigned long addr)
 	pte = *ptep;
 	if (dirty && (pte_val(pte) & _PAGE_PRESENT)) {
 		pgste = pgste_ipte_notify(mm, addr, ptep, pgste);
-		ptep_ipte_global(mm, addr, ptep);
+		nodat = !!(pgste_val(pgste) & _PGSTE_GPS_NODAT);
+		ptep_ipte_global(mm, addr, ptep, nodat);
 		if (MACHINE_HAS_ESOP || !(pte_val(pte) & _PAGE_WRITE))
 			pte_val(pte) |= _PAGE_PROTECT;
 		else
