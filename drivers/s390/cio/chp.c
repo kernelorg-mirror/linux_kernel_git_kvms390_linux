@@ -689,8 +689,6 @@ static void cfg_func(struct work_struct *work)
 
 	spin_lock(&cfg_lock);
 	t = chp_cfg_fetch_task(&chpid);
-	if (t != cfg_none)
-		cfg_set_task(chpid, cfg_none);
 	spin_unlock(&cfg_lock);
 
 	switch (t) {
@@ -720,6 +718,10 @@ static void cfg_func(struct work_struct *work)
 		wake_up_interruptible(&cfg_wait_queue);
 		return;
 	}
+	spin_lock(&cfg_lock);
+	if (t == cfg_get_task(chpid))
+		cfg_set_task(chpid, cfg_none);
+	spin_unlock(&cfg_lock);
 	schedule_work(&cfg_work);
 }
 
