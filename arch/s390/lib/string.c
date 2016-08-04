@@ -241,7 +241,7 @@ static inline int clcle(const char *s1, unsigned long l1,
 			int *diff)
 {
 	register unsigned long r2 asm("2") = (unsigned long) s1;
-	register unsigned long r3 asm("3") = (unsigned long) l1;
+	register unsigned long r3 asm("3") = (unsigned long) l2;
 	register unsigned long r4 asm("4") = (unsigned long) s2;
 	register unsigned long r5 asm("5") = (unsigned long) l2;
 	int cc;
