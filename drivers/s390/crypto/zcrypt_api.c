@@ -87,7 +87,7 @@ static ssize_t zcrypt_type_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%s\n", zdev->type_string);
 }
 
-static DEVICE_ATTR(type, S_IRUSR | S_IRGRP | S_IROTH, zcrypt_type_show, NULL);
+static DEVICE_ATTR(type, 0444, zcrypt_type_show, NULL);
 
 static ssize_t zcrypt_online_show(struct device *dev,
 				  struct device_attribute *attr, char *buf)
@@ -113,8 +113,7 @@ static ssize_t zcrypt_online_store(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(online, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-		   zcrypt_online_show, zcrypt_online_store);
+static DEVICE_ATTR(online, 0644, zcrypt_online_show, zcrypt_online_store);
 
 static struct attribute * zcrypt_device_attrs[] = {
 	&dev_attr_type.attr,
@@ -1454,9 +1453,7 @@ int __init zcrypt_api_init(void)
 		goto out;
 
 	/* Set up the proc file system */
-	zcrypt_entry = proc_create("driver/z90crypt",
-				   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-				   NULL, &zcrypt_proc_fops);
+	zcrypt_entry = proc_create("driver/z90crypt", 0644, NULL, &zcrypt_proc_fops);
 	if (!zcrypt_entry) {
 		rc = -ENOMEM;
 		goto out_misc;
