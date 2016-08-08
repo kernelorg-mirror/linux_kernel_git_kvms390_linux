@@ -177,6 +177,9 @@ union scsw {
 #define SCHN_STAT_INTF_CTRL_CHK	 0x02
 #define SCHN_STAT_CHAIN_CHECK	 0x01
 
+#define SCSW_SCHXS_DEV_NOFCX	 0x03
+#define SCSW_SCHXS_PATH_NOFCX	 0x04
+
 /*
  * architectured values for first sense byte
  */

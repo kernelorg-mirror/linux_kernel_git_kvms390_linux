@@ -1179,6 +1179,32 @@ static int dasd_eckd_read_conf(struct dasd_device *device)
 	return path_err;
 }
 
+static u32 get_fcx_max_data(struct dasd_device *device)
+{
+	struct dasd_eckd_private *private = device->private;
+	int fcx_in_css, fcx_in_gneq, fcx_in_features;
+	int tpm, mdc;
+
+	if (dasd_nofcx)
+		return 0;
+	/* is transport mode supported? */
+	fcx_in_css = css_general_characteristics.fcx;
+	fcx_in_gneq = private->gneq->reserved2[7] & 0x04;
+	fcx_in_features = private->features.feature[40] & 0x80;
+	tpm = fcx_in_css && fcx_in_gneq && fcx_in_features;
+
+	if (!tpm)
+		return 0;
+
+	mdc = ccw_device_get_mdc(device->cdev, 0);
+	if (mdc < 0) {
+		dev_warn(&device->cdev->dev, "Detecting the maximum supported data size for zHPF requests failed\n");
+		return 0;
+	} else {
+		return mdc * FCX_MAX_DATA_FACTOR;
+	}
+}
+
 static int verify_fcx_max_data(struct dasd_device *device, __u8 lpm)
 {
 	struct dasd_eckd_private *private = device->private;
@@ -1438,6 +1464,19 @@ static int dasd_eckd_verify_path(struct dasd_device *device, __u8 lpm)
 	return 0;
 }
 
+void dasd_eckd_reset_path(struct dasd_device *device, __u8 pm)
+{
+	struct dasd_eckd_private *private = device->private;
+	unsigned long flags;
+
+	if (!private->fcx_max_data)
+		private->fcx_max_data = get_fcx_max_data(device);
+	spin_lock_irqsave(get_ccwdev_lock(device->cdev), flags);
+	dasd_path_set_tbvpm(device, pm ? : dasd_path_get_notoperpm(device));
+	dasd_schedule_device_bh(device);
+	spin_unlock_irqrestore(get_ccwdev_lock(device->cdev), flags);
+}
+
 static int dasd_eckd_read_features(struct dasd_device *device)
 {
 	struct dasd_eckd_private *private = device->private;
@@ -1632,32 +1671,6 @@ static void dasd_eckd_kick_validate_server(struct dasd_device *device)
 	/* queue call to do_validate_server to the kernel event daemon. */
 	if (!schedule_work(&device->kick_validate))
 		dasd_put_device(device);
-}
-
-static u32 get_fcx_max_data(struct dasd_device *device)
-{
-	struct dasd_eckd_private *private = device->private;
-	int fcx_in_css, fcx_in_gneq, fcx_in_features;
-	int tpm, mdc;
-
-	if (dasd_nofcx)
-		return 0;
-	/* is transport mode supported? */
-	fcx_in_css = css_general_characteristics.fcx;
-	fcx_in_gneq = private->gneq->reserved2[7] & 0x04;
-	fcx_in_features = private->features.feature[40] & 0x80;
-	tpm = fcx_in_css && fcx_in_gneq && fcx_in_features;
-
-	if (!tpm)
-		return 0;
-
-	mdc = ccw_device_get_mdc(device->cdev, 0);
-	if (mdc < 0) {
-		dev_warn(&device->cdev->dev, "Detecting the maximum supported"
-			 " data size for zHPF requests failed\n");
-		return 0;
-	} else
-		return mdc * FCX_MAX_DATA_FACTOR;
 }
 
 /*
@@ -5677,6 +5690,62 @@ static int dasd_eckd_check_attention(struct dasd_device *device, __u8 lpum)
 	return 0;
 }
 
+int dasd_eckd_disable_hpf_path(struct dasd_device *device, __u8 lpum)
+{
+	if (~lpum & dasd_path_get_opm(device)) {
+		dasd_path_add_nohpfpm(device, lpum);
+		dasd_path_remove_opm(device, lpum);
+		dev_err(&device->cdev->dev,
+			"Channel path %02X lost HPF functionality and is disabled\n",
+			lpum);
+		return 1;
+	}
+	return 0;
+}
+
+void dasd_eckd_disable_hpf_device(struct dasd_device *device)
+{
+	struct dasd_eckd_private *private = device->private;
+
+	dev_err(&device->cdev->dev,
+		"High Performance FICON disabled\n");
+	private->fcx_max_data = 0;
+}
+
+int dasd_eckd_hpf_enabled(struct dasd_device *device)
+{
+	struct dasd_eckd_private *private = device->private;
+
+	return private->fcx_max_data ? 1 : 0;
+}
+
+void dasd_eckd_handle_hpf_error(struct dasd_device *device, struct irb *irb)
+{
+	struct dasd_eckd_private *private = device->private;
+
+	if (!private->fcx_max_data) {
+		/* sanity check for no HPF, the error makes no sense */
+		DBF_DEV_EVENT(DBF_WARNING, device, "%s",
+			      "Trying to disable HPF for a non HPF device");
+		return;
+	}
+	if (irb->scsw.tm.schxs & SCSW_SCHXS_DEV_NOFCX) {
+		dasd_eckd_disable_hpf_device(device);
+	} else if (irb->scsw.tm.schxs & SCSW_SCHXS_PATH_NOFCX) {
+		if (dasd_eckd_disable_hpf_path(device, irb->esw.esw1.lpum))
+			return;
+		dasd_eckd_disable_hpf_device(device);
+		dasd_path_set_tbvpm(device,
+				  dasd_path_get_hpfpm(device));
+	}
+	/*
+	 * prevent that any new I/O ist started on the device and schedule a
+	 * requeue of existing requests
+	 */
+	dasd_device_set_stop_bits(device, DASD_STOPPED_NOT_ACC);
+	dasd_schedule_requeue(device);
+}
+
 static struct ccw_driver dasd_eckd_driver = {
 	.driver = {
 		.name	= "dasd-eckd",
@@ -5745,6 +5814,10 @@ static struct dasd_discipline dasd_eckd_discipline = {
 	.check_attention = dasd_eckd_check_attention,
 	.host_access_count = dasd_eckd_host_access_count,
 	.hosts_print = dasd_hosts_print,
+	.handle_hpf_error = dasd_eckd_handle_hpf_error,
+	.disable_hpf = dasd_eckd_disable_hpf_device,
+	.hpf_enabled = dasd_eckd_hpf_enabled,
+	.reset_path = dasd_eckd_reset_path,
 };
 
 static int __init
