@@ -334,7 +334,7 @@ void ptep_modify_prot_commit(struct mm_struct *mm, unsigned long addr,
 EXPORT_SYMBOL(ptep_modify_prot_commit);
 
 static inline void pmdp_idte_local(struct mm_struct *mm,
-                                  unsigned long addr, pmd_t *pmdp)
+				  unsigned long addr, pmd_t *pmdp)
 {
 	unsigned long opt, asce;
 

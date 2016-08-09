@@ -108,7 +108,7 @@ static inline void set_page_stable_dat(struct page *page, int order)
 
 	for (i = 0; i < (1 << order); i++)
 		asm volatile(".insn rrf,0xb9ab0000,%0,%1,%2,0"
-		                           : "=&d" (rc)
+			     : "=&d" (rc)
 			     : "a" (page_to_phys(page + i)),
 			       "i" (ESSA_SET_STABLE));
 }
@@ -197,9 +197,9 @@ void __init cmma_init_nodat(void)
 		page = pfn_to_page(start);
 		for (ix = start; ix < end; ix++, page++) {
 			if (__test_and_clear_bit(PG_arch_1, &page->flags))
-				continue;       /* skip page table pages */
+				continue;	/* skip page table pages */
 			if (!list_empty(&page->lru))
-				continue;       /* skip free pages */
+				continue;	/* skip free pages */
 			set_page_stable_nodat(page, 0);
 		}
 	}

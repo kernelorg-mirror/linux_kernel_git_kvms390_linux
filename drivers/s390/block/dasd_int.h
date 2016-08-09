@@ -405,13 +405,13 @@ extern struct dasd_discipline *dasd_diag_discipline_pointer;
 /* DASD path handling */
 
 #define DASD_PATH_OPERATIONAL  1
-#define DASD_PATH_TBV          2
-#define DASD_PATH_PP           3
-#define DASD_PATH_NPP          4
+#define DASD_PATH_TBV	       2
+#define DASD_PATH_PP	       3
+#define DASD_PATH_NPP	       4
 #define DASD_PATH_MISCABLED    5
 #define DASD_PATH_NOHPF        6
-#define DASD_PATH_CUIR         7
-#define DASD_PATH_IFCC         8
+#define DASD_PATH_CUIR	       7
+#define DASD_PATH_IFCC	       8
 
 #define DASD_THRHLD_MAX		4294967295
 #define DASD_INTERVAL_MAX	4294967295
