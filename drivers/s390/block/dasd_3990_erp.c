@@ -2208,7 +2208,7 @@ dasd_3990_erp_inspect_32(struct dasd_ccw_req * erp, char *sense)
 
 }				/* end dasd_3990_erp_inspect_32 */
 
-void dasd_3990_erp_disable_path(struct dasd_device *device, __u8 lpum)
+static void dasd_3990_erp_disable_path(struct dasd_device *device, __u8 lpum)
 {
 	int pos = pathmask_to_pos(lpum);
 
@@ -2225,7 +2225,7 @@ void dasd_3990_erp_disable_path(struct dasd_device *device, __u8 lpum)
 	atomic_set(&device->path[pos].error_count, 0);
 }
 
-void dasd_3990_erp_account_error(struct dasd_ccw_req *erp)
+static void dasd_3990_erp_account_error(struct dasd_ccw_req *erp)
 {
 	struct dasd_device *device = erp->startdev;
 	__u8 lpum = erp->refers->irb.esw.esw1.lpum;

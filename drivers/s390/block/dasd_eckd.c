@@ -1464,7 +1464,7 @@ static int dasd_eckd_verify_path(struct dasd_device *device, __u8 lpm)
 	return 0;
 }
 
-void dasd_eckd_reset_path(struct dasd_device *device, __u8 pm)
+static void dasd_eckd_reset_path(struct dasd_device *device, __u8 pm)
 {
 	struct dasd_eckd_private *private = device->private;
 	unsigned long flags;
@@ -5690,7 +5690,7 @@ static int dasd_eckd_check_attention(struct dasd_device *device, __u8 lpum)
 	return 0;
 }
 
-int dasd_eckd_disable_hpf_path(struct dasd_device *device, __u8 lpum)
+static int dasd_eckd_disable_hpf_path(struct dasd_device *device, __u8 lpum)
 {
 	if (~lpum & dasd_path_get_opm(device)) {
 		dasd_path_add_nohpfpm(device, lpum);
@@ -5703,7 +5703,7 @@ int dasd_eckd_disable_hpf_path(struct dasd_device *device, __u8 lpum)
 	return 0;
 }
 
-void dasd_eckd_disable_hpf_device(struct dasd_device *device)
+static void dasd_eckd_disable_hpf_device(struct dasd_device *device)
 {
 	struct dasd_eckd_private *private = device->private;
 
@@ -5712,14 +5712,15 @@ void dasd_eckd_disable_hpf_device(struct dasd_device *device)
 	private->fcx_max_data = 0;
 }
 
-int dasd_eckd_hpf_enabled(struct dasd_device *device)
+static int dasd_eckd_hpf_enabled(struct dasd_device *device)
 {
 	struct dasd_eckd_private *private = device->private;
 
 	return private->fcx_max_data ? 1 : 0;
 }
 
-void dasd_eckd_handle_hpf_error(struct dasd_device *device, struct irb *irb)
+static void dasd_eckd_handle_hpf_error(struct dasd_device *device,
+				       struct irb *irb)
 {
 	struct dasd_eckd_private *private = device->private;
 

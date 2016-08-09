@@ -1548,8 +1548,7 @@ dasd_path_threshold_store(struct device *dev, struct device_attribute *attr,
 	unsigned long flags;
 	unsigned long val;
 
-	spin_lock_irqsave(get_ccwdev_lock(to_ccwdev(dev)), flags);
-	device = dasd_device_from_cdev_locked(to_ccwdev(dev));
+	device = dasd_device_from_cdev(to_ccwdev(dev));
 	if (IS_ERR(device))
 		return -ENODEV;
 
@@ -1558,12 +1557,11 @@ dasd_path_threshold_store(struct device *dev, struct device_attribute *attr,
 		dasd_put_device(device);
 		return -EINVAL;
 	}
-
+	spin_lock_irqsave(get_ccwdev_lock(to_ccwdev(dev)), flags);
 	if (val)
 		device->path_thrhld = val;
-
-	dasd_put_device(device);
 	spin_unlock_irqrestore(get_ccwdev_lock(to_ccwdev(dev)), flags);
+	dasd_put_device(device);
 	return count;
 }
 
@@ -1597,8 +1595,7 @@ dasd_path_interval_store(struct device *dev, struct device_attribute *attr,
 	unsigned long flags;
 	unsigned long val;
 
-	spin_lock_irqsave(get_ccwdev_lock(to_ccwdev(dev)), flags);
-	device = dasd_device_from_cdev_locked(to_ccwdev(dev));
+	device = dasd_device_from_cdev(to_ccwdev(dev));
 	if (IS_ERR(device))
 		return -ENODEV;
 
@@ -1607,12 +1604,11 @@ dasd_path_interval_store(struct device *dev, struct device_attribute *attr,
 		dasd_put_device(device);
 		return -EINVAL;
 	}
-
+	spin_lock_irqsave(get_ccwdev_lock(to_ccwdev(dev)), flags);
 	if (val)
 		device->path_interval = val;
-
-	dasd_put_device(device);
 	spin_unlock_irqrestore(get_ccwdev_lock(to_ccwdev(dev)), flags);
+	dasd_put_device(device);
 	return count;
 }
 

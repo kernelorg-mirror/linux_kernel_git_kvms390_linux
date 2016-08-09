@@ -413,8 +413,8 @@ extern struct dasd_discipline *dasd_diag_discipline_pointer;
 #define DASD_PATH_CUIR	       7
 #define DASD_PATH_IFCC	       8
 
-#define DASD_THRHLD_MAX		4294967295
-#define DASD_INTERVAL_MAX	4294967295
+#define DASD_THRHLD_MAX		4294967295U
+#define DASD_INTERVAL_MAX	4294967295U
 
 struct dasd_path {
 	unsigned long flags;

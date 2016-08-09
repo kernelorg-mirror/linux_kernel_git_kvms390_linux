@@ -1630,7 +1630,7 @@ void dasd_generic_handle_state_change(struct dasd_device *device)
 }
 EXPORT_SYMBOL_GPL(dasd_generic_handle_state_change);
 
-int dasd_check_hpf_error(struct irb *irb)
+static int dasd_check_hpf_error(struct irb *irb)
 {
 	return (scsw_tm_is_valid_schxs(&irb->scsw) &&
 	    (irb->scsw.tm.schxs & SCSW_SCHXS_DEV_NOFCX ||
@@ -3762,7 +3762,7 @@ EXPORT_SYMBOL_GPL(dasd_generic_verify_path);
 /*
  * clear active requests and requeue them to block layer if possible
  */
-int dasd_generic_requeue_all_requests(struct dasd_device *device)
+static int dasd_generic_requeue_all_requests(struct dasd_device *device)
 {
 	struct list_head requeue_queue;
 	struct dasd_ccw_req *cqr, *n;
