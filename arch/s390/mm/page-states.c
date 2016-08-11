@@ -53,21 +53,6 @@ static inline int cmma_test_essa(void)
 	return rc;
 }
 
-static inline int cmma_test_essa_nodat(void)
-{
-	register int rc asm("1");
-
-	/* test ESSA_SET_STABLE_NODAT */
-	asm volatile(
-		"	.insn	rrf,0xb9ab0000,%0,%1,%2,0\n"
-		"0:     la      %0,0\n"
-		"1:\n"
-		EX_TABLE(0b,1b)
-		: "=&d" (rc)
-		: "a" (0UL), "i" (ESSA_SET_STABLE_NODAT), "0" (-EOPNOTSUPP));
-	return rc;
-}
-
 void __init cmma_init(void)
 {
 	if (!cmma_flag)
@@ -76,8 +61,8 @@ void __init cmma_init(void)
 		cmma_flag = 0;
 		return;
 	}
-	if (!cmma_test_essa_nodat())
-		cmma_flag = 02;
+	if (MACHINE_HAS_TLB_GUEST)
+		cmma_flag = 2;
 }
 
 static inline unsigned char get_page_state(struct page *page)
