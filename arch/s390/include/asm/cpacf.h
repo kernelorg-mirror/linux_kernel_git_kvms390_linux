@@ -224,11 +224,9 @@ static inline int cpacf_kmc(unsigned long func, void *param,
  * @param: address of parameter block; see POP for details on each func
  * @src: address of source memory area
  * @src_len: length of src operand in bytes
- *
- * Returns 0 for the query func, number of processed bytes for digest funcs
  */
-static inline int cpacf_kimd(unsigned long func, void *param,
-			     const u8 *src, long src_len)
+static inline void cpacf_kimd(unsigned long func, void *param,
+			      const u8 *src, long src_len)
 {
 	register unsigned long r0 asm("0") = (unsigned long) func;
 	register unsigned long r1 asm("1") = (unsigned long) param;
@@ -241,8 +239,6 @@ static inline int cpacf_kimd(unsigned long func, void *param,
 		: [src] "+a" (r2), [len] "+d" (r3)
 		: [fc] "d" (r0), [pba] "a" (r1), [opc] "i" (CPACF_KIMD)
 		: "cc", "memory");
-
-	return src_len - r3;
 }
 
 /**
@@ -251,11 +247,9 @@ static inline int cpacf_kimd(unsigned long func, void *param,
  * @param: address of parameter block; see POP for details on each func
  * @src: address of source memory area
  * @src_len: length of src operand in bytes
- *
- * Returns 0 for the query func, number of processed bytes for digest funcs
  */
-static inline int cpacf_klmd(unsigned long func, void *param,
-			     const u8 *src, long src_len)
+static inline void cpacf_klmd(unsigned long func, void *param,
+			      const u8 *src, long src_len)
 {
 	register unsigned long r0 asm("0") = (unsigned long) func;
 	register unsigned long r1 asm("1") = (unsigned long) param;
@@ -268,8 +262,6 @@ static inline int cpacf_klmd(unsigned long func, void *param,
 		: [src] "+a" (r2), [len] "+d" (r3)
 		: [fc] "d" (r0), [pba] "a" (r1), [opc] "i" (CPACF_KLMD)
 		: "cc", "memory");
-
-	return src_len - r3;
 }
 
 /**
@@ -342,13 +334,10 @@ static inline int cpacf_kmctr(unsigned long func, void *param, u8 *dest,
  * @dest_len: size of destination memory area in bytes
  * @seed: address of seed data
  * @seed_len: size of seed data in bytes
- *
- * Returns 0 for the query func, number of random bytes stored in
- * dest buffer for generate function
  */
-static inline int cpacf_ppno(unsigned long func, void *param,
-			     u8 *dest, long dest_len,
-			     const u8 *seed, long seed_len)
+static inline void cpacf_ppno(unsigned long func, void *param,
+			      u8 *dest, long dest_len,
+			      const u8 *seed, long seed_len)
 {
 	register unsigned long r0 asm("0") = (unsigned long) func;
 	register unsigned long r1 asm("1") = (unsigned long) param;
@@ -364,8 +353,6 @@ static inline int cpacf_ppno(unsigned long func, void *param,
 		: [fc] "d" (r0), [pba] "a" (r1),
 		  [seed] "a" (r4), [slen] "d" (r5), [opc] "i" (CPACF_PPNO)
 		: "cc", "memory");
-
-	return dest_len - r3;
 }
 
 /**
@@ -373,10 +360,8 @@ static inline int cpacf_ppno(unsigned long func, void *param,
  *		 instruction
  * @func: the function code passed to PCC; see CPACF_KM_xxx defines
  * @param: address of parameter block; see POP for details on each func
- *
- * Returns 0.
  */
-static inline int cpacf_pcc(unsigned long func, void *param)
+static inline void cpacf_pcc(unsigned long func, void *param)
 {
 	register unsigned long r0 asm("0") = (unsigned long) func;
 	register unsigned long r1 asm("1") = (unsigned long) param;
@@ -387,8 +372,6 @@ static inline int cpacf_pcc(unsigned long func, void *param)
 		:
 		: [fc] "d" (r0), [pba] "a" (r1), [opc] "i" (CPACF_PCC)
 		: "cc", "memory");
-
-	return 0;
 }
 
 #endif	/* _ASM_S390_CPACF_H */

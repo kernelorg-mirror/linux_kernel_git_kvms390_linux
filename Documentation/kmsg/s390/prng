@@ -70,34 +70,6 @@
  */
 
 /*?
- * Text: "The prng self test seed operation for the SHA-512 mode failed with rc=%d\n"
- * Severity: Error
- * Parameter:
- *   @1: return code from the PPNO_SHA512_DRNG_SEED call
- * Description:
- * The pseudo-random number device driver is not operational because the self test failed.
- * The return code of the initial seed operation indicated an error.
- * User action:
- * Unload and reload the prng module, or
- * if prng was compiled into the kernel, restart Linux.
- * If the error persists, contact your support organization.
- */
-
-/*?
- * Text: "The prng self test generate operation for the SHA-512 mode failed with rc=%d\n"
- * Severity: Error
- * Parameter:
- *   @1: return code from the PPNO_SHA512_DRNG_GEN call
- * Description:
- * The pseudo-random number device driver is not operational because the self test failed.
- * The return code of the initial generate operation indicated an error.
- * User action:
- * Unload and reload the prng module, or
- * if prng was compiled into the kernel, restart Linux.
- * If the error persists, contact your support organization.
- */
-
-/*?
  * Text: "The prng self test state test for the SHA-512 mode failed\n"
  * Severity: Error
  * Description:

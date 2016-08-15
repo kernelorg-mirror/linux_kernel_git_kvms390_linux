@@ -72,7 +72,6 @@ static int ghash_update(struct shash_desc *desc,
 	u8 *buf = dctx->buffer;
 	struct kernel_fpu vxstate;
 	unsigned int n;
-	int ret;
 
 	if (dctx->bytes) {
 		u8 *pos = buf + (GHASH_BLOCK_SIZE - dctx->bytes);
@@ -91,10 +90,8 @@ static int ghash_update(struct shash_desc *desc,
 					 dctx->key8, dctx->icv);
 				kernel_fpu_end(&vxstate, KERNEL_VXR);
 			} else {
-				ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx,
-						 buf, GHASH_BLOCK_SIZE);
-				if (ret != GHASH_BLOCK_SIZE)
-					return -EIO;
+				cpacf_kimd(CPACF_KIMD_GHASH, dctx,
+					   buf, GHASH_BLOCK_SIZE);
 			}
 		}
 	}
@@ -106,9 +103,7 @@ static int ghash_update(struct shash_desc *desc,
 			ghash_vx(src, n, dctx->key8, dctx->icv);
 			kernel_fpu_end(&vxstate, KERNEL_VXR);
 		} else {
-			ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx, src, n);
-			if (ret != n)
-				return -EIO;
+			cpacf_kimd(CPACF_KIMD_GHASH, dctx, src, n);
 		}
 		src += n;
 		srclen -= n;
@@ -126,7 +121,6 @@ static int ghash_flush(struct ghash_desc_ctx *dctx)
 {
 	struct kernel_fpu vxstate;
 	u8 *pos, *buf;
-	int ret;
 
 	if (!dctx->bytes)
 		return 0;
@@ -141,11 +135,8 @@ static int ghash_flush(struct ghash_desc_ctx *dctx)
 		pos = buf + (GHASH_BLOCK_SIZE - dctx->bytes);
 		memset(pos, 0, dctx->bytes);
 
-		ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx,
-				 buf, GHASH_BLOCK_SIZE);
-		if (ret != GHASH_BLOCK_SIZE)
-			return -EIO;
-
+		cpacf_kimd(CPACF_KIMD_GHASH, dctx,
+			   buf, GHASH_BLOCK_SIZE);
 	}
 	dctx->bytes = 0;
 	return 0;
