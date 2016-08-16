@@ -294,7 +294,7 @@ __printf(2, 3) int printk_hash(const char *, const char *, ...);
  * back to KERN_DEFAULT.
  */
 #define pr_cont(fmt, ...) \
-	pr_printk_hash(KERN_CONT, fmt, ##__VA_ARGS__)
+	printk(KERN_CONT fmt, ##__VA_ARGS__)
 
 /* pr_devel() should produce zero code unless DEBUG is defined */
 #ifdef DEBUG
