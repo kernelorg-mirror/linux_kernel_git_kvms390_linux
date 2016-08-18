@@ -179,7 +179,7 @@ static int __init ghash_mod_init(void)
 	if (MACHINE_HAS_VX && (cpu_id.machine == 0x2964 ||
 			       cpu_id.machine == 0x2965))
 		ghash_use_vx = 1;
-	else if (!cpacf_query(CPACF_KIMD, CPACF_KIMD_GHASH))
+	else if (!cpacf_query_func(CPACF_KIMD, CPACF_KIMD_GHASH))
 		return -ENODEV;
 
 	return crypto_register_shash(&ghash_alg);
