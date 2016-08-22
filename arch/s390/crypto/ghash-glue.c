@@ -42,9 +42,9 @@ static int ghash_init(struct shash_desc *desc)
 	memset(dctx, 0, sizeof(*dctx));
 	memcpy(dctx->key, ctx->key, GHASH_BLOCK_SIZE);
 	if (ghash_use_vx) {
-		kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW | KERNEL_VXR_HIGH);
+		kernel_fpu_begin(&vxstate, KERNEL_VXR);
 		ghash_vx_init(dctx->key, dctx->key8);
-		kernel_fpu_end(&vxstate);
+		kernel_fpu_end(&vxstate, KERNEL_VXR);
 	}
 
 	return 0;
@@ -86,11 +86,10 @@ static int ghash_update(struct shash_desc *desc,
 
 		if (!dctx->bytes) {
 			if (ghash_use_vx) {
-				kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
-							   KERNEL_VXR_HIGH);
+				kernel_fpu_begin(&vxstate, KERNEL_VXR);
 				ghash_vx(buf, GHASH_BLOCK_SIZE,
 					 dctx->key8, dctx->icv);
-				kernel_fpu_end(&vxstate);
+				kernel_fpu_end(&vxstate, KERNEL_VXR);
 			} else {
 				ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx,
 						 buf, GHASH_BLOCK_SIZE);
@@ -103,10 +102,9 @@ static int ghash_update(struct shash_desc *desc,
 	n = srclen & ~(GHASH_BLOCK_SIZE - 1);
 	if (n) {
 		if (ghash_use_vx) {
-			kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
-						   KERNEL_VXR_HIGH);
+			kernel_fpu_begin(&vxstate, KERNEL_VXR);
 			ghash_vx(src, n, dctx->key8, dctx->icv);
-			kernel_fpu_end(&vxstate);
+			kernel_fpu_end(&vxstate, KERNEL_VXR);
 		} else {
 			ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx, src, n);
 			if (ret != n)
@@ -135,11 +133,10 @@ static int ghash_flush(struct ghash_desc_ctx *dctx)
 
 	buf = dctx->buffer;
 	if (ghash_use_vx) {
-		kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
-					   KERNEL_VXR_HIGH);
+		kernel_fpu_begin(&vxstate, KERNEL_VXR);
 		ghash_vx(buf, GHASH_BLOCK_SIZE - dctx->bytes,
 			 dctx->key8, dctx->icv);
-		kernel_fpu_end(&vxstate);
+		kernel_fpu_end(&vxstate, KERNEL_VXR);
 	} else {
 		pos = buf + (GHASH_BLOCK_SIZE - dctx->bytes);
 		memset(pos, 0, dctx->bytes);
