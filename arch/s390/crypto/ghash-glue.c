@@ -19,7 +19,7 @@ void ghash_vx(const u8 *src, unsigned int len, const u8 *key, u8 *hash);
 #define GHASH_BLOCK_SIZE	16
 #define GHASH_DIGEST_SIZE	16
 
-static int ghash_kimd_available;
+static int ghash_use_vx;
 
 struct ghash_ctx {
 	u8 key[GHASH_BLOCK_SIZE];
@@ -41,7 +41,7 @@ static int ghash_init(struct shash_desc *desc)
 
 	memset(dctx, 0, sizeof(*dctx));
 	memcpy(dctx->key, ctx->key, GHASH_BLOCK_SIZE);
-	if (MACHINE_HAS_VX) {
+	if (ghash_use_vx) {
 		kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW | KERNEL_VXR_HIGH);
 		ghash_vx_init(dctx->key, dctx->key8);
 		kernel_fpu_end(&vxstate);
@@ -85,32 +85,32 @@ static int ghash_update(struct shash_desc *desc,
 		src += n;
 
 		if (!dctx->bytes) {
-			if (!MACHINE_HAS_VX) {
-				ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx,
-						 buf, GHASH_BLOCK_SIZE);
-				if (ret != GHASH_BLOCK_SIZE)
-					return -EIO;
-			} else {
+			if (ghash_use_vx) {
 				kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
 							   KERNEL_VXR_HIGH);
 				ghash_vx(buf, GHASH_BLOCK_SIZE,
 					 dctx->key8, dctx->icv);
 				kernel_fpu_end(&vxstate);
+			} else {
+				ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx,
+						 buf, GHASH_BLOCK_SIZE);
+				if (ret != GHASH_BLOCK_SIZE)
+					return -EIO;
 			}
 		}
 	}
 
 	n = srclen & ~(GHASH_BLOCK_SIZE - 1);
 	if (n) {
-		if (!MACHINE_HAS_VX) {
-			ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx, src, n);
-			if (ret != n)
-				return -EIO;
-		} else {
+		if (ghash_use_vx) {
 			kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
 						   KERNEL_VXR_HIGH);
 			ghash_vx(src, n, dctx->key8, dctx->icv);
 			kernel_fpu_end(&vxstate);
+		} else {
+			ret = cpacf_kimd(CPACF_KIMD_GHASH, dctx, src, n);
+			if (ret != n)
+				return -EIO;
 		}
 		src += n;
 		srclen -= n;
@@ -134,7 +134,13 @@ static int ghash_flush(struct ghash_desc_ctx *dctx)
 		return 0;
 
 	buf = dctx->buffer;
-	if (!MACHINE_HAS_VX) {
+	if (ghash_use_vx) {
+		kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
+					   KERNEL_VXR_HIGH);
+		ghash_vx(buf, GHASH_BLOCK_SIZE - dctx->bytes,
+			 dctx->key8, dctx->icv);
+		kernel_fpu_end(&vxstate);
+	} else {
 		pos = buf + (GHASH_BLOCK_SIZE - dctx->bytes);
 		memset(pos, 0, dctx->bytes);
 
@@ -143,12 +149,6 @@ static int ghash_flush(struct ghash_desc_ctx *dctx)
 		if (ret != GHASH_BLOCK_SIZE)
 			return -EIO;
 
-	} else {
-		kernel_fpu_begin(&vxstate, KERNEL_VXR_LOW |
-					   KERNEL_VXR_HIGH);
-		ghash_vx(buf, GHASH_BLOCK_SIZE - dctx->bytes,
-			 dctx->key8, dctx->icv);
-		kernel_fpu_end(&vxstate);
 	}
 	dctx->bytes = 0;
 	return 0;
@@ -185,9 +185,13 @@ static struct shash_alg ghash_alg = {
 
 static int __init ghash_mod_init(void)
 {
-	ghash_kimd_available = cpacf_query(CPACF_KIMD, CPACF_KIMD_GHASH);
+	struct cpuid cpu_id;
 
-	if (!ghash_kimd_available && !MACHINE_HAS_VX)
+	get_cpu_id(&cpu_id);
+	if (MACHINE_HAS_VX && (cpu_id.machine == 0x2964 ||
+			       cpu_id.machine == 0x2965))
+		ghash_use_vx = 1;
+	else if (!cpacf_query(CPACF_KIMD, CPACF_KIMD_GHASH))
 		return -ENODEV;
 
 	return crypto_register_shash(&ghash_alg);
