@@ -439,6 +439,51 @@ static const struct smcd_ops ism_ops = {
 	.move_data = ism_move,
 };
 
+static int ism_dev_init(struct ism_dev *ism)
+{
+	struct pci_dev *pdev = ism->pdev;
+	int ret;
+
+	ret = pci_alloc_irq_vectors(pdev, 1, 1, PCI_IRQ_MSI);
+	if (ret <= 0)
+		goto out;
+
+	ret = request_irq(pci_irq_vector(pdev, 0), ism_handle_irq, 0,
+			  pci_name(pdev), ism);
+	if (ret)
+		goto free_vectors;
+
+	ret = register_sba(ism);
+	if (ret)
+		goto free_irq;
+
+	ret = register_ieq(ism);
+	if (ret)
+		goto unreg_sba;
+
+	ret = ism_read_local_gid(ism);
+	if (ret)
+		goto unreg_ieq;
+
+	ret = smcd_register_dev(ism->smcd);
+	if (ret)
+		goto unreg_ieq;
+
+	query_info(ism);
+	return 0;
+
+unreg_ieq:
+	unregister_ieq(ism);
+unreg_sba:
+	unregister_sba(ism);
+free_irq:
+	free_irq(pci_irq_vector(pdev, 0), ism);
+free_vectors:
+	pci_free_irq_vectors(pdev);
+out:
+	return ret;
+}
+
 static int ism_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct ism_dev *ism;
@@ -478,42 +523,12 @@ static int ism_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 		goto err_unmap;
 
 	ism->smcd->priv = ism;
-	ret = pci_alloc_irq_vectors(pdev, 1, 1, PCI_IRQ_MSI);
-	if (ret <= 0)
+	ret = ism_dev_init(ism);
+	if (ret)
 		goto err_free;
 
-	ret = request_irq(pci_irq_vector(pdev, 0), ism_handle_irq, 0,
-			  pci_name(pdev), ism);
-	if (ret)
-		goto err_vectors;
-
-	ret = register_sba(ism);
-	if (ret)
-		goto err_irq;
-
-	ret = register_ieq(ism);
-	if (ret)
-		goto err_sba;
-
-	ret = ism_read_local_gid(ism);
-	if (ret)
-		goto err_ieq;
-
-	ret = smcd_register_dev(ism->smcd);
-	if (ret)
-		goto err_ieq;
-
-	query_info(ism);
 	return 0;
 
-err_ieq:
-	unregister_ieq(ism);
-err_sba:
-	unregister_sba(ism);
-err_irq:
-	free_irq(pci_irq_vector(pdev, 0), ism);
-err_vectors:
-	pci_free_irq_vectors(pdev);
 err_free:
 	smcd_free_dev(ism->smcd);
 err_unmap:
@@ -528,15 +543,23 @@ err:
 	return ret;
 }
 
-static void ism_remove(struct pci_dev *pdev)
+static void ism_dev_exit(struct ism_dev *ism)
 {
-	struct ism_dev *ism = dev_get_drvdata(&pdev->dev);
+	struct pci_dev *pdev = ism->pdev;
 
 	smcd_unregister_dev(ism->smcd);
 	unregister_ieq(ism);
 	unregister_sba(ism);
 	free_irq(pci_irq_vector(pdev, 0), ism);
 	pci_free_irq_vectors(pdev);
+}
+
+static void ism_remove(struct pci_dev *pdev)
+{
+	struct ism_dev *ism = dev_get_drvdata(&pdev->dev);
+
+	ism_dev_exit(ism);
+
 	smcd_free_dev(ism->smcd);
 	pci_iounmap(pdev, ism->ctl);
 	pci_release_mem_regions(pdev);
@@ -545,11 +568,31 @@ static void ism_remove(struct pci_dev *pdev)
 	kfree(ism);
 }
 
+static int ism_suspend(struct device *dev)
+{
+	struct ism_dev *ism = dev_get_drvdata(dev);
+
+	ism_dev_exit(ism);
+	return 0;
+}
+
+static int ism_resume(struct device *dev)
+{
+	struct ism_dev *ism = dev_get_drvdata(dev);
+
+	return ism_dev_init(ism);
+}
+
+static SIMPLE_DEV_PM_OPS(ism_pm_ops, ism_suspend, ism_resume);
+
 static struct pci_driver ism_driver = {
 	.name	  = DRV_NAME,
 	.id_table = ism_device_table,
 	.probe	  = ism_probe,
 	.remove	  = ism_remove,
+	.driver	  = {
+		.pm = &ism_pm_ops,
+	},
 };
 
 static int __init ism_init(void)
