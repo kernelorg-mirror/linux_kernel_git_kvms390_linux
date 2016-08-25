@@ -88,7 +88,7 @@ struct ica_z90_status {
  * Identifier for Crypto Request Performance Index
  */
 enum crypto_ops {
-	MEX_1K = 0,
+	MEX_1K,
 	MEX_2K,
 	MEX_4K,
 	CRT_1K,
@@ -130,13 +130,14 @@ struct zcrypt_device {
 	int max_mod_size;		/* Max number of bits. */
 	int short_crt;			/* Card has crt length restriction. */
 	int speed_rating[NUM_OPS];	/* Speed idx of crypto ops. */
-	int load;			/* Utilization of the crypto device */
+	atomic_t load;			/* Utilization of the crypto device */
 
 	int request_count;		/* # current requests. */
 
 	struct ap_message reply;	/* Per-device reply structure. */
 	int max_exp_bit_length;
 
+	struct zcrypt_device *group_dev;/* Pointer to group device */
 	debug_info_t *dbf_area;		/* debugging */
 };
 
@@ -149,6 +150,8 @@ void zcrypt_device_get(struct zcrypt_device *);
 int zcrypt_device_put(struct zcrypt_device *);
 int zcrypt_device_register(struct zcrypt_device *);
 void zcrypt_device_unregister(struct zcrypt_device *);
+int zcrypt_group_device_register(struct zcrypt_device *);
+void zcrypt_group_device_unregister(struct zcrypt_device *);
 void zcrypt_msgtype_register(struct zcrypt_ops *);
 void zcrypt_msgtype_unregister(struct zcrypt_ops *);
 struct zcrypt_ops *zcrypt_msgtype_request(unsigned char *, int);

@@ -76,6 +76,91 @@ static int zcrypt_cex4_probe(struct ap_device *ap_dev)
 	int CEX5P_SPEED_IDX[] = { 49,  67,  131,  52,  85,  287,  0,  4};
 	int rc = 0;
 
+	/* Group device handling */
+	if (ap_dev->group) {
+		zdev = zcrypt_device_alloc(CEX4A_MAX_MESSAGE_SIZE);
+		if (!zdev)
+			return -ENOMEM;
+		zdev->ap_dev = ap_dev;
+		ap_dev->reply = &zdev->reply;
+		ap_dev->private = zdev;
+		if (ap_test_bit(&ap_dev->functions, AP_FUNC_ACCEL)) {
+			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4) {
+				zdev->type_string = "CEX4A";
+				zdev->user_space_type = ZCRYPT_CEX4;
+				memcpy(zdev->speed_rating, CEX4A_SPEED_IDX,
+				       sizeof(CEX4A_SPEED_IDX));
+			} else {
+				zdev->type_string = "CEX5A";
+				zdev->user_space_type = ZCRYPT_CEX5;
+				memcpy(zdev->speed_rating, CEX5A_SPEED_IDX,
+				       sizeof(CEX5A_SPEED_IDX));
+			}
+			zdev->min_mod_size = CEX4A_MIN_MOD_SIZE;
+			if (ap_test_bit(&ap_dev->functions, AP_FUNC_MEX4K) &&
+			    ap_test_bit(&ap_dev->functions, AP_FUNC_CRT4K)) {
+				zdev->max_mod_size = CEX4A_MAX_MOD_SIZE_4K;
+				zdev->max_exp_bit_length =
+					CEX4A_MAX_MOD_SIZE_4K;
+			} else {
+				zdev->max_mod_size = CEX4A_MAX_MOD_SIZE_2K;
+				zdev->max_exp_bit_length =
+					CEX4A_MAX_MOD_SIZE_2K;
+			}
+			zdev->short_crt = 1;
+		} else if (ap_test_bit(&ap_dev->functions, AP_FUNC_COPRO)) {
+			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4) {
+				zdev->type_string = "CEX4C";
+				/* wrong user space type, must be CEX4
+				 * just keep it for cca compatibility
+				 */
+				zdev->user_space_type = ZCRYPT_CEX3C;
+				memcpy(zdev->speed_rating, CEX4C_SPEED_IDX,
+				       sizeof(CEX4C_SPEED_IDX));
+			} else {
+				zdev->type_string = "CEX5C";
+				/* wrong user space type, must be CEX5
+				 * just keep it for cca compatibility
+				 */
+				zdev->user_space_type = ZCRYPT_CEX3C;
+				memcpy(zdev->speed_rating, CEX5C_SPEED_IDX,
+				       sizeof(CEX5C_SPEED_IDX));
+			}
+			zdev->min_mod_size = CEX4C_MIN_MOD_SIZE;
+			zdev->max_mod_size = CEX4C_MAX_MOD_SIZE;
+			zdev->max_exp_bit_length = CEX4C_MAX_MOD_SIZE;
+			zdev->short_crt = 0;
+		} else if (ap_test_bit(&ap_dev->functions, AP_FUNC_EP11)) {
+			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4) {
+				zdev->type_string = "CEX4P";
+				zdev->user_space_type = ZCRYPT_CEX4;
+				memcpy(zdev->speed_rating, CEX4P_SPEED_IDX,
+				       sizeof(CEX4P_SPEED_IDX));
+			} else {
+				zdev->type_string = "CEX5P";
+				zdev->user_space_type = ZCRYPT_CEX5;
+				memcpy(zdev->speed_rating, CEX5P_SPEED_IDX,
+				       sizeof(CEX5P_SPEED_IDX));
+			}
+			zdev->min_mod_size = CEX4C_MIN_MOD_SIZE;
+			zdev->max_mod_size = CEX4C_MAX_MOD_SIZE;
+			zdev->max_exp_bit_length = CEX4C_MAX_MOD_SIZE;
+			zdev->short_crt = 0;
+		} else {
+			zcrypt_device_free(zdev);
+			return -ENODEV;
+		}
+		zdev->online = 1;
+		zdev->ops = NULL; /* group device doesn't support ops */
+
+		rc = zcrypt_group_device_register(zdev);
+		if (rc) {
+			ap_dev->private = NULL;
+			zcrypt_device_free(zdev);
+		}
+		return rc;
+	}
+
 	switch (ap_dev->device_type) {
 	case AP_DEVICE_TYPE_CEX4:
 	case AP_DEVICE_TYPE_CEX5:
@@ -83,72 +168,32 @@ static int zcrypt_cex4_probe(struct ap_device *ap_dev)
 			zdev = zcrypt_device_alloc(CEX4A_MAX_MESSAGE_SIZE);
 			if (!zdev)
 				return -ENOMEM;
-			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4) {
+			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4)
 				zdev->type_string = "CEX4A";
-				memcpy(zdev->speed_rating, CEX4A_SPEED_IDX,
-				       sizeof(CEX4A_SPEED_IDX));
-			} else {
+			else
 				zdev->type_string = "CEX5A";
-				memcpy(zdev->speed_rating, CEX5A_SPEED_IDX,
-				       sizeof(CEX5A_SPEED_IDX));
-			}
-			zdev->user_space_type = ZCRYPT_CEX3A;
-			zdev->min_mod_size = CEX4A_MIN_MOD_SIZE;
-			if (ap_test_bit(&ap_dev->functions, AP_FUNC_MEX4K) &&
-			    ap_test_bit(&ap_dev->functions, AP_FUNC_CRT4K)) {
-				zdev->max_mod_size =
-					CEX4A_MAX_MOD_SIZE_4K;
-				zdev->max_exp_bit_length =
-					CEX4A_MAX_MOD_SIZE_4K;
-			} else {
-				zdev->max_mod_size =
-					CEX4A_MAX_MOD_SIZE_2K;
-				zdev->max_exp_bit_length =
-					CEX4A_MAX_MOD_SIZE_2K;
-			}
-			zdev->short_crt = 1;
 			zdev->ops = zcrypt_msgtype_request(MSGTYPE50_NAME,
-							   MSGTYPE50_VARIANT_DEFAULT);
+						MSGTYPE50_VARIANT_DEFAULT);
 		} else if (ap_test_bit(&ap_dev->functions, AP_FUNC_COPRO)) {
 			zdev = zcrypt_device_alloc(CEX4C_MAX_MESSAGE_SIZE);
 			if (!zdev)
 				return -ENOMEM;
-			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4) {
+			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4)
 				zdev->type_string = "CEX4C";
-				memcpy(zdev->speed_rating, CEX4C_SPEED_IDX,
-				       sizeof(CEX4C_SPEED_IDX));
-			} else {
+			else
 				zdev->type_string = "CEX5C";
-				memcpy(zdev->speed_rating, CEX5C_SPEED_IDX,
-				       sizeof(CEX5C_SPEED_IDX));
-			}
-			zdev->user_space_type = ZCRYPT_CEX3C;
-			zdev->min_mod_size = CEX4C_MIN_MOD_SIZE;
-			zdev->max_mod_size = CEX4C_MAX_MOD_SIZE;
-			zdev->max_exp_bit_length = CEX4C_MAX_MOD_SIZE;
-			zdev->short_crt = 0;
 			zdev->ops = zcrypt_msgtype_request(MSGTYPE06_NAME,
-							   MSGTYPE06_VARIANT_DEFAULT);
+						MSGTYPE06_VARIANT_DEFAULT);
 		} else if (ap_test_bit(&ap_dev->functions, AP_FUNC_EP11)) {
 			zdev = zcrypt_device_alloc(CEX4C_MAX_MESSAGE_SIZE);
 			if (!zdev)
 				return -ENOMEM;
-			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4) {
+			if (ap_dev->device_type == AP_DEVICE_TYPE_CEX4)
 				zdev->type_string = "CEX4P";
-				memcpy(zdev->speed_rating, CEX4P_SPEED_IDX,
-				       sizeof(CEX4P_SPEED_IDX));
-			} else {
+			else
 				zdev->type_string = "CEX5P";
-				memcpy(zdev->speed_rating, CEX5P_SPEED_IDX,
-				       sizeof(CEX5P_SPEED_IDX));
-			}
-			zdev->user_space_type = ZCRYPT_CEX4;
-			zdev->min_mod_size = CEX4C_MIN_MOD_SIZE;
-			zdev->max_mod_size = CEX4C_MAX_MOD_SIZE;
-			zdev->max_exp_bit_length = CEX4C_MAX_MOD_SIZE;
-			zdev->short_crt = 0;
 			zdev->ops = zcrypt_msgtype_request(MSGTYPE06_NAME,
-							MSGTYPE06_VARIANT_EP11);
+						MSGTYPE06_VARIANT_EP11);
 		}
 		break;
 	}
@@ -156,7 +201,7 @@ static int zcrypt_cex4_probe(struct ap_device *ap_dev)
 		return -ENODEV;
 	zdev->ap_dev = ap_dev;
 	zdev->online = 1;
-	zdev->load = zdev->speed_rating[0];
+	atomic_set(&zdev->load, 0);
 	ap_device_init_reply(ap_dev, &zdev->reply);
 	ap_dev->private = zdev;
 	rc = zcrypt_device_register(zdev);
@@ -179,8 +224,13 @@ static void zcrypt_cex4_remove(struct ap_device *ap_dev)
 
 	if (zdev) {
 		zops = zdev->ops;
-		zcrypt_device_unregister(zdev);
-		zcrypt_msgtype_release(zops);
+
+		if (ap_dev->group)
+			zcrypt_group_device_unregister(zdev);
+		else {
+			zcrypt_device_unregister(zdev);
+			zcrypt_msgtype_release(zops);
+		}
 	}
 }
 

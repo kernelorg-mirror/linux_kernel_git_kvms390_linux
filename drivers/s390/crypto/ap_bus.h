@@ -203,6 +203,8 @@ struct ap_device {
 	struct ap_message *reply;	/* Per device reply message. */
 
 	void *private;			/* ap driver private pointer. */
+	unsigned int group;		/* indicates a group device */
+	unsigned int id;		/* AP card id */
 };
 
 #define to_ap_dev(x) container_of((x), struct ap_device, device)

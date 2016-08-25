@@ -73,8 +73,10 @@ MODULE_PARM_DESC(poll_thread, "Turn on/off poll thread, default is 0 (off).");
 
 static struct device *ap_root_device = NULL;
 static struct ap_config_info *ap_configuration;
-static DEFINE_SPINLOCK(ap_device_list_lock);
-static LIST_HEAD(ap_device_list);
+static DEFINE_SPINLOCK(ap_group_device_list_lock);
+static LIST_HEAD(ap_group_device_list);
+static spinlock_t ap_sub_device_list_lock[AP_DEVICES];
+struct list_head ap_sub_device_list[AP_DEVICES];
 static bool initialised;
 
 /*
@@ -940,6 +942,7 @@ static void ap_tasklet_fn(unsigned long dummy)
 {
 	struct ap_device *ap_dev;
 	enum ap_wait wait = AP_WAIT_NONE;
+	int id;
 
 	/* Reset the indicator if interrupts are used. Thus new interrupts can
 	 * be received. Doing it in the beginning of the tasklet is therefor
@@ -948,13 +951,17 @@ static void ap_tasklet_fn(unsigned long dummy)
 	if (ap_using_interrupts())
 		xchg(ap_airq.lsi_ptr, 0);
 
-	spin_lock(&ap_device_list_lock);
-	list_for_each_entry(ap_dev, &ap_device_list, list) {
-		spin_lock_bh(&ap_dev->lock);
-		wait = min(wait, ap_sm_event_loop(ap_dev, AP_EVENT_POLL));
-		spin_unlock_bh(&ap_dev->lock);
+	for (id = 0; id < AP_DEVICES; id++) {
+		spin_lock(&ap_sub_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_sub_device_list[id], list) {
+			spin_lock_bh(&ap_dev->lock);
+			wait = min(wait, ap_sm_event_loop(ap_dev,
+							  AP_EVENT_POLL));
+			spin_unlock_bh(&ap_dev->lock);
+		}
+		spin_unlock(&ap_sub_device_list_lock[id]);
 	}
-	spin_unlock(&ap_device_list_lock);
+
 	ap_sm_wait(wait);
 }
 
@@ -1106,10 +1113,22 @@ static ssize_t ap_request_count_show(struct device *dev,
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
 	int rc;
+	unsigned int id, req_cnt = 0;
 
-	spin_lock_bh(&ap_dev->lock);
-	rc = snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->total_request_count);
-	spin_unlock_bh(&ap_dev->lock);
+	if (ap_dev->group) {
+		id = ap_dev->id;
+		spin_lock_bh(&ap_sub_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_sub_device_list[id], list) {
+			req_cnt += ap_dev->total_request_count;
+		}
+		spin_unlock_bh(&ap_sub_device_list_lock[id]);
+		rc = snprintf(buf, PAGE_SIZE, "%d\n", req_cnt);
+	} else {
+		spin_lock_bh(&ap_dev->lock);
+		rc = snprintf(buf, PAGE_SIZE, "%d\n",
+			      ap_dev->total_request_count);
+		spin_unlock_bh(&ap_dev->lock);
+	}
 	return rc;
 }
 
@@ -1120,10 +1139,21 @@ static ssize_t ap_requestq_count_show(struct device *dev,
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
 	int rc;
+	unsigned int id, reqq_cnt = 0;
 
-	spin_lock_bh(&ap_dev->lock);
-	rc = snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->requestq_count);
-	spin_unlock_bh(&ap_dev->lock);
+	if (ap_dev->group) {
+		id = ap_dev->id;
+		spin_lock_bh(&ap_sub_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_sub_device_list[id], list) {
+			reqq_cnt += ap_dev->requestq_count;
+		}
+		spin_unlock_bh(&ap_sub_device_list_lock[id]);
+		rc = snprintf(buf, PAGE_SIZE, "%d\n", reqq_cnt);
+	} else {
+		spin_lock_bh(&ap_dev->lock);
+		rc = snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->requestq_count);
+		spin_unlock_bh(&ap_dev->lock);
+	}
 	return rc;
 }
 
@@ -1134,10 +1164,21 @@ static ssize_t ap_pendingq_count_show(struct device *dev,
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
 	int rc;
+	unsigned int id, penq_cnt = 0;
 
-	spin_lock_bh(&ap_dev->lock);
-	rc = snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->pendingq_count);
-	spin_unlock_bh(&ap_dev->lock);
+	if (ap_dev->group) {
+		id = ap_dev->id;
+		spin_lock_bh(&ap_sub_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_sub_device_list[id], list) {
+			penq_cnt += ap_dev->pendingq_count;
+		}
+		spin_unlock_bh(&ap_sub_device_list_lock[id]);
+		rc = snprintf(buf, PAGE_SIZE, "%d\n", penq_cnt);
+	} else {
+		spin_lock_bh(&ap_dev->lock);
+		rc = snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->pendingq_count);
+		spin_unlock_bh(&ap_dev->lock);
+	}
 	return rc;
 }
 
@@ -1203,6 +1244,21 @@ static ssize_t ap_functions_show(struct device *dev,
 }
 
 static DEVICE_ATTR(ap_functions, 0444, ap_functions_show, NULL);
+
+static struct attribute *ap_group_dev_attrs[] = {
+	&dev_attr_hwtype.attr,
+	&dev_attr_raw_hwtype.attr,
+	&dev_attr_depth.attr,
+	&dev_attr_request_count.attr,
+	&dev_attr_requestq_count.attr,
+	&dev_attr_pendingq_count.attr,
+	&dev_attr_modalias.attr,
+	&dev_attr_ap_functions.attr,
+	NULL
+};
+static struct attribute_group ap_group_dev_attr_group = {
+	.attrs = ap_group_dev_attrs
+};
 
 static struct attribute *ap_dev_attrs[] = {
 	&dev_attr_hwtype.attr,
@@ -1425,18 +1481,32 @@ static int ap_device_remove(struct device *dev)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
 	struct ap_driver *ap_drv = ap_dev->drv;
+	int id;
 
-	ap_flush_queue(ap_dev);
-	del_timer_sync(&ap_dev->timeout);
-	spin_lock_bh(&ap_device_list_lock);
-	list_del_init(&ap_dev->list);
-	spin_unlock_bh(&ap_device_list_lock);
-	if (ap_drv->remove)
-		ap_drv->remove(ap_dev);
-	spin_lock_bh(&ap_dev->lock);
-	atomic_sub(ap_dev->queue_count, &ap_poll_requests);
-	spin_unlock_bh(&ap_dev->lock);
+	if (ap_dev->group) {
+		spin_lock_bh(&ap_group_device_list_lock);
+		list_del_init(&ap_dev->list);
+		spin_unlock_bh(&ap_group_device_list_lock);
+		if (ap_drv->remove)
+			ap_drv->remove(ap_dev);
+	} else {
+		ap_flush_queue(ap_dev);
+		del_timer_sync(&ap_dev->timeout);
+		id = ap_dev->id;
+		spin_lock_bh(&ap_sub_device_list_lock[id]);
+		list_del_init(&ap_dev->list);
+		spin_unlock_bh(&ap_sub_device_list_lock[id]);
+		if (ap_drv->remove)
+			ap_drv->remove(ap_dev);
+		spin_lock_bh(&ap_dev->lock);
+		atomic_sub(ap_dev->queue_count, &ap_poll_requests);
+		spin_unlock_bh(&ap_dev->lock);
+	}
 	return 0;
+}
+static void ap_group_device_release(struct device *dev)
+{
+	kfree(to_ap_dev(dev));
 }
 
 static void ap_device_release(struct device *dev)
@@ -1506,12 +1576,7 @@ static ssize_t ap_control_domain_mask_show(struct bus_type *bus, char *buf)
 {
 	if (!ap_configuration)	/* QCI not supported */
 		return snprintf(buf, PAGE_SIZE, "not supported\n");
-	if (!test_facility(76))
-		/* format 0 - 16 bit domain field */
-		return snprintf(buf, PAGE_SIZE, "%08x%08x\n",
-				ap_configuration->adm[0],
-				ap_configuration->adm[1]);
-	/* format 1 - 256 bit domain field */
+
 	return snprintf(buf, PAGE_SIZE,
 			"0x%08x%08x%08x%08x%08x%08x%08x%08x\n",
 			ap_configuration->adm[0], ap_configuration->adm[1],
@@ -1522,6 +1587,22 @@ static ssize_t ap_control_domain_mask_show(struct bus_type *bus, char *buf)
 
 static BUS_ATTR(ap_control_domain_mask, 0444,
 		ap_control_domain_mask_show, NULL);
+
+static ssize_t ap_usage_domain_mask_show(struct bus_type *bus, char *buf)
+{
+	if (!ap_configuration)	/* QCI not supported */
+		return snprintf(buf, PAGE_SIZE, "not supported\n");
+
+	return snprintf(buf, PAGE_SIZE,
+			"0x%08x%08x%08x%08x%08x%08x%08x%08x\n",
+			ap_configuration->aqm[0], ap_configuration->aqm[1],
+			ap_configuration->aqm[2], ap_configuration->aqm[3],
+			ap_configuration->aqm[4], ap_configuration->aqm[5],
+			ap_configuration->aqm[6], ap_configuration->aqm[7]);
+}
+
+static BUS_ATTR(ap_usage_domain_mask, 0444,
+		ap_usage_domain_mask_show, NULL);
 
 static ssize_t ap_config_time_show(struct bus_type *bus, char *buf)
 {
@@ -1618,6 +1699,7 @@ static BUS_ATTR(ap_max_domain_id, 0444, ap_max_domain_id_show, NULL);
 static struct bus_attribute *const ap_bus_attrs[] = {
 	&bus_attr_ap_domain,
 	&bus_attr_ap_control_domain_mask,
+	&bus_attr_ap_usage_domain_mask,
 	&bus_attr_config_time,
 	&bus_attr_poll_thread,
 	&bus_attr_ap_interrupts,
@@ -1676,107 +1758,220 @@ static int ap_select_domain(void)
 	return -ENODEV;
 }
 
+static int ap_group_device_register(struct ap_device *ap_group_dev)
+{
+	int rc = 0;
+
+	dev_set_name(&ap_group_dev->device, "card%02x", ap_group_dev->id);
+	INIT_LIST_HEAD(&ap_group_dev->list);
+
+	spin_lock_bh(&ap_group_device_list_lock);
+	list_add(&ap_group_dev->list, &ap_group_device_list);
+	spin_unlock_bh(&ap_group_device_list_lock);
+
+	rc = device_register(&ap_group_dev->device);
+	if (rc) {
+		spin_lock_bh(&ap_group_dev->lock);
+		list_del_init(&ap_group_dev->list);
+		spin_unlock_bh(&ap_group_dev->lock);
+		put_device(&ap_group_dev->device);
+		return -EFAULT;
+	}
+
+	/* Add group device attributes. */
+	rc = sysfs_create_group(&ap_group_dev->device.kobj,
+				&ap_group_dev_attr_group);
+	if (rc)
+		device_unregister(&ap_group_dev->device);
+
+	return rc;
+}
+
+static int create_sub_device(ap_qid_t qid, int queue_depth, int device_type,
+			     unsigned int device_functions,
+			     struct ap_device *ap_group_dev)
+{
+	int rc, id, dom;
+	struct ap_device *ap_dev;
+
+	id = AP_QID_DEVICE(qid);
+	dom = AP_QID_QUEUE(qid);
+	ap_dev = kzalloc(sizeof(*ap_dev), GFP_KERNEL);
+	if (!ap_dev)
+		return -ENOMEM;
+	ap_dev->id = id;
+	ap_dev->qid = qid;
+	ap_dev->state = AP_STATE_RESET_START;
+	ap_dev->interrupt = AP_INTR_DISABLED;
+	ap_dev->queue_depth = queue_depth;
+	ap_dev->raw_hwtype = device_type;
+	ap_dev->device_type = device_type;
+	ap_dev->functions = device_functions;
+	spin_lock_init(&ap_dev->lock);
+	INIT_LIST_HEAD(&ap_dev->pendingq);
+	INIT_LIST_HEAD(&ap_dev->requestq);
+	INIT_LIST_HEAD(&ap_dev->list);
+	setup_timer(&ap_dev->timeout, ap_request_timeout,
+		    (unsigned long) ap_dev);
+
+	ap_dev->device.bus = &ap_bus_type;
+	ap_dev->device.parent = &ap_group_dev->device;
+
+	rc = dev_set_name(&ap_dev->device, "%02x.%03d",
+			  id, dom);
+	if (rc) {
+		kfree(ap_dev);
+		return -EFAULT;
+	}
+	/* Add sub devices to group device list */
+	spin_lock_bh(&ap_sub_device_list_lock[id]);
+	list_add(&ap_dev->list, &ap_sub_device_list[id]);
+	spin_unlock_bh(&ap_sub_device_list_lock[id]);
+
+	/* Start with a device reset */
+	spin_lock_bh(&ap_dev->lock);
+	ap_sm_wait(ap_sm_event(ap_dev, AP_EVENT_POLL));
+	spin_unlock_bh(&ap_dev->lock);
+	/* Register device */
+	ap_dev->device.release = ap_device_release;
+	rc = device_register(&ap_dev->device);
+	if (rc) {
+		spin_lock_bh(&ap_dev->lock);
+		list_del_init(&ap_dev->list);
+		spin_unlock_bh(&ap_dev->lock);
+		put_device(&ap_dev->device);
+		return -EFAULT;
+	}
+	/* Add device attributes. */
+	rc = sysfs_create_group(&ap_dev->device.kobj,
+				&ap_dev_attr_group);
+	if (rc) {
+		device_unregister(&ap_dev->device);
+		return -EFAULT;
+	}
+	return 0;
+}
+
 /**
- * __ap_scan_bus(): Scan the AP bus.
+ *  __ap_scan_grp_dev(): Scan the AP bus for group devices.
  * @dev: Pointer to device
  * @data: Pointer to data
- *
- * Scan the AP bus for new devices.
  */
-static int __ap_scan_bus(struct device *dev, void *data)
+static int __ap_scan_grp_dev(struct device *dev, void *data)
+{
+	return to_ap_dev(dev)->id == (unsigned long) data;
+}
+
+/**
+ * __ap_scan_dev(): Scan the AP bus for sub devices.
+ * @dev: Pointer to device
+ * @data: Pointer to data
+ */
+static int __ap_scan_dev(struct device *dev, void *data)
 {
 	return to_ap_dev(dev)->qid == (ap_qid_t)(unsigned long) data;
 }
 
+/**
+ * ap_scan_bus(): Scan the AP bus for new devices
+ * Runs periodically, workqueue timer (ap_config_time)
+ */
 static void ap_scan_bus(struct work_struct *unused)
 {
-	struct ap_device *ap_dev;
+	struct ap_device *ap_dev, *ap_group_dev;
 	struct device *dev;
 	ap_qid_t qid;
 	int queue_depth = 0, device_type = 0;
-	unsigned int device_functions = 0;
-	int rc, i, borked;
+	unsigned int device_functs = 0, domains_available;
+	int rc, id, dom, borked, group_device_registered;
 
 	ap_query_configuration();
 	if (ap_select_domain() != 0)
 		goto out;
 
-
-	spin_lock_bh(&ap_domain_lock);
-	for (i = 0; i < AP_DEVICES; i++) {
-		qid = AP_MKQID(i, ap_domain_index);
-		dev = bus_find_device(&ap_bus_type, NULL,
-				      (void *)(unsigned long)qid,
-				      __ap_scan_bus);
-		rc = ap_query_queue(qid, &queue_depth, &device_type,
-				    &device_functions);
-		if (dev) {
-			ap_dev = to_ap_dev(dev);
-			spin_lock_bh(&ap_dev->lock);
-			if (rc == -ENODEV)
-				ap_dev->state = AP_STATE_BORKED;
-			borked = ap_dev->state == AP_STATE_BORKED;
-			spin_unlock_bh(&ap_dev->lock);
-			if (borked)	/* Remove broken device */
-				device_unregister(dev);
-			put_device(dev);
-			if (!borked)
+	for (id = 0; id < AP_DEVICES; id++) {
+		if ((ap_configuration) &&
+		    !ap_test_config(ap_configuration->apm, id))
+			continue;
+		/* check if device is already registered */
+		dev = bus_find_device(&ap_bus_type, NULL, (void *)
+				      (unsigned long)id, __ap_scan_grp_dev);
+		if (!dev) {
+			ap_group_dev = kzalloc(sizeof(*ap_group_dev),
+					       GFP_KERNEL);
+			if (!ap_group_dev)
+				break;
+			ap_group_dev->device.bus = &ap_bus_type;
+			ap_group_dev->device.parent = ap_root_device;
+			ap_group_dev->device.release = ap_group_device_release;
+			ap_group_dev->qid = 0xffff;
+			ap_group_dev->id = id;
+			ap_group_dev->group = 1;
+			ap_group_dev->functions = 0x00;
+			spin_lock_init(&ap_group_dev->lock);
+			group_device_registered = 0;
+		} else {
+			ap_group_dev = to_ap_dev(dev);
+			group_device_registered = 1;
+		}
+		domains_available = 0;
+		for (dom = 0; dom < AP_DOMAINS; dom++) {
+			if (!ap_test_config_domain(dom))
 				continue;
-		}
-		if (rc)
-			continue;
-		ap_dev = kzalloc(sizeof(*ap_dev), GFP_KERNEL);
-		if (!ap_dev)
-			break;
-		ap_dev->qid = qid;
-		ap_dev->state = AP_STATE_RESET_START;
-		ap_dev->interrupt = AP_INTR_DISABLED;
-		ap_dev->queue_depth = queue_depth;
-		ap_dev->raw_hwtype = device_type;
-		ap_dev->device_type = device_type;
-		ap_dev->functions = device_functions;
-		spin_lock_init(&ap_dev->lock);
-		INIT_LIST_HEAD(&ap_dev->pendingq);
-		INIT_LIST_HEAD(&ap_dev->requestq);
-		INIT_LIST_HEAD(&ap_dev->list);
-		setup_timer(&ap_dev->timeout, ap_request_timeout,
-			    (unsigned long) ap_dev);
 
-		ap_dev->device.bus = &ap_bus_type;
-		ap_dev->device.parent = ap_root_device;
-		rc = dev_set_name(&ap_dev->device, "card%02x",
-				  AP_QID_DEVICE(ap_dev->qid));
-		if (rc) {
-			kfree(ap_dev);
-			continue;
-		}
-		/* Add to list of devices */
-		spin_lock_bh(&ap_device_list_lock);
-		list_add(&ap_dev->list, &ap_device_list);
-		spin_unlock_bh(&ap_device_list_lock);
-		/* Start with a device reset */
-		spin_lock_bh(&ap_dev->lock);
-		ap_sm_wait(ap_sm_event(ap_dev, AP_EVENT_POLL));
-		spin_unlock_bh(&ap_dev->lock);
-		/* Register device */
-		ap_dev->device.release = ap_device_release;
-		rc = device_register(&ap_dev->device);
-		if (rc) {
-			spin_lock_bh(&ap_dev->lock);
-			list_del_init(&ap_dev->list);
-			spin_unlock_bh(&ap_dev->lock);
-			put_device(&ap_dev->device);
-			continue;
-		}
-		/* Add device attributes. */
-		rc = sysfs_create_group(&ap_dev->device.kobj,
-					&ap_dev_attr_group);
-		if (rc) {
-			device_unregister(&ap_dev->device);
-			continue;
-		}
-	}
-	spin_unlock_bh(&ap_domain_lock);
+			qid = AP_MKQID(id, dom);
+			dev = bus_find_device(&ap_bus_type, NULL, (void *)
+					(unsigned long)qid, __ap_scan_dev);
+			rc = ap_query_queue(qid, &queue_depth, &device_type,
+					    &device_functs);
+			if (dev) {
+				ap_dev = to_ap_dev(dev);
+				spin_lock_bh(&ap_dev->lock);
+				if (rc == -ENODEV ||
+				    /* adapter reconfiguration */
+				    (ap_group_dev->functions &&
+				     ap_group_dev->functions != device_functs))
+					ap_dev->state = AP_STATE_BORKED;
+				borked = ap_dev->state == AP_STATE_BORKED;
+				spin_unlock_bh(&ap_dev->lock);
+				if (borked)	/* Remove broken device */
+					device_unregister(dev);
+				put_device(dev);
+				if (!borked) {
+					domains_available = 1;
+					continue;
+				}
+			}
+			if (rc)
+				continue;
+			/* new child device found */
+			/* register group device, since a domain is valid */
+			if (!group_device_registered) {
+				ap_group_dev->raw_hwtype = device_type;
+				ap_group_dev->device_type = device_type;
+				ap_group_dev->queue_depth = queue_depth;
+				ap_group_dev->functions = device_functs;
+
+				rc = ap_group_device_register(ap_group_dev);
+				if (rc) {
+					kfree(ap_group_dev);
+					/* no grp dev, no child dev, break out
+					 * continue with next group device.
+					 */
+					break;
+				}
+				group_device_registered = 1;
+			}
+
+			rc = create_sub_device(qid, queue_depth, device_type,
+					       device_functs, ap_group_dev);
+			if (!rc)
+				domains_available = 1;
+		} /* end domain loop */
+		/* In case of no sub devices, group device can be removed */
+		if (group_device_registered && !domains_available)
+			device_unregister(&ap_group_dev->device);
+	} /* end device loop */
 out:
 	mod_timer(&ap_config_timer, jiffies + ap_config_time * HZ);
 }
@@ -1826,6 +2021,11 @@ int __init ap_module_init(void)
 {
 	int max_domain_id;
 	int rc, i;
+
+	for (i = 0; i < AP_DEVICES; i++) {
+		INIT_LIST_HEAD(&ap_sub_device_list[i]);
+		spin_lock_init(&ap_sub_device_list_lock[i]);
+	}
 
 	if (ap_instructions_available() != 0) {
 		pr_warn("The hardware system does not support AP instructions\n");
@@ -1930,13 +2130,27 @@ void ap_module_exit(void)
 {
 	int i;
 
+	struct ap_device *ap_dev;
+	struct ap_device *ap_group_dev;
 	initialised = false;
 	ap_reset_domain();
 	ap_poll_thread_stop();
 	del_timer_sync(&ap_config_timer);
 	hrtimer_cancel(&ap_poll_timer);
 	tasklet_kill(&ap_tasklet);
-	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_devices_unregister);
+
+	/* remove all ap sub devices */
+	for (i = 0; i < AP_DEVICES; i++) {
+		list_for_each_entry(ap_dev, &ap_sub_device_list[i], list) {
+			__ap_devices_unregister(&ap_dev->device, NULL);
+		}
+	}
+	/* remove all ap group devices */
+	list_for_each_entry(ap_group_dev, &ap_group_device_list, list) {
+		__ap_devices_unregister(&ap_group_dev->device, NULL);
+	}
+
+	/* remove bus attributes */
 	for (i = 0; ap_bus_attrs[i]; i++)
 		bus_remove_file(&ap_bus_type, ap_bus_attrs[i]);
 	unregister_pm_notifier(&ap_power_notifier);
