@@ -85,7 +85,7 @@ static int zcrypt_cex2a_probe(struct ap_device *ap_dev)
 {
 	struct zcrypt_device *zdev = NULL;
 	int CEX2A_SPEED_IDX[] = { 800, 1000, 2000,  900, 1200, 2400, 0};
-	int CEX3A_SPEED_IDX[] = { 400,  500, 1000,  450,  550, 1200, 0};
+	int CEX3A_SPEED_IDX[] = { 400,	500, 1000,  450,  550, 1200, 0};
 	int rc = 0;
 
 	/* Group device handling */

@@ -122,9 +122,9 @@ unsigned int get_ep11cprb_fc(struct ep11_urb *, struct ap_message *,
 			     unsigned int *);
 unsigned int get_rng_fc(struct ap_message *, int *, unsigned int *);
 
-#define LOW     10
-#define MEDIUM  100
-#define HIGH    500
+#define LOW	10
+#define MEDIUM	100
+#define HIGH	500
 
 int speed_idx_cca(int);
 int speed_idx_ep11(int);

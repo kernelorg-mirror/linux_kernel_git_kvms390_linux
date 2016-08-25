@@ -1193,8 +1193,8 @@ static long zcrypt_msgtype6_send_ep11_cprb(struct zcrypt_device *zdev,
 	struct {
 		struct type6_hdr hdr;
 		struct ep11_cprb cprbx;
-		unsigned char   pld_tag;        /* fixed value 0x30 */
-		unsigned char   pld_lenfmt;     /* payload length format */
+		unsigned char	pld_tag;	/* fixed value 0x30 */
+		unsigned char	pld_lenfmt;	/* payload length format */
 	} __packed * msg = ap_msg->message;
 	struct pld_hdr {
 		unsigned char	func_tag;	/* fixed value 0x4 */

@@ -167,7 +167,7 @@ static int zcrypt_pcixcc_probe(struct ap_device *ap_dev)
 	 * MEX_1k, MEX_2k, MEX_4k, CRT_1k, CRT_2k, CRT_4k, RNG, SECKEY
 	 */
 	int CEX2C_SPEED_IDX[] = {1000, 1400, 2400, 1100, 1500, 2600, 100, 12};
-	int CEX3C_SPEED_IDX[] = { 500,  700, 1400,  550,  800, 1500,  80, 10};
+	int CEX3C_SPEED_IDX[] = { 500,	700, 1400,  550,  800, 1500,  80, 10};
 	int rc = 0;
 
 	zdev = zcrypt_device_alloc(PCIXCC_MAX_XCRB_MESSAGE_SIZE);
