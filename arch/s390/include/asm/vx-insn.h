@@ -433,6 +433,16 @@
 
 /* Vector integer instructions */
 
+/* VECTOR AND */
+.macro	VN	vr1, vr2, vr3
+	VX_NUM	v1, \vr1
+	VX_NUM	v2, \vr2
+	VX_NUM	v3, \vr3
+	.word	0xE700 | ((v1&15) << 4) | (v2&15)
+	.word	((v3&15) << 12)
+	MRXBOPC	0, 0x68, v1, v2, v3
+.endm
+
 /* VECTOR EXCLUSIVE OR */
 .macro	VX	vr1, vr2, vr3
 	VX_NUM	v1, \vr1
@@ -529,6 +539,26 @@
 	VREP	\vr1, \vr3, \imm2, 3
 .endm
 
+/* VECTOR REPLICATE IMMEDIATE */
+.macro	VREPI	vr1, imm2, m3
+	VX_NUM	v1, \vr1
+	.word	0xE700 | ((v1&15) << 4)
+	.word	\imm2
+	MRXBOPC	\m3, 0x45, v1
+.endm
+.macro	VREPIB	vr1, imm2
+	VREPI	\vr1, \imm2, 0
+.endm
+.macro	VREPIH	vr1, imm2
+	VREPI	\vr1, \imm2, 1
+.endm
+.macro	VREPIF	vr1, imm2
+	VREPI	\vr1, \imm2, 2
+.endm
+.macro	VREPIG	vr1, imm2
+	VREP	\vr1, \imm2, 3
+.endm
+
 /* VECTOR SHIFT RIGHT LOGICAL */
 .macro	VSRL	vr1, vr2, vr3
 	VX_NUM	v1, \vr1
@@ -613,6 +643,29 @@
 .endm
 .macro	VACQ	vr1, vr2, vr3, vr4
 	VAC	\vr1, \vr2, \vr3, \vr4, 4
+.endm
+
+/* VECTOR ELEMENT SHIFT RIGHT ARITHMETIC */
+.macro	VESRAV	vr1, vr2, vr3, m4
+	VX_NUM	v1, \vr1
+	VX_NUM	v2, \vr2
+	VX_NUM	v3, \vr3
+	.word	0xE700 | ((v1&15) << 4) | (v2&15)
+	.word	((v3&15) << 12)
+	MRXBOPC \m4, 0x7A, v1, v2, v3
+.endm
+
+.macro	VESRAVB	vr1, vr2, vr3
+	VESRAV	\vr1, \vr2, \vr3, 0
+.endm
+.macro	VESRAVH	vr1, vr2, vr3
+	VESRAV	\vr1, \vr2, \vr3, 1
+.endm
+.macro	VESRAVF	vr1, vr2, vr3
+	VESRAV	\vr1, \vr2, \vr3, 2
+.endm
+.macro	VESRAVG	vr1, vr2, vr3
+	VESRAV	\vr1, \vr2, \vr3, 3
 .endm
 
 #endif	/* __ASSEMBLY__ */
