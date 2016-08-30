@@ -38,7 +38,7 @@
 unsigned int get_rsa_modex_fc(struct ica_rsa_modexpo *, int *);
 unsigned int get_rsa_crt_fc(struct ica_rsa_modexpo_crt *, int *);
 
-int zcrypt_msgtype50_init(void);
+void zcrypt_msgtype50_init(void);
 void zcrypt_msgtype50_exit(void);
 
 #endif /* _ZCRYPT_MSGTYPE50_H_ */

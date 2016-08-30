@@ -1855,6 +1855,8 @@ int __init zcrypt_api_init(void)
 		goto out_misc;
 	}
 
+	zcrypt_msgtype6_init();
+	zcrypt_msgtype50_init();
 	return 0;
 
 out_misc:
@@ -1868,11 +1870,13 @@ out:
  *
  * The module termination code.
  */
-void zcrypt_api_exit(void)
+void __exit zcrypt_api_exit(void)
 {
 	remove_proc_entry("driver/z90crypt", NULL);
 	misc_deregister(&zcrypt_misc_device);
 	zcrypt_debug_exit();
+	zcrypt_msgtype6_exit();
+	zcrypt_msgtype50_exit();
 }
 
 module_init(zcrypt_api_init);
