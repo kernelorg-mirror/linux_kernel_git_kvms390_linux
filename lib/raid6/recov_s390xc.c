@@ -1,6 +1,4 @@
 /*
- * recoc_s390vx.c
- *
  * RAID-6 data recovery in dual failure mode based on the XC instruction.
  *
  * Copyright IBM Corp. 2016
@@ -17,7 +15,7 @@ static inline void xor_block(u8 *p1, u8 *p2)
 	asm volatile(
 		"	xc	0(256,%[p1]),0(%[p2])\n"
 		: "+m" (*(addrtype *) p1) : "m" (*(addrtype *) p2),
-		  [p1] "a" (p1), [p2] "a" (p2));
+		  [p1] "a" (p1), [p2] "a" (p2) : "cc");
 }
 
 /* Recover two failed data blocks. */

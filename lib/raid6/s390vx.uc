@@ -1,6 +1,4 @@
 /*
- * raid6_vx$#.c
- *
  * $#-way unrolled RAID6 gen/xor functions for s390
  * based on the vector facility
  *
