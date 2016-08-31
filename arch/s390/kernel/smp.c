@@ -202,7 +202,8 @@ static int pcpu_alloc_lowcore(struct pcpu *pcpu, int cpu)
 			mcesad = (unsigned long) kzalloc(size, GFP_KERNEL);
 			if (!mcesad)
 				goto out;
-			mcesad |= bits;
+			if (MACHINE_HAS_GS)
+				mcesad |= bits;
 		}
 	} else {
 		async_stack = pcpu->lowcore->async_stack - ASYNC_FRAME_OFFSET;
@@ -224,7 +225,7 @@ static int pcpu_alloc_lowcore(struct pcpu *pcpu, int cpu)
 	return 0;
 out:
 	if (pcpu != &pcpu_devices[0]) {
-		kfree((void *)(mcesad & -4UL));
+		kfree((void *)(mcesad & -16UL));
 		free_page(panic_stack);
 		free_pages(async_stack, ASYNC_ORDER);
 		free_pages((unsigned long) pcpu->lowcore, LC_ORDER);
@@ -241,7 +242,7 @@ static void pcpu_free_lowcore(struct pcpu *pcpu)
 	vdso_free_per_cpu(pcpu->lowcore);
 	if (pcpu == &pcpu_devices[0])
 		return;
-	kfree((void *)(pcpu->lowcore->mcesad & -4UL));
+	kfree((void *)(pcpu->lowcore->mcesad & -16UL));
 	free_page(pcpu->lowcore->panic_stack-PANIC_FRAME_OFFSET);
 	free_pages(pcpu->lowcore->async_stack-ASYNC_FRAME_OFFSET, ASYNC_ORDER);
 	free_pages((unsigned long) pcpu->lowcore, LC_ORDER);
@@ -557,7 +558,7 @@ int smp_store_status(int cpu)
 		return -EIO;
 	if (!MACHINE_HAS_VX && !MACHINE_HAS_GS)
 		return 0;
-	pa = __pa(pcpu->lowcore->mcesad & -4UL);
+	pa = __pa(pcpu->lowcore->mcesad & -16UL);
 	if (__pcpu_sigp_relax(pcpu->address, SIGP_STORE_ADDITIONAL_STATUS,
 			      pa) != SIGP_CC_ORDER_CODE_ACCEPTED)
 		return -EIO;

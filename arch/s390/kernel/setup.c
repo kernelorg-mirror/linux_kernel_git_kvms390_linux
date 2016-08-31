@@ -343,7 +343,9 @@ static void __init setup_lowcore(void)
 
 		bits = MACHINE_HAS_GS ? 11 : 10;
 		size = 1UL << bits;
-		lc->mcesad = ((__u64) __alloc_bootmem(size, size, 0)) | bits;
+		lc->mcesad = (__u64) __alloc_bootmem(size, size, 0);
+		if (MACHINE_HAS_GS)
+			lc->mcesad |= bits;
 	}
 	lc->vdso_per_cpu_data = (unsigned long) &lc->paste[0];
 	lc->sync_enter_timer = S390_lowcore.sync_enter_timer;
