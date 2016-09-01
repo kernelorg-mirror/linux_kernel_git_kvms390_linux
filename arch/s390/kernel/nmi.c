@@ -221,20 +221,18 @@ static int notrace s390_validate_registers(union mci mci, int umode)
 			"	lctlg	0,15,0(%0)"
 			: : "a" (&S390_lowcore.cregs_save_area));
 	}
-	/* Validate guarded storage register s*/
-	if (MACHINE_HAS_GS) {
-		if (!mci.gs) {
+	/* Validate guarded storage registers */
+	if (MACHINE_HAS_GS && (S390_lowcore.cregs_save_area[2] & (1UL << 4))) {
+		if (!mci.gs)
 			/*
-			 * Guarded storage register can't be restored.
-			 * If the process uses guarded storage it needs
-			 * to be terminated. Avoid current->thread.gs_cb
-			 * to check for GS enablement, use the bit in CR2
-			 * instead.
+			 * Guarded storage register can't be restored and
+			 * the current processes uses guarded storage.
+			 * It has to be terminated.
 			 */
-			if (S390_lowcore.cregs_save_area[2] & (1UL << 4))
-				kill_task = 1;
-		}
-		load_gs_cb((struct gs_cb *) mcesa->guarded_storage_save_area);
+			kill_task = 1;
+		else
+			load_gs_cb((struct gs_cb *)
+				   mcesa->guarded_storage_save_area);
 	}
 	/*
 	 * We don't even try to validate the TOD register, since we simply

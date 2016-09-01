@@ -104,6 +104,7 @@ static void __do_machine_kdump(void *image)
 static noinline void __machine_kdump(void *image)
 {
 	struct mcesa *mcesa;
+	unsigned long cr2_old, cr2_new;
 	int this_cpu, cpu;
 
 	lgr_info_log();
@@ -119,8 +120,13 @@ static noinline void __machine_kdump(void *image)
 	mcesa = (struct mcesa *)(S390_lowcore.mcesad & -16UL);
 	if (MACHINE_HAS_VX)
 		save_vx_regs((__vector128 *) mcesa->vector_save_area);
-	if (MACHINE_HAS_GS)
+	if (MACHINE_HAS_GS) {
+		__ctl_store(cr2_old, 2, 2);
+		cr2_new = cr2_old | (1UL << 4);
+		__ctl_load(cr2_new, 2, 2);
 		save_gs_cb((struct gs_cb *) mcesa->guarded_storage_save_area);
+		__ctl_load(cr2_old, 2, 2);
+	}
 	/*
 	 * To create a good backchain for this CPU in the dump store_status
 	 * is passed the address of a function. The address is saved into
