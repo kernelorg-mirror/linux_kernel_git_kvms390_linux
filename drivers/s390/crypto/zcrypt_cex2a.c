@@ -147,8 +147,7 @@ static int zcrypt_cex2a_probe(struct ap_device *ap_dev)
 	}
 	if (!zdev)
 		return -ENODEV;
-	zdev->ops = zcrypt_msgtype_request(MSGTYPE50_NAME,
-					   MSGTYPE50_VARIANT_DEFAULT);
+	zdev->ops = zcrypt_msgtype(MSGTYPE50_NAME, MSGTYPE50_VARIANT_DEFAULT);
 	zdev->ap_dev = ap_dev;
 	zdev->online = 1;
 	atomic_set(&zdev->load, 0);
@@ -157,7 +156,6 @@ static int zcrypt_cex2a_probe(struct ap_device *ap_dev)
 	rc = zcrypt_device_register(zdev);
 	if (rc) {
 		ap_dev->private = NULL;
-		zcrypt_msgtype_release(zdev->ops);
 		zcrypt_device_free(zdev);
 	}
 	return rc;
@@ -170,10 +168,8 @@ static int zcrypt_cex2a_probe(struct ap_device *ap_dev)
 static void zcrypt_cex2a_remove(struct ap_device *ap_dev)
 {
 	struct zcrypt_device *zdev = ap_dev->private;
-	struct zcrypt_ops *zops = zdev->ops;
 
 	zcrypt_device_unregister(zdev);
-	zcrypt_msgtype_release(zops);
 }
 
 int __init zcrypt_cex2a_init(void)

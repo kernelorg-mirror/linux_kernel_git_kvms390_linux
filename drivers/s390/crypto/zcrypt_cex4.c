@@ -172,7 +172,7 @@ static int zcrypt_cex4_probe(struct ap_device *ap_dev)
 				zdev->type_string = "CEX4A";
 			else
 				zdev->type_string = "CEX5A";
-			zdev->ops = zcrypt_msgtype_request(MSGTYPE50_NAME,
+			zdev->ops = zcrypt_msgtype(MSGTYPE50_NAME,
 						MSGTYPE50_VARIANT_DEFAULT);
 		} else if (ap_test_bit(&ap_dev->functions, AP_FUNC_COPRO)) {
 			zdev = zcrypt_device_alloc(CEX4C_MAX_MESSAGE_SIZE);
@@ -182,7 +182,7 @@ static int zcrypt_cex4_probe(struct ap_device *ap_dev)
 				zdev->type_string = "CEX4C";
 			else
 				zdev->type_string = "CEX5C";
-			zdev->ops = zcrypt_msgtype_request(MSGTYPE06_NAME,
+			zdev->ops = zcrypt_msgtype(MSGTYPE06_NAME,
 						MSGTYPE06_VARIANT_DEFAULT);
 		} else if (ap_test_bit(&ap_dev->functions, AP_FUNC_EP11)) {
 			zdev = zcrypt_device_alloc(CEX4C_MAX_MESSAGE_SIZE);
@@ -192,7 +192,7 @@ static int zcrypt_cex4_probe(struct ap_device *ap_dev)
 				zdev->type_string = "CEX4P";
 			else
 				zdev->type_string = "CEX5P";
-			zdev->ops = zcrypt_msgtype_request(MSGTYPE06_NAME,
+			zdev->ops = zcrypt_msgtype(MSGTYPE06_NAME,
 						MSGTYPE06_VARIANT_EP11);
 		}
 		break;
@@ -206,7 +206,6 @@ static int zcrypt_cex4_probe(struct ap_device *ap_dev)
 	ap_dev->private = zdev;
 	rc = zcrypt_device_register(zdev);
 	if (rc) {
-		zcrypt_msgtype_release(zdev->ops);
 		ap_dev->private = NULL;
 		zcrypt_device_free(zdev);
 	}
@@ -220,17 +219,12 @@ static int zcrypt_cex4_probe(struct ap_device *ap_dev)
 static void zcrypt_cex4_remove(struct ap_device *ap_dev)
 {
 	struct zcrypt_device *zdev = ap_dev->private;
-	struct zcrypt_ops *zops;
 
 	if (zdev) {
-		zops = zdev->ops;
-
 		if (ap_dev->group)
 			zcrypt_group_device_unregister(zdev);
-		else {
+		else
 			zcrypt_device_unregister(zdev);
-			zcrypt_msgtype_release(zops);
-		}
 	}
 }
 
