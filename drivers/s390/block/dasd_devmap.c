@@ -1390,7 +1390,9 @@ static ssize_t dasd_hpf_show(struct device *dev, struct device_attribute *attr,
 	int hpf;
 
 	device = dasd_device_from_cdev(to_ccwdev(dev));
-	if (IS_ERR(device) || !device->discipline->reset_path) {
+	if (IS_ERR(device))
+		return -ENODEV;
+	if (!device->discipline->hpf_enabled) {
 		dasd_put_device(device);
 		return snprintf(buf, PAGE_SIZE, "%d\n", dasd_nofcx);
 	}
