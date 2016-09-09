@@ -1201,7 +1201,7 @@ static u32 get_fcx_max_data(struct dasd_device *device)
 		dev_warn(&device->cdev->dev, "Detecting the maximum supported data size for zHPF requests failed\n");
 		return 0;
 	} else {
-		return mdc * FCX_MAX_DATA_FACTOR;
+		return (u32) mdc * FCX_MAX_DATA_FACTOR;
 	}
 }
 
