@@ -137,7 +137,7 @@ struct zcrypt_device {
 	struct ap_message reply;	/* Per-device reply structure. */
 	int max_exp_bit_length;
 
-	struct zcrypt_device *group_dev;/* Pointer to group device */
+	struct zcrypt_device *card_dev; /* Pointer to card device */
 	debug_info_t *dbf_area;		/* debugging */
 };
 
@@ -148,10 +148,10 @@ struct zcrypt_device *zcrypt_device_alloc(size_t);
 void zcrypt_device_free(struct zcrypt_device *);
 void zcrypt_device_get(struct zcrypt_device *);
 int zcrypt_device_put(struct zcrypt_device *);
-int zcrypt_device_register(struct zcrypt_device *);
-void zcrypt_device_unregister(struct zcrypt_device *);
-int zcrypt_group_device_register(struct zcrypt_device *);
-void zcrypt_group_device_unregister(struct zcrypt_device *);
+int zcrypt_queue_device_register(struct zcrypt_device *);
+void zcrypt_queue_device_unregister(struct zcrypt_device *);
+int zcrypt_card_device_register(struct zcrypt_device *);
+void zcrypt_card_device_unregister(struct zcrypt_device *);
 void zcrypt_msgtype_register(struct zcrypt_ops *);
 void zcrypt_msgtype_unregister(struct zcrypt_ops *);
 struct zcrypt_ops *zcrypt_msgtype(unsigned char *, int);

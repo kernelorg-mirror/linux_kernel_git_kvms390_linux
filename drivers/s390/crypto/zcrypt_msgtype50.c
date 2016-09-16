@@ -315,7 +315,7 @@ static int ICACRT_msg_to_type50CRT_msg(struct zcrypt_device *zdev,
 		u = crb2->u + sizeof(crb2->u) - short_len;
 		inp = crb2->message + sizeof(crb2->message) - mod_len;
 	} else if ((mod_len <= 512) &&	/* up to 4096 bit key size */
-		   (zdev->group_dev->max_mod_size == CEX3A_MAX_MOD_SIZE)) {
+		   (zdev->card_dev->max_mod_size == CEX3A_MAX_MOD_SIZE)) {
 		struct type50_crb3_msg *crb3 = ap_msg->message;
 		memset(crb3, 0, sizeof(*crb3));
 		ap_msg->length = sizeof(*crb3);
@@ -368,15 +368,15 @@ static int convert_type80(struct zcrypt_device *zdev,
 		/* The result is too short, the CEX2A card may not do that.. */
 		zdev->online = 0;
 		pr_err("Cryptographic device %x failed and was set offline\n",
-		       AP_QID_DEVICE(zdev->ap_dev->qid));
+		       AP_QID_CARD(zdev->ap_dev->qid));
 		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%drc%d",
-			       AP_QID_DEVICE(zdev->ap_dev->qid),
+			       AP_QID_CARD(zdev->ap_dev->qid),
 			       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online, t80h->code);
 
 		return -EAGAIN;	/* repeat the request on a different device. */
 	}
-	if (zdev->group_dev->user_space_type == ZCRYPT_CEX2A)
+	if (zdev->card_dev->user_space_type == ZCRYPT_CEX2A)
 		BUG_ON(t80h->len > CEX2A_MAX_RESPONSE_SIZE);
 	else
 		BUG_ON(t80h->len > CEX3A_MAX_RESPONSE_SIZE);
@@ -402,9 +402,9 @@ static int convert_response(struct zcrypt_device *zdev,
 	default: /* Unknown response type, this should NEVER EVER happen */
 		zdev->online = 0;
 		pr_err("Cryptographic device %x failed and was set offline\n",
-		       AP_QID_DEVICE(zdev->ap_dev->qid));
+		       AP_QID_CARD(zdev->ap_dev->qid));
 		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%dfail",
-			       AP_QID_DEVICE(zdev->ap_dev->qid),
+			       AP_QID_CARD(zdev->ap_dev->qid),
 			       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online);
 		return -EAGAIN;	/* repeat the request on a different device. */
@@ -465,7 +465,7 @@ static long zcrypt_cex2a_modexpo(struct zcrypt_device *zdev,
 	int rc;
 
 	ap_init_message(&ap_msg);
-	if (zdev->group_dev->user_space_type == ZCRYPT_CEX2A)
+	if (zdev->card_dev->user_space_type == ZCRYPT_CEX2A)
 		ap_msg.message = kmalloc(MSGTYPE50_CRB2_MAX_MSG_SIZE,
 					 GFP_KERNEL);
 	else
@@ -511,7 +511,7 @@ static long zcrypt_cex2a_modexpo_crt(struct zcrypt_device *zdev,
 	int rc;
 
 	ap_init_message(&ap_msg);
-	if (zdev->group_dev->user_space_type == ZCRYPT_CEX2A)
+	if (zdev->card_dev->user_space_type == ZCRYPT_CEX2A)
 		ap_msg.message = kmalloc(MSGTYPE50_CRB2_MAX_MSG_SIZE,
 					 GFP_KERNEL);
 	else

@@ -648,8 +648,8 @@ static int convert_type86_ica(struct zcrypt_device *zdev,
 		if (service_rc == 8 && service_rs == 770)
 			return -EINVAL;
 		if (service_rc == 8 && service_rs == 783) {
-			zdev->group_dev->min_mod_size =
-					PCIXCC_MIN_MOD_SIZE_OLD;
+			zdev->card_dev->min_mod_size =
+				PCIXCC_MIN_MOD_SIZE_OLD;
 			return -EAGAIN;
 		}
 		if (service_rc == 12 && service_rs == 769)
@@ -658,9 +658,9 @@ static int convert_type86_ica(struct zcrypt_device *zdev,
 			return -EINVAL;
 		zdev->online = 0;
 		pr_err("Cryptographic device %x failed and was set offline\n",
-		       AP_QID_DEVICE(zdev->ap_dev->qid));
+		       AP_QID_CARD(zdev->ap_dev->qid));
 		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%drc%d",
-			       AP_QID_DEVICE(zdev->ap_dev->qid),
+			       AP_QID_CARD(zdev->ap_dev->qid),
 			       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online,
 			       msg->hdr.reply_code);
@@ -787,8 +787,8 @@ static int convert_response_ica(struct zcrypt_device *zdev,
 		if (msg->cprbx.ccp_rtcode &&
 		   (msg->cprbx.ccp_rscode == 0x14f) &&
 		   (outputdatalength > 256)) {
-			if (zdev->group_dev->max_exp_bit_length <= 17) {
-				zdev->group_dev->max_exp_bit_length = 17;
+			if (zdev->card_dev->max_exp_bit_length <= 17) {
+				zdev->card_dev->max_exp_bit_length = 17;
 				return -EAGAIN;
 			} else
 				return -EINVAL;
@@ -803,9 +803,9 @@ static int convert_response_ica(struct zcrypt_device *zdev,
 	default: /* Unknown response type, this should NEVER EVER happen */
 		zdev->online = 0;
 		pr_err("Cryptographic device %x failed and was set offline\n",
-		       AP_QID_DEVICE(zdev->ap_dev->qid));
+		       AP_QID_CARD(zdev->ap_dev->qid));
 		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%dfail",
-			       AP_QID_DEVICE(zdev->ap_dev->qid),
+			       AP_QID_CARD(zdev->ap_dev->qid),
 			       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online);
 		return -EAGAIN;	/* repeat the request on a different device. */
@@ -837,9 +837,9 @@ static int convert_response_xcrb(struct zcrypt_device *zdev,
 		xcRB->status = 0x0008044DL; /* HDD_InvalidParm */
 		zdev->online = 0;
 		pr_err("Cryptographic device %x failed and was set offline\n",
-		       AP_QID_DEVICE(zdev->ap_dev->qid));
+		       AP_QID_CARD(zdev->ap_dev->qid));
 		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%dfail",
-		       AP_QID_DEVICE(zdev->ap_dev->qid),
+		       AP_QID_CARD(zdev->ap_dev->qid),
 		       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online);
 		return -EAGAIN;	/* repeat the request on a different device. */
@@ -865,9 +865,9 @@ static int convert_response_ep11_xcrb(struct zcrypt_device *zdev,
 	default: /* Unknown response type, this should NEVER EVER happen */
 		zdev->online = 0;
 		pr_err("Cryptographic device %x failed and was set offline\n",
-		       AP_QID_DEVICE(zdev->ap_dev->qid));
+		       AP_QID_CARD(zdev->ap_dev->qid));
 		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%dfail",
-			       AP_QID_DEVICE(zdev->ap_dev->qid),
+			       AP_QID_CARD(zdev->ap_dev->qid),
 			       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online);
 		return -EAGAIN; /* repeat the request on a different device. */
@@ -894,9 +894,9 @@ static int convert_response_rng(struct zcrypt_device *zdev,
 	default: /* Unknown response type, this should NEVER EVER happen */
 		zdev->online = 0;
 		pr_err("Cryptographic device %x failed and was set offline\n",
-		       AP_QID_DEVICE(zdev->ap_dev->qid));
+		       AP_QID_CARD(zdev->ap_dev->qid));
 		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%dfail",
-			       AP_QID_DEVICE(zdev->ap_dev->qid),
+			       AP_QID_CARD(zdev->ap_dev->qid),
 			       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online);
 		return -EAGAIN;	/* repeat the request on a different device. */
