@@ -993,10 +993,12 @@ dasd_access_show(struct device *dev, struct device_attribute *attr,
 	if (IS_ERR(device))
 		return PTR_ERR(device);
 
-	if (device->discipline->host_access_count)
-		count = device->discipline->host_access_count(device);
-	else
+	if (!device->discipline)
+		count = -ENODEV;
+	else if (!device->discipline->host_access_count)
 		count = -EOPNOTSUPP;
+	else
+		count = device->discipline->host_access_count(device);
 
 	dasd_put_device(device);
 	if (count < 0)
@@ -1365,16 +1367,16 @@ dasd_path_reset_store(struct device *dev, struct device_attribute *attr,
 		      const char *buf, size_t count)
 {
 	struct dasd_device *device;
-	int val;
+	unsigned int val;
 
 	device = dasd_device_from_cdev(to_ccwdev(dev));
-	if (IS_ERR(device) || !device->block)
+	if (IS_ERR(device))
 		return -ENODEV;
 
-	if ((kstrtouint(buf, 16, &val) != 0) || val < 0 || val > 0xff)
+	if ((kstrtouint(buf, 16, &val) != 0) || val > 0xff)
 		val = 0;
 
-	if (device->discipline->reset_path)
+	if (device->discipline && device->discipline->reset_path)
 		device->discipline->reset_path(device, (__u8) val);
 
 	dasd_put_device(device);
@@ -1392,7 +1394,7 @@ static ssize_t dasd_hpf_show(struct device *dev, struct device_attribute *attr,
 	device = dasd_device_from_cdev(to_ccwdev(dev));
 	if (IS_ERR(device))
 		return -ENODEV;
-	if (!device->discipline->hpf_enabled) {
+	if (!device->discipline || !device->discipline->hpf_enabled) {
 		dasd_put_device(device);
 		return snprintf(buf, PAGE_SIZE, "%d\n", dasd_nofcx);
 	}
