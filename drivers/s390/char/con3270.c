@@ -126,7 +126,8 @@ con3270_update_string(struct con3270 *cp, struct string *s, int nr)
 {
 	if (s->len < 4) {
 		/* This indicates a bug, but printing a warning would
-		 * cause a deadlock. */
+		 * cause a deadlock.
+		 */
 		return;
 	}
 	if (s->string[s->len - 4] != TO_RA)
