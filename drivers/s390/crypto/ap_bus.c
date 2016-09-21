@@ -92,7 +92,6 @@ static DECLARE_WORK(ap_scan_work, ap_scan_bus);
  */
 static void ap_tasklet_fn(unsigned long);
 static DECLARE_TASKLET(ap_tasklet, ap_tasklet_fn, 0);
-static atomic_t ap_poll_requests = ATOMIC_INIT(0);
 static DECLARE_WAIT_QUEUE_HEAD(ap_poll_wait);
 static struct task_struct *ap_poll_kthread = NULL;
 static DEFINE_MUTEX(ap_poll_thread_mutex);
@@ -420,7 +419,6 @@ static struct ap_queue_status ap_sm_recv(struct ap_device *ap_dev)
 			 ap_dev->reply->message, ap_dev->reply->length);
 	switch (status.response_code) {
 	case AP_RESPONSE_NORMAL:
-		atomic_dec(&ap_poll_requests);
 		ap_dev->queue_count--;
 		if (ap_dev->queue_count > 0)
 			mod_timer(&ap_dev->timeout,
@@ -437,7 +435,6 @@ static struct ap_queue_status ap_sm_recv(struct ap_device *ap_dev)
 		if (!status.queue_empty || ap_dev->queue_count <= 0)
 			break;
 		/* The card shouldn't forget requests but who knows. */
-		atomic_sub(ap_dev->queue_count, &ap_poll_requests);
 		ap_dev->queue_count = 0;
 		list_splice_init(&ap_dev->pendingq, &ap_dev->requestq);
 		ap_dev->requestq_count += ap_dev->pendingq_count;
@@ -525,7 +522,6 @@ static enum ap_wait ap_sm_write(struct ap_device *ap_dev)
 			   ap_msg->message, ap_msg->length, ap_msg->special);
 	switch (status.response_code) {
 	case AP_RESPONSE_NORMAL:
-		atomic_inc(&ap_poll_requests);
 		ap_dev->queue_count++;
 		if (ap_dev->queue_count == 1)
 			mod_timer(&ap_dev->timeout,
@@ -850,6 +846,27 @@ static void ap_tasklet_fn(unsigned long dummy)
 	ap_sm_wait(wait);
 }
 
+static int ap_pending_requests(void)
+{
+	struct device *dev = NULL;
+	struct ap_device *ap_dev;
+	int pending = 0;
+
+	while (pending == 0 &&
+	       (dev = bus_find_device(&ap_bus_type, dev,
+				      NULL, __match_any_queue_device)))
+	{
+		ap_dev = to_ap_dev(dev);
+		spin_lock_bh(&ap_dev->lock);
+		if (ap_dev->queue_count)
+			pending++;
+		spin_unlock_bh(&ap_dev->lock);
+		put_device(dev);
+	}
+
+	return pending;
+}
+
 /**
  * ap_poll_thread(): Thread that polls for finished requests.
  * @data: Unused pointer
@@ -869,8 +886,7 @@ static int ap_poll_thread(void *data)
 	while (!kthread_should_stop()) {
 		add_wait_queue(&ap_poll_wait, &wait);
 		set_current_state(TASK_INTERRUPTIBLE);
-		if (ap_suspend_flag ||
-		    atomic_read(&ap_poll_requests) <= 0) {
+		if (ap_suspend_flag || ap_pending_requests()) {
 			schedule();
 			try_to_freeze();
 		}
@@ -1379,9 +1395,6 @@ static int ap_device_remove(struct device *dev)
 		del_timer_sync(&ap_dev->timeout);
 		if (ap_drv->remove)
 			ap_drv->remove(ap_dev);
-		spin_lock_bh(&ap_dev->lock);
-		atomic_sub(ap_dev->queue_count, &ap_poll_requests);
-		spin_unlock_bh(&ap_dev->lock);
 	}
 	return 0;
 }
