@@ -77,6 +77,8 @@ struct device *ap_root_device = NULL;
 EXPORT_SYMBOL(ap_root_device);
 
 static struct ap_config_info *ap_configuration;
+static spinlock_t ap_queue_device_list_lock[AP_DEVICES];
+static struct list_head ap_queue_device_list[AP_DEVICES];
 static bool initialised;
 
 /*
@@ -765,54 +767,6 @@ static void ap_interrupt_handler(struct airq_struct *airq)
 		tasklet_schedule(&ap_tasklet);
 }
 
-/*
- * helper function to be used with bus_find_dev
- * matches for all card devices
- */
-static int __match_any_card_device(struct device *dev, void *data)
-{
-	return is_card_dev(dev);
-}
-
-/*
- * helper function to be used with bus_find_dev
- * matches for the card device with the given id
- */
-static int __match_card_device_with_id(struct device *dev, void *data)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	return is_card_dev(dev) && ap_dev->id == (int)(long) data;
-}
-
-/*
- * helper function to be used with bus_find_dev
- * matches for all queue devices
- */
-static int __match_any_queue_device(struct device *dev, void *data)
-{
-	return is_queue_dev(dev);
-}
-
-/* helper function to be used with bus_find_dev
- * matches for all queue devices for a given id
- */
-static int __match_queue_device_with_id(struct device *dev, void *data)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	return is_queue_dev(dev) &&
-		AP_QID_CARD(ap_dev->qid) == (int)(long) data;
-}
-
-/* helper function to be used with bus_find_dev
- * matches for the queue device with a given qid
- */
-static int __match_queue_device_with_qid(struct device *dev, void *data)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	return is_queue_dev(dev) &&
-		ap_dev->qid == (int)(long) data;
-}
-
 /**
  * ap_tasklet_fn(): Tasklet to poll all AP devices.
  * @dummy: Unused variable
@@ -821,7 +775,7 @@ static int __match_queue_device_with_qid(struct device *dev, void *data)
  */
 static void ap_tasklet_fn(unsigned long dummy)
 {
-	struct device *dev = NULL;
+	int id;
 	struct ap_device *ap_dev;
 	enum ap_wait wait = AP_WAIT_NONE;
 
@@ -832,15 +786,15 @@ static void ap_tasklet_fn(unsigned long dummy)
 	if (ap_using_interrupts())
 		xchg(ap_airq.lsi_ptr, 0);
 
-	while ((dev = bus_find_device(&ap_bus_type, dev,
-				      NULL, __match_any_queue_device)))
-	{
-		ap_dev = to_ap_dev(dev);
-		spin_lock_bh(&ap_dev->lock);
-		wait = min(wait, ap_sm_event_loop(ap_dev,
-						  AP_EVENT_POLL));
-		spin_unlock_bh(&ap_dev->lock);
-		put_device(dev);
+	for (id = 0; id < AP_DEVICES; id++) {
+		spin_lock(&ap_queue_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
+			spin_lock_bh(&ap_dev->lock);
+			wait = min(wait, ap_sm_event_loop(ap_dev,
+							  AP_EVENT_POLL));
+			spin_unlock_bh(&ap_dev->lock);
+		}
+		spin_unlock(&ap_queue_device_list_lock[id]);
 	}
 
 	ap_sm_wait(wait);
@@ -848,20 +802,19 @@ static void ap_tasklet_fn(unsigned long dummy)
 
 static int ap_pending_requests(void)
 {
-	struct device *dev = NULL;
 	struct ap_device *ap_dev;
-	int pending = 0;
+	int id, pending = 0;
 
-	while (pending == 0 &&
-	       (dev = bus_find_device(&ap_bus_type, dev,
-				      NULL, __match_any_queue_device)))
-	{
-		ap_dev = to_ap_dev(dev);
-		spin_lock_bh(&ap_dev->lock);
-		if (ap_dev->queue_count)
-			pending++;
-		spin_unlock_bh(&ap_dev->lock);
-		put_device(dev);
+	for (id = 0; pending == 0 && id < AP_DEVICES; id++) {
+		spin_lock_bh(&ap_queue_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
+			spin_lock_bh(&ap_dev->lock);
+			if (ap_dev->queue_count)
+				pending = 1;
+			spin_unlock_bh(&ap_dev->lock);
+			if (pending) break;
+		}
+		spin_unlock_bh(&ap_queue_device_list_lock[id]);
 	}
 
 	return pending;
@@ -886,7 +839,7 @@ static int ap_poll_thread(void *data)
 	while (!kthread_should_stop()) {
 		add_wait_queue(&ap_poll_wait, &wait);
 		set_current_state(TASK_INTERRUPTIBLE);
-		if (ap_suspend_flag || ap_pending_requests()) {
+		if (ap_suspend_flag || !ap_pending_requests()) {
 			schedule();
 			try_to_freeze();
 		}
@@ -898,7 +851,8 @@ static int ap_poll_thread(void *data)
 			continue;
 		}
 		ap_tasklet_fn(0);
-	} while (!kthread_should_stop());
+	}
+
 	return 0;
 }
 
@@ -1013,17 +967,17 @@ static ssize_t ap_request_count_show(struct device *dev,
 				     char *buf)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
-	unsigned int req_cnt = 0;
+	unsigned int id, req_cnt = 0;
 
 	if (is_card_dev(dev)) {
-		struct device *_dev = NULL;
-		while ((_dev = bus_find_device(&ap_bus_type, _dev,
-					       (void *)(long) ap_dev->id,
-					       __match_queue_device_with_id)))
-		{
-			req_cnt += to_ap_dev(_dev)->total_request_count;
-			put_device(_dev);
+		id = ap_dev->id;
+		spin_lock_bh(&ap_queue_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
+			spin_lock_bh(&ap_dev->lock);
+			req_cnt += ap_dev->total_request_count;
+			spin_unlock_bh(&ap_dev->lock);
 		}
+		spin_unlock_bh(&ap_queue_device_list_lock[id]);
 	} else {
 		spin_lock_bh(&ap_dev->lock);
 		req_cnt = ap_dev->total_request_count;
@@ -1038,17 +992,17 @@ static ssize_t ap_requestq_count_show(struct device *dev,
 				      struct device_attribute *attr, char *buf)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
-	unsigned int reqq_cnt = 0;
+	unsigned int id, reqq_cnt = 0;
 
 	if (is_card_dev(dev)) {
-		struct device *_dev = NULL;
-		while ((_dev = bus_find_device(&ap_bus_type, _dev,
-					       (void *)(long) ap_dev->id,
-					       __match_queue_device_with_id)))
-		{
-			reqq_cnt += to_ap_dev(_dev)->requestq_count;
-			put_device(_dev);
+		id = ap_dev->id;
+		spin_lock_bh(&ap_queue_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
+			spin_lock_bh(&ap_dev->lock);
+			reqq_cnt += ap_dev->requestq_count;
+			spin_unlock_bh(&ap_dev->lock);
 		}
+		spin_unlock_bh(&ap_queue_device_list_lock[id]);
 	} else {
 		spin_lock_bh(&ap_dev->lock);
 		reqq_cnt = ap_dev->requestq_count;
@@ -1063,17 +1017,17 @@ static ssize_t ap_pendingq_count_show(struct device *dev,
 				      struct device_attribute *attr, char *buf)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
-	unsigned int penq_cnt = 0;
+	unsigned int id, penq_cnt = 0;
 
 	if (is_card_dev(dev)) {
-		struct device *_dev = NULL;
-		while ((_dev = bus_find_device(&ap_bus_type, _dev,
-					       (void *)(long) ap_dev->id,
-					       __match_queue_device_with_id)))
-		{
-			penq_cnt += to_ap_dev(_dev)->pendingq_count;
-			put_device(_dev);
+		id = ap_dev->id;
+		spin_lock_bh(&ap_queue_device_list_lock[id]);
+		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
+			spin_lock_bh(&ap_dev->lock);
+			penq_cnt += ap_dev->pendingq_count;
+			spin_unlock_bh(&ap_dev->lock);
 		}
+		spin_unlock_bh(&ap_queue_device_list_lock[id]);
 	} else {
 		spin_lock_bh(&ap_dev->lock);
 		penq_cnt = ap_dev->pendingq_count;
@@ -1265,7 +1219,7 @@ static void ap_bus_suspend(void)
 	tasklet_disable(&ap_tasklet);
 }
 
-static int __ap_devices_unregister(struct device *dev, void *dummy)
+static int __ap_device_unregister(struct device *dev, void *dummy)
 {
 	device_unregister(dev);
 	return 0;
@@ -1276,7 +1230,7 @@ static void ap_bus_resume(void)
 	int rc;
 
 	/* Unconditionally remove all AP devices */
-	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_devices_unregister);
+	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_device_unregister);
 	/* Reset thin interrupt setting */
 	if (ap_interrupts_available() && !ap_using_interrupts()) {
 		rc = register_adapter_interrupt(&ap_airq);
@@ -1384,18 +1338,22 @@ EXPORT_SYMBOL(ap_flush_queue);
 
 static int ap_device_remove(struct device *dev)
 {
+	int id;
 	struct ap_device *ap_dev = to_ap_dev(dev);
 	struct ap_driver *ap_drv = ap_dev->drv;
 
-	if (is_card_dev(dev)) {
-		if (ap_drv->remove)
-			ap_drv->remove(ap_dev);
-	} else {
+	if (is_queue_dev(dev)) {
+		id = AP_QID_CARD(ap_dev->qid);
 		ap_flush_queue(ap_dev);
 		del_timer_sync(&ap_dev->timeout);
-		if (ap_drv->remove)
-			ap_drv->remove(ap_dev);
+		spin_lock_bh(&ap_queue_device_list_lock[id]);
+		list_del_init(&ap_dev->list);
+		spin_unlock_bh(&ap_queue_device_list_lock[id]);
 	}
+
+	if (ap_drv->remove)
+		ap_drv->remove(ap_dev);
+
 	return 0;
 }
 static void ap_card_device_release(struct device *dev)
@@ -1405,6 +1363,8 @@ static void ap_card_device_release(struct device *dev)
 
 static void ap_queue_device_release(struct device *dev)
 {
+	/* decrease parent device's refcount */
+	put_device(dev->parent);
 	kfree(to_ap_dev(dev));
 }
 
@@ -1671,6 +1631,7 @@ static struct ap_device *create_card_device(int id,
 	ap_dev->device_type = device_type;
 	ap_dev->functions = device_functs;
 	spin_lock_init(&ap_dev->lock);
+	INIT_LIST_HEAD(&ap_dev->list);
 
 	ap_dev->device.bus = &ap_bus_type;
 	ap_dev->device.parent = ap_root_device;
@@ -1738,15 +1699,27 @@ static int create_queue_device(ap_qid_t qid,
 		return -EFAULT;
 	}
 
+	/* Add queue devices to queue device list */
+	spin_lock_bh(&ap_queue_device_list_lock[id]);
+	list_add(&ap_dev->list, &ap_queue_device_list[id]);
+	spin_unlock_bh(&ap_queue_device_list_lock[id]);
+
 	/* Start with a device reset */
 	spin_lock_bh(&ap_dev->lock);
 	ap_sm_wait(ap_sm_event(ap_dev, AP_EVENT_POLL));
 	spin_unlock_bh(&ap_dev->lock);
 
+	/* increase parent device's refcount */
+	get_device(ap_dev->device.parent);
+
 	/* Register device */
 	ap_dev->device.release = ap_queue_device_release;
 	rc = device_register(&ap_dev->device);
 	if (rc) {
+		spin_lock_bh(&ap_queue_device_list_lock[id]);
+		list_del_init(&ap_dev->list);
+		spin_unlock_bh(&ap_queue_device_list_lock[id]);
+		put_device(ap_dev->device.parent);
 		put_device(&ap_dev->device);
 		return -EFAULT;
 	}
@@ -1758,6 +1731,44 @@ static int create_queue_device(ap_qid_t qid,
 		return -EFAULT;
 	}
 	return 0;
+}
+
+/*
+ * helper function to be used with bus_find_dev
+ * matches for the card device with the given id
+ */
+static int __match_card_device_with_id(struct device *dev, void *data)
+{
+	struct ap_device *ap_dev = to_ap_dev(dev);
+	return is_card_dev(dev) && ap_dev->id == (int)(long) data;
+}
+
+/* helper function to be used with bus_find_dev
+ * matches for the queue device with a given qid
+ */
+static int __match_queue_device_with_qid(struct device *dev, void *data)
+{
+	struct ap_device *ap_dev = to_ap_dev(dev);
+	return is_queue_dev(dev) &&
+		ap_dev->qid == (int)(long) data;
+}
+
+/*
+ * helper function to be used with bus_find_dev
+ * matches for all card devices
+ */
+static int __match_any_card_device(struct device *dev, void *data)
+{
+	return is_card_dev(dev);
+}
+
+/*
+ * helper function to be used with bus_find_dev
+ * matches for all queue devices
+ */
+static int __match_any_queue_device(struct device *dev, void *data)
+{
+	return is_queue_dev(dev);
 }
 
 /**
@@ -1887,6 +1898,11 @@ int __init ap_module_init(void)
 {
 	int max_domain_id;
 	int rc, i;
+
+	for (i = 0; i < AP_DEVICES; i++) {
+		INIT_LIST_HEAD(&ap_queue_device_list[i]);
+		spin_lock_init(&ap_queue_device_list_lock[i]);
+	}
 
 	if (ap_instructions_available() != 0) {
 		pr_warn("The hardware system does not support AP instructions\n");

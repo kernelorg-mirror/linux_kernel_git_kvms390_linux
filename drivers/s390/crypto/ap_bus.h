@@ -179,6 +179,7 @@ struct ap_device {
 	struct device device;
 	struct ap_driver *drv;		/* Pointer to AP device driver. */
 	spinlock_t lock;		/* Per device lock. */
+	struct list_head list;		/* private list of all AP devices. */
 
 	void *private;			/* ap driver private pointer. */
 
