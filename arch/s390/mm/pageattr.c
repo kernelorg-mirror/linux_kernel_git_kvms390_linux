@@ -84,6 +84,8 @@ static void pgt_set(unsigned long *old, unsigned long new, unsigned long addr,
 struct cpa {
 	unsigned int set_ro	: 1;
 	unsigned int clear_ro	: 1;
+	unsigned int set_nx	: 1;
+	unsigned int clear_nx	: 1;
 };
 
 static int walk_pte_level(pmd_t *pmdp, unsigned long addr, unsigned long end,
@@ -99,6 +101,10 @@ static int walk_pte_level(pmd_t *pmdp, unsigned long addr, unsigned long end,
 			new = pte_wrprotect(*ptep);
 		else if (cpa.clear_ro)
 			new = pte_mkwrite(pte_mkdirty(*ptep));
+		if (cpa.set_nx)
+			pte_val(new) |= _PAGE_NOEXEC;
+		else if (cpa.clear_nx)
+			pte_val(new) &= ~_PAGE_NOEXEC;
 		pgt_set((unsigned long *)ptep, pte_val(new), addr, CRDTE_DTT_PAGE);
 		ptep++;
 		addr += PAGE_SIZE;
@@ -141,6 +147,10 @@ static void modify_pmd_page(pmd_t *pmdp, unsigned long addr, struct cpa cpa)
 		new = pmd_wrprotect(*pmdp);
 	else if (cpa.clear_ro)
 		new = pmd_mkwrite(pmd_mkdirty(*pmdp));
+	if (cpa.set_nx)
+		pmd_val(new) |= _SEGMENT_ENTRY_NOEXEC;
+	else if (cpa.clear_nx)
+		pmd_val(new) &= ~_SEGMENT_ENTRY_NOEXEC;
 	pgt_set((unsigned long *)pmdp, pmd_val(new), addr, CRDTE_DTT_SEGMENT);
 }
 
@@ -210,6 +220,10 @@ static void modify_pud_page(pud_t *pudp, unsigned long addr, struct cpa cpa)
 		new = pud_wrprotect(*pudp);
 	else if (cpa.clear_ro)
 		new = pud_mkwrite(pud_mkdirty(*pudp));
+	if (cpa.set_nx)
+		pud_val(new) |= _REGION_ENTRY_NOEXEC;
+	else if (cpa.clear_nx)
+		pud_val(new) &= ~_REGION_ENTRY_NOEXEC;
 	pgt_set((unsigned long *)pudp, pud_val(new), addr, CRDTE_DTT_REGION3);
 }
 
@@ -291,15 +305,28 @@ int set_memory_rw(unsigned long addr, int numpages)
 	return change_page_attr(addr, addr + numpages * PAGE_SIZE, cpa);
 }
 
-/* not possible */
 int set_memory_nx(unsigned long addr, int numpages)
 {
-	return 0;
+	struct cpa cpa = {
+		.set_nx = 1,
+	};
+
+	if (!MACHINE_HAS_NX)
+		return 0;
+	addr &= PAGE_MASK;
+	return change_page_attr(addr, addr + numpages * PAGE_SIZE, cpa);
 }
 
 int set_memory_x(unsigned long addr, int numpages)
 {
-	return 0;
+	struct cpa cpa = {
+		.clear_nx = 1,
+	};
+
+	if (!MACHINE_HAS_NX)
+		return 0;
+	addr &= PAGE_MASK;
+	return change_page_attr(addr, addr + numpages * PAGE_SIZE, cpa);
 }
 
 #ifdef CONFIG_DEBUG_PAGEALLOC
