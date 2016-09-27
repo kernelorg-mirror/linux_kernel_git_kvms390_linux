@@ -367,9 +367,9 @@ static int convert_type80(struct zcrypt_device *zdev,
 	if (t80h->len < sizeof(*t80h) + outputdatalength) {
 		/* The result is too short, the CEX2A card may not do that.. */
 		zdev->online = 0;
-		pr_err("Cryptographic device %x failed and was set offline\n",
+		pr_err("Cryptographic device %02x failed and was set offline\n",
 		       AP_QID_DEVICE(zdev->ap_dev->qid));
-		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%drc%d",
+		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%04xo%drc%d",
 			       AP_QID_DEVICE(zdev->ap_dev->qid),
 			       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online, t80h->code);
@@ -401,9 +401,9 @@ static int convert_response(struct zcrypt_device *zdev,
 				      outputdata, outputdatalength);
 	default: /* Unknown response type, this should NEVER EVER happen */
 		zdev->online = 0;
-		pr_err("Cryptographic device %x failed and was set offline\n",
+		pr_err("Cryptographic device %02x failed and was set offline\n",
 		       AP_QID_DEVICE(zdev->ap_dev->qid));
-		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%02xo%dfail",
+		ZCRYPT_DBF_DEV(DBF_ERR, zdev, "dev%02x%04xo%dfail",
 			       AP_QID_DEVICE(zdev->ap_dev->qid),
 			       AP_QID_QUEUE(zdev->ap_dev->qid),
 			       zdev->online);
