@@ -14,7 +14,7 @@
  */
 
 /*?
- * Text: "%s:  Shutting down the LCS device failed\n "
+ * Text: "%s:  Shutting down the LCS device failed\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the LCS device

@@ -640,7 +640,7 @@
 /* dasd_erp */
 
 /*?
- * Text: "%s: A timeout error occurred for cqr %p"
+ * Text: "%s: A timeout error occurred for cqr %p\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the DASD
@@ -662,7 +662,7 @@
  */
 
 /*?
- * Text: "%s: A transport error occurred for cqr %p"
+ * Text: "%s: A transport error occurred for cqr %p\n"
  * Severity: Error
  * Parameter:
  *   @1: bus ID of the DASD
