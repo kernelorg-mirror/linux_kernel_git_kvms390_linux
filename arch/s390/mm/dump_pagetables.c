@@ -49,10 +49,8 @@ static void print_prot(struct seq_file *m, unsigned int pr, int level)
 		seq_printf(m, "I\n");
 		return;
 	}
-	seq_putc(m, 'R');
-	seq_putc(m, (pr & _PAGE_PROTECT) ? 'O' : 'W');
-	seq_putc(m, (pr & _PAGE_NOEXEC) ? ' ' : 'X');
-	seq_putc(m, '\n');
+	seq_puts(m, (pr & _PAGE_PROTECT) ? "RO " : "RW ");
+	seq_puts(m, (pr & _PAGE_NOEXEC) ? "NX\n" : "X\n");
 }
 
 static void note_page(struct seq_file *m, struct pg_state *st,
