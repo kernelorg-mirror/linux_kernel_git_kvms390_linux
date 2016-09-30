@@ -80,25 +80,6 @@ static struct ap_device_id zcrypt_cex2a_queue_ids[] = {
 
 MODULE_DEVICE_TABLE(ap, zcrypt_cex2a_queue_ids);
 
-static int zcrypt_cex2a_card_probe(struct ap_device *ap_dev);
-static int zcrypt_cex2a_queue_probe(struct ap_device *ap_dev);
-static void zcrypt_cex2a_card_remove(struct ap_device *ap_dev);
-static void zcrypt_cex2a_queue_remove(struct ap_device *ap_dev);
-
-static struct ap_driver zcrypt_cex2a_card_driver = {
-	.probe = zcrypt_cex2a_card_probe,
-	.remove = zcrypt_cex2a_card_remove,
-	.ids = zcrypt_cex2a_card_ids,
-	.request_timeout = CEX2A_CLEANUP_TIME,
-};
-
-static struct ap_driver zcrypt_cex2a_queue_driver = {
-	.probe = zcrypt_cex2a_queue_probe,
-	.remove = zcrypt_cex2a_queue_remove,
-	.ids = zcrypt_cex2a_queue_ids,
-	.request_timeout = CEX2A_CLEANUP_TIME,
-};
-
 /**
  * Probe function for CEX2A card devices. It always accepts the AP device
  * since the bus_match already checked the card type.
@@ -106,89 +87,54 @@ static struct ap_driver zcrypt_cex2a_queue_driver = {
  */
 static int zcrypt_cex2a_card_probe(struct ap_device *ap_dev)
 {
-	struct zcrypt_device *zdev = NULL;
-	int CEX2A_SPEED_IDX[] = { 800, 1000, 2000,  900, 1200, 2400, 0};
-	int CEX3A_SPEED_IDX[] = { 400,	500, 1000,  450,  550, 1200, 0};
+	/*
+	 * Normalized speed ratings per crypto adapter
+	 * MEX_1k, MEX_2k, MEX_4k, CRT_1k, CRT_2k, CRT_4k, RNG, SECKEY
+	 */
+	static const int CEX2A_SPEED_IDX[] = { 800, 1000, 2000,  900, 1200, 2400, 0, 0};
+	static const int CEX3A_SPEED_IDX[] = { 400,  500, 1000,  450,  550, 1200, 0, 0};
+
+	struct ap_card *ac = to_ap_card(&ap_dev->device);
+	struct zcrypt_card *zc;
 	int rc = 0;
 
-	zdev = zcrypt_device_alloc(CEX2A_MAX_RESPONSE_SIZE);
-	if (!zdev)
+	zc = zcrypt_card_alloc();
+	if (!zc)
 		return -ENOMEM;
+	zc->card = ac;
+	ac->private = zc;
 
-	if (ap_dev->device_type == AP_DEVICE_TYPE_CEX2A) {
-		zdev->min_mod_size = CEX2A_MIN_MOD_SIZE;
-		zdev->max_mod_size = CEX2A_MAX_MOD_SIZE;
-		zdev->short_crt = 1;
-		memcpy(zdev->speed_rating, CEX2A_SPEED_IDX,
+	if (ac->ap_dev.device_type == AP_DEVICE_TYPE_CEX2A) {
+		zc->min_mod_size = CEX2A_MIN_MOD_SIZE;
+		zc->max_mod_size = CEX2A_MAX_MOD_SIZE;
+		memcpy(zc->speed_rating, CEX2A_SPEED_IDX,
 		       sizeof(CEX2A_SPEED_IDX));
-		zdev->max_exp_bit_length = CEX2A_MAX_MOD_SIZE;
-		zdev->type_string = "CEX2A";
-		zdev->user_space_type = ZCRYPT_CEX2A;
-	} else if (ap_dev->device_type == AP_DEVICE_TYPE_CEX3A) {
-		zdev->min_mod_size = CEX2A_MIN_MOD_SIZE;
-		zdev->max_mod_size = CEX2A_MAX_MOD_SIZE;
-		zdev->max_exp_bit_length = CEX2A_MAX_MOD_SIZE;
-		if (ap_test_bit(&ap_dev->functions, AP_FUNC_MEX4K) &&
-		    ap_test_bit(&ap_dev->functions, AP_FUNC_CRT4K)) {
-			zdev->max_mod_size = CEX3A_MAX_MOD_SIZE;
-			zdev->max_exp_bit_length = CEX3A_MAX_MOD_SIZE;
+		zc->max_exp_bit_length = CEX2A_MAX_MOD_SIZE;
+		zc->type_string = "CEX2A";
+		zc->user_space_type = ZCRYPT_CEX2A;
+	} else if (ac->ap_dev.device_type == AP_DEVICE_TYPE_CEX3A) {
+		zc->min_mod_size = CEX2A_MIN_MOD_SIZE;
+		zc->max_mod_size = CEX2A_MAX_MOD_SIZE;
+		zc->max_exp_bit_length = CEX2A_MAX_MOD_SIZE;
+		if (ap_test_bit(&ac->functions, AP_FUNC_MEX4K) &&
+		    ap_test_bit(&ac->functions, AP_FUNC_CRT4K)) {
+			zc->max_mod_size = CEX3A_MAX_MOD_SIZE;
+			zc->max_exp_bit_length = CEX3A_MAX_MOD_SIZE;
 		}
-		zdev->short_crt = 1;
-		memcpy(zdev->speed_rating, CEX3A_SPEED_IDX,
+		memcpy(zc->speed_rating, CEX3A_SPEED_IDX,
 		       sizeof(CEX3A_SPEED_IDX));
-		zdev->type_string = "CEX3A";
-		zdev->user_space_type = ZCRYPT_CEX3A;
+		zc->type_string = "CEX3A";
+		zc->user_space_type = ZCRYPT_CEX3A;
 	} else {
-		zcrypt_device_free(zdev);
+		zcrypt_card_free(zc);
 		return -ENODEV;
 	}
-	zdev->ops = NULL; /* grp device does not support funct. req. */
+	zc->online = 1;
 
-	rc = zcrypt_card_device_register(zdev);
+	rc = zcrypt_card_register(zc);
 	if (rc) {
-		ap_dev->private = NULL;
-		zcrypt_device_free(zdev);
-	}
-
-	return rc;
-}
-
-/**
- * Probe function for CEX2A queue devices. It always accepts the AP device
- * since the bus_match already checked the queue type.
- * @ap_dev: pointer to the AP device.
- */
-static int zcrypt_cex2a_queue_probe(struct ap_device *ap_dev)
-{
-	struct zcrypt_device *zdev = NULL;
-	int rc = 0;
-
-	switch (ap_dev->device_type) {
-	case AP_DEVICE_TYPE_CEX2A:
-		zdev = zcrypt_device_alloc(CEX2A_MAX_RESPONSE_SIZE);
-		if (!zdev)
-			return -ENOMEM;
-		zdev->type_string = "CEX2A";
-		break;
-	case AP_DEVICE_TYPE_CEX3A:
-		zdev = zcrypt_device_alloc(CEX3A_MAX_RESPONSE_SIZE);
-		if (!zdev)
-			return -ENOMEM;
-		zdev->type_string = "CEX3A";
-		break;
-	}
-	if (!zdev)
-		return -ENODEV;
-	zdev->ops = zcrypt_msgtype(MSGTYPE50_NAME, MSGTYPE50_VARIANT_DEFAULT);
-	zdev->ap_dev = ap_dev;
-	zdev->online = 1;
-	atomic_set(&zdev->load, 0);
-	ap_device_init_reply(ap_dev, &zdev->reply);
-	ap_dev->private = zdev;
-	rc = zcrypt_queue_device_register(zdev);
-	if (rc) {
-		ap_dev->private = NULL;
-		zcrypt_device_free(zdev);
+		ac->private = NULL;
+		zcrypt_card_free(zc);
 	}
 
 	return rc;
@@ -200,10 +146,57 @@ static int zcrypt_cex2a_queue_probe(struct ap_device *ap_dev)
  */
 static void zcrypt_cex2a_card_remove(struct ap_device *ap_dev)
 {
-	struct zcrypt_device *zdev = ap_dev->private;
+	struct zcrypt_card *zc = to_ap_card(&ap_dev->device)->private;
 
-	if (zdev)
-		zcrypt_card_device_unregister(zdev);
+	if (zc)
+		zcrypt_card_unregister(zc);
+}
+
+static struct ap_driver zcrypt_cex2a_card_driver = {
+	.probe = zcrypt_cex2a_card_probe,
+	.remove = zcrypt_cex2a_card_remove,
+	.ids = zcrypt_cex2a_card_ids,
+};
+
+/**
+ * Probe function for CEX2A queue devices. It always accepts the AP device
+ * since the bus_match already checked the queue type.
+ * @ap_dev: pointer to the AP device.
+ */
+static int zcrypt_cex2a_queue_probe(struct ap_device *ap_dev)
+{
+	struct ap_queue *aq = to_ap_queue(&ap_dev->device);
+	struct zcrypt_queue *zq = NULL;
+	int rc;
+
+	switch (ap_dev->device_type) {
+	case AP_DEVICE_TYPE_CEX2A:
+		zq = zcrypt_queue_alloc(CEX2A_MAX_RESPONSE_SIZE);
+		if (!zq)
+			return -ENOMEM;
+		break;
+	case AP_DEVICE_TYPE_CEX3A:
+		zq = zcrypt_queue_alloc(CEX3A_MAX_RESPONSE_SIZE);
+		if (!zq)
+			return -ENOMEM;
+		break;
+	}
+	if (!zq)
+		return -ENODEV;
+	zq->ops = zcrypt_msgtype(MSGTYPE50_NAME, MSGTYPE50_VARIANT_DEFAULT);
+	zq->queue = aq;
+	zq->online = 1;
+	atomic_set(&zq->load, 0);
+	ap_queue_init_reply(aq, &zq->reply);
+	aq->request_timeout = CEX2A_CLEANUP_TIME,
+	aq->private = zq;
+	rc = zcrypt_queue_register(zq);
+	if (rc) {
+		aq->private = NULL;
+		zcrypt_queue_free(zq);
+	}
+
+	return rc;
 }
 
 /**
@@ -212,11 +205,21 @@ static void zcrypt_cex2a_card_remove(struct ap_device *ap_dev)
  */
 static void zcrypt_cex2a_queue_remove(struct ap_device *ap_dev)
 {
-	struct zcrypt_device *zdev = ap_dev->private;
+	struct ap_queue *aq = to_ap_queue(&ap_dev->device);
+	struct zcrypt_queue *zq = aq->private;
 
-	if (zdev)
-		zcrypt_queue_device_unregister(zdev);
+	ap_queue_remove(aq);
+	if (zq)
+		zcrypt_queue_unregister(zq);
 }
+
+static struct ap_driver zcrypt_cex2a_queue_driver = {
+	.probe = zcrypt_cex2a_queue_probe,
+	.remove = zcrypt_cex2a_queue_remove,
+	.suspend = ap_queue_suspend,
+	.resume = ap_queue_resume,
+	.ids = zcrypt_cex2a_queue_ids,
+};
 
 int __init zcrypt_cex2a_init(void)
 {

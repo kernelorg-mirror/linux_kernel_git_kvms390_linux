@@ -73,12 +73,12 @@ static int ap_thread_flag = 0;
 module_param_named(poll_thread, ap_thread_flag, int, S_IRUSR|S_IRGRP);
 MODULE_PARM_DESC(poll_thread, "Turn on/off poll thread, default is 0 (off).");
 
-struct device *ap_root_device = NULL;
-EXPORT_SYMBOL(ap_root_device);
+static struct device *ap_root_device;
+
+spinlock_t ap_list_lock;
+LIST_HEAD(ap_card_list);
 
 static struct ap_config_info *ap_configuration;
-static spinlock_t ap_queue_device_list_lock[AP_DEVICES];
-static struct list_head ap_queue_device_list[AP_DEVICES];
 static bool initialised;
 
 /*
@@ -130,6 +130,20 @@ static struct airq_struct ap_airq = {
 static inline int ap_using_interrupts(void)
 {
 	return ap_airq_flag;
+}
+
+/**
+ * ap_airq_ptr() - Get the address of the adapter interrupt indicator
+ *
+ * Returns the address of the local-summary-indicator of the adapter
+ * interrupt handler for AP, or NULL if adapter interrupts are not
+ * available.
+ */
+void *ap_airq_ptr(void)
+{
+        if (ap_using_interrupts())
+                return ap_airq.lsi_ptr;
+        return NULL;
 }
 
 /**
@@ -233,101 +247,6 @@ static inline int ap_test_config_domain(unsigned int domain)
 }
 
 /**
- * ap_queue_enable_interruption(): Enable interruption on an AP.
- * @qid: The AP queue number
- * @ind: the notification indicator byte
- *
- * Enables interruption on AP queue via ap_aqic(). Based on the return
- * value it waits a while and tests the AP queue if interrupts
- * have been switched on using ap_test_queue().
- */
-static int ap_queue_enable_interruption(struct ap_device *ap_dev, void *ind)
-{
-	struct ap_queue_status status;
-
-	status = ap_aqic(ap_dev->qid, ind);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-	case AP_RESPONSE_OTHERWISE_CHANGED:
-		return 0;
-	case AP_RESPONSE_Q_NOT_AVAIL:
-	case AP_RESPONSE_DECONFIGURED:
-	case AP_RESPONSE_CHECKSTOPPED:
-	case AP_RESPONSE_INVALID_ADDRESS:
-		pr_err("Registering adapter interrupts for card %x failed\n",
-		       AP_QID_CARD(ap_dev->qid));
-		return -EOPNOTSUPP;
-	case AP_RESPONSE_RESET_IN_PROGRESS:
-	case AP_RESPONSE_BUSY:
-	default:
-		return -EBUSY;
-	}
-}
-
-/**
- * __ap_send(): Send message to adjunct processor queue.
- * @qid: The AP queue number
- * @psmid: The program supplied message identifier
- * @msg: The message text
- * @length: The message length
- * @special: Special Bit
- *
- * Returns AP queue status structure.
- * Condition code 1 on NQAP can't happen because the L bit is 1.
- * Condition code 2 on NQAP also means the send is incomplete,
- * because a segment boundary was reached. The NQAP is repeated.
- */
-static inline struct ap_queue_status
-__ap_send(ap_qid_t qid, unsigned long long psmid, void *msg, size_t length,
-	  unsigned int special)
-{
-	if (special == 1)
-		qid |= 0x400000UL;
-	return ap_nqap(qid, psmid, msg, length);
-}
-
-int ap_send(ap_qid_t qid, unsigned long long psmid, void *msg, size_t length)
-{
-	struct ap_queue_status status;
-
-	status = __ap_send(qid, psmid, msg, length, 0);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-		return 0;
-	case AP_RESPONSE_Q_FULL:
-	case AP_RESPONSE_RESET_IN_PROGRESS:
-		return -EBUSY;
-	case AP_RESPONSE_REQ_FAC_NOT_INST:
-		return -EINVAL;
-	default:	/* Device is gone. */
-		return -ENODEV;
-	}
-}
-EXPORT_SYMBOL(ap_send);
-
-int ap_recv(ap_qid_t qid, unsigned long long *psmid, void *msg, size_t length)
-{
-	struct ap_queue_status status;
-
-	if (msg == NULL)
-		return -EINVAL;
-	status = ap_dqap(qid, psmid, msg, length);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-		return 0;
-	case AP_RESPONSE_NO_PENDING_REPLY:
-		if (status.queue_empty)
-			return -ENOENT;
-		return -EBUSY;
-	case AP_RESPONSE_RESET_IN_PROGRESS:
-		return -EBUSY;
-	default:
-		return -ENODEV;
-	}
-}
-EXPORT_SYMBOL(ap_recv);
-
-/**
  * ap_query_queue(): Check if an AP queue is available.
  * @qid: The AP queue number
  * @queue_depth: Pointer to queue depth value
@@ -369,9 +288,7 @@ static int ap_query_queue(ap_qid_t qid, int *queue_depth, int *device_type,
 	}
 }
 
-/* State machine definitions and helpers */
-
-static void ap_sm_wait(enum ap_wait wait)
+void ap_wait(enum ap_wait wait)
 {
 	ktime_t hr_time;
 
@@ -400,347 +317,21 @@ static void ap_sm_wait(enum ap_wait wait)
 	}
 }
 
-static enum ap_wait ap_sm_nop(struct ap_device *ap_dev)
-{
-	return AP_WAIT_NONE;
-}
-
-/**
- * ap_sm_recv(): Receive pending reply messages from an AP device but do
- *	not change the state of the device.
- * @ap_dev: pointer to the AP device
- *
- * Returns AP_WAIT_NONE, AP_WAIT_AGAIN, or AP_WAIT_INTERRUPT
- */
-static struct ap_queue_status ap_sm_recv(struct ap_device *ap_dev)
-{
-	struct ap_queue_status status;
-	struct ap_message *ap_msg;
-
-	status = ap_dqap(ap_dev->qid, &ap_dev->reply->psmid,
-			 ap_dev->reply->message, ap_dev->reply->length);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-		ap_dev->queue_count--;
-		if (ap_dev->queue_count > 0)
-			mod_timer(&ap_dev->timeout,
-				  jiffies + ap_dev->drv->request_timeout);
-		list_for_each_entry(ap_msg, &ap_dev->pendingq, list) {
-			if (ap_msg->psmid != ap_dev->reply->psmid)
-				continue;
-			list_del_init(&ap_msg->list);
-			ap_dev->pendingq_count--;
-			ap_msg->receive(ap_dev, ap_msg, ap_dev->reply);
-			break;
-		}
-	case AP_RESPONSE_NO_PENDING_REPLY:
-		if (!status.queue_empty || ap_dev->queue_count <= 0)
-			break;
-		/* The card shouldn't forget requests but who knows. */
-		ap_dev->queue_count = 0;
-		list_splice_init(&ap_dev->pendingq, &ap_dev->requestq);
-		ap_dev->requestq_count += ap_dev->pendingq_count;
-		ap_dev->pendingq_count = 0;
-		break;
-	default:
-		break;
-	}
-	return status;
-}
-
-/**
- * ap_sm_read(): Receive pending reply messages from an AP device.
- * @ap_dev: pointer to the AP device
- *
- * Returns AP_WAIT_NONE, AP_WAIT_AGAIN, or AP_WAIT_INTERRUPT
- */
-static enum ap_wait ap_sm_read(struct ap_device *ap_dev)
-{
-	struct ap_queue_status status;
-
-	if (!ap_dev->reply)
-		return AP_WAIT_NONE;
-	status = ap_sm_recv(ap_dev);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-		if (ap_dev->queue_count > 0) {
-			ap_dev->state = AP_STATE_WORKING;
-			return AP_WAIT_AGAIN;
-		}
-		ap_dev->state = AP_STATE_IDLE;
-		return AP_WAIT_NONE;
-	case AP_RESPONSE_NO_PENDING_REPLY:
-		if (ap_dev->queue_count > 0)
-			return AP_WAIT_INTERRUPT;
-		ap_dev->state = AP_STATE_IDLE;
-		return AP_WAIT_NONE;
-	default:
-		ap_dev->state = AP_STATE_BORKED;
-		return AP_WAIT_NONE;
-	}
-}
-
-/**
- * ap_sm_suspend_read(): Receive pending reply messages from an AP device
- * without changing the device state in between. In suspend mode we don't
- * allow sending new requests, therefore just fetch pending replies.
- * @ap_dev: pointer to the AP device
- *
- * Returns AP_WAIT_NONE or AP_WAIT_AGAIN
- */
-static enum ap_wait ap_sm_suspend_read(struct ap_device *ap_dev)
-{
-	struct ap_queue_status status;
-
-	if (!ap_dev->reply)
-		return AP_WAIT_NONE;
-	status = ap_sm_recv(ap_dev);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-		if (ap_dev->queue_count > 0)
-			return AP_WAIT_AGAIN;
-		/* fall through */
-	default:
-		return AP_WAIT_NONE;
-	}
-}
-
-/**
- * ap_sm_write(): Send messages from the request queue to an AP device.
- * @ap_dev: pointer to the AP device
- *
- * Returns AP_WAIT_NONE, AP_WAIT_AGAIN, or AP_WAIT_INTERRUPT
- */
-static enum ap_wait ap_sm_write(struct ap_device *ap_dev)
-{
-	struct ap_queue_status status;
-	struct ap_message *ap_msg;
-
-	if (ap_dev->requestq_count <= 0)
-		return AP_WAIT_NONE;
-	/* Start the next request on the queue. */
-	ap_msg = list_entry(ap_dev->requestq.next, struct ap_message, list);
-	status = __ap_send(ap_dev->qid, ap_msg->psmid,
-			   ap_msg->message, ap_msg->length, ap_msg->special);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-		ap_dev->queue_count++;
-		if (ap_dev->queue_count == 1)
-			mod_timer(&ap_dev->timeout,
-				  jiffies + ap_dev->drv->request_timeout);
-		list_move_tail(&ap_msg->list, &ap_dev->pendingq);
-		ap_dev->requestq_count--;
-		ap_dev->pendingq_count++;
-		if (ap_dev->queue_count < ap_dev->queue_depth) {
-			ap_dev->state = AP_STATE_WORKING;
-			return AP_WAIT_AGAIN;
-		}
-		/* fall through */
-	case AP_RESPONSE_Q_FULL:
-		ap_dev->state = AP_STATE_QUEUE_FULL;
-		return AP_WAIT_INTERRUPT;
-	case AP_RESPONSE_RESET_IN_PROGRESS:
-		ap_dev->state = AP_STATE_RESET_WAIT;
-		return AP_WAIT_TIMEOUT;
-	case AP_RESPONSE_MESSAGE_TOO_BIG:
-	case AP_RESPONSE_REQ_FAC_NOT_INST:
-		list_del_init(&ap_msg->list);
-		ap_dev->requestq_count--;
-		ap_msg->rc = -EINVAL;
-		ap_msg->receive(ap_dev, ap_msg, NULL);
-		return AP_WAIT_AGAIN;
-	default:
-		ap_dev->state = AP_STATE_BORKED;
-		return AP_WAIT_NONE;
-	}
-}
-
-/**
- * ap_sm_read_write(): Send and receive messages to/from an AP device.
- * @ap_dev: pointer to the AP device
- *
- * Returns AP_WAIT_NONE, AP_WAIT_AGAIN, or AP_WAIT_INTERRUPT
- */
-static enum ap_wait ap_sm_read_write(struct ap_device *ap_dev)
-{
-	return min(ap_sm_read(ap_dev), ap_sm_write(ap_dev));
-}
-
-/**
- * ap_sm_reset(): Reset an AP queue.
- * @qid: The AP queue number
- *
- * Submit the Reset command to an AP queue.
- */
-static enum ap_wait ap_sm_reset(struct ap_device *ap_dev)
-{
-	struct ap_queue_status status;
-
-	status = ap_rapq(ap_dev->qid);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-	case AP_RESPONSE_RESET_IN_PROGRESS:
-		ap_dev->state = AP_STATE_RESET_WAIT;
-		ap_dev->interrupt = AP_INTR_DISABLED;
-		return AP_WAIT_TIMEOUT;
-	case AP_RESPONSE_BUSY:
-		return AP_WAIT_TIMEOUT;
-	case AP_RESPONSE_Q_NOT_AVAIL:
-	case AP_RESPONSE_DECONFIGURED:
-	case AP_RESPONSE_CHECKSTOPPED:
-	default:
-		ap_dev->state = AP_STATE_BORKED;
-		return AP_WAIT_NONE;
-	}
-}
-
-/**
- * ap_sm_reset_wait(): Test queue for completion of the reset operation
- * @ap_dev: pointer to the AP device
- *
- * Returns AP_POLL_IMMEDIATELY, AP_POLL_AFTER_TIMEROUT or 0.
- */
-static enum ap_wait ap_sm_reset_wait(struct ap_device *ap_dev)
-{
-	struct ap_queue_status status;
-	unsigned long info;
-
-	if (ap_dev->queue_count > 0 && ap_dev->reply)
-		/* Try to read a completed message and get the status */
-		status = ap_sm_recv(ap_dev);
-	else
-		/* Get the status with TAPQ */
-		status = ap_test_queue(ap_dev->qid, &info);
-
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-		if (ap_using_interrupts() &&
-		    ap_queue_enable_interruption(ap_dev,
-						 ap_airq.lsi_ptr) == 0)
-			ap_dev->state = AP_STATE_SETIRQ_WAIT;
-		else
-			ap_dev->state = (ap_dev->queue_count > 0) ?
-				AP_STATE_WORKING : AP_STATE_IDLE;
-		return AP_WAIT_AGAIN;
-	case AP_RESPONSE_BUSY:
-	case AP_RESPONSE_RESET_IN_PROGRESS:
-		return AP_WAIT_TIMEOUT;
-	case AP_RESPONSE_Q_NOT_AVAIL:
-	case AP_RESPONSE_DECONFIGURED:
-	case AP_RESPONSE_CHECKSTOPPED:
-	default:
-		ap_dev->state = AP_STATE_BORKED;
-		return AP_WAIT_NONE;
-	}
-}
-
-/**
- * ap_sm_setirq_wait(): Test queue for completion of the irq enablement
- * @ap_dev: pointer to the AP device
- *
- * Returns AP_POLL_IMMEDIATELY, AP_POLL_AFTER_TIMEROUT or 0.
- */
-static enum ap_wait ap_sm_setirq_wait(struct ap_device *ap_dev)
-{
-	struct ap_queue_status status;
-	unsigned long info;
-
-	if (ap_dev->queue_count > 0 && ap_dev->reply)
-		/* Try to read a completed message and get the status */
-		status = ap_sm_recv(ap_dev);
-	else
-		/* Get the status with TAPQ */
-		status = ap_test_queue(ap_dev->qid, &info);
-
-	if (status.int_enabled == 1) {
-		/* Irqs are now enabled */
-		ap_dev->interrupt = AP_INTR_ENABLED;
-		ap_dev->state = (ap_dev->queue_count > 0) ?
-			AP_STATE_WORKING : AP_STATE_IDLE;
-	}
-
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-		if (ap_dev->queue_count > 0)
-			return AP_WAIT_AGAIN;
-		/* fallthrough */
-	case AP_RESPONSE_NO_PENDING_REPLY:
-		return AP_WAIT_TIMEOUT;
-	default:
-		ap_dev->state = AP_STATE_BORKED;
-		return AP_WAIT_NONE;
-	}
-}
-
-/*
- * AP state machine jump table
- */
-static ap_func_t *ap_jumptable[NR_AP_STATES][NR_AP_EVENTS] = {
-	[AP_STATE_RESET_START] = {
-		[AP_EVENT_POLL] = ap_sm_reset,
-		[AP_EVENT_TIMEOUT] = ap_sm_nop,
-	},
-	[AP_STATE_RESET_WAIT] = {
-		[AP_EVENT_POLL] = ap_sm_reset_wait,
-		[AP_EVENT_TIMEOUT] = ap_sm_nop,
-	},
-	[AP_STATE_SETIRQ_WAIT] = {
-		[AP_EVENT_POLL] = ap_sm_setirq_wait,
-		[AP_EVENT_TIMEOUT] = ap_sm_nop,
-	},
-	[AP_STATE_IDLE] = {
-		[AP_EVENT_POLL] = ap_sm_write,
-		[AP_EVENT_TIMEOUT] = ap_sm_nop,
-	},
-	[AP_STATE_WORKING] = {
-		[AP_EVENT_POLL] = ap_sm_read_write,
-		[AP_EVENT_TIMEOUT] = ap_sm_reset,
-	},
-	[AP_STATE_QUEUE_FULL] = {
-		[AP_EVENT_POLL] = ap_sm_read,
-		[AP_EVENT_TIMEOUT] = ap_sm_reset,
-	},
-	[AP_STATE_SUSPEND_WAIT] = {
-		[AP_EVENT_POLL] = ap_sm_suspend_read,
-		[AP_EVENT_TIMEOUT] = ap_sm_nop,
-	},
-	[AP_STATE_BORKED] = {
-		[AP_EVENT_POLL] = ap_sm_nop,
-		[AP_EVENT_TIMEOUT] = ap_sm_nop,
-	},
-};
-
-static inline enum ap_wait ap_sm_event(struct ap_device *ap_dev,
-				       enum ap_event event)
-{
-	return ap_jumptable[ap_dev->state][event](ap_dev);
-}
-
-static inline enum ap_wait ap_sm_event_loop(struct ap_device *ap_dev,
-					    enum ap_event event)
-{
-	enum ap_wait wait;
-
-	while ((wait = ap_sm_event(ap_dev, event)) == AP_WAIT_AGAIN)
-		;
-	return wait;
-}
-
 /**
  * ap_request_timeout(): Handling of request timeouts
  * @data: Holds the AP device.
  *
  * Handles request timeouts.
  */
-static void ap_request_timeout(unsigned long data)
+void ap_request_timeout(unsigned long data)
 {
-	struct ap_device *ap_dev = (struct ap_device *) data;
+	struct ap_queue *aq = (struct ap_queue *) data;
 
 	if (ap_suspend_flag)
 		return;
-	spin_lock_bh(&ap_dev->lock);
-	ap_sm_wait(ap_sm_event(ap_dev, AP_EVENT_TIMEOUT));
-	spin_unlock_bh(&ap_dev->lock);
+	spin_lock_bh(&aq->lock);
+	ap_wait(ap_sm_event(aq, AP_EVENT_TIMEOUT));
+	spin_unlock_bh(&aq->lock);
 }
 
 /**
@@ -775,8 +366,8 @@ static void ap_interrupt_handler(struct airq_struct *airq)
  */
 static void ap_tasklet_fn(unsigned long dummy)
 {
-	int id;
-	struct ap_device *ap_dev;
+	struct ap_card *ac;
+	struct ap_queue *aq;
 	enum ap_wait wait = AP_WAIT_NONE;
 
 	/* Reset the indicator if interrupts are used. Thus new interrupts can
@@ -786,38 +377,35 @@ static void ap_tasklet_fn(unsigned long dummy)
 	if (ap_using_interrupts())
 		xchg(ap_airq.lsi_ptr, 0);
 
-	for (id = 0; id < AP_DEVICES; id++) {
-		spin_lock(&ap_queue_device_list_lock[id]);
-		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
-			spin_lock_bh(&ap_dev->lock);
-			wait = min(wait, ap_sm_event_loop(ap_dev,
-							  AP_EVENT_POLL));
-			spin_unlock_bh(&ap_dev->lock);
+	spin_lock(&ap_list_lock);
+	for_each_ap_card(ac) {
+		for_each_ap_queue(aq, ac) {
+			spin_lock(&aq->lock);
+			wait = min(wait, ap_sm_event_loop(aq, AP_EVENT_POLL));
+			spin_unlock(&aq->lock);
 		}
-		spin_unlock(&ap_queue_device_list_lock[id]);
 	}
+	spin_unlock(&ap_list_lock);
 
-	ap_sm_wait(wait);
+	ap_wait(wait);
 }
 
 static int ap_pending_requests(void)
 {
-	struct ap_device *ap_dev;
-	int id, pending = 0;
+	struct ap_card *ac;
+	struct ap_queue *aq;
 
-	for (id = 0; pending == 0 && id < AP_DEVICES; id++) {
-		spin_lock_bh(&ap_queue_device_list_lock[id]);
-		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
-			spin_lock_bh(&ap_dev->lock);
-			if (ap_dev->queue_count)
-				pending = 1;
-			spin_unlock_bh(&ap_dev->lock);
-			if (pending) break;
+	spin_lock_bh(&ap_list_lock);
+	for_each_ap_card(ac) {
+		for_each_ap_queue(aq, ac) {
+			if (aq->queue_count == 0)
+				continue;
+			spin_unlock_bh(&ap_list_lock);
+			return 1;
 		}
-		spin_unlock_bh(&ap_queue_device_list_lock[id]);
 	}
-
-	return pending;
+	spin_unlock_bh(&ap_list_lock);
+	return 0;
 }
 
 /**
@@ -881,255 +469,8 @@ static void ap_poll_thread_stop(void)
 	mutex_unlock(&ap_poll_thread_mutex);
 }
 
-/**
- * ap_queue_message(): Queue a request to an AP device.
- * @ap_dev: The AP device to queue the message to
- * @ap_msg: The message that is to be added
- */
-void ap_queue_message(struct ap_device *ap_dev, struct ap_message *ap_msg)
-{
-	/* For asynchronous message handling a valid receive-callback
-	 * is required. */
-	BUG_ON(!ap_msg->receive);
-
-	spin_lock_bh(&ap_dev->lock);
-	/* Queue the message. */
-	list_add_tail(&ap_msg->list, &ap_dev->requestq);
-	ap_dev->requestq_count++;
-	ap_dev->total_request_count++;
-	/* Send/receive as many request from the queue as possible. */
-	ap_sm_wait(ap_sm_event_loop(ap_dev, AP_EVENT_POLL));
-	spin_unlock_bh(&ap_dev->lock);
-}
-EXPORT_SYMBOL(ap_queue_message);
-
-/**
- * ap_cancel_message(): Cancel a crypto request.
- * @ap_dev: The AP device that has the message queued
- * @ap_msg: The message that is to be removed
- *
- * Cancel a crypto request. This is done by removing the request
- * from the device pending or request queue. Note that the
- * request stays on the AP queue. When it finishes the message
- * reply will be discarded because the psmid can't be found.
- */
-void ap_cancel_message(struct ap_device *ap_dev, struct ap_message *ap_msg)
-{
-	struct ap_message *tmp;
-
-	spin_lock_bh(&ap_dev->lock);
-	if (!list_empty(&ap_msg->list)) {
-		list_for_each_entry(tmp, &ap_dev->pendingq, list)
-			if (tmp->psmid == ap_msg->psmid) {
-				ap_dev->pendingq_count--;
-				goto found;
-			}
-		ap_dev->requestq_count--;
-found:
-		list_del_init(&ap_msg->list);
-	}
-	spin_unlock_bh(&ap_dev->lock);
-}
-EXPORT_SYMBOL(ap_cancel_message);
-
-/*
- * AP device related attributes.
- */
-static ssize_t ap_hwtype_show(struct device *dev,
-			      struct device_attribute *attr, char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	return snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->device_type);
-}
-
-static DEVICE_ATTR(hwtype, 0444, ap_hwtype_show, NULL);
-
-static ssize_t ap_raw_hwtype_show(struct device *dev,
-			      struct device_attribute *attr, char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-
-	return snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->raw_hwtype);
-}
-
-static DEVICE_ATTR(raw_hwtype, 0444, ap_raw_hwtype_show, NULL);
-
-static ssize_t ap_depth_show(struct device *dev, struct device_attribute *attr,
-			     char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	return snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->queue_depth);
-}
-
-static DEVICE_ATTR(depth, 0444, ap_depth_show, NULL);
-static ssize_t ap_request_count_show(struct device *dev,
-				     struct device_attribute *attr,
-				     char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	unsigned int id, req_cnt = 0;
-
-	if (is_card_dev(dev)) {
-		id = ap_dev->id;
-		spin_lock_bh(&ap_queue_device_list_lock[id]);
-		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
-			spin_lock_bh(&ap_dev->lock);
-			req_cnt += ap_dev->total_request_count;
-			spin_unlock_bh(&ap_dev->lock);
-		}
-		spin_unlock_bh(&ap_queue_device_list_lock[id]);
-	} else {
-		spin_lock_bh(&ap_dev->lock);
-		req_cnt = ap_dev->total_request_count;
-		spin_unlock_bh(&ap_dev->lock);
-	}
-	return snprintf(buf, PAGE_SIZE, "%d\n", req_cnt);
-}
-
-static DEVICE_ATTR(request_count, 0444, ap_request_count_show, NULL);
-
-static ssize_t ap_requestq_count_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	unsigned int id, reqq_cnt = 0;
-
-	if (is_card_dev(dev)) {
-		id = ap_dev->id;
-		spin_lock_bh(&ap_queue_device_list_lock[id]);
-		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
-			spin_lock_bh(&ap_dev->lock);
-			reqq_cnt += ap_dev->requestq_count;
-			spin_unlock_bh(&ap_dev->lock);
-		}
-		spin_unlock_bh(&ap_queue_device_list_lock[id]);
-	} else {
-		spin_lock_bh(&ap_dev->lock);
-		reqq_cnt = ap_dev->requestq_count;
-		spin_unlock_bh(&ap_dev->lock);
-	}
-	return snprintf(buf, PAGE_SIZE, "%d\n", reqq_cnt);
-}
-
-static DEVICE_ATTR(requestq_count, 0444, ap_requestq_count_show, NULL);
-
-static ssize_t ap_pendingq_count_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	unsigned int id, penq_cnt = 0;
-
-	if (is_card_dev(dev)) {
-		id = ap_dev->id;
-		spin_lock_bh(&ap_queue_device_list_lock[id]);
-		list_for_each_entry(ap_dev, &ap_queue_device_list[id], list) {
-			spin_lock_bh(&ap_dev->lock);
-			penq_cnt += ap_dev->pendingq_count;
-			spin_unlock_bh(&ap_dev->lock);
-		}
-		spin_unlock_bh(&ap_queue_device_list_lock[id]);
-	} else {
-		spin_lock_bh(&ap_dev->lock);
-		penq_cnt = ap_dev->pendingq_count;
-		spin_unlock_bh(&ap_dev->lock);
-	}
-	return snprintf(buf, PAGE_SIZE, "%d\n", penq_cnt);
-}
-
-static DEVICE_ATTR(pendingq_count, 0444, ap_pendingq_count_show, NULL);
-
-static ssize_t ap_reset_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	int rc = 0;
-
-	spin_lock_bh(&ap_dev->lock);
-	switch (ap_dev->state) {
-	case AP_STATE_RESET_START:
-	case AP_STATE_RESET_WAIT:
-		rc = snprintf(buf, PAGE_SIZE, "Reset in progress.\n");
-		break;
-	case AP_STATE_WORKING:
-	case AP_STATE_QUEUE_FULL:
-		rc = snprintf(buf, PAGE_SIZE, "Reset Timer armed.\n");
-		break;
-	default:
-		rc = snprintf(buf, PAGE_SIZE, "No Reset Timer set.\n");
-	}
-	spin_unlock_bh(&ap_dev->lock);
-	return rc;
-}
-
-static DEVICE_ATTR(reset, 0444, ap_reset_show, NULL);
-
-static ssize_t ap_interrupt_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	int rc = 0;
-
-	spin_lock_bh(&ap_dev->lock);
-	if (ap_dev->state == AP_STATE_SETIRQ_WAIT)
-		rc = snprintf(buf, PAGE_SIZE, "Enable Interrupt pending.\n");
-	else if (ap_dev->interrupt == AP_INTR_ENABLED)
-		rc = snprintf(buf, PAGE_SIZE, "Interrupts enabled.\n");
-	else
-		rc = snprintf(buf, PAGE_SIZE, "Interrupts disabled.\n");
-	spin_unlock_bh(&ap_dev->lock);
-	return rc;
-}
-
-static DEVICE_ATTR(interrupt, 0444, ap_interrupt_show, NULL);
-
-static ssize_t ap_modalias_show(struct device *dev,
-				struct device_attribute *attr, char *buf)
-{
-	return sprintf(buf, "ap:t%02X\n", to_ap_dev(dev)->device_type);
-}
-
-static DEVICE_ATTR(modalias, 0444, ap_modalias_show, NULL);
-
-static ssize_t ap_functions_show(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	return snprintf(buf, PAGE_SIZE, "0x%08X\n", ap_dev->functions);
-}
-
-static DEVICE_ATTR(ap_functions, 0444, ap_functions_show, NULL);
-
-static struct attribute *ap_card_dev_attrs[] = {
-	&dev_attr_hwtype.attr,
-	&dev_attr_raw_hwtype.attr,
-	&dev_attr_depth.attr,
-	&dev_attr_request_count.attr,
-	&dev_attr_requestq_count.attr,
-	&dev_attr_pendingq_count.attr,
-	&dev_attr_modalias.attr,
-	&dev_attr_ap_functions.attr,
-	NULL
-};
-static struct attribute_group ap_card_dev_attr_group = {
-	.attrs = ap_card_dev_attrs
-};
-
-static struct attribute *ap_queue_dev_attrs[] = {
-	&dev_attr_hwtype.attr,
-	&dev_attr_raw_hwtype.attr,
-	&dev_attr_depth.attr,
-	&dev_attr_request_count.attr,
-	&dev_attr_requestq_count.attr,
-	&dev_attr_pendingq_count.attr,
-	&dev_attr_reset.attr,
-	&dev_attr_interrupt.attr,
-	&dev_attr_modalias.attr,
-	&dev_attr_ap_functions.attr,
-	NULL
-};
-static struct attribute_group ap_queue_dev_attr_group = {
-	.attrs = ap_queue_dev_attrs
-};
+#define is_card_dev(x) ((x)->parent == ap_root_device)
+#define is_queue_dev(x) ((x)->parent != ap_root_device)
 
 /**
  * ap_bus_match()
@@ -1140,7 +481,6 @@ static struct attribute_group ap_queue_dev_attr_group = {
  */
 static int ap_bus_match(struct device *dev, struct device_driver *drv)
 {
-	struct ap_device *ap_dev = to_ap_dev(dev);
 	struct ap_driver *ap_drv = to_ap_drv(drv);
 	struct ap_device_id *id;
 
@@ -1151,14 +491,13 @@ static int ap_bus_match(struct device *dev, struct device_driver *drv)
 	for (id = ap_drv->ids; id->match_flags; id++) {
 		if (is_card_dev(dev) &&
 		    id->match_flags & AP_DEVICE_ID_MATCH_CARD_TYPE &&
-		    id->dev_type == ap_dev->device_type)
+		    id->dev_type == to_ap_dev(dev)->device_type)
 			return 1;
 		if (is_queue_dev(dev) &&
 		    id->match_flags & AP_DEVICE_ID_MATCH_QUEUE_TYPE &&
-		    id->dev_type == ap_dev->device_type)
+		    id->dev_type == to_ap_dev(dev)->device_type)
 			return 1;
 	}
-
 	return 0;
 }
 
@@ -1193,18 +532,17 @@ static int ap_dev_suspend(struct device *dev, pm_message_t state)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
 
-	/* Poll on the device until all requests are finished. */
-	spin_lock_bh(&ap_dev->lock);
-	ap_dev->state = AP_STATE_SUSPEND_WAIT;
-	while (ap_sm_event(ap_dev, AP_EVENT_POLL) != AP_WAIT_NONE)
-		;
-	ap_dev->state = AP_STATE_BORKED;
-	spin_unlock_bh(&ap_dev->lock);
+	if (ap_dev->drv->suspend)
+		ap_dev->drv->suspend(ap_dev);
 	return 0;
 }
 
 static int ap_dev_resume(struct device *dev)
 {
+	struct ap_device *ap_dev = to_ap_dev(dev);
+
+	if (ap_dev->drv->resume)
+		ap_dev->drv->resume(ap_dev);
 	return 0;
 }
 
@@ -1219,7 +557,7 @@ static void ap_bus_suspend(void)
 	tasklet_disable(&ap_tasklet);
 }
 
-static int __ap_device_unregister(struct device *dev, void *dummy)
+static int __ap_devices_unregister(struct device *dev, void *dummy)
 {
 	device_unregister(dev);
 	return 0;
@@ -1230,7 +568,7 @@ static void ap_bus_resume(void)
 	int rc;
 
 	/* Unconditionally remove all AP devices */
-	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_device_unregister);
+	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_devices_unregister);
 	/* Reset thin interrupt setting */
 	if (ap_interrupts_available() && !ap_using_interrupts()) {
 		rc = register_adapter_interrupt(&ap_airq);
@@ -1280,17 +618,6 @@ static struct bus_type ap_bus_type = {
 	.resume = ap_dev_resume,
 };
 
-void ap_device_init_reply(struct ap_device *ap_dev,
-			  struct ap_message *reply)
-{
-	ap_dev->reply = reply;
-
-	spin_lock_bh(&ap_dev->lock);
-	ap_sm_wait(ap_sm_event(ap_dev, AP_EVENT_POLL));
-	spin_unlock_bh(&ap_dev->lock);
-}
-EXPORT_SYMBOL(ap_device_init_reply);
-
 static int ap_device_probe(struct device *dev)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
@@ -1304,68 +631,20 @@ static int ap_device_probe(struct device *dev)
 	return rc;
 }
 
-/**
- * __ap_flush_queue(): Flush requests.
- * @ap_dev: Pointer to the AP device
- *
- * Flush all requests from the request/pending queue of an AP device.
- */
-static void __ap_flush_queue(struct ap_device *ap_dev)
-{
-	struct ap_message *ap_msg, *next;
-
-	list_for_each_entry_safe(ap_msg, next, &ap_dev->pendingq, list) {
-		list_del_init(&ap_msg->list);
-		ap_dev->pendingq_count--;
-		ap_msg->rc = -EAGAIN;
-		ap_msg->receive(ap_dev, ap_msg, NULL);
-	}
-	list_for_each_entry_safe(ap_msg, next, &ap_dev->requestq, list) {
-		list_del_init(&ap_msg->list);
-		ap_dev->requestq_count--;
-		ap_msg->rc = -EAGAIN;
-		ap_msg->receive(ap_dev, ap_msg, NULL);
-	}
-}
-
-void ap_flush_queue(struct ap_device *ap_dev)
-{
-	spin_lock_bh(&ap_dev->lock);
-	__ap_flush_queue(ap_dev);
-	spin_unlock_bh(&ap_dev->lock);
-}
-EXPORT_SYMBOL(ap_flush_queue);
-
 static int ap_device_remove(struct device *dev)
 {
-	int id;
 	struct ap_device *ap_dev = to_ap_dev(dev);
 	struct ap_driver *ap_drv = ap_dev->drv;
 
-	if (is_queue_dev(dev)) {
-		id = AP_QID_CARD(ap_dev->qid);
-		ap_flush_queue(ap_dev);
-		del_timer_sync(&ap_dev->timeout);
-		spin_lock_bh(&ap_queue_device_list_lock[id]);
-		list_del_init(&ap_dev->list);
-		spin_unlock_bh(&ap_queue_device_list_lock[id]);
-	}
-
+	spin_lock_bh(&ap_list_lock);
+	if (is_card_dev(dev))
+		list_del_init(&to_ap_card(dev)->list);
+	else
+		list_del_init(&to_ap_queue(dev)->list);
+	spin_unlock_bh(&ap_list_lock);
 	if (ap_drv->remove)
 		ap_drv->remove(ap_dev);
-
 	return 0;
-}
-static void ap_card_device_release(struct device *dev)
-{
-	kfree(to_ap_dev(dev));
-}
-
-static void ap_queue_device_release(struct device *dev)
-{
-	/* decrease parent device's refcount */
-	put_device(dev->parent);
-	kfree(to_ap_dev(dev));
 }
 
 int ap_driver_register(struct ap_driver *ap_drv, struct module *owner,
@@ -1612,147 +891,6 @@ static int ap_select_domain(void)
 	return -ENODEV;
 }
 
-static struct ap_device *create_card_device(int id,
-					    int queue_depth,
-					    int device_type,
-					    unsigned int device_functs)
-{
-	int rc;
-	struct ap_device *ap_dev;
-
-	ap_dev = kzalloc(sizeof(*ap_dev), GFP_KERNEL);
-	if (!ap_dev)
-		return (struct ap_device *) -ENOMEM;
-
-	ap_dev->id = id;
-	ap_dev->qid = 0xffff;
-	ap_dev->queue_depth = queue_depth;
-	ap_dev->raw_hwtype = device_type;
-	ap_dev->device_type = device_type;
-	ap_dev->functions = device_functs;
-	spin_lock_init(&ap_dev->lock);
-	INIT_LIST_HEAD(&ap_dev->list);
-
-	ap_dev->device.bus = &ap_bus_type;
-	ap_dev->device.parent = ap_root_device;
-
-	rc = dev_set_name(&ap_dev->device, "card%02x", id);
-	if (rc) {
-		kfree(ap_dev);
-		return (struct ap_device *) -EFAULT;
-	}
-
-	/* Register device */
-	ap_dev->device.release = ap_card_device_release;
-	rc = device_register(&ap_dev->device);
-	if (rc) {
-		put_device(&ap_dev->device);
-		return (struct ap_device *) -EFAULT;
-	}
-
-	/* Add card device attributes. */
-	rc = sysfs_create_group(&ap_dev->device.kobj,
-				&ap_card_dev_attr_group);
-	if (rc) {
-		device_unregister(&ap_dev->device);
-		return (struct ap_device *) -EFAULT;
-	}
-
-	/* return a ref to the card dev */
-	get_device(&ap_dev->device);
-	return ap_dev;
-}
-
-static int create_queue_device(ap_qid_t qid,
-			       struct ap_device *ap_card_dev)
-{
-	int rc, id, dom;
-	struct ap_device *ap_dev;
-
-	id = AP_QID_CARD(qid);
-	dom = AP_QID_QUEUE(qid);
-
-	ap_dev = kzalloc(sizeof(*ap_dev), GFP_KERNEL);
-	if (!ap_dev)
-		return -ENOMEM;
-	ap_dev->id = id;
-	ap_dev->qid = qid;
-	ap_dev->state = AP_STATE_RESET_START;
-	ap_dev->interrupt = AP_INTR_DISABLED;
-	ap_dev->queue_depth = ap_card_dev->queue_depth;
-	ap_dev->raw_hwtype = ap_card_dev->device_type;
-	ap_dev->device_type = ap_card_dev->device_type;
-	ap_dev->functions = ap_card_dev->functions;
-	spin_lock_init(&ap_dev->lock);
-	INIT_LIST_HEAD(&ap_dev->pendingq);
-	INIT_LIST_HEAD(&ap_dev->requestq);
-	setup_timer(&ap_dev->timeout, ap_request_timeout,
-		    (unsigned long) ap_dev);
-
-	ap_dev->device.bus = &ap_bus_type;
-	ap_dev->device.parent = &ap_card_dev->device;
-
-	rc = dev_set_name(&ap_dev->device, "%02x.%03d",
-			  id, dom);
-	if (rc) {
-		kfree(ap_dev);
-		return -EFAULT;
-	}
-
-	/* Add queue devices to queue device list */
-	spin_lock_bh(&ap_queue_device_list_lock[id]);
-	list_add(&ap_dev->list, &ap_queue_device_list[id]);
-	spin_unlock_bh(&ap_queue_device_list_lock[id]);
-
-	/* Start with a device reset */
-	spin_lock_bh(&ap_dev->lock);
-	ap_sm_wait(ap_sm_event(ap_dev, AP_EVENT_POLL));
-	spin_unlock_bh(&ap_dev->lock);
-
-	/* increase parent device's refcount */
-	get_device(ap_dev->device.parent);
-
-	/* Register device */
-	ap_dev->device.release = ap_queue_device_release;
-	rc = device_register(&ap_dev->device);
-	if (rc) {
-		spin_lock_bh(&ap_queue_device_list_lock[id]);
-		list_del_init(&ap_dev->list);
-		spin_unlock_bh(&ap_queue_device_list_lock[id]);
-		put_device(ap_dev->device.parent);
-		put_device(&ap_dev->device);
-		return -EFAULT;
-	}
-	/* Add device attributes. */
-	rc = sysfs_create_group(&ap_dev->device.kobj,
-				&ap_queue_dev_attr_group);
-	if (rc) {
-		device_unregister(&ap_dev->device);
-		return -EFAULT;
-	}
-	return 0;
-}
-
-/*
- * helper function to be used with bus_find_dev
- * matches for the card device with the given id
- */
-static int __match_card_device_with_id(struct device *dev, void *data)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	return is_card_dev(dev) && ap_dev->id == (int)(long) data;
-}
-
-/* helper function to be used with bus_find_dev
- * matches for the queue device with a given qid
- */
-static int __match_queue_device_with_qid(struct device *dev, void *data)
-{
-	struct ap_device *ap_dev = to_ap_dev(dev);
-	return is_queue_dev(dev) &&
-		ap_dev->qid == (int)(long) data;
-}
-
 /*
  * helper function to be used with bus_find_dev
  * matches for all card devices
@@ -1764,11 +902,28 @@ static int __match_any_card_device(struct device *dev, void *data)
 
 /*
  * helper function to be used with bus_find_dev
+ * matches for the card device with the given id
+ */
+static int __match_card_device_with_id(struct device *dev, void *data)
+{
+	return is_card_dev(dev) && to_ap_card(dev)->id == (int)(long) data;
+}
+
+/*
+ * helper function to be used with bus_find_dev
  * matches for all queue devices
  */
 static int __match_any_queue_device(struct device *dev, void *data)
 {
 	return is_queue_dev(dev);
+}
+
+/* helper function to be used with bus_find_dev
+ * matches for the queue device with a given qid
+ */
+static int __match_queue_device_with_qid(struct device *dev, void *data)
+{
+	return is_queue_dev(dev) && to_ap_queue(dev)->qid == (int)(long) data;
 }
 
 /**
@@ -1777,12 +932,13 @@ static int __match_any_queue_device(struct device *dev, void *data)
  */
 static void ap_scan_bus(struct work_struct *unused)
 {
-	struct ap_device *ap_dev, *ap_card_dev;
+	struct ap_queue *aq;
+	struct ap_card *ac;
 	struct device *dev;
 	ap_qid_t qid;
-	int queue_depth, device_type;
-	unsigned int device_functs = 0, domains_available;
-	int rc, id, dom, borked;
+	int depth = 0, type = 0;
+	unsigned int functions = 0;
+	int rc, id, dom, borked, no_domains;
 
 	ap_query_configuration();
 	if (ap_select_domain() != 0)
@@ -1796,8 +952,8 @@ static void ap_scan_bus(struct work_struct *unused)
 		dev = bus_find_device(&ap_bus_type, NULL,
 				      (void *)(long) id,
 				      __match_card_device_with_id);
-		ap_card_dev = dev ? to_ap_dev(dev) : NULL;
-		domains_available = 0;
+		ac = dev ? to_ap_card(dev) : NULL;
+		no_domains = 1;
 		for (dom = 0; dom < AP_DOMAINS; dom++) {
 			if (!ap_test_config_domain(dom))
 				continue;
@@ -1805,48 +961,85 @@ static void ap_scan_bus(struct work_struct *unused)
 			dev = bus_find_device(&ap_bus_type, NULL,
 					      (void *)(long) qid,
 					      __match_queue_device_with_qid);
-			rc = ap_query_queue(qid, &queue_depth, &device_type,
-					    &device_functs);
+			rc = ap_query_queue(qid, &depth, &type, &functions);
 			if (dev) {
-				ap_dev = to_ap_dev(dev);
-				spin_lock_bh(&ap_dev->lock);
+				aq = to_ap_queue(dev);
+				spin_lock_bh(&aq->lock);
 				if (rc == -ENODEV ||
 				    /* adapter reconfiguration */
-				    (ap_card_dev &&
-				     ap_card_dev->functions != device_functs))
-					ap_dev->state = AP_STATE_BORKED;
-				borked = ap_dev->state == AP_STATE_BORKED;
-				spin_unlock_bh(&ap_dev->lock);
+				    (ac && ac->functions != functions))
+					aq->state = AP_STATE_BORKED;
+				borked = aq->state == AP_STATE_BORKED;
+				spin_unlock_bh(&aq->lock);
 				if (borked)	/* Remove broken device */
 					device_unregister(dev);
 				put_device(dev);
 				if (!borked) {
-					domains_available = 1;
+					no_domains = 0;
 					continue;
 				}
 			}
 			if (rc)
 				continue;
 			/* new queue device needed */
-			if (!ap_card_dev) {
+			if (!ac) {
 				/* but first chreate the card device */
-				ap_card_dev = create_card_device(id,
-								 queue_depth,
-								 device_type,
-								 device_functs);
-				if (IS_ERR(ap_card_dev))
+				ac = ap_card_create(id, depth,
+						    type, functions);
+				if (!ac)
+					continue;
+				ac->ap_dev.device.bus = &ap_bus_type;
+				ac->ap_dev.device.parent = ap_root_device;
+				dev_set_name(&ac->ap_dev.device,
+					     "card%02x", id);
+				/* Register card with AP bus */
+				rc = device_register(&ac->ap_dev.device);
+				if (rc) {
+					put_device(&ac->ap_dev.device);
+					ac = NULL;
 					break;
+				}
+				/* Add card device to card list */
+				spin_lock_bh(&ap_list_lock);
+				list_add(&ac->list, &ap_card_list);
+				spin_unlock_bh(&ap_list_lock);
 			}
 			/* now create the new queue device */
-			rc = create_queue_device(qid, ap_card_dev);
-			if (!rc)
-				domains_available = 1;
+			aq = ap_queue_create(qid, type);
+			if (!aq)
+				continue;
+			aq->card = ac;
+			aq->ap_dev.device.bus = &ap_bus_type;
+			aq->ap_dev.device.parent = &ac->ap_dev.device;
+			dev_set_name(&aq->ap_dev.device,
+				     "%02x.%04x", id, dom);
+			/* Add queue device to card queue list */
+			spin_lock_bh(&ap_list_lock);
+			list_add(&aq->list, &ac->queues);
+			spin_unlock_bh(&ap_list_lock);
+			/* Start with a device reset */
+			spin_lock_bh(&aq->lock);
+			ap_wait(ap_sm_event(aq, AP_EVENT_POLL));
+			spin_unlock_bh(&aq->lock);
+			/* increase parent device's refcount */
+			get_device(aq->ap_dev.device.parent);
+			/* Register device */
+			rc = device_register(&aq->ap_dev.device);
+			if (rc) {
+				spin_lock_bh(&ap_list_lock);
+				list_del_init(&aq->list);
+				spin_unlock_bh(&ap_list_lock);
+				put_device(aq->ap_dev.device.parent);
+				put_device(&aq->ap_dev.device);
+				continue;
+			}
+			no_domains = 0;
 		} /* end domain loop */
-		if (ap_card_dev) {
+		if (ac) {
 			/* remove card dev if there are no queue devices */
-			if (!domains_available)
-				device_unregister(&ap_card_dev->device);
-			put_device(&ap_card_dev->device);
+			if (no_domains)
+				device_unregister(&ac->ap_dev.device);
+			put_device(&ac->ap_dev.device);
 		}
 	} /* end device loop */
 out:
@@ -1898,11 +1091,6 @@ int __init ap_module_init(void)
 {
 	int max_domain_id;
 	int rc, i;
-
-	for (i = 0; i < AP_DEVICES; i++) {
-		INIT_LIST_HEAD(&ap_queue_device_list[i]);
-		spin_lock_init(&ap_queue_device_list_lock[i]);
-	}
 
 	if (ap_instructions_available() != 0) {
 		pr_warn("The hardware system does not support AP instructions\n");
@@ -2018,8 +1206,7 @@ void ap_module_exit(void)
 	/* remove all ap queue devices */
 	dev = NULL;
 	while ((dev = bus_find_device(&ap_bus_type, dev,
-				      NULL, __match_any_queue_device)))
-	{
+				      NULL, __match_any_queue_device))) {
 		device_unregister(dev);
 		put_device(dev);
 	}
@@ -2027,8 +1214,7 @@ void ap_module_exit(void)
 	/* remove all ap card devices */
 	dev = NULL;
 	while ((dev = bus_find_device(&ap_bus_type, dev,
-				      NULL, __match_any_card_device)))
-	{
+				      NULL, __match_any_card_device))) {
 		device_unregister(dev);
 		put_device(dev);
 	}
