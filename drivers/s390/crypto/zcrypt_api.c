@@ -244,11 +244,12 @@ static long zcrypt_rsa_modexpo(struct ica_rsa_modexpo *mex)
 	if (!pref_zq)
 		return -ENODEV;
 
-	rc = zq->ops->rsa_modexpo(zq, mex);
+	rc = pref_zq->ops->rsa_modexpo(pref_zq, mex);
 
 	spin_lock(&zcrypt_list_lock);
 	zcrypt_drop_queue(pref_zc, pref_zq, weight);
 	spin_unlock(&zcrypt_list_lock);
+
 	return rc;
 }
 
@@ -312,6 +313,7 @@ static long zcrypt_rsa_crt(struct ica_rsa_modexpo_crt *crt)
 	spin_lock(&zcrypt_list_lock);
 	zcrypt_drop_queue(pref_zc, pref_zq, weight);
 	spin_unlock(&zcrypt_list_lock);
+
 	return rc;
 }
 
@@ -441,7 +443,8 @@ static long zcrypt_send_ep11_cprb(struct ep11_urb *xcrb)
 		if (!zc->online || !(zc->card->functions & 0x04000000))
 			continue;
 		/* Check for user selected EP11 card */
-		if (!is_desired_ep11_card(zc->card->id, target_num, targets))
+		if (targets &&
+		    !is_desired_ep11_card(zc->card->id, target_num, targets))
 			continue;
 		/* get weight index of the card device  */
 		weight = speed_idx_ep11(func_code) * zc->speed_rating[SECKEY];
@@ -451,8 +454,9 @@ static long zcrypt_send_ep11_cprb(struct ep11_urb *xcrb)
 		for_each_zcrypt_queue(zq, zc) {
 			/* check if device is online and eligible */
 			if (!zq->online ||
-			    !is_desired_ep11_queue(zq->queue->qid,
-						   target_num, targets))
+			    (targets &&
+			     !is_desired_ep11_queue(zq->queue->qid,
+						    target_num, targets)))
 				continue;
 			if (pref_zq && atomic_read(&zq->load) + weight >=
 			    atomic_read(&pref_zq->load) + pref_weight)
@@ -475,6 +479,7 @@ static long zcrypt_send_ep11_cprb(struct ep11_urb *xcrb)
 	spin_lock(&zcrypt_list_lock);
 	zcrypt_drop_queue(pref_zc, pref_zq, weight);
 	spin_unlock(&zcrypt_list_lock);
+
 out_free:
 	kfree(targets);
 	return rc;
@@ -782,7 +787,6 @@ static long zcrypt_unlocked_ioctl(struct file *filp, unsigned int cmd,
 	}
 	case ZDEVICESTATUS: {
 		struct zcrypt_device_matrix *device_status;
-
 		device_status = kzalloc(sizeof(struct zcrypt_device_matrix),
 					GFP_KERNEL);
 		if (!device_status)

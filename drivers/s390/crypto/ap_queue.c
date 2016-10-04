@@ -571,9 +571,7 @@ struct device_type ap_queue_type = {
 
 static void ap_queue_device_release(struct device *dev)
 {
-	/* decrease parent device's refcount */ 
-	put_device(dev->parent);
-	kfree(to_ap_dev(dev));
+	kfree(to_ap_queue(dev));
 }
 
 struct ap_queue *ap_queue_create(ap_qid_t qid, int device_type)

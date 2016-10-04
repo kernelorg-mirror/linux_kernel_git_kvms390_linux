@@ -143,7 +143,7 @@ struct device_type ap_card_type = {
 
 static void ap_card_device_release(struct device *dev)
 {
-        kfree(to_ap_card(dev));
+	kfree(to_ap_card(dev));
 }
 
 struct ap_card *ap_card_create(int id, int queue_depth, int device_type,

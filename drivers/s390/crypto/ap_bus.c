@@ -75,7 +75,7 @@ MODULE_PARM_DESC(poll_thread, "Turn on/off poll thread, default is 0 (off).");
 
 static struct device *ap_root_device;
 
-spinlock_t ap_list_lock;
+DEFINE_SPINLOCK(ap_list_lock);
 LIST_HEAD(ap_card_list);
 
 static struct ap_config_info *ap_configuration;
@@ -141,9 +141,9 @@ static inline int ap_using_interrupts(void)
  */
 void *ap_airq_ptr(void)
 {
-        if (ap_using_interrupts())
-                return ap_airq.lsi_ptr;
-        return NULL;
+	if (ap_using_interrupts())
+		return ap_airq.lsi_ptr;
+	return NULL;
 }
 
 /**
@@ -377,15 +377,15 @@ static void ap_tasklet_fn(unsigned long dummy)
 	if (ap_using_interrupts())
 		xchg(ap_airq.lsi_ptr, 0);
 
-	spin_lock(&ap_list_lock);
+	spin_lock_bh(&ap_list_lock);
 	for_each_ap_card(ac) {
 		for_each_ap_queue(aq, ac) {
-			spin_lock(&aq->lock);
+			spin_lock_bh(&aq->lock);
 			wait = min(wait, ap_sm_event_loop(aq, AP_EVENT_POLL));
-			spin_unlock(&aq->lock);
+			spin_unlock_bh(&aq->lock);
 		}
 	}
-	spin_unlock(&ap_list_lock);
+	spin_unlock_bh(&ap_list_lock);
 
 	ap_wait(wait);
 }
@@ -557,9 +557,17 @@ static void ap_bus_suspend(void)
 	tasklet_disable(&ap_tasklet);
 }
 
-static int __ap_devices_unregister(struct device *dev, void *dummy)
+static int __ap_card_devices_unregister(struct device *dev, void *dummy)
 {
-	device_unregister(dev);
+	if (is_card_dev(dev))
+		device_unregister(dev);
+	return 0;
+}
+
+static int __ap_queue_devices_unregister(struct device *dev, void *dummy)
+{
+	if (is_queue_dev(dev))
+		device_unregister(dev);
 	return 0;
 }
 
@@ -567,8 +575,11 @@ static void ap_bus_resume(void)
 {
 	int rc;
 
-	/* Unconditionally remove all AP devices */
-	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_devices_unregister);
+	/* remove all queue devices */
+	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_queue_devices_unregister);
+	/* remove all card devices */
+	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_card_devices_unregister);
+
 	/* Reset thin interrupt setting */
 	if (ap_interrupts_available() && !ap_using_interrupts()) {
 		rc = register_adapter_interrupt(&ap_airq);
@@ -893,29 +904,11 @@ static int ap_select_domain(void)
 
 /*
  * helper function to be used with bus_find_dev
- * matches for all card devices
- */
-static int __match_any_card_device(struct device *dev, void *data)
-{
-	return is_card_dev(dev);
-}
-
-/*
- * helper function to be used with bus_find_dev
  * matches for the card device with the given id
  */
 static int __match_card_device_with_id(struct device *dev, void *data)
 {
 	return is_card_dev(dev) && to_ap_card(dev)->id == (int)(long) data;
-}
-
-/*
- * helper function to be used with bus_find_dev
- * matches for all queue devices
- */
-static int __match_any_queue_device(struct device *dev, void *data)
-{
-	return is_queue_dev(dev);
 }
 
 /* helper function to be used with bus_find_dev
@@ -983,7 +976,7 @@ static void ap_scan_bus(struct work_struct *unused)
 				continue;
 			/* new queue device needed */
 			if (!ac) {
-				/* but first chreate the card device */
+				/* but first create the card device */
 				ac = ap_card_create(id, depth,
 						    type, functions);
 				if (!ac)
@@ -999,6 +992,8 @@ static void ap_scan_bus(struct work_struct *unused)
 					ac = NULL;
 					break;
 				}
+				/* get it and thus adjust reference counter */
+				get_device(&ac->ap_dev.device);
 				/* Add card device to card list */
 				spin_lock_bh(&ap_list_lock);
 				list_add(&ac->list, &ap_card_list);
@@ -1021,15 +1016,12 @@ static void ap_scan_bus(struct work_struct *unused)
 			spin_lock_bh(&aq->lock);
 			ap_wait(ap_sm_event(aq, AP_EVENT_POLL));
 			spin_unlock_bh(&aq->lock);
-			/* increase parent device's refcount */
-			get_device(aq->ap_dev.device.parent);
 			/* Register device */
 			rc = device_register(&aq->ap_dev.device);
 			if (rc) {
 				spin_lock_bh(&ap_list_lock);
 				list_del_init(&aq->list);
 				spin_unlock_bh(&ap_list_lock);
-				put_device(aq->ap_dev.device.parent);
 				put_device(&aq->ap_dev.device);
 				continue;
 			}
@@ -1194,7 +1186,6 @@ out_free:
 void ap_module_exit(void)
 {
 	int i;
-	struct device *dev;
 
 	initialised = false;
 	ap_reset_domain();
@@ -1203,21 +1194,10 @@ void ap_module_exit(void)
 	hrtimer_cancel(&ap_poll_timer);
 	tasklet_kill(&ap_tasklet);
 
-	/* remove all ap queue devices */
-	dev = NULL;
-	while ((dev = bus_find_device(&ap_bus_type, dev,
-				      NULL, __match_any_queue_device))) {
-		device_unregister(dev);
-		put_device(dev);
-	}
-
-	/* remove all ap card devices */
-	dev = NULL;
-	while ((dev = bus_find_device(&ap_bus_type, dev,
-				      NULL, __match_any_card_device))) {
-		device_unregister(dev);
-		put_device(dev);
-	}
+	/* first remove queue devices */
+	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_queue_devices_unregister);
+	/* now remove the card devices */
+	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_card_devices_unregister);
 
 	/* remove bus attributes */
 	for (i = 0; ap_bus_attrs[i]; i++)
