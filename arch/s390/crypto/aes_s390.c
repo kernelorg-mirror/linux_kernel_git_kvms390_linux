@@ -22,6 +22,7 @@
 
 #include <crypto/aes.h>
 #include <crypto/algapi.h>
+#include <crypto/internal/skcipher.h>
 #include <linux/err.h>
 #include <linux/module.h>
 #include <linux/cpufeature.h>
@@ -40,7 +41,7 @@ struct s390_aes_ctx {
 	int key_len;
 	unsigned long fc;
 	union {
-		struct crypto_blkcipher *blk;
+		struct crypto_skcipher *blk;
 		struct crypto_cipher *cip;
 	} fallback;
 };
@@ -50,7 +51,7 @@ struct s390_xts_ctx {
 	u8 pcc_key[32];
 	int key_len;
 	unsigned long fc;
-	struct crypto_blkcipher *fallback;
+	struct crypto_skcipher *fallback;
 };
 
 static int setkey_fallback_cip(struct crypto_tfm *tfm, const u8 *in_key,
@@ -169,16 +170,16 @@ static int setkey_fallback_blk(struct crypto_tfm *tfm, const u8 *key,
 	struct s390_aes_ctx *sctx = crypto_tfm_ctx(tfm);
 	unsigned int ret;
 
-	sctx->fallback.blk->base.crt_flags &= ~CRYPTO_TFM_REQ_MASK;
-	sctx->fallback.blk->base.crt_flags |= (tfm->crt_flags &
-			CRYPTO_TFM_REQ_MASK);
+	crypto_skcipher_clear_flags(sctx->fallback.blk, CRYPTO_TFM_REQ_MASK);
+	crypto_skcipher_set_flags(sctx->fallback.blk, tfm->crt_flags &
+						      CRYPTO_TFM_REQ_MASK);
 
-	ret = crypto_blkcipher_setkey(sctx->fallback.blk, key, len);
-	if (ret) {
-		tfm->crt_flags &= ~CRYPTO_TFM_RES_MASK;
-		tfm->crt_flags |= (sctx->fallback.blk->base.crt_flags &
-				CRYPTO_TFM_RES_MASK);
-	}
+	ret = crypto_skcipher_setkey(sctx->fallback.blk, key, len);
+
+	tfm->crt_flags &= ~CRYPTO_TFM_RES_MASK;
+	tfm->crt_flags |= crypto_skcipher_get_flags(sctx->fallback.blk) &
+			  CRYPTO_TFM_RES_MASK;
+
 	return ret;
 }
 
@@ -186,28 +187,36 @@ static int fallback_blk_dec(struct blkcipher_desc *desc,
 		struct scatterlist *dst, struct scatterlist *src,
 		unsigned int nbytes)
 {
-	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(desc->tfm);
-	struct blkcipher_desc fallback_desc = {
-		.tfm = sctx->fallback.blk,
-		.info = desc->info,
-		.flags = desc->flags
-	};
+	unsigned int ret;
+	struct crypto_blkcipher *tfm = desc->tfm;
+	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(tfm);
+	SKCIPHER_REQUEST_ON_STACK(req, sctx->fallback.blk);
 
-	return crypto_blkcipher_decrypt_iv(&fallback_desc, dst, src, nbytes);
+	skcipher_request_set_tfm(req, sctx->fallback.blk);
+	skcipher_request_set_callback(req, desc->flags, NULL, NULL);
+	skcipher_request_set_crypt(req, src, dst, nbytes, desc->info);
+
+	ret = crypto_skcipher_decrypt(req);
+
+	skcipher_request_zero(req);
+	return ret;
 }
 
 static int fallback_blk_enc(struct blkcipher_desc *desc,
 		struct scatterlist *dst, struct scatterlist *src,
 		unsigned int nbytes)
 {
-	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(desc->tfm);
-	struct blkcipher_desc fallback_desc = {
-		.tfm = sctx->fallback.blk,
-		.info = desc->info,
-		.flags = desc->flags
-	};
+	unsigned int ret;
+	struct crypto_blkcipher *tfm = desc->tfm;
+	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(tfm);
+	SKCIPHER_REQUEST_ON_STACK(req, sctx->fallback.blk);
 
-	return crypto_blkcipher_encrypt_iv(&fallback_desc, dst, src, nbytes);
+	skcipher_request_set_tfm(req, sctx->fallback.blk);
+	skcipher_request_set_callback(req, desc->flags, NULL, NULL);
+	skcipher_request_set_crypt(req, src, dst, nbytes, desc->info);
+
+	ret = crypto_skcipher_encrypt(req);
+	return ret;
 }
 
 static int ecb_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
@@ -283,8 +292,9 @@ static int fallback_init_blk(struct crypto_tfm *tfm)
 	const char *name = tfm->__crt_alg->cra_name;
 	struct s390_aes_ctx *sctx = crypto_tfm_ctx(tfm);
 
-	sctx->fallback.blk = crypto_alloc_blkcipher(name, 0,
-			CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK);
+	sctx->fallback.blk = crypto_alloc_skcipher(name, 0,
+						   CRYPTO_ALG_ASYNC |
+						   CRYPTO_ALG_NEED_FALLBACK);
 
 	if (IS_ERR(sctx->fallback.blk)) {
 		pr_err("Allocating AES fallback algorithm %s failed\n",
@@ -299,8 +309,7 @@ static void fallback_exit_blk(struct crypto_tfm *tfm)
 {
 	struct s390_aes_ctx *sctx = crypto_tfm_ctx(tfm);
 
-	crypto_free_blkcipher(sctx->fallback.blk);
-	sctx->fallback.blk = NULL;
+	crypto_free_skcipher(sctx->fallback.blk);
 }
 
 static struct crypto_alg ecb_aes_alg = {
@@ -430,16 +439,16 @@ static int xts_fallback_setkey(struct crypto_tfm *tfm, const u8 *key,
 	struct s390_xts_ctx *xts_ctx = crypto_tfm_ctx(tfm);
 	unsigned int ret;
 
-	xts_ctx->fallback->base.crt_flags &= ~CRYPTO_TFM_REQ_MASK;
-	xts_ctx->fallback->base.crt_flags |= (tfm->crt_flags &
-			CRYPTO_TFM_REQ_MASK);
+	crypto_skcipher_clear_flags(xts_ctx->fallback, CRYPTO_TFM_REQ_MASK);
+	crypto_skcipher_set_flags(xts_ctx->fallback, tfm->crt_flags &
+						     CRYPTO_TFM_REQ_MASK);
 
-	ret = crypto_blkcipher_setkey(xts_ctx->fallback, key, len);
-	if (ret) {
-		tfm->crt_flags &= ~CRYPTO_TFM_RES_MASK;
-		tfm->crt_flags |= (xts_ctx->fallback->base.crt_flags &
-				CRYPTO_TFM_RES_MASK);
-	}
+	ret = crypto_skcipher_setkey(xts_ctx->fallback, key, len);
+
+	tfm->crt_flags &= ~CRYPTO_TFM_RES_MASK;
+	tfm->crt_flags |= crypto_skcipher_get_flags(xts_ctx->fallback) &
+			  CRYPTO_TFM_RES_MASK;
+
 	return ret;
 }
 
@@ -447,28 +456,38 @@ static int xts_fallback_decrypt(struct blkcipher_desc *desc,
 		struct scatterlist *dst, struct scatterlist *src,
 		unsigned int nbytes)
 {
-	struct s390_xts_ctx *xts_ctx = crypto_blkcipher_ctx(desc->tfm);
-	struct blkcipher_desc fallback_desc = {
-		.tfm = xts_ctx->fallback,
-		.info = desc->info,
-		.flags = desc->flags
-	};
+	struct crypto_blkcipher *tfm = desc->tfm;
+	struct s390_xts_ctx *xts_ctx = crypto_blkcipher_ctx(tfm);
+	SKCIPHER_REQUEST_ON_STACK(req, xts_ctx->fallback);
+	unsigned int ret;
 
-	return crypto_blkcipher_decrypt_iv(&fallback_desc, dst, src, nbytes);
+	skcipher_request_set_tfm(req, xts_ctx->fallback);
+	skcipher_request_set_callback(req, desc->flags, NULL, NULL);
+	skcipher_request_set_crypt(req, src, dst, nbytes, desc->info);
+
+	ret = crypto_skcipher_decrypt(req);
+
+	skcipher_request_zero(req);
+	return ret;
 }
 
 static int xts_fallback_encrypt(struct blkcipher_desc *desc,
 		struct scatterlist *dst, struct scatterlist *src,
 		unsigned int nbytes)
 {
-	struct s390_xts_ctx *xts_ctx = crypto_blkcipher_ctx(desc->tfm);
-	struct blkcipher_desc fallback_desc = {
-		.tfm = xts_ctx->fallback,
-		.info = desc->info,
-		.flags = desc->flags
-	};
+	struct crypto_blkcipher *tfm = desc->tfm;
+	struct s390_xts_ctx *xts_ctx = crypto_blkcipher_ctx(tfm);
+	SKCIPHER_REQUEST_ON_STACK(req, xts_ctx->fallback);
+	unsigned int ret;
 
-	return crypto_blkcipher_encrypt_iv(&fallback_desc, dst, src, nbytes);
+	skcipher_request_set_tfm(req, xts_ctx->fallback);
+	skcipher_request_set_callback(req, desc->flags, NULL, NULL);
+	skcipher_request_set_crypt(req, src, dst, nbytes, desc->info);
+
+	ret = crypto_skcipher_encrypt(req);
+
+	skcipher_request_zero(req);
+	return ret;
 }
 
 static int xts_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
@@ -572,8 +591,9 @@ static int xts_fallback_init(struct crypto_tfm *tfm)
 	const char *name = tfm->__crt_alg->cra_name;
 	struct s390_xts_ctx *xts_ctx = crypto_tfm_ctx(tfm);
 
-	xts_ctx->fallback = crypto_alloc_blkcipher(name, 0,
-			CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK);
+	xts_ctx->fallback = crypto_alloc_skcipher(name, 0,
+						  CRYPTO_ALG_ASYNC |
+						  CRYPTO_ALG_NEED_FALLBACK);
 
 	if (IS_ERR(xts_ctx->fallback)) {
 		pr_err("Allocating XTS fallback algorithm %s failed\n",
@@ -587,8 +607,7 @@ static void xts_fallback_exit(struct crypto_tfm *tfm)
 {
 	struct s390_xts_ctx *xts_ctx = crypto_tfm_ctx(tfm);
 
-	crypto_free_blkcipher(xts_ctx->fallback);
-	xts_ctx->fallback = NULL;
+	crypto_free_skcipher(xts_ctx->fallback);
 }
 
 static struct crypto_alg xts_aes_alg = {

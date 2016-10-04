@@ -12,3 +12,4 @@
  */
 /*? Text: "Open for Business request failed with response code 0x%04x\n" */
 /*? Text: "SCLP receiver did not register to receive Configuration Management Data Events.\n" */
+/*? Text: "%s: %d output lines suppressed due to ratelimiting\n" */

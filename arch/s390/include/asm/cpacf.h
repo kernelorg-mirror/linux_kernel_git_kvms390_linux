@@ -20,6 +20,9 @@
 #define CPACF_KMC		0xb92f		/* MSA	*/
 #define CPACF_KIMD		0xb93e		/* MSA	*/
 #define CPACF_KLMD		0xb93f		/* MSA	*/
+#define CPACF_PCKMO		0xb928		/* MSA3 */
+#define CPACF_KMF		0xb92a		/* MSA4 */
+#define CPACF_KMO		0xb92b		/* MSA4 */
 #define CPACF_PCC		0xb92c		/* MSA4 */
 #define CPACF_KMCTR		0xb92d		/* MSA4 */
 #define CPACF_PPNO		0xb93c		/* MSA5 */
@@ -121,6 +124,7 @@ static inline void __cpacf_query(unsigned int opcode, cpacf_mask_t *mask)
 	register unsigned long r1 asm("1") = (unsigned long) mask;
 
 	asm volatile(
+		"	spm 0\n" /* pckmo doesn't change the cc */
 		/* Parameter registers are ignored, but may not be 0 */
 		"0:	.insn	rrf,%[opc] << 16,2,2,2,0\n"
 		"	brc	1,0b\n"	/* handle partial completion */
@@ -138,6 +142,10 @@ static inline int __cpacf_check_opcode(unsigned int opcode)
 	case CPACF_KIMD:
 	case CPACF_KLMD:
 		return test_facility(17);	/* check for MSA */
+	case CPACF_PCKMO:
+		return test_facility(76);	/* check for MSA3 */
+	case CPACF_KMF:
+	case CPACF_KMO:
 	case CPACF_PCC:
 	case CPACF_KMCTR:
 		return test_facility(77);	/* check for MSA4 */
