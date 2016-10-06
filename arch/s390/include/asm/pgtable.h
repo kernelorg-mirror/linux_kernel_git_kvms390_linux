@@ -399,11 +399,13 @@ static inline int is_module_addr(void *addr)
 				 _PAGE_INVALID | _PAGE_PROTECT)
 
 #define PAGE_SHARED	__pgprot(_PAGE_PRESENT | _PAGE_READ | _PAGE_WRITE | \
-				 _PAGE_YOUNG | _PAGE_DIRTY)
+				 _PAGE_YOUNG | _PAGE_DIRTY | _PAGE_NOEXEC)
 #define PAGE_KERNEL	__pgprot(_PAGE_PRESENT | _PAGE_READ | _PAGE_WRITE | \
-				 _PAGE_YOUNG | _PAGE_DIRTY)
+				 _PAGE_YOUNG | _PAGE_DIRTY | _PAGE_NOEXEC)
 #define PAGE_KERNEL_RO	__pgprot(_PAGE_PRESENT | _PAGE_READ | _PAGE_YOUNG | \
-				 _PAGE_PROTECT)
+				 _PAGE_PROTECT | _PAGE_NOEXEC)
+#define PAGE_KERNEL_EXEC __pgprot(_PAGE_PRESENT | _PAGE_READ | _PAGE_WRITE | \
+				  _PAGE_YOUNG |	_PAGE_DIRTY)
 
 /*
  * On s390 the page table entry has an invalid bit and a read-only bit.
@@ -449,12 +451,14 @@ static inline int is_module_addr(void *addr)
 				 _SEGMENT_ENTRY_READ |	\
 				 _SEGMENT_ENTRY_WRITE | \
 				 _SEGMENT_ENTRY_YOUNG | \
-				 _SEGMENT_ENTRY_DIRTY)
+				 _SEGMENT_ENTRY_DIRTY | \
+				 _SEGMENT_ENTRY_NOEXEC)
 #define SEGMENT_KERNEL_RO __pgprot(_SEGMENT_ENTRY |	\
 				 _SEGMENT_ENTRY_LARGE |	\
 				 _SEGMENT_ENTRY_READ |	\
 				 _SEGMENT_ENTRY_YOUNG |	\
-				 _SEGMENT_ENTRY_PROTECT)
+				 _SEGMENT_ENTRY_PROTECT | \
+				 _SEGMENT_ENTRY_NOEXEC)
 
 /*
  * Region3 entry (large page) protection definitions.
@@ -465,12 +469,14 @@ static inline int is_module_addr(void *addr)
 				 _REGION3_ENTRY_READ |	 \
 				 _REGION3_ENTRY_WRITE |	 \
 				 _REGION3_ENTRY_YOUNG |	 \
-				 _REGION3_ENTRY_DIRTY)
+				 _REGION3_ENTRY_DIRTY | \
+				 _REGION_ENTRY_NOEXEC)
 #define REGION3_KERNEL_RO __pgprot(_REGION_ENTRY_TYPE_R3 | \
 				   _REGION3_ENTRY_LARGE |  \
 				   _REGION3_ENTRY_READ |   \
 				   _REGION3_ENTRY_YOUNG |  \
-				   _REGION_ENTRY_PROTECT)
+				   _REGION_ENTRY_PROTECT | \
+				   _REGION_ENTRY_NOEXEC)
 
 static inline int mm_has_pgste(struct mm_struct *mm)
 {
