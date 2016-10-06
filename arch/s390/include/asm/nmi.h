@@ -71,6 +71,9 @@ union mci {
 	};
 };
 
+#define MCESA_ORIGIN_MASK	(~0x3ffUL)
+#define MCESA_LC_MASK		(0xfUL)
+
 struct mcesa {
 	u8 vector_save_area[1024];
 	u8 guarded_storage_save_area[32];

@@ -149,7 +149,7 @@ static int notrace s390_validate_registers(union mci mci, int umode)
 	} else
 		asm volatile("lfpc 0(%0)" : : "a" (fpt_creg_save_area));
 
-	mcesa = (struct mcesa *)(S390_lowcore.mcesad & -16UL);
+	mcesa = (struct mcesa *)(S390_lowcore.mcesad & MCESA_ORIGIN_MASK);
 	if (!MACHINE_HAS_VX) {
 		/* Validate floating point registers */
 		asm volatile(

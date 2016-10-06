@@ -48,6 +48,7 @@
 #include <asm/os_info.h>
 #include <asm/sigp.h>
 #include <asm/idle.h>
+#include <asm/nmi.h>
 #include "entry.h"
 
 enum {
@@ -74,6 +75,8 @@ struct pcpu {
 
 static u8 boot_core_type;
 static struct pcpu pcpu_devices[NR_CPUS];
+
+static struct kmem_cache *pcpu_mcesa_cache;
 
 unsigned int smp_cpu_mt_shift;
 EXPORT_SYMBOL(smp_cpu_mt_shift);
@@ -185,10 +188,10 @@ static void pcpu_ec_call(struct pcpu *pcpu, int ec_bit)
 static int pcpu_alloc_lowcore(struct pcpu *pcpu, int cpu)
 {
 	unsigned long async_stack, panic_stack;
-	unsigned long bits, size, mcesad;
+	unsigned long mcesa_origin, mcesa_bits;
 	struct lowcore *lc;
 
-	mcesad = 0;
+	mcesa_origin = mcesa_bits = 0;
 	if (pcpu != &pcpu_devices[0]) {
 		pcpu->lowcore =	(struct lowcore *)
 			__get_free_pages(GFP_KERNEL | GFP_DMA, LC_ORDER);
@@ -197,25 +200,24 @@ static int pcpu_alloc_lowcore(struct pcpu *pcpu, int cpu)
 		if (!pcpu->lowcore || !panic_stack || !async_stack)
 			goto out;
 		if (MACHINE_HAS_VX || MACHINE_HAS_GS) {
-			bits = MACHINE_HAS_GS ? 11 : 10;
-			size = 1UL << bits;
-			mcesad = (unsigned long) kzalloc(size, GFP_KERNEL);
-			if (!mcesad)
+			mcesa_origin = (unsigned long)
+				kmem_cache_alloc(pcpu_mcesa_cache, GFP_KERNEL);
+			if (!mcesa_origin)
 				goto out;
-			if (MACHINE_HAS_GS)
-				mcesad |= bits;
+			mcesa_bits = MACHINE_HAS_GS ? 11 : 10;
 		}
 	} else {
 		async_stack = pcpu->lowcore->async_stack - ASYNC_FRAME_OFFSET;
 		panic_stack = pcpu->lowcore->panic_stack - PANIC_FRAME_OFFSET;
-		mcesad = pcpu->lowcore->mcesad;
+		mcesa_origin = pcpu->lowcore->mcesad & MCESA_ORIGIN_MASK;
+		mcesa_bits = pcpu->lowcore->mcesad & MCESA_LC_MASK;
 	}
 	lc = pcpu->lowcore;
 	memcpy(lc, &S390_lowcore, 512);
 	memset((char *) lc + 512, 0, sizeof(*lc) - 512);
 	lc->async_stack = async_stack + ASYNC_FRAME_OFFSET;
 	lc->panic_stack = panic_stack + PANIC_FRAME_OFFSET;
-	lc->mcesad = mcesad;
+	lc->mcesad = mcesa_origin | mcesa_bits;
 	lc->cpu_nr = cpu;
 	lc->spinlock_lockval = arch_spin_lockval(cpu);
 	if (vdso_alloc_per_cpu(lc))
@@ -225,7 +227,9 @@ static int pcpu_alloc_lowcore(struct pcpu *pcpu, int cpu)
 	return 0;
 out:
 	if (pcpu != &pcpu_devices[0]) {
-		kfree((void *)(mcesad & -16UL));
+		if (mcesa_origin)
+			kmem_cache_free(pcpu_mcesa_cache,
+					(void *) mcesa_origin);
 		free_page(panic_stack);
 		free_pages(async_stack, ASYNC_ORDER);
 		free_pages((unsigned long) pcpu->lowcore, LC_ORDER);
@@ -237,12 +241,17 @@ out:
 
 static void pcpu_free_lowcore(struct pcpu *pcpu)
 {
+	unsigned long mcesa_origin;
+
 	pcpu_sigp_retry(pcpu, SIGP_SET_PREFIX, 0);
 	lowcore_ptr[pcpu - pcpu_devices] = NULL;
 	vdso_free_per_cpu(pcpu->lowcore);
 	if (pcpu == &pcpu_devices[0])
 		return;
-	kfree((void *)(pcpu->lowcore->mcesad & -16UL));
+	if (MACHINE_HAS_VX || MACHINE_HAS_GS) {
+		mcesa_origin = pcpu->lowcore->mcesad & MCESA_ORIGIN_MASK;
+		kmem_cache_free(pcpu_mcesa_cache, (void *) mcesa_origin);
+	}
 	free_page(pcpu->lowcore->panic_stack-PANIC_FRAME_OFFSET);
 	free_pages(pcpu->lowcore->async_stack-ASYNC_FRAME_OFFSET, ASYNC_ORDER);
 	free_pages((unsigned long) pcpu->lowcore, LC_ORDER);
@@ -558,7 +567,7 @@ int smp_store_status(int cpu)
 		return -EIO;
 	if (!MACHINE_HAS_VX && !MACHINE_HAS_GS)
 		return 0;
-	pa = __pa(pcpu->lowcore->mcesad & -16UL);
+	pa = __pa(pcpu->lowcore->mcesad & MCESA_ORIGIN_MASK);
 	if (__pcpu_sigp_relax(pcpu->address, SIGP_STORE_ADDITIONAL_STATUS,
 			      pa) != SIGP_CC_ORDER_CODE_ACCEPTED)
 		return -EIO;
@@ -908,12 +917,22 @@ void __init smp_fill_possible_mask(void)
 
 void __init smp_prepare_cpus(unsigned int max_cpus)
 {
+	unsigned long size;
+
 	/* request the 0x1201 emergency signal external interrupt */
 	if (register_external_irq(EXT_IRQ_EMERGENCY_SIG, do_ext_call_interrupt))
 		panic("Couldn't request external interrupt 0x1201");
 	/* request the 0x1202 external call external interrupt */
 	if (register_external_irq(EXT_IRQ_EXTERNAL_CALL, do_ext_call_interrupt))
 		panic("Couldn't request external interrupt 0x1202");
+	/* create slab cache for the machine-check-extended-save-areas */
+	if (MACHINE_HAS_VX || MACHINE_HAS_GS) {
+		size = 1UL << (MACHINE_HAS_GS ? 11 : 10);
+		pcpu_mcesa_cache = kmem_cache_create("nmi save areas",
+						     size, size, 0, NULL);
+		if (!pcpu_mcesa_cache)
+			panic("Couldn't create nmi save area cache");
+	}
 	smp_detect_cpus();
 }
 
