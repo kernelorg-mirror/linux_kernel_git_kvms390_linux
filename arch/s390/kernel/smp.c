@@ -928,7 +928,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 	/* create slab cache for the machine-check-extended-save-areas */
 	if (MACHINE_HAS_VX || MACHINE_HAS_GS) {
 		size = 1UL << (MACHINE_HAS_GS ? 11 : 10);
-		pcpu_mcesa_cache = kmem_cache_create("nmi save areas",
+		pcpu_mcesa_cache = kmem_cache_create("nmi_save_areas",
 						     size, size, 0, NULL);
 		if (!pcpu_mcesa_cache)
 			panic("Couldn't create nmi save area cache");
