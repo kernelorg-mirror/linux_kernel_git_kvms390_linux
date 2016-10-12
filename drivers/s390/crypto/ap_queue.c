@@ -584,6 +584,9 @@ struct ap_queue *ap_queue_create(ap_qid_t qid, int device_type)
 	aq->ap_dev.device.release = ap_queue_device_release;
 	aq->ap_dev.device.type = &ap_queue_type;
 	aq->ap_dev.device_type = device_type;
+	/* toleration of new cards: map to CEX5 */
+	if (device_type > AP_DEVICE_TYPE_CEX5)
+		aq->ap_dev.device_type = AP_DEVICE_TYPE_CEX5;
 	aq->qid = qid;
 	aq->state = AP_STATE_RESET_START;
 	aq->interrupt = AP_INTR_DISABLED;

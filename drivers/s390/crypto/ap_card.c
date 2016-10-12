@@ -159,6 +159,9 @@ struct ap_card *ap_card_create(int id, int queue_depth, int device_type,
 	ac->ap_dev.device.type = &ap_card_type;
 	ac->ap_dev.device_type = device_type;
 	ac->raw_hwtype = device_type;
+	/* toleration of new cards: map to CEX5 */
+	if (device_type > AP_DEVICE_TYPE_CEX5)
+		ac->ap_dev.device_type = AP_DEVICE_TYPE_CEX5;
 	ac->queue_depth = queue_depth;
 	ac->functions = functions;
 	ac->id = id;
