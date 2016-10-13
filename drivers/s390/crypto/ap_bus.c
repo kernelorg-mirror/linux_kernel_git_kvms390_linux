@@ -355,7 +355,7 @@ static int ap_queue_enable_interruption(struct ap_device *ap_dev, void *ind)
 	case AP_RESPONSE_DECONFIGURED:
 	case AP_RESPONSE_CHECKSTOPPED:
 	case AP_RESPONSE_INVALID_ADDRESS:
-		pr_err("Registering adapter interrupts for AP %02x failed\n",
+		pr_err("Registering adapter interrupts for AP %d failed\n",
 		       AP_QID_DEVICE(ap_dev->qid));
 		return -EOPNOTSUPP;
 	case AP_RESPONSE_RESET_IN_PROGRESS:
@@ -1820,7 +1820,7 @@ static int create_sub_device(ap_qid_t qid, int queue_depth, int device_type,
 	ap_dev->device.bus = &ap_bus_type;
 	ap_dev->device.parent = &ap_group_dev->device;
 
-	rc = dev_set_name(&ap_dev->device, "%02x.%04x",
+	rc = dev_set_name(&ap_dev->device, "%02x.%03d",
 			  id, dom);
 	if (rc) {
 		kfree(ap_dev);

@@ -113,7 +113,7 @@ static ssize_t zcrypt_online_store(struct device *dev,
 	if (sscanf(buf, "%d\n", &online) != 1 || online < 0 || online > 1)
 		return -EINVAL;
 	zdev->online = online;
-	ZCRYPT_DBF_DEV(DBF_INFO, zdev, "dev%02x%04xo%dman",
+	ZCRYPT_DBF_DEV(DBF_INFO, zdev, "dev%02x%02xo%dman",
 		       AP_QID_DEVICE(zdev->ap_dev->qid),
 		       AP_QID_QUEUE(zdev->ap_dev->qid),
 		       zdev->online);
@@ -319,7 +319,7 @@ int zcrypt_device_register(struct zcrypt_device *zdev)
 	id = AP_QID_DEVICE(zdev->ap_dev->qid);
 	spin_lock_bh(&zcrypt_sub_device_list_lock[id]);
 	zdev->online = 1;	/* New devices are online by default. */
-	ZCRYPT_DBF_DEV(DBF_INFO, zdev, "dev%02x%04xo%dreg",
+	ZCRYPT_DBF_DEV(DBF_INFO, zdev, "dev%02x%02xo%dreg",
 		       AP_QID_DEVICE(zdev->ap_dev->qid),
 		       AP_QID_QUEUE(zdev->ap_dev->qid),
 		       zdev->online);
