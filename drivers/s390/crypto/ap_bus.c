@@ -1806,9 +1806,6 @@ static int create_sub_device(ap_qid_t qid, int queue_depth, int device_type,
 	ap_dev->queue_depth = queue_depth;
 	ap_dev->raw_hwtype = device_type;
 	ap_dev->device_type = device_type;
-	/* CEX6 toleration: map device type to CEX5 */
-	if (device_type == AP_DEVICE_TYPE_CEX6)
-		ap_dev->device_type = AP_DEVICE_TYPE_CEX5;
 	ap_dev->functions = device_functions;
 	spin_lock_init(&ap_dev->lock);
 	INIT_LIST_HEAD(&ap_dev->pendingq);
@@ -1952,10 +1949,6 @@ static void ap_scan_bus(struct work_struct *unused)
 			if (!group_device_registered) {
 				ap_group_dev->raw_hwtype = device_type;
 				ap_group_dev->device_type = device_type;
-				/* CEX6 toleration: map device type to CEX5 */
-				if (device_type == AP_DEVICE_TYPE_CEX6)
-					ap_group_dev->device_type =
-						AP_DEVICE_TYPE_CEX5;
 				ap_group_dev->queue_depth = queue_depth;
 				ap_group_dev->functions = device_functs;
 
