@@ -953,8 +953,7 @@ static void ap_scan_bus(struct work_struct *unused)
 				      (void *)(long) id,
 				      __match_card_device_with_id);
 		ac = dev ? to_ap_card(dev) : NULL;
-		if (ap_configuration &&
-		    !ap_test_config(ap_configuration->apm, id)) {
+		if (!ap_test_config_card_id(id)) {
 			if (dev) {
 				/* card device has been removed from
 				 * configuration, remove the belonging
