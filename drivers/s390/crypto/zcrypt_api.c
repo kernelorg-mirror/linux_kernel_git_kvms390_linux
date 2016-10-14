@@ -223,15 +223,25 @@ static long zcrypt_rsa_modexpo(struct ica_rsa_modexpo *mex)
 			continue;
 		/* get weight index of the card device	*/
 		weight = zc->speed_rating[func_code];
-		if (pref_zc && atomic_read(&zc->load) + weight >=
+		if (pref_zc && atomic_read(&zc->load) + weight >
 		    atomic_read(&pref_zc->load) + pref_weight)
+			continue;
+		if ((pref_zc && atomic_read(&zc->load) + weight ==
+		    atomic_read(&pref_zc->load) + pref_weight) &&
+		    (atomic_read(&zc->card->total_request_count) >=
+		     atomic_read(&pref_zc->card->total_request_count)))
 			continue;
 		for_each_zcrypt_queue(zq, zc) {
 			/* check if device is online and eligible */
 			if (!zq->online)
 				continue;
-			if (pref_zq && atomic_read(&zq->load) + weight >=
+			if (pref_zq && atomic_read(&zq->load) + weight >
 			    atomic_read(&pref_zq->load) + pref_weight)
+				continue;
+			if ((pref_zq && atomic_read(&zq->load) + weight ==
+			    atomic_read(&pref_zq->load) + pref_weight) &&
+			    (zq->queue->total_request_count >=
+			     pref_zq->queue->total_request_count))
 				continue;
 			pref_zc = zc;
 			pref_zq = zq;
@@ -287,15 +297,25 @@ static long zcrypt_rsa_crt(struct ica_rsa_modexpo_crt *crt)
 			continue;
 		/* get weight index of the card device	*/
 		weight = zc->speed_rating[func_code];
-		if (pref_zc && atomic_read(&zc->load) + weight >=
+		if (pref_zc && atomic_read(&zc->load) + weight >
 		    atomic_read(&pref_zc->load) + pref_weight)
+			continue;
+		if ((pref_zc && atomic_read(&zc->load) + weight ==
+		    atomic_read(&pref_zc->load) + pref_weight) &&
+		    (atomic_read(&zc->card->total_request_count) >=
+		     atomic_read(&pref_zc->card->total_request_count)))
 			continue;
 		for_each_zcrypt_queue(zq, zc) {
 			/* check if device is online and eligible */
 			if (!zq->online)
 				continue;
-			if (pref_zq && atomic_read(&zq->load) + weight >=
+			if (pref_zq && atomic_read(&zq->load) + weight >
 			    atomic_read(&pref_zq->load) + pref_weight)
+				continue;
+			if ((pref_zq && atomic_read(&zq->load) + weight ==
+			    atomic_read(&pref_zq->load) + pref_weight) &&
+			    (zq->queue->total_request_count >=
+			     pref_zq->queue->total_request_count))
 				continue;
 			pref_zc = zc;
 			pref_zq = zq;
@@ -344,8 +364,13 @@ static long zcrypt_send_cprb(struct ica_xcRB *xcRB)
 			continue;
 		/* get weight index of the card device	*/
 		weight = speed_idx_cca(func_code) * zc->speed_rating[SECKEY];
-		if (pref_zc && atomic_read(&zc->load) + weight >=
+		if (pref_zc && atomic_read(&zc->load) + weight >
 		    atomic_read(&pref_zc->load) + pref_weight)
+			continue;
+		if ((pref_zc && atomic_read(&zc->load) + weight ==
+		    atomic_read(&pref_zc->load) + pref_weight) &&
+		    (atomic_read(&zc->card->total_request_count) >=
+		     atomic_read(&pref_zc->card->total_request_count)))
 			continue;
 		for_each_zcrypt_queue(zq, zc) {
 			/* check if device is online and eligible */
@@ -353,8 +378,13 @@ static long zcrypt_send_cprb(struct ica_xcRB *xcRB)
 			    ((*domain != (unsigned short) AUTOSELECT) &&
 			     (*domain != AP_QID_QUEUE(zq->queue->qid))))
 				continue;
-			if (pref_zq && atomic_read(&zq->load) + weight >=
+			if (pref_zq && atomic_read(&zq->load) + weight >
 			    atomic_read(&pref_zq->load) + pref_weight)
+				continue;
+			if ((pref_zq && atomic_read(&zq->load) + weight ==
+			    atomic_read(&pref_zq->load) + pref_weight) &&
+			    (zq->queue->total_request_count >=
+			     pref_zq->queue->total_request_count))
 				continue;
 			pref_zc = zc;
 			pref_zq = zq;
@@ -448,8 +478,13 @@ static long zcrypt_send_ep11_cprb(struct ep11_urb *xcrb)
 			continue;
 		/* get weight index of the card device	*/
 		weight = speed_idx_ep11(func_code) * zc->speed_rating[SECKEY];
-		if (pref_zc && atomic_read(&zc->load) + weight >=
+		if (pref_zc && atomic_read(&zc->load) + weight >
 		    atomic_read(&pref_zc->load) + pref_weight)
+			continue;
+		if ((pref_zc && atomic_read(&zc->load) + weight ==
+		    atomic_read(&pref_zc->load) + pref_weight) &&
+		    (atomic_read(&zc->card->total_request_count) >=
+		     atomic_read(&pref_zc->card->total_request_count)))
 			continue;
 		for_each_zcrypt_queue(zq, zc) {
 			/* check if device is online and eligible */
@@ -458,8 +493,13 @@ static long zcrypt_send_ep11_cprb(struct ep11_urb *xcrb)
 			     !is_desired_ep11_queue(zq->queue->qid,
 						    target_num, targets)))
 				continue;
-			if (pref_zq && atomic_read(&zq->load) + weight >=
+			if (pref_zq && atomic_read(&zq->load) + weight >
 			    atomic_read(&pref_zq->load) + pref_weight)
+				continue;
+			if ((pref_zq && atomic_read(&zq->load) + weight ==
+			    atomic_read(&pref_zq->load) + pref_weight) &&
+			    (zq->queue->total_request_count >=
+				pref_zq->queue->total_request_count))
 				continue;
 			pref_zc = zc;
 			pref_zq = zq;
@@ -508,15 +548,25 @@ static long zcrypt_rng(char *buffer)
 			continue;
 		/* get weight index of the card device	*/
 		weight = zc->speed_rating[func_code];
-		if (pref_zc && atomic_read(&zc->load) + weight >=
+		if (pref_zc && atomic_read(&zc->load) + weight >
 		    atomic_read(&pref_zc->load) + pref_weight)
+			continue;
+		if ((pref_zc && atomic_read(&zc->load) + weight ==
+		    atomic_read(&pref_zc->load) + pref_weight) &&
+		    (atomic_read(&zc->card->total_request_count) >=
+		     atomic_read(&pref_zc->card->total_request_count)))
 			continue;
 		for_each_zcrypt_queue(zq, zc) {
 			/* check if device is online and eligible */
 			if (!zq->online)
 				continue;
-			if (pref_zq && atomic_read(&zq->load) + weight >=
+			if (pref_zq && atomic_read(&zq->load) + weight >
 			    atomic_read(&pref_zq->load) + pref_weight)
+				continue;
+			if ((pref_zq && atomic_read(&zq->load) + weight ==
+			    atomic_read(&pref_zq->load) + pref_weight) &&
+			    (zq->queue->total_request_count >=
+			     pref_zq->queue->total_request_count))
 				continue;
 			pref_zc = zc;
 			pref_zq = zq;
