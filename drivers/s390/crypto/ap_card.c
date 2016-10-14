@@ -81,7 +81,7 @@ static ssize_t ap_requestq_count_show(struct device *dev,
 	reqq_cnt = 0;
 	spin_lock_bh(&ap_list_lock);
 	for_each_ap_queue(aq, ac)
-		reqq_cnt += aq->total_request_count;
+		reqq_cnt += aq->requestq_count;
 	spin_unlock_bh(&ap_list_lock);
 	return snprintf(buf, PAGE_SIZE, "%d\n", reqq_cnt);
 }
