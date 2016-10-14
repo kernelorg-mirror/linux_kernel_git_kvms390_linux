@@ -715,7 +715,7 @@ static ssize_t ap_domain_store(struct bus_type *bus,
 {
 	int domain;
 
-	if (sscanf(buf, "%d\n", &domain) != 1 ||
+	if (sscanf(buf, "%i\n", &domain) != 1 ||
 	    domain < 0 || domain > ap_max_domain_id)
 		return -EINVAL;
 	spin_lock_bh(&ap_domain_lock);
