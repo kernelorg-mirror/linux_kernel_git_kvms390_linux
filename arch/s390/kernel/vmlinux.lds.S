@@ -79,7 +79,7 @@ SECTIONS
 
 	. = ALIGN(PAGE_SIZE);
 	.init.text : AT(ADDR(.init.text) - LOAD_OFFSET) {
-        	VMLINUX_SYMBOL(_sinittext) = . ;
+		VMLINUX_SYMBOL(_sinittext) = . ;
 		INIT_TEXT
 		. = ALIGN(PAGE_SIZE);
 		VMLINUX_SYMBOL(_einittext) = . ;

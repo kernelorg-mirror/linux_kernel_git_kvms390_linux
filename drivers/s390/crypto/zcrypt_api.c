@@ -221,7 +221,7 @@ static long zcrypt_rsa_modexpo(struct ica_rsa_modexpo *mex)
 		if (zc->min_mod_size > mex->inputdatalength ||
 		    zc->max_mod_size < mex->inputdatalength)
 			continue;
-		/* get weight index of the card device  */
+		/* get weight index of the card device	*/
 		weight = zc->speed_rating[func_code];
 		if (pref_zc && atomic_read(&zc->load) + weight >=
 		    atomic_read(&pref_zc->load) + pref_weight)
@@ -285,7 +285,7 @@ static long zcrypt_rsa_crt(struct ica_rsa_modexpo_crt *crt)
 		if (zc->min_mod_size > crt->inputdatalength ||
 		    zc->max_mod_size < crt->inputdatalength)
 			continue;
-		/* get weight index of the card device  */
+		/* get weight index of the card device	*/
 		weight = zc->speed_rating[func_code];
 		if (pref_zc && atomic_read(&zc->load) + weight >=
 		    atomic_read(&pref_zc->load) + pref_weight)
@@ -342,7 +342,7 @@ static long zcrypt_send_cprb(struct ica_xcRB *xcRB)
 		if (xcRB->user_defined != AUTOSELECT &&
 		    xcRB->user_defined != zc->card->id)
 			continue;
-		/* get weight index of the card device  */
+		/* get weight index of the card device	*/
 		weight = speed_idx_cca(func_code) * zc->speed_rating[SECKEY];
 		if (pref_zc && atomic_read(&zc->load) + weight >=
 		    atomic_read(&pref_zc->load) + pref_weight)
@@ -446,7 +446,7 @@ static long zcrypt_send_ep11_cprb(struct ep11_urb *xcrb)
 		if (targets &&
 		    !is_desired_ep11_card(zc->card->id, target_num, targets))
 			continue;
-		/* get weight index of the card device  */
+		/* get weight index of the card device	*/
 		weight = speed_idx_ep11(func_code) * zc->speed_rating[SECKEY];
 		if (pref_zc && atomic_read(&zc->load) + weight >=
 		    atomic_read(&pref_zc->load) + pref_weight)
@@ -506,7 +506,7 @@ static long zcrypt_rng(char *buffer)
 		/* Check for online CCA cards */
 		if (!zc->online || !(zc->card->functions & 0x10000000))
 			continue;
-		/* get weight index of the card device  */
+		/* get weight index of the card device	*/
 		weight = zc->speed_rating[func_code];
 		if (pref_zc && atomic_read(&zc->load) + weight >=
 		    atomic_read(&pref_zc->load) + pref_weight)

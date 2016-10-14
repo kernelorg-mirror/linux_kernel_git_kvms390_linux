@@ -266,7 +266,7 @@ static inline void ap_init_message(struct ap_message *ap_msg)
 	list_for_each_entry(_ac, &ap_card_list, list)
 
 #define for_each_ap_queue(_aq, _ac) \
-	list_for_each_entry(_aq, &(_ac)->queues, list) 
+	list_for_each_entry(_aq, &(_ac)->queues, list)
 
 /*
  * Note: don't use ap_send/ap_recv after using ap_queue_message
