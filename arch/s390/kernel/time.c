@@ -415,7 +415,9 @@ static void clock_sync_global(unsigned long long delta)
 		tod_steering_delta = ((s64) tod_steering_delta < 0) ?
 			-(adj >> 15) : (adj >> 15);
 	tod_steering_delta += delta;
-	// FIXME: overflow tod_steering_delta << 15 ?!?
+	if ((abs(tod_steering_delta) >> 48) != 0)
+		panic("TOD clock sync offset %lli is too large to drift\n",
+		      tod_steering_delta);
 	tod_steering_end = now + (abs(tod_steering_delta) << 15);
 	vdso_data->ts_dir = (tod_steering_delta < 0) ? 0 : 1;
 	vdso_data->ts_end = tod_steering_end;
