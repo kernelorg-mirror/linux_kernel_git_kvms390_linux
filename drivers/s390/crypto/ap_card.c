@@ -22,6 +22,7 @@ static ssize_t ap_hwtype_show(struct device *dev,
 			      struct device_attribute *attr, char *buf)
 {
 	struct ap_card *ac = to_ap_card(dev);
+
 	return snprintf(buf, PAGE_SIZE, "%d\n", ac->ap_dev.device_type);
 }
 
@@ -41,6 +42,7 @@ static ssize_t ap_depth_show(struct device *dev, struct device_attribute *attr,
 			     char *buf)
 {
 	struct ap_card *ac = to_ap_card(dev);
+
 	return snprintf(buf, PAGE_SIZE, "%d\n", ac->queue_depth);
 }
 
@@ -50,6 +52,7 @@ static ssize_t ap_functions_show(struct device *dev,
 				 struct device_attribute *attr, char *buf)
 {
 	struct ap_card *ac = to_ap_card(dev);
+
 	return snprintf(buf, PAGE_SIZE, "0x%08X\n", ac->functions);
 }
 
@@ -156,10 +159,10 @@ struct ap_card *ap_card_create(int id, int queue_depth, int device_type,
 	ac->ap_dev.device.release = ap_card_device_release;
 	ac->ap_dev.device.type = &ap_card_type;
 	ac->ap_dev.device_type = device_type;
-	ac->raw_hwtype = device_type;
-	/* toleration of new cards: map to CEX5 */
-	if (device_type > AP_DEVICE_TYPE_CEX5)
+	/* CEX6 toleration: map to CEX5 */
+	if (device_type == AP_DEVICE_TYPE_CEX6)
 		ac->ap_dev.device_type = AP_DEVICE_TYPE_CEX5;
+	ac->raw_hwtype = device_type;
 	ac->queue_depth = queue_depth;
 	ac->functions = functions;
 	ac->id = id;

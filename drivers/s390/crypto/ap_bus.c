@@ -955,11 +955,12 @@ static void ap_scan_bus(struct work_struct *unused)
 		ac = dev ? to_ap_card(dev) : NULL;
 		if (!ap_test_config_card_id(id)) {
 			if (dev) {
-				/* card device has been removed from
+				/* Card device has been removed from
 				 * configuration, remove the belonging
-				 * queue devices */
+				 * queue devices.
+				 */
 				bus_for_each_dev(&ap_bus_type, NULL,
-					(void*)(long) id,
+					(void *)(long) id,
 					__ap_queue_devices_with_id_unregister);
 				/* now remove the card device */
 				device_unregister(dev);
@@ -967,9 +968,10 @@ static void ap_scan_bus(struct work_struct *unused)
 			}
 			continue;
 		}
-		/* according to the configuration there should be a card
+		/* According to the configuration there should be a card
 		 * device, so check if there is at least one valid queue
-		 * and maybe create queue devices and the card device. */
+		 * and maybe create queue devices and the card device.
+		 */
 		domains = 0;
 		for (dom = 0; dom < AP_DOMAINS; dom++) {
 			qid = AP_MKQID(id, dom);
@@ -979,8 +981,9 @@ static void ap_scan_bus(struct work_struct *unused)
 			aq = dev ? to_ap_queue(dev) : NULL;
 			if (!ap_test_config_domain(dom)) {
 				if (dev) {
-					/* queue device exists but has been
-					 * removed from configuration */
+					/* Queue device exists but has been
+					 * removed from configuration.
+					 */
 					device_unregister(dev);
 					put_device(dev);
 				}

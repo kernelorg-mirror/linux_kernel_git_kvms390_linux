@@ -584,8 +584,8 @@ struct ap_queue *ap_queue_create(ap_qid_t qid, int device_type)
 	aq->ap_dev.device.release = ap_queue_device_release;
 	aq->ap_dev.device.type = &ap_queue_type;
 	aq->ap_dev.device_type = device_type;
-	/* toleration of new cards: map to CEX5 */
-	if (device_type > AP_DEVICE_TYPE_CEX5)
+	/* CEX6 toleration: map to CEX5 */
+	if (device_type == AP_DEVICE_TYPE_CEX6)
 		aq->ap_dev.device_type = AP_DEVICE_TYPE_CEX5;
 	aq->qid = qid;
 	aq->state = AP_STATE_RESET_START;
@@ -616,7 +616,8 @@ EXPORT_SYMBOL(ap_queue_init_reply);
 void ap_queue_message(struct ap_queue *aq, struct ap_message *ap_msg)
 {
 	/* For asynchronous message handling a valid receive-callback
-	 * is required. */
+	 * is required.
+	 */
 	BUG_ON(!ap_msg->receive);
 
 	spin_lock_bh(&aq->lock);

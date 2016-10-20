@@ -91,8 +91,10 @@ static int zcrypt_cex2a_card_probe(struct ap_device *ap_dev)
 	 * Normalized speed ratings per crypto adapter
 	 * MEX_1k, MEX_2k, MEX_4k, CRT_1k, CRT_2k, CRT_4k, RNG, SECKEY
 	 */
-	static const int CEX2A_SPEED_IDX[] = { 800, 1000, 2000,  900, 1200, 2400, 0, 0};
-	static const int CEX3A_SPEED_IDX[] = { 400,  500, 1000,  450,  550, 1200, 0, 0};
+	static const int CEX2A_SPEED_IDX[] = {
+		800, 1000, 2000,  900, 1200, 2400, 0, 0};
+	static const int CEX3A_SPEED_IDX[] = {
+		400,  500, 1000,  450,	550, 1200, 0, 0};
 
 	struct ap_card *ac = to_ap_card(&ap_dev->device);
 	struct zcrypt_card *zc;

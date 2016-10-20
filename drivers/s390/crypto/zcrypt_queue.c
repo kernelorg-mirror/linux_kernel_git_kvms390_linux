@@ -20,10 +20,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
 #include <linux/module.h>
@@ -36,7 +32,7 @@
 #include <linux/compat.h>
 #include <linux/slab.h>
 #include <linux/atomic.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/hw_random.h>
 #include <linux/debugfs.h>
 #include <asm/debug.h>
@@ -56,6 +52,7 @@ static ssize_t zcrypt_queue_online_show(struct device *dev,
 					char *buf)
 {
 	struct zcrypt_queue *zq = to_ap_queue(dev)->private;
+
 	return snprintf(buf, PAGE_SIZE, "%d\n", zq->online);
 }
 
@@ -84,7 +81,7 @@ static ssize_t zcrypt_queue_online_store(struct device *dev,
 static DEVICE_ATTR(online, 0644, zcrypt_queue_online_show,
 		   zcrypt_queue_online_store);
 
-static struct attribute * zcrypt_queue_attrs[] = {
+static struct attribute *zcrypt_queue_attrs[] = {
 	&dev_attr_online.attr,
 	NULL,
 };

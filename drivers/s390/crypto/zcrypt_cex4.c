@@ -71,12 +71,18 @@ static int zcrypt_cex4_card_probe(struct ap_device *ap_dev)
 	 * Normalized speed ratings per crypto adapter
 	 * MEX_1k, MEX_2k, MEX_4k, CRT_1k, CRT_2k, CRT_4k, RNG, SECKEY
 	 */
-	static const int CEX4A_SPEED_IDX[] = {	5,  6,	  59,  20, 115,  581,  0,  0};
-	static const int CEX5A_SPEED_IDX[] = {	3,  3,	   6,	8,  32,  218,  0,  0};
-	static const int CEX4C_SPEED_IDX[] = { 24,  25,   82,  41, 138, 1111, 79,  8};
-	static const int CEX5C_SPEED_IDX[] = { 10,  14,   23,  17,  45,  242, 63,  4};
-	static const int CEX4P_SPEED_IDX[] = {142, 198, 1852, 203, 331, 1563,  0,  8};
-	static const int CEX5P_SPEED_IDX[] = { 49,  67,  131,  52,  85,  287,  0,  4};
+	static const int CEX4A_SPEED_IDX[] = {
+		5,  6,	  59,  20, 115,  581,  0,  0};
+	static const int CEX5A_SPEED_IDX[] = {
+		3,  3,	   6,	8,  32,  218,  0,  0};
+	static const int CEX4C_SPEED_IDX[] = {
+		24,  25,   82,	41, 138, 1111, 79,  8};
+	static const int CEX5C_SPEED_IDX[] = {
+		10,  14,   23,	17,  45,  242, 63,  4};
+	static const int CEX4P_SPEED_IDX[] = {
+		142, 198, 1852, 203, 331, 1563,  0,  8};
+	static const int CEX5P_SPEED_IDX[] = {
+		49,  67,  131,	52,  85,  287,	0,  4};
 
 	struct ap_card *ac = to_ap_card(&ap_dev->device);
 	struct zcrypt_card *zc;
