@@ -363,7 +363,7 @@ out:
 static int diag224_get_name_table(void)
 {
 	/* memory must be below 2GB */
-	diag224_cpu_names = kmalloc(PAGE_SIZE, GFP_KERNEL | GFP_DMA);
+	diag224_cpu_names = (char *) __get_free_page(GFP_KERNEL | GFP_DMA);
 	if (!diag224_cpu_names)
 		return -ENOMEM;
 	if (diag224(diag224_cpu_names)) {
