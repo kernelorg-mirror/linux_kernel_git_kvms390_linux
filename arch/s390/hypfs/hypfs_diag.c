@@ -367,7 +367,7 @@ static int diag224_get_name_table(void)
 	if (!diag224_cpu_names)
 		return -ENOMEM;
 	if (diag224(diag224_cpu_names)) {
-		kfree(diag224_cpu_names);
+		free_page(diag224_cpu_names);
 		return -EOPNOTSUPP;
 	}
 	EBCASC(diag224_cpu_names + 16, (*diag224_cpu_names + 1) * 16);
@@ -376,7 +376,7 @@ static int diag224_get_name_table(void)
 
 static void diag224_delete_name_table(void)
 {
-	kfree(diag224_cpu_names);
+	free_page(diag224_cpu_names);
 }
 
 static int diag224_idx2name(int index, char *name)
