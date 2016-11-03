@@ -359,6 +359,28 @@
  */
 
 /*?
+ * Text: "%s: Hardware checksumming is performed only if %s and its peer use different OSA Express 3 ports\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ *   @2: network interface name
+ * Description:
+ * Offloaded checksum calculations apply only to packets that go out to the
+ * LAN or come in from the LAN. Linux instances that share an OSA Express 3
+ * port exchange packets directly.
+ * Packets transmitted through a shared port, and for which you have turned
+ * on hardware checksumming, are neither checksummed by the OSA adapter nor by
+ * Linux.
+ *
+ * User action:
+ * To use hardware checksumming, ensure that the peers use separate ports.
+ * To use software checksumming in Linux instead, turn off hardware
+ * checksumming.
+ * If you can risk running without checksumming for your connection,
+ * ignore this message.
+ */
+
+/*?
  * Text: "%s: Enabling HW checksumming for %s failed, using SW checksumming\n"
  * Severity: Warning
  * Parameter:
