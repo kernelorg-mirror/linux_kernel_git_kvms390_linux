@@ -576,9 +576,9 @@ static void zcrypt_device_status_mask(struct zcrypt_device_matrix *matrix)
 			stat += AP_QID_CARD(zq->queue->qid) * MAX_ZDEV_DOMAINS;
 			stat += AP_QID_QUEUE(zq->queue->qid);
 			stat->hwtype = zc->card->ap_dev.device_type;
-			stat->functions = zc->card->functions;
+			stat->functions = zc->card->functions >> 26;
 			stat->qid = zq->queue->qid;
-			stat->online = zq->online;
+			stat->online = zq->online ? 0x01 : 0x00;
 		}
 	}
 	spin_unlock(&zcrypt_list_lock);
