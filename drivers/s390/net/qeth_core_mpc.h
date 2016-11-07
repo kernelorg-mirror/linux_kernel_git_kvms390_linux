@@ -358,7 +358,7 @@ struct qeth_arp_query_info {
 enum qeth_ipa_checksum_bits {
 	QETH_IPA_CHECKSUM_IP_HDR	= 0x0002,
 	QETH_IPA_CHECKSUM_UDP		= 0x0008,
-	QETH_IPA_CHECKSUM_TCP	        = 0x0010,
+	QETH_IPA_CHECKSUM_TCP		= 0x0010,
 	QETH_IPA_CHECKSUM_LP2LP		= 0x0020
 };
 
