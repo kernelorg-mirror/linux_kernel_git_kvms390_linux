@@ -128,7 +128,6 @@ static inline void preempt_count_set(int pc)
 
 static inline void set_preempt_need_resched(void)
 {
-
 }
 
 static inline void clear_preempt_need_resched(void)
