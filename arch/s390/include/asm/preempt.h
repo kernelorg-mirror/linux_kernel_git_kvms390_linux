@@ -1,8 +1,8 @@
 #ifndef __ASM_PREEMPT_H
 #define __ASM_PREEMPT_H
 
+#include <asm/current.h>
 #include <linux/thread_info.h>
-#include <asm/lowcore.h>
 
 #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
 
