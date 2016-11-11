@@ -3,47 +3,11 @@
 
 #include <asm/current.h>
 #include <linux/thread_info.h>
+#include <asm/atomic_ops.h>
 
 #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
 
 #define PREEMPT_ENABLED	(0 + PREEMPT_NEED_RESCHED)
-
-static inline void __preempt_count_asi(int val)
-{
-	asm volatile(
-		"	asi	%0,%1\n"
-		: "+Q" (S390_lowcore.preempt_count) : "i" (val) : "cc");
-}
-
-static inline int __preempt_count_laa(int val)
-{
-	asm volatile(
-		"	laa	%0,%0,%1\n"
-		: "+d" (val), "+Q" (S390_lowcore.preempt_count) : : "cc");
-	return val;
-}
-
-static inline int __preempt_count_lao(int val)
-{
-	asm volatile(
-		"	lao	%0,%0,%1\n"
-		: "+d" (val), "+Q" (S390_lowcore.preempt_count) : : "cc");
-	return val;
-}
-
-static inline int __preempt_count_lan(int val)
-{
-	asm volatile(
-		"	lan	%0,%0,%1\n"
-		: "+d" (val), "+Q" (S390_lowcore.preempt_count) : : "cc");
-	return val;
-}
-
-static inline int __preempt_count_cmpxchg(int old, int new)
-{
-	return __sync_bool_compare_and_swap(&S390_lowcore.preempt_count,
-					    old, new);
-}
 
 static inline int preempt_count(void)
 {
@@ -58,7 +22,8 @@ static inline void preempt_count_set(int pc)
 		old = READ_ONCE(S390_lowcore.preempt_count);
 		new = (old & PREEMPT_NEED_RESCHED) |
 			(pc & ~PREEMPT_NEED_RESCHED);
-	} while (!__preempt_count_cmpxchg(old, new));
+	} while (__atomic_cmpxchg(&S390_lowcore.preempt_count,
+				  old, new) != old);
 }
 
 #define init_task_preempt_count(p)	do { } while (0)
@@ -69,12 +34,12 @@ static inline void preempt_count_set(int pc)
 
 static inline void set_preempt_need_resched(void)
 {
-	__preempt_count_lan(~PREEMPT_NEED_RESCHED);
+	__atomic_and(~PREEMPT_NEED_RESCHED, &S390_lowcore.preempt_count);
 }
 
 static inline void clear_preempt_need_resched(void)
 {
-	__preempt_count_lao(PREEMPT_NEED_RESCHED);
+	__atomic_or(PREEMPT_NEED_RESCHED, &S390_lowcore.preempt_count);
 }
 
 static inline bool test_preempt_need_resched(void)
@@ -85,9 +50,9 @@ static inline bool test_preempt_need_resched(void)
 static inline void __preempt_count_add(int val)
 {
 	if (__builtin_constant_p(val) && (val >= -128) && (val <= 127))
-		__preempt_count_asi(val);
+		__atomic_add_const(val, &S390_lowcore.preempt_count);
 	else
-		__preempt_count_laa(val);
+		__atomic_add(val, &S390_lowcore.preempt_count);
 }
 
 static inline void __preempt_count_sub(int val)
@@ -97,7 +62,7 @@ static inline void __preempt_count_sub(int val)
 
 static inline bool __preempt_count_dec_and_test(void)
 {
-	return __preempt_count_laa(-1) == 1;
+	return __atomic_add(-1, &S390_lowcore.preempt_count) == 1;
 }
 
 static inline bool should_resched(int preempt_offset)
