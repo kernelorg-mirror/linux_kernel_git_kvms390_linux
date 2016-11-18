@@ -766,7 +766,7 @@
  */
 
 /*?
- * Text: "%s: FORMAT 4 - No syn byte in count address area; offset active\n"
+ * Text: "%s: FORMAT 4 - No sync byte in count address area; offset active\n"
  * Severity: Warning
  * Parameter:
  *   @1: bus ID of the DASD
@@ -923,7 +923,7 @@
  */
 
 /*?
- * Text: "%s: FORMAT 4 - No syn byte in data area; offset active\n"
+ * Text: "%s: FORMAT 4 - No sync byte in data area; offset active\n"
  * Severity: Warning
  * Parameter:
  *   @1: bus ID of the DASD
@@ -1384,7 +1384,7 @@
  */
 
 /*?
- * Text: "%s: FORMAT D - Reserved\n"
+ * Text: "%s: FORMAT F - Reserved\n"
  * Severity: Warning
  * Parameter:
  *   @1: bus ID of the DASD
