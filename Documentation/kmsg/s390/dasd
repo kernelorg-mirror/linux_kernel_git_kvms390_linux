@@ -394,17 +394,6 @@
  */
 
 /*?
- * Text: "The dasd= parameter value %s has an invalid ending\n"
- * Severity: Warning
- * Parameter:
- *   @1: parameter value
- * Description:
- * The specified value for the dasd= kernel or module parameter is not correct.
- * User action:
- * Check the module or the kernel parameter.
- */
-
-/*?
  * Text: "Registering the device driver with major number %d failed\n"
  * Severity: Warning
  * Parameter:
