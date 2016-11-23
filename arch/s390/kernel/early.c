@@ -380,14 +380,16 @@ early_param("novx", disable_vector_extension);
 
 static int __init noexec_setup(char *str)
 {
-	if (strncmp(str, "on", 2) == 0)
-		return 0;
-	if (strncmp(str, "off", 3) != 0)
-		return -EINVAL;
-	/* Disable no-execute support */
-	S390_lowcore.machine_flags &= ~MACHINE_FLAG_NX;
-	__ctl_clear_bit(0, 20);
-	return 0;
+	bool enabled;
+	int rc;
+
+	rc = kstrtobool(str, &enabled);
+	if (!rc && !enabled) {
+		/* Disable no-execute support */
+		S390_lowcore.machine_flags &= ~MACHINE_FLAG_NX;
+		__ctl_clear_bit(0, 20);
+	}
+	return rc;
 }
 early_param("noexec", noexec_setup);
 
