@@ -421,6 +421,9 @@ extern struct dasd_discipline *dasd_diag_discipline_pointer;
 
 struct dasd_path {
 	unsigned long flags;
+	u8 cssid;
+	u8 ssid;
+	u8 chpid;
 	struct dasd_conf_data *conf_data;
 	atomic_t error_count;
 	unsigned long long errorclk;
