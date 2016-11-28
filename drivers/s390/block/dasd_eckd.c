@@ -1742,10 +1742,11 @@ dasd_eckd_check_characteristics(struct dasd_device *device)
 	if (rc)
 		goto out_err1;
 
-	/* set default timeout */
+	/* set some default values */
 	device->default_expires = DASD_EXPIRES;
-	/* set default retry count */
 	device->default_retries = DASD_RETRIES;
+	device->path_thrhld = DASD_ECKD_PATH_THRHLD;
+	device->path_interval = DASD_ECKD_PATH_INTERVAL;
 
 	if (private->gneq) {
 		value = 1;
