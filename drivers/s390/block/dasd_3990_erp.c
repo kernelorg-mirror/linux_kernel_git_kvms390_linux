@@ -2217,8 +2217,8 @@ static void dasd_3990_erp_disable_path(struct dasd_device *device, __u8 lpum)
 		return;
 
 	dev_err(&device->cdev->dev,
-		"Path %02x is disabled - IFCC threshold exceeded\n",
-		lpum);
+		"Path %x.%02x (pathmask %02x) is disabled - IFCC threshold exceeded\n",
+		device->path[pos].cssid, device->path[pos].chpid, lpum);
 	dasd_path_remove_opm(device, lpum);
 	dasd_path_add_ifccpm(device, lpum);
 	device->path[pos].errorclk = 0;
