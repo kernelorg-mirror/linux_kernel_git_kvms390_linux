@@ -3734,7 +3734,7 @@ EXPORT_SYMBOL_GPL(dasd_generic_notify);
 void dasd_generic_path_event(struct ccw_device *cdev, int *path_event)
 {
 	struct dasd_device *device;
-	int chp, oldopm, hpfpm;
+	int chp, oldopm, hpfpm, ifccpm;
 
 	device = dasd_device_from_cdev_locked(cdev);
 	if (IS_ERR(device))
@@ -3767,6 +3767,7 @@ void dasd_generic_path_event(struct ccw_device *cdev, int *path_event)
 		}
 	}
 	hpfpm = dasd_path_get_hpfpm(device);
+	ifccpm = dasd_path_get_ifccpm(device);
 	if (!dasd_path_get_opm(device) && hpfpm) {
 		/*
 		 * device has no operational paths but at least one path is
@@ -3779,8 +3780,16 @@ void dasd_generic_path_event(struct ccw_device *cdev, int *path_event)
 		dasd_path_set_tbvpm(device, hpfpm);
 		dasd_schedule_device_bh(device);
 		dasd_schedule_requeue(device);
+	} else if (!dasd_path_get_opm(device) && ifccpm) {
+		/*
+		 * device has no operational paths but at least one path is
+		 * disabled due to IFCC errors
+		 * trigger path verification on paths with IFCC errors
+		 */
+		dasd_path_set_tbvpm(device, ifccpm);
+		dasd_schedule_device_bh(device);
 	}
-	if (oldopm && !dasd_path_get_opm(device) && !hpfpm) {
+	if (oldopm && !dasd_path_get_opm(device) && !hpfpm && !ifccpm) {
 		dev_warn(&device->cdev->dev,
 			 "No verified channel paths remain for the device\n");
 		DBF_DEV_EVENT(DBF_WARNING, device,
