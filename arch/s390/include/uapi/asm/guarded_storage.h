@@ -1,6 +1,8 @@
 #ifndef _GUARDED_STORAGE_H
 #define _GUARDED_STORAGE_H
 
+#include <linux/types.h>
+
 struct gs_cb {
 	__u64 reserved;
 	__u64 gsd;
