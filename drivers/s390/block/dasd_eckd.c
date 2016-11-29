@@ -5323,11 +5323,10 @@ static int dasd_hosts_print(struct dasd_device *device, struct seq_file *m)
  */
 static int
 dasd_eckd_psf_cuir_response(struct dasd_device *device, int response,
-			    __u32 message_id,
-			    struct channel_path_desc *desc,
-			    struct subchannel_id sch_id)
+			    __u32 message_id, __u8 lpum)
 {
 	struct dasd_psf_cuir_response *psf_cuir;
+	int pos = pathmask_to_pos(lpum);
 	struct dasd_ccw_req *cqr;
 	struct ccw1 *ccw;
 	int rc;
@@ -5345,11 +5344,10 @@ dasd_eckd_psf_cuir_response(struct dasd_device *device, int response,
 	psf_cuir = (struct dasd_psf_cuir_response *)cqr->data;
 	psf_cuir->order = PSF_ORDER_CUIR_RESPONSE;
 	psf_cuir->cc = response;
-	if (desc)
-		psf_cuir->chpid = desc->chpid;
+	psf_cuir->chpid = device->path[pos].chpid;
 	psf_cuir->message_id = message_id;
-	psf_cuir->cssid = sch_id.cssid;
-	psf_cuir->ssid = sch_id.ssid;
+	psf_cuir->cssid = device->path[pos].cssid;
+	psf_cuir->ssid = device->path[pos].ssid;
 	ccw = cqr->cpaddr;
 	ccw->cmd_code = DASD_ECKD_CCW_PSF;
 	ccw->cda = (__u32)(addr_t)psf_cuir;
@@ -5462,27 +5460,23 @@ static int dasd_eckd_cuir_scope(struct dasd_device *device, __u8 lpum,
 }
 
 static void dasd_eckd_cuir_notify_user(struct dasd_device *device,
-				       unsigned long paths,
-				       struct subchannel_id sch_id, int action)
+				       unsigned long paths, int action)
 {
-	struct channel_path_desc *desc;
 	int pos;
 
 	while (paths) {
 		/* get position of bit in mask */
-		pos = ffs(paths) - 1;
+		pos = 8 - ffs(paths);
 		/* get channel path descriptor from this position */
-		desc = ccw_device_get_chp_desc(device->cdev, 7 - pos);
 		if (action == CUIR_QUIESCE)
-			pr_warn("Service on the storage server caused path "
-				"%x.%02x to go offline", sch_id.cssid,
-				desc ? desc->chpid : 0);
+			pr_warn("Service on the storage server caused path %x.%02x to go offline",
+				device->path[pos].cssid,
+				device->path[pos].chpid);
 		else if (action == CUIR_RESUME)
-			pr_info("Path %x.%02x is back online after service "
-				"on the storage server", sch_id.cssid,
-				desc ? desc->chpid : 0);
-		kfree(desc);
-		clear_bit(pos, &paths);
+			pr_info("Path %x.%02x is back online after service on the storage server",
+				device->path[pos].cssid,
+				device->path[pos].chpid);
+		clear_bit(7 - pos, &paths);
 	}
 }
 
@@ -5515,7 +5509,6 @@ static int dasd_eckd_cuir_remove_path(struct dasd_device *device, __u8 lpum,
  * notify the already set offline devices again
  */
 static int dasd_eckd_cuir_quiesce(struct dasd_device *device, __u8 lpum,
-				  struct subchannel_id sch_id,
 				  struct dasd_cuir_message *cuir)
 {
 	struct dasd_eckd_private *private = device->private;
@@ -5570,14 +5563,13 @@ static int dasd_eckd_cuir_quiesce(struct dasd_device *device, __u8 lpum,
 		}
 	}
 	/* notify user about all paths affected by CUIR action */
-	dasd_eckd_cuir_notify_user(device, paths, sch_id, CUIR_QUIESCE);
+	dasd_eckd_cuir_notify_user(device, paths, CUIR_QUIESCE);
 	return 0;
 out_err:
 	return tbcpm;
 }
 
 static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
-				 struct subchannel_id sch_id,
 				 struct dasd_cuir_message *cuir)
 {
 	struct dasd_eckd_private *private = device->private;
@@ -5636,7 +5628,7 @@ static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
 		}
 	}
 	/* notify user about all paths affected by CUIR action */
-	dasd_eckd_cuir_notify_user(device, paths, sch_id, CUIR_RESUME);
+	dasd_eckd_cuir_notify_user(device, paths, CUIR_RESUME);
 	return 0;
 }
 
@@ -5644,38 +5636,31 @@ static void dasd_eckd_handle_cuir(struct dasd_device *device, void *messages,
 				 __u8 lpum)
 {
 	struct dasd_cuir_message *cuir = messages;
-	struct channel_path_desc *desc;
-	struct subchannel_id sch_id;
-	int pos, response;
+	int response;
 
 	DBF_DEV_EVENT(DBF_WARNING, device,
 		      "CUIR request: %016llx %016llx %016llx %08x",
 		      ((u64 *)cuir)[0], ((u64 *)cuir)[1], ((u64 *)cuir)[2],
 		      ((u32 *)cuir)[3]);
-	ccw_device_get_schid(device->cdev, &sch_id);
-	pos = pathmask_to_pos(lpum);
-	desc = ccw_device_get_chp_desc(device->cdev, pos);
 
 	if (cuir->code == CUIR_QUIESCE) {
 		/* quiesce */
-		if (dasd_eckd_cuir_quiesce(device, lpum, sch_id, cuir))
+		if (dasd_eckd_cuir_quiesce(device, lpum, cuir))
 			response = PSF_CUIR_LAST_PATH;
 		else
 			response = PSF_CUIR_COMPLETED;
 	} else if (cuir->code == CUIR_RESUME) {
 		/* resume */
-		dasd_eckd_cuir_resume(device, lpum, sch_id, cuir);
+		dasd_eckd_cuir_resume(device, lpum, cuir);
 		response = PSF_CUIR_COMPLETED;
 	} else
 		response = PSF_CUIR_NOT_SUPPORTED;
 
 	dasd_eckd_psf_cuir_response(device, response,
-				    cuir->message_id, desc, sch_id);
+				    cuir->message_id, lpum);
 	DBF_DEV_EVENT(DBF_WARNING, device,
 		      "CUIR response: %d on message ID %08x", response,
 		      cuir->message_id);
-	/* free descriptor copy */
-	kfree(desc);
 	/* to make sure there is no attention left schedule work again */
 	device->discipline->check_attention(device, lpum);
 }
