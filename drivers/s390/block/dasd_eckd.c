@@ -5454,7 +5454,7 @@ static int dasd_eckd_cuir_scope(struct dasd_device *device, __u8 lpum,
 			continue;
 		/* device and path match the reference values
 		   add path to CUIR scope */
-		tbcpm |= path;
+		tbcpm |= 0x80 >> path;
 	}
 	return tbcpm;
 }
@@ -5588,7 +5588,7 @@ static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
 		tbcpm = dasd_eckd_cuir_scope(dev, lpum, cuir);
 		paths |= tbcpm;
 		if (!(dasd_path_get_opm(dev) & tbcpm)) {
-			dasd_path_add_tbvpm(device, tbcpm);
+			dasd_path_add_tbvpm(dev, tbcpm);
 			dasd_schedule_device_bh(dev);
 		}
 	}
@@ -5598,7 +5598,7 @@ static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
 		tbcpm = dasd_eckd_cuir_scope(dev, lpum, cuir);
 		paths |= tbcpm;
 		if (!(dasd_path_get_opm(dev) & tbcpm)) {
-			dasd_path_add_tbvpm(device, tbcpm);
+			dasd_path_add_tbvpm(dev, tbcpm);
 			dasd_schedule_device_bh(dev);
 		}
 	}
@@ -5612,7 +5612,7 @@ static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
 			tbcpm = dasd_eckd_cuir_scope(dev, lpum, cuir);
 			paths |= tbcpm;
 			if (!(dasd_path_get_opm(dev) & tbcpm)) {
-				dasd_path_add_tbvpm(device, tbcpm);
+				dasd_path_add_tbvpm(dev, tbcpm);
 				dasd_schedule_device_bh(dev);
 			}
 		}
@@ -5622,7 +5622,7 @@ static int dasd_eckd_cuir_resume(struct dasd_device *device, __u8 lpum,
 			tbcpm = dasd_eckd_cuir_scope(dev, lpum, cuir);
 			paths |= tbcpm;
 			if (!(dasd_path_get_opm(dev) & tbcpm)) {
-				dasd_path_add_tbvpm(device, tbcpm);
+				dasd_path_add_tbvpm(dev, tbcpm);
 				dasd_schedule_device_bh(dev);
 			}
 		}
