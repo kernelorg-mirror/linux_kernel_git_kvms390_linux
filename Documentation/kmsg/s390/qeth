@@ -948,4 +948,19 @@
  * initiate a recovery process by writing '1' to the 'recover'
  * sysfs attribute of the device.
  */
+
+/*?
+ * Text: "%s: OSN devices are not supported\n"
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ * Description:
+ * The qeth driver no longer supports CHPID type "OSN" (control unit type
+ * 1731/06, device type 1732/06). This device type was used by
+ * IBM Communication Controller for Linux, which is out of service.
+ * User action:
+ * If you need to run Communication Controller for Linux, install kernel
+ * version 4.9 or earlier.
+ */
+
 /*? Text: "%s: %d output lines suppressed due to ratelimiting\n" */
