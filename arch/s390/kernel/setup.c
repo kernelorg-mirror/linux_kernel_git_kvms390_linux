@@ -343,7 +343,7 @@ static void __init setup_lowcore(void)
 
 		bits = MACHINE_HAS_GS ? 11 : 10;
 		size = 1UL << bits;
-		lc->mcesad = memblock_alloc(size, size);
+		lc->mcesad = (__u64) __alloc_bootmem(size, size, 0);
 		if (MACHINE_HAS_GS)
 			lc->mcesad |= bits;
 	}
