@@ -34,7 +34,7 @@ static void __ref *vmem_alloc_pages(unsigned int order)
 
 	if (slab_is_available())
 		return (void *)__get_free_pages(GFP_KERNEL, order);
-	return (void *) memblock_alloc(size, size);
+	return alloc_bootmem_align(size, size);
 }
 
 static inline pud_t *vmem_pud_alloc(void)
@@ -61,16 +61,17 @@ pmd_t *vmem_pmd_alloc(void)
 
 pte_t __ref *vmem_pte_alloc(void)
 {
-	unsigned long size = PTRS_PER_PTE * sizeof(pte_t);
 	pte_t *pte;
 
 	if (slab_is_available())
 		pte = (pte_t *) page_table_alloc(&init_mm);
 	else
-		pte = (pte_t *) memblock_alloc(size, size);
+		pte = alloc_bootmem_align(PTRS_PER_PTE * sizeof(pte_t),
+					  PTRS_PER_PTE * sizeof(pte_t));
 	if (!pte)
 		return NULL;
-	clear_table((unsigned long *) pte, _PAGE_INVALID, size);
+	clear_table((unsigned long *) pte, _PAGE_INVALID,
+		    PTRS_PER_PTE * sizeof(pte_t));
 	return pte;
 }
 
