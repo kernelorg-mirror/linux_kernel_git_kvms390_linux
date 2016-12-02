@@ -7,10 +7,10 @@
 
 #include <asm/debug.h>
 
-#define DBF_ERR         3	/* error conditions   */
-#define DBF_WARN        4	/* warning conditions */
-#define DBF_INFO        5	/* informational      */
-#define DBF_DEBUG       6	/* for debugging only */
+#define DBF_ERR		3	/* error conditions   */
+#define DBF_WARN	4	/* warning conditions */
+#define DBF_INFO	5	/* informational      */
+#define DBF_DEBUG	6	/* for debugging only */
 
 #define RC2ERR(rc) ((rc) ? DBF_ERR : DBF_INFO)
 #define RC2WARN(rc) ((rc) ? DBF_WARN : DBF_INFO)
