@@ -31,7 +31,6 @@ void arch_lock_relax(int cpu);
 
 void arch_spin_lock_wait(arch_spinlock_t *);
 int arch_spin_trylock_retry(arch_spinlock_t *);
-void arch_spin_lock_wait_flags(arch_spinlock_t *, unsigned long flags);
 
 static inline void arch_spin_relax(arch_spinlock_t *lock)
 {
@@ -56,8 +55,7 @@ static inline int arch_spin_is_locked(arch_spinlock_t *lp)
 static inline int arch_spin_trylock_once(arch_spinlock_t *lp)
 {
 	barrier();
-	return likely(arch_spin_value_unlocked(*lp) &&
-		      __atomic_cmpxchg_bool(&lp->lock, 0, SPINLOCK_LOCKVAL));
+	return likely(__atomic_cmpxchg_bool(&lp->lock, 0, SPINLOCK_LOCKVAL));
 }
 
 static inline void arch_spin_lock(arch_spinlock_t *lp)
@@ -70,7 +68,7 @@ static inline void arch_spin_lock_flags(arch_spinlock_t *lp,
 					unsigned long flags)
 {
 	if (!arch_spin_trylock_once(lp))
-		arch_spin_lock_wait_flags(lp, flags);
+		arch_spin_lock_wait(lp);
 }
 
 static inline int arch_spin_trylock(arch_spinlock_t *lp)
@@ -82,12 +80,10 @@ static inline int arch_spin_trylock(arch_spinlock_t *lp)
 
 static inline void arch_spin_unlock(arch_spinlock_t *lp)
 {
-	typecheck(int, lp->lock);
 	asm volatile(
-		"st	%1,%0\n"
-		: "+Q" (lp->lock)
-		: "d" (0)
-		: "cc", "memory");
+		"       sth      %1,%0\n"
+		: : "Q" (((unsigned short *) &lp->lock)[1]),
+		    "d" (0) : "cc", "memory");
 }
 
 static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)

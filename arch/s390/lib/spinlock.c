@@ -46,92 +46,122 @@ static inline int cpu_is_preempted(int cpu)
 	return 1;
 }
 
+struct spin_wait {
+	struct spin_wait *next;
+	int lock_spin;
+};
+
+static DEFINE_PER_CPU_ALIGNED(struct spin_wait, spin_wait[4]);
+
+#define _Q_LOCK_CPU_OFFSET	0
+#define _Q_LOCK_STEAL_OFFSET	16
+#define _Q_TAIL_IDX_OFFSET	17
+#define _Q_TAIL_CPU_OFFSET	19
+
+#define _Q_LOCK_CPU_MASK	0x0000ffff
+#define _Q_LOCK_STEAL_MASK	0x00010000
+#define _Q_TAIL_IDX_MASK	0x00060000
+#define _Q_TAIL_CPU_MASK	0xfff80000
+
+#define _Q_LOCK_MASK		(_Q_LOCK_CPU_MASK | _Q_LOCK_STEAL_MASK)
+#define _Q_TAIL_MASK		(_Q_TAIL_IDX_MASK | _Q_TAIL_CPU_MASK)
+
 void arch_spin_lock_wait(arch_spinlock_t *lp)
 {
-	int cpu = SPINLOCK_LOCKVAL;
-	int owner, count, first_diag;
+	struct spin_wait *node, *prev, *next;
+	int lockval, ix, cpu, node_id, tail_id, old, new, owner, count;
 
-	first_diag = 1;
+	ix = S390_lowcore.spinlock_index++;
+	barrier();
+	lockval = SPINLOCK_LOCKVAL;	/* cpu + 1 */
+	node = this_cpu_ptr(&spin_wait[ix]);
+	node_id = (lockval << _Q_TAIL_CPU_OFFSET) | (ix << _Q_TAIL_IDX_OFFSET);
+	memset(node, 0, sizeof(*node));
+
+	/* Enqueue the node for this CPU in the spinlock wait queue */
 	while (1) {
-		owner = ACCESS_ONCE(lp->lock);
-		/* Try to get the lock if it is free. */
-		if (!owner) {
-			if (__atomic_cmpxchg_bool(&lp->lock, 0, cpu))
-				return;
+		old = READ_ONCE(lp->lock);
+		if ((old & _Q_LOCK_MASK) == 0) {
+			/*
+			 * The lock is free but there may be waiters.
+			 * With no waiters simply take the lock, if there
+			 * are waiters try to steal the lock. The lock may
+			 * only be stolen once before the next queued waiter
+			 * will get the lock.
+			 */
+			new = (old ? (old | _Q_LOCK_STEAL_MASK) : 0) | lockval;
+			if (__atomic_cmpxchg_bool(&lp->lock, old, new))
+				/* Got the lock */
+				goto out;
+			/* lock passing in progress */
 			continue;
 		}
-		/* First iteration: check if the lock owner is running. */
-		if (first_diag && cpu_is_preempted(owner - 1)) {
-			smp_yield_cpu(owner - 1);
-			first_diag = 0;
-			continue;
-		}
-		/* Loop for a while on the lock value. */
+		/* Make the node of this CPU the new tail. */
+		new = node_id | (old & _Q_LOCK_MASK);
+		if (__atomic_cmpxchg_bool(&lp->lock, old, new))
+			break;
+	}
+	/* Set the 'next' pointer of the tail node in the queue */
+	tail_id = old & _Q_TAIL_MASK;
+	if (tail_id != 0) {
+		ix = (tail_id & _Q_TAIL_IDX_MASK) >> _Q_TAIL_IDX_OFFSET;
+		cpu = (tail_id & _Q_TAIL_CPU_MASK) >> _Q_TAIL_CPU_OFFSET;
+		prev = per_cpu_ptr(&spin_wait[ix], cpu - 1);
+		WRITE_ONCE(prev->next, node);
+	}
+
+	/* Pass the virtual CPU to the lock holder if it is not running */
+	owner = old & _Q_LOCK_CPU_MASK;
+	if (owner && cpu_is_preempted(owner - 1))
+		smp_yield_cpu(owner - 1);
+
+	/* Spin on the CPU local 'lock_spin' word */
+	if (tail_id != 0) {
 		count = spin_retry;
-		do {
+		while (1) {
+			if (__smp_load_acquire(&node->lock_spin))
+				break;
 			if (MACHINE_HAS_CAD)
-				compare_and_delay(&lp->lock, owner);
-			owner = ACCESS_ONCE(lp->lock);
-		} while (owner && count-- > 0);
-		if (!owner)
-			continue;
-		/*
-		 * For multiple layers of hypervisors, e.g. z/VM + LPAR
-		 * yield the CPU unconditionally. For LPAR rely on the
-		 * sense running status.
-		 */
-		if (!MACHINE_IS_LPAR || cpu_is_preempted(owner - 1)) {
-			smp_yield_cpu(owner - 1);
-			first_diag = 0;
+				compare_and_delay(&node->lock_spin, 0);
+			if (count-- >= 0)
+				continue;
+			count = spin_retry;
 		}
 	}
+
+	/* Spin on the lock value in the spinlock_t */
+	count = spin_retry;
+	while (1) {
+		old = READ_ONCE(lp->lock);
+		owner = old & _Q_LOCK_CPU_MASK;
+		if (!owner) {
+			tail_id = old & _Q_TAIL_MASK;
+			new = ((tail_id != node_id) ? tail_id : 0) | lockval;
+			if (__atomic_cmpxchg_bool(&lp->lock, old, new))
+				/* Got the lock */
+				break;
+			continue;
+		}
+		if (MACHINE_HAS_CAD)
+			compare_and_delay(&lp->lock, old);
+		if (count-- >= 0)
+			continue;
+		if (!MACHINE_IS_LPAR || cpu_is_preempted(owner - 1))
+			smp_yield_cpu(owner - 1);
+		count = spin_retry;
+	}
+
+	/* Pass lock_spin job to next CPU in the queue */
+	if (tail_id != node_id) {
+		/* Wait until the next CPU has set up the 'next' pointer */
+		while ((next = __smp_load_acquire(&node->next)) == 0);
+		next->lock_spin = 1;
+	}
+
+ out:
+	S390_lowcore.spinlock_index--;
 }
 EXPORT_SYMBOL(arch_spin_lock_wait);
-
-void arch_spin_lock_wait_flags(arch_spinlock_t *lp, unsigned long flags)
-{
-	int cpu = SPINLOCK_LOCKVAL;
-	int owner, count, first_diag;
-
-	local_irq_restore(flags);
-	first_diag = 1;
-	while (1) {
-		owner = ACCESS_ONCE(lp->lock);
-		/* Try to get the lock if it is free. */
-		if (!owner) {
-			local_irq_disable();
-			if (__atomic_cmpxchg_bool(&lp->lock, 0, cpu))
-				return;
-			local_irq_restore(flags);
-			continue;
-		}
-		/* Check if the lock owner is running. */
-		if (first_diag && cpu_is_preempted(owner - 1)) {
-			smp_yield_cpu(owner - 1);
-			first_diag = 0;
-			continue;
-		}
-		/* Loop for a while on the lock value. */
-		count = spin_retry;
-		do {
-			if (MACHINE_HAS_CAD)
-				compare_and_delay(&lp->lock, owner);
-			owner = ACCESS_ONCE(lp->lock);
-		} while (owner && count-- > 0);
-		if (!owner)
-			continue;
-		/*
-		 * For multiple layers of hypervisors, e.g. z/VM + LPAR
-		 * yield the CPU unconditionally. For LPAR rely on the
-		 * sense running status.
-		 */
-		if (!MACHINE_IS_LPAR || cpu_is_preempted(owner - 1)) {
-			smp_yield_cpu(owner - 1);
-			first_diag = 0;
-		}
-	}
-}
-EXPORT_SYMBOL(arch_spin_lock_wait_flags);
 
 int arch_spin_trylock_retry(arch_spinlock_t *lp)
 {
@@ -282,8 +312,8 @@ void arch_lock_relax(int cpu)
 {
 	if (!cpu)
 		return;
-	if (MACHINE_IS_LPAR && !cpu_is_preempted(cpu - 1))
+	if (MACHINE_IS_LPAR && !cpu_is_preempted((cpu - 1) & 0xffff))
 		return;
-	smp_yield_cpu(cpu - 1);
+	smp_yield_cpu((cpu - 1) & 0xffff);
 }
 EXPORT_SYMBOL(arch_lock_relax);
