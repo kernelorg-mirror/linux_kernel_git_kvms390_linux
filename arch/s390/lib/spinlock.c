@@ -61,8 +61,8 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 			continue;
 		}
 		/* First iteration: check if the lock owner is running. */
-		if (first_diag && cpu_is_preempted(~owner)) {
-			smp_yield_cpu(~owner);
+		if (first_diag && cpu_is_preempted(owner - 1)) {
+			smp_yield_cpu(owner - 1);
 			first_diag = 0;
 			continue;
 		}
@@ -80,8 +80,8 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 		 * yield the CPU unconditionally. For LPAR rely on the
 		 * sense running status.
 		 */
-		if (!MACHINE_IS_LPAR || cpu_is_preempted(~owner)) {
-			smp_yield_cpu(~owner);
+		if (!MACHINE_IS_LPAR || cpu_is_preempted(owner - 1)) {
+			smp_yield_cpu(owner - 1);
 			first_diag = 0;
 		}
 	}
@@ -106,8 +106,8 @@ void arch_spin_lock_wait_flags(arch_spinlock_t *lp, unsigned long flags)
 			continue;
 		}
 		/* Check if the lock owner is running. */
-		if (first_diag && cpu_is_preempted(~owner)) {
-			smp_yield_cpu(~owner);
+		if (first_diag && cpu_is_preempted(owner - 1)) {
+			smp_yield_cpu(owner - 1);
 			first_diag = 0;
 			continue;
 		}
@@ -125,8 +125,8 @@ void arch_spin_lock_wait_flags(arch_spinlock_t *lp, unsigned long flags)
 		 * yield the CPU unconditionally. For LPAR rely on the
 		 * sense running status.
 		 */
-		if (!MACHINE_IS_LPAR || cpu_is_preempted(~owner)) {
-			smp_yield_cpu(~owner);
+		if (!MACHINE_IS_LPAR || cpu_is_preempted(owner - 1)) {
+			smp_yield_cpu(owner - 1);
 			first_diag = 0;
 		}
 	}
@@ -162,8 +162,8 @@ void _raw_read_lock_wait(arch_rwlock_t *rw)
 	owner = 0;
 	while (1) {
 		if (count-- <= 0) {
-			if (owner && cpu_is_preempted(~owner))
-				smp_yield_cpu(~owner);
+			if (owner && cpu_is_preempted(owner - 1))
+				smp_yield_cpu(owner - 1);
 			count = spin_retry;
 		}
 		old = ACCESS_ONCE(rw->lock);
@@ -208,8 +208,8 @@ void _raw_write_lock_wait(arch_rwlock_t *rw, int prev)
 	owner = 0;
 	while (1) {
 		if (count-- <= 0) {
-			if (owner && cpu_is_preempted(~owner))
-				smp_yield_cpu(~owner);
+			if (owner && cpu_is_preempted(owner - 1))
+				smp_yield_cpu(owner - 1);
 			count = spin_retry;
 		}
 		old = ACCESS_ONCE(rw->lock);
@@ -238,8 +238,8 @@ void _raw_write_lock_wait(arch_rwlock_t *rw)
 	owner = 0;
 	while (1) {
 		if (count-- <= 0) {
-			if (owner && cpu_is_preempted(~owner))
-				smp_yield_cpu(~owner);
+			if (owner && cpu_is_preempted(owner - 1))
+				smp_yield_cpu(owner - 1);
 			count = spin_retry;
 		}
 		old = ACCESS_ONCE(rw->lock);
@@ -282,8 +282,8 @@ void arch_lock_relax(int cpu)
 {
 	if (!cpu)
 		return;
-	if (MACHINE_IS_LPAR && !cpu_is_preempted(~cpu))
+	if (MACHINE_IS_LPAR && !cpu_is_preempted(cpu - 1))
 		return;
-	smp_yield_cpu(~cpu);
+	smp_yield_cpu(cpu - 1);
 }
 EXPORT_SYMBOL(arch_lock_relax);
