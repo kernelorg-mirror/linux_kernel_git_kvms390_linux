@@ -172,10 +172,15 @@ static inline struct zcrypt_queue *zcrypt_pick_queue(struct zcrypt_card *zc,
 						     struct zcrypt_queue *zq,
 						     unsigned int weight)
 {
-	if (!zq || !try_module_get(zq->queue->ap_dev.drv->driver.owner))
+	if (!zq)
 		return NULL;
 	zcrypt_queue_get(zq);
 	get_device(&zq->queue->ap_dev.device);
+	if (!try_module_get(zq->queue->ap_dev.drv->driver.owner)) {
+		put_device(&zq->queue->ap_dev.device);
+		zcrypt_queue_put(zq);
+		return NULL;
+	}
 	atomic_add(weight, &zc->load);
 	atomic_add(weight, &zq->load);
 	zq->request_count++;
@@ -189,9 +194,9 @@ static inline void zcrypt_drop_queue(struct zcrypt_card *zc,
 	zq->request_count--;
 	atomic_sub(weight, &zc->load);
 	atomic_sub(weight, &zq->load);
+	module_put(zq->queue->ap_dev.drv->driver.owner);
 	put_device(&zq->queue->ap_dev.device);
 	zcrypt_queue_put(zq);
-	module_put(zq->queue->ap_dev.drv->driver.owner);
 }
 
 static inline bool zcrypt_card_compare(struct zcrypt_card *zc,

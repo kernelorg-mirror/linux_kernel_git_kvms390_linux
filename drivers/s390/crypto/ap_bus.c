@@ -560,7 +560,7 @@ static int ap_dev_suspend(struct device *dev)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
 
-	if (ap_dev->drv->suspend)
+	if (ap_dev->drv && ap_dev->drv->suspend)
 		ap_dev->drv->suspend(ap_dev);
 	return 0;
 }
@@ -569,7 +569,7 @@ static int ap_dev_resume(struct device *dev)
 {
 	struct ap_device *ap_dev = to_ap_dev(dev);
 
-	if (ap_dev->drv->resume)
+	if (ap_dev->drv && ap_dev->drv->resume)
 		ap_dev->drv->resume(ap_dev);
 	return 0;
 }
