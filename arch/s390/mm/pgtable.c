@@ -37,8 +37,6 @@ static inline void ptep_ipte_local(struct mm_struct *mm, unsigned long addr,
 		if (asce != -1UL) {
 			asce = asce ? : mm->context.asce;
 			opt |= IPTE_GUEST_ASCE;
-		} else {
-			asce = 0;
 		}
 		__ptep_ipte(addr, ptep, opt, asce, IPTE_LOCAL);
 	} else {
@@ -59,8 +57,6 @@ static inline void ptep_ipte_global(struct mm_struct *mm, unsigned long addr,
 		if (asce != -1UL) {
 			asce = asce ? : mm->context.asce;
 			opt |= IPTE_GUEST_ASCE;
-		} else {
-			asce = 0;
 		}
 		__ptep_ipte(addr, ptep, opt, asce, IPTE_GLOBAL);
 	} else {
@@ -341,49 +337,25 @@ void ptep_modify_prot_commit(struct mm_struct *mm, unsigned long addr,
 EXPORT_SYMBOL(ptep_modify_prot_commit);
 
 static inline void pmdp_idte_local(struct mm_struct *mm,
-				  unsigned long addr, pmd_t *pmdp)
+				   unsigned long addr, pmd_t *pmdp)
 {
-	unsigned long opt, asce;
-
-	if (MACHINE_HAS_TLB_GUEST) {
-		opt = 0;
-		asce = READ_ONCE(mm->context.gmap_asce);
-		if (asce == 0UL)
-			opt |= IDTE_NODAT;
-		if (asce != -1UL) {
-			asce = asce ? : mm->context.asce;
-			opt |= IDTE_GUEST_ASCE;
-		} else {
-			asce = 0;
-		}
-		__pmdp_idte(addr, pmdp, opt, asce, IDTE_LOCAL);
-	} else {
+	if (MACHINE_HAS_TLB_GUEST)
+		__pmdp_idte(addr, pmdp, IDTE_NODAT | IDTE_GUEST_ASCE,
+			    mm->context.asce, IDTE_LOCAL);
+	else
 		__pmdp_idte(addr, pmdp, 0, 0, IDTE_LOCAL);
-	}
 }
 
 static inline void pmdp_idte_global(struct mm_struct *mm,
-				    unsigned long addr, pmd_t *pmdp)
+				  unsigned long addr, pmd_t *pmdp)
 {
-	unsigned long opt, asce;
-
-	if (MACHINE_HAS_TLB_GUEST) {
-		opt = 0;
-		asce = READ_ONCE(mm->context.gmap_asce);
-		if (asce == 0UL)
-			opt |= IDTE_NODAT;
-		if (asce != -1UL) {
-			asce = asce ? : mm->context.asce;
-			opt |= IDTE_GUEST_ASCE;
-		} else {
-			asce = 0;
-		}
-		__pmdp_idte(addr, pmdp, opt, asce, IDTE_GLOBAL);
-	} else if (MACHINE_HAS_IDTE) {
+	if (MACHINE_HAS_TLB_GUEST)
+		__pmdp_idte(addr, pmdp, IDTE_NODAT | IDTE_GUEST_ASCE,
+			    mm->context.asce, IDTE_GLOBAL);
+	else if (MACHINE_HAS_IDTE)
 		__pmdp_idte(addr, pmdp, 0, 0, IDTE_GLOBAL);
-	} else {
+	else
 		__pmdp_csp(pmdp);
-	}
 }
 
 static inline pmd_t pmdp_flush_direct(struct mm_struct *mm,
@@ -453,51 +425,27 @@ EXPORT_SYMBOL(pmdp_xchg_lazy);
 static inline void pudp_idte_local(struct mm_struct *mm,
 				   unsigned long addr, pud_t *pudp)
 {
-	unsigned long opt, asce;
-
-	if (MACHINE_HAS_TLB_GUEST) {
-		opt = 0;
-		asce = READ_ONCE(mm->context.gmap_asce);
-		if (asce == 0UL)
-			opt |= IDTE_NODAT;
-		if (asce != -1UL) {
-			asce = asce ? : mm->context.asce;
-			opt |= IDTE_GUEST_ASCE;
-		} else {
-			asce = 0;
-		}
-		__pudp_idte(addr, pudp, opt, asce, IDTE_LOCAL);
-	} else {
+	if (MACHINE_HAS_TLB_GUEST)
+		__pudp_idte(addr, pudp, IDTE_NODAT | IDTE_GUEST_ASCE,
+			    mm->context.asce, IDTE_LOCAL);
+	else
 		__pudp_idte(addr, pudp, 0, 0, IDTE_LOCAL);
-	}
 }
 
 static inline void pudp_idte_global(struct mm_struct *mm,
 				    unsigned long addr, pud_t *pudp)
 {
-	unsigned long opt, asce;
-
-	if (MACHINE_HAS_TLB_GUEST) {
-		opt = 0;
-		asce = READ_ONCE(mm->context.gmap_asce);
-		if (asce == 0UL)
-			opt |= IDTE_NODAT;
-		if (asce != -1UL) {
-			asce = asce ? : mm->context.asce;
-			opt |= IDTE_GUEST_ASCE;
-		} else {
-			asce = 0;
-		}
-		__pudp_idte(addr, pudp, opt, asce, IDTE_GLOBAL);
-	} else if (MACHINE_HAS_IDTE) {
+	if (MACHINE_HAS_TLB_GUEST)
+		__pudp_idte(addr, pudp, IDTE_NODAT | IDTE_GUEST_ASCE,
+			    mm->context.asce, IDTE_GLOBAL);
+	else if (MACHINE_HAS_IDTE)
 		__pudp_idte(addr, pudp, 0, 0, IDTE_GLOBAL);
-	} else {
+	else
 		/*
 		 * Invalid bit position is the same for pmd and pud, so we can
 		 * re-use _pmd_csp() here
 		 */
 		__pmdp_csp((pmd_t *) pudp);
-	}
 }
 
 static inline pud_t pudp_flush_direct(struct mm_struct *mm,
