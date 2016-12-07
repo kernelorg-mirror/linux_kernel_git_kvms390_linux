@@ -598,10 +598,7 @@ static struct qeth_ipa_cmd *qeth_check_ipa_data(struct qeth_card *card,
 	if (IS_IPA(iob->data)) {
 		cmd = (struct qeth_ipa_cmd *) PDU_ENCAPSULATION(iob->data);
 		if (IS_IPA_REPLY(cmd)) {
-			if (cmd->hdr.command != IPA_CMD_SETCCID &&
-			    cmd->hdr.command != IPA_CMD_DELCCID &&
-			    cmd->hdr.command != IPA_CMD_MODCCID &&
-			    cmd->hdr.command != IPA_CMD_SET_DIAG_ASS)
+			if (cmd->hdr.command != IPA_CMD_SET_DIAG_ASS)
 				qeth_issue_ipa_msg(cmd,
 						cmd->hdr.return_code, card);
 			return cmd;
@@ -649,8 +646,6 @@ static struct qeth_ipa_cmd *qeth_check_ipa_data(struct qeth_card *card,
 					return cmd;
 				else
 					return NULL;
-			case IPA_CMD_MODCCID:
-				return cmd;
 			case IPA_CMD_REGISTER_LOCAL_ADDR:
 				QETH_CARD_TEXT(card, 3, "irla");
 				break;
