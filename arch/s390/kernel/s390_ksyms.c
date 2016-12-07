@@ -12,4 +12,5 @@ EXPORT_SYMBOL(sie_exit);
 EXPORT_SYMBOL(save_fpu_regs);
 #endif
 EXPORT_SYMBOL(memcpy);
+EXPORT_SYMBOL(memmove);
 EXPORT_SYMBOL(memset);
