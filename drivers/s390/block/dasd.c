@@ -1627,8 +1627,8 @@ EXPORT_SYMBOL_GPL(dasd_generic_handle_state_change);
 static int dasd_check_hpf_error(struct irb *irb)
 {
 	return (scsw_tm_is_valid_schxs(&irb->scsw) &&
-	    (irb->scsw.tm.schxs & SCSW_SCHXS_DEV_NOFCX ||
-	     irb->scsw.tm.schxs & SCSW_SCHXS_PATH_NOFCX));
+	    (irb->scsw.tm.sesq == SCSW_SESQ_DEV_NOFCX ||
+	     irb->scsw.tm.sesq == SCSW_SESQ_PATH_NOFCX));
 }
 
 /*

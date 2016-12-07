@@ -4800,7 +4800,8 @@ static void dasd_eckd_dump_sense_tcw(struct dasd_device *device,
 		       req, scsw_cc(&irb->scsw), scsw_fctl(&irb->scsw),
 		       scsw_actl(&irb->scsw), scsw_stctl(&irb->scsw),
 		       scsw_dstat(&irb->scsw), scsw_cstat(&irb->scsw),
-		       irb->scsw.tm.fcxs, irb->scsw.tm.schxs,
+		       irb->scsw.tm.fcxs,
+		       (irb->scsw.tm.ifob << 7) | irb->scsw.tm.sesq,
 		       req ? req->intrc : 0);
 	len += sprintf(page + len, PRINTK_HEADER
 		       " device %s: Failing TCW: %p\n",
@@ -5747,9 +5748,9 @@ static void dasd_eckd_handle_hpf_error(struct dasd_device *device,
 			      "Trying to disable HPF for a non HPF device");
 		return;
 	}
-	if (irb->scsw.tm.schxs & SCSW_SCHXS_DEV_NOFCX) {
+	if (irb->scsw.tm.sesq == SCSW_SESQ_DEV_NOFCX) {
 		dasd_eckd_disable_hpf_device(device);
-	} else if (irb->scsw.tm.schxs & SCSW_SCHXS_PATH_NOFCX) {
+	} else if (irb->scsw.tm.sesq == SCSW_SESQ_PATH_NOFCX) {
 		if (dasd_eckd_disable_hpf_path(device, irb->esw.esw1.lpum))
 			return;
 		dasd_eckd_disable_hpf_device(device);
