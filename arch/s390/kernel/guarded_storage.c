@@ -9,6 +9,7 @@
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <asm/guarded_storage.h>
+#include "entry.h"
 
 void exit_thread_gs(void)
 {
