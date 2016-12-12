@@ -2609,11 +2609,11 @@ static void qeth_l3_fill_af_iucv_hdr(struct qeth_card *card,
 	char daddr[16];
 	struct af_iucv_trans_hdr *iucv_hdr;
 
-	skb_pull(skb, 14);
+	skb_pull(skb, ETH_HLEN);
 	card->dev->header_ops->create(skb, card->dev, 0,
 				      card->dev->dev_addr, card->dev->dev_addr,
 				      card->dev->addr_len);
-	skb_pull(skb, 14);
+	skb_pull(skb, ETH_HLEN);
 	iucv_hdr = (struct af_iucv_trans_hdr *)skb->data;
 	memset(hdr, 0, sizeof(struct qeth_hdr));
 	hdr->hdr.l3.id = QETH_HEADER_TYPE_LAYER3;
