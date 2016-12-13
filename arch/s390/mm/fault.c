@@ -566,10 +566,15 @@ void do_protection_exception(struct pt_regs *regs)
 		do_low_address(regs);
 		return;
 	}
-	access = VM_WRITE;
-	if (MACHINE_HAS_NX && (trans_exc_code & 0x80))
+	if (unlikely(MACHINE_HAS_NX && (trans_exc_code & 0x80))) {
+		regs->int_parm_long = (trans_exc_code & ~PAGE_MASK) | 
+					(regs->psw.addr & PAGE_MASK);
 		access = VM_EXEC;
-	fault = do_exception(regs, access);
+		fault = VM_FAULT_BADACCESS;
+	} else {
+		access = VM_WRITE;
+		fault = do_exception(regs, access);
+	}
 	if (unlikely(fault))
 		do_fault_error(regs, access, fault);
 }
