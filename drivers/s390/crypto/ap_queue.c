@@ -37,7 +37,7 @@ static int ap_queue_enable_interruption(struct ap_queue *aq, void *ind)
 	case AP_RESPONSE_DECONFIGURED:
 	case AP_RESPONSE_CHECKSTOPPED:
 	case AP_RESPONSE_INVALID_ADDRESS:
-		pr_err("Registering adapter interrupts for AP device %0x2.%04x failed\n",
+		pr_err("Registering adapter interrupts for AP device %02x.%04x failed\n",
 		       AP_QID_CARD(aq->qid),
 		       AP_QID_QUEUE(aq->qid));
 		return -EOPNOTSUPP;

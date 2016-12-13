@@ -26,10 +26,11 @@
  */
 
 /*?
- * Text: "Registering adapter interrupts for AP %d failed\n"
+ * Text: "Registering adapter interrupts for AP device %02x.%04x failed\n"
  * Severity: Error
  * Parameter:
  *   @1: AP device ID
+ *   @2: AP queue
  * Description:
  * The hardware system supports AP adapter interrupts but failed to enable
  * an adapter for interrupts. Possible causes for this error are:

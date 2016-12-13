@@ -1,8 +1,9 @@
 /*?
- * Text: "Cryptographic device %x failed and was set offline\n"
+ * Text: "Cryptographic device %02x.%04x failed and was set offline\n"
  * Severity: Error
  * Parameter:
- *   @1: device index
+ *   @1: AP device ID
+ *   @2: AP queue
  * Description:
  * A cryptographic device failed to process a cryptographic request.
  * The cryptographic device driver could not correct the error and
