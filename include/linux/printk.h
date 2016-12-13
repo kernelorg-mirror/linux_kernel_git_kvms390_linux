@@ -269,9 +269,11 @@ extern asmlinkage void dump_stack(void) __cold;
 
 #elif defined(CONFIG_KMSG_IDS) && defined(KMSG_COMPONENT)
 
-__printf(2, 3) int printk_hash(const char *, const char *, ...);
+/* format element '%pj' prints the six digit jhash of a string */
+#define _pr_printk_hash(pfx, fmt, ...) \
+	printk(pfx fmt, pfx fmt + __builtin_strlen(pfx), ##__VA_ARGS__)
 #define pr_printk_hash(level, format, ...) \
-	printk_hash(level KMSG_COMPONENT ".%06x" ": ", format, ##__VA_ARGS__)
+	_pr_printk_hash(level KMSG_COMPONENT ".%pj: ", format, ##__VA_ARGS__)
 
 #else /* !defined(CONFIG_KMSG_IDS) */
 

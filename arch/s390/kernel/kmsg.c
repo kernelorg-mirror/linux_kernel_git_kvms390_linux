@@ -47,23 +47,14 @@ static inline u32 __printk_jhash(const void *key, u32 length)
 }
 
 /**
- * printk_hash - print a kernel message include a hash over the message
- * @prefix: message prefix including the ".%06x" for the hash
- * @fmt: format string
+ * __jhash_string - calculate the six digit jhash of a string
+ * @str: string to calculate the jhash
  */
-asmlinkage int printk_hash(const char *prefix, const char *fmt, ...)
+unsigned long long __jhash_string(const char *str)
 {
-	va_list args;
-	int r;
-
-	r = printk(prefix, __printk_jhash(fmt, strlen(fmt)) & 0xffffff);
-	va_start(args, fmt);
-	r += vprintk(fmt, args);
-	va_end(args);
-
-	return r;
+	return __printk_jhash(str, strlen(str)) & 0xffffff;
 }
-EXPORT_SYMBOL(printk_hash);
+EXPORT_SYMBOL(__jhash_string);
 
 static int __dev_printk_hash(const char *level, const struct device *dev,
 			     struct va_format *vaf)
