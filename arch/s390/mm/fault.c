@@ -567,7 +567,7 @@ void do_protection_exception(struct pt_regs *regs)
 		return;
 	}
 	if (unlikely(MACHINE_HAS_NX && (trans_exc_code & 0x80))) {
-		regs->int_parm_long = (trans_exc_code & ~PAGE_MASK) | 
+		regs->int_parm_long = (trans_exc_code & ~PAGE_MASK) |
 					(regs->psw.addr & PAGE_MASK);
 		access = VM_EXEC;
 		fault = VM_FAULT_BADACCESS;
