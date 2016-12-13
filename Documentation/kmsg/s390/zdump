@@ -24,3 +24,4 @@
  * None.
  */
 /*? Text: "0x%x is an unknown architecture.\n" */
+/*? Text: "%s: %d output lines suppressed due to ratelimiting\n" */
