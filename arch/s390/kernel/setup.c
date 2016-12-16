@@ -46,7 +46,6 @@
 #include <linux/crash_dump.h>
 #include <linux/memory.h>
 #include <linux/compat.h>
-#include <linux/compat.h>
 
 #include <asm/ipl.h>
 #include <asm/facility.h>
