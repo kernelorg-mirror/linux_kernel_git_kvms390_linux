@@ -94,7 +94,7 @@ static void update_mt_scaling(void)
  * Update process times based on virtual cpu times stored by entry.S
  * to the lowcore fields user_timer, system_timer & steal_clock.
  */
-static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
+static int do_account_vtime(struct task_struct *tsk)
 {
 	u64 timer, clock, user, system, steal;
 	u64 user_scaled, system_scaled;
@@ -137,7 +137,7 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 		system_scaled = (system_scaled * mult) / div;
 	}
 	account_user_time(tsk, user, user_scaled);
-	account_system_time(tsk, hardirq_offset, system, system_scaled);
+	account_system_time(tsk, 0, system, system_scaled);
 
 	steal = S390_lowcore.steal_timer;
 	if ((s64) steal > 0) {
@@ -150,7 +150,7 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
 
 void vtime_task_switch(struct task_struct *prev)
 {
-	do_account_vtime(prev, 0);
+	do_account_vtime(prev);
 	prev->thread.user_timer = S390_lowcore.user_timer;
 	prev->thread.system_timer = S390_lowcore.system_timer;
 	S390_lowcore.user_timer = current->thread.user_timer;
@@ -164,7 +164,7 @@ void vtime_task_switch(struct task_struct *prev)
  */
 void vtime_account_user(struct task_struct *tsk)
 {
-	if (do_account_vtime(tsk, HARDIRQ_OFFSET))
+	if (do_account_vtime(tsk))
 		virt_timer_expire();
 }
 
