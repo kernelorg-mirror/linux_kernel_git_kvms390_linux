@@ -45,6 +45,7 @@ void update_cr_regs(struct task_struct *task)
 	struct per_regs old, new;
 	unsigned long cr0_old, cr0_new;
 	unsigned long cr2_old, cr2_new;
+	int cr0_changed, cr2_changed;
 
 	__ctl_store(cr0_old, 0, 0);
 	__ctl_store(cr2_old, 2, 2);
@@ -72,9 +73,11 @@ void update_cr_regs(struct task_struct *task)
 			cr2_new |= (1UL << 4);
 	}
 	/* Load control register 0/2 iff changed */
-	if (cr0_new != cr0_old)
+	cr0_changed = cr0_new != cr0_old;
+	cr2_changed = cr2_new != cr2_old;
+	if (cr0_changed)
 		__ctl_load(cr0_new, 0, 0);
-	if (cr2_new != cr2_old)
+	if (cr2_changed)
 		__ctl_load(cr2_new, 2, 2);
 	/* Copy user specified PER registers */
 	new.control = thread->per_user.control;
