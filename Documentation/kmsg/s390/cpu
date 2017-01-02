@@ -11,8 +11,16 @@
  */
 
 /*?
- * Text: "The CPU configuration topology of the machine is:"
+ * Text: "The CPU configuration topology of the machine is: %d %d %d %d %d %d / %d\n"
  * Severity: Informational
+ * Parameter:
+ *   @1: Mag6
+ *   @2: Mag5
+ *   @3: Mag4
+ *   @4: Mag3
+ *   @5: Mag2
+ *   @6: Mag1
+ *   @7: Mnest
  * Description:
  * The first six values of the topology information represent fields Mag6 to
  * Mag1 of system-information block (SYSIB) 15.1.2. These fields specify the
