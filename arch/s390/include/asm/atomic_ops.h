@@ -107,6 +107,9 @@ __ATOMIC64_OPS(__atomic64_xor, "xgr")
 
 #undef __ATOMIC64_OPS
 
+#define __atomic_add_const(val, ptr)	__atomic_add(val, ptr)
+#define __atomic64_add_const(val, ptr)	__atomic64_add(val, ptr)
+
 #endif /* CONFIG_HAVE_MARCH_Z196_FEATURES */
 
 static inline int __atomic_cmpxchg(int *ptr, int old, int new)
