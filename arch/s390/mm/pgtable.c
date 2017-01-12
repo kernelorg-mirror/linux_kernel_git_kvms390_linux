@@ -347,7 +347,7 @@ static inline void pmdp_idte_local(struct mm_struct *mm,
 }
 
 static inline void pmdp_idte_global(struct mm_struct *mm,
-				  unsigned long addr, pmd_t *pmdp)
+				    unsigned long addr, pmd_t *pmdp)
 {
 	if (MACHINE_HAS_TLB_GUEST)
 		__pmdp_idte(addr, pmdp, IDTE_NODAT | IDTE_GUEST_ASCE,
