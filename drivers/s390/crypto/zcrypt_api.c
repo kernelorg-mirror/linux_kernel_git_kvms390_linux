@@ -672,11 +672,11 @@ static void zcrypt_qdepth_mask(char qdepth[AP_DEVICES])
 		for_each_zcrypt_queue(zq, zc) {
 			if (AP_QID_QUEUE(zq->queue->qid) != ap_domain_index)
 				continue;
-			spin_lock(&zq->queue->lock);
+			spin_lock_bh(&zq->queue->lock);
 			qdepth[AP_QID_CARD(zq->queue->qid)] =
 				zq->queue->pendingq_count +
 				zq->queue->requestq_count;
-			spin_unlock(&zq->queue->lock);
+			spin_unlock_bh(&zq->queue->lock);
 		}
 	}
 	spin_unlock(&zcrypt_list_lock);
@@ -693,10 +693,10 @@ static void zcrypt_perdev_reqcnt(int reqcnt[AP_DEVICES])
 		for_each_zcrypt_queue(zq, zc) {
 			if (AP_QID_QUEUE(zq->queue->qid) != ap_domain_index)
 				continue;
-			spin_lock(&zq->queue->lock);
+			spin_lock_bh(&zq->queue->lock);
 			reqcnt[AP_QID_CARD(zq->queue->qid)] =
 				zq->queue->total_request_count;
-			spin_unlock(&zq->queue->lock);
+			spin_unlock_bh(&zq->queue->lock);
 		}
 	}
 	spin_unlock(&zcrypt_list_lock);
@@ -714,9 +714,9 @@ static int zcrypt_pendingq_count(void)
 		for_each_zcrypt_queue(zq, zc) {
 			if (AP_QID_QUEUE(zq->queue->qid) != ap_domain_index)
 				continue;
-			spin_lock(&zq->queue->lock);
+			spin_lock_bh(&zq->queue->lock);
 			pendingq_count += zq->queue->pendingq_count;
-			spin_unlock(&zq->queue->lock);
+			spin_unlock_bh(&zq->queue->lock);
 		}
 	}
 	spin_unlock(&zcrypt_list_lock);
@@ -735,9 +735,9 @@ static int zcrypt_requestq_count(void)
 		for_each_zcrypt_queue(zq, zc) {
 			if (AP_QID_QUEUE(zq->queue->qid) != ap_domain_index)
 				continue;
-			spin_lock(&zq->queue->lock);
+			spin_lock_bh(&zq->queue->lock);
 			requestq_count += zq->queue->requestq_count;
-			spin_unlock(&zq->queue->lock);
+			spin_unlock_bh(&zq->queue->lock);
 		}
 	}
 	spin_unlock(&zcrypt_list_lock);
