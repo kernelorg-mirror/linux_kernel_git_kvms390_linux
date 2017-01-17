@@ -299,10 +299,14 @@ void *restart_stack __section(.data);
 static void __init setup_lowcore(void)
 {
 	struct lowcore *lc;
+	unsigned int i;
 
 	/*
 	 * Setup lowcore for boot cpu
 	 */
+	i = -ENOMEM;
+	if (i < 0)
+		printk("\n");
 	BUILD_BUG_ON(sizeof(struct lowcore) != LC_PAGES * 4096);
 	lc = memblock_virt_alloc_low(sizeof(*lc), sizeof(*lc));
 	lc->restart_psw.mask = PSW_KERNEL_BITS;
