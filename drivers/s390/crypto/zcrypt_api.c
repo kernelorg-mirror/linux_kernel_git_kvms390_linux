@@ -668,17 +668,19 @@ static void zcrypt_qdepth_mask(char qdepth[AP_DEVICES])
 
 	memset(qdepth, 0, sizeof(char)	* AP_DEVICES);
 	spin_lock(&zcrypt_list_lock);
+	local_bh_disable();
 	for_each_zcrypt_card(zc) {
 		for_each_zcrypt_queue(zq, zc) {
 			if (AP_QID_QUEUE(zq->queue->qid) != ap_domain_index)
 				continue;
-			spin_lock_bh(&zq->queue->lock);
+			spin_lock(&zq->queue->lock);
 			qdepth[AP_QID_CARD(zq->queue->qid)] =
 				zq->queue->pendingq_count +
 				zq->queue->requestq_count;
-			spin_unlock_bh(&zq->queue->lock);
+			spin_unlock(&zq->queue->lock);
 		}
 	}
+	local_bh_enable();
 	spin_unlock(&zcrypt_list_lock);
 }
 
@@ -689,16 +691,18 @@ static void zcrypt_perdev_reqcnt(int reqcnt[AP_DEVICES])
 
 	memset(reqcnt, 0, sizeof(int) * AP_DEVICES);
 	spin_lock(&zcrypt_list_lock);
+	local_bh_disable();
 	for_each_zcrypt_card(zc) {
 		for_each_zcrypt_queue(zq, zc) {
 			if (AP_QID_QUEUE(zq->queue->qid) != ap_domain_index)
 				continue;
-			spin_lock_bh(&zq->queue->lock);
+			spin_lock(&zq->queue->lock);
 			reqcnt[AP_QID_CARD(zq->queue->qid)] =
 				zq->queue->total_request_count;
-			spin_unlock_bh(&zq->queue->lock);
+			spin_unlock(&zq->queue->lock);
 		}
 	}
+	local_bh_enable();
 	spin_unlock(&zcrypt_list_lock);
 }
 
@@ -710,15 +714,17 @@ static int zcrypt_pendingq_count(void)
 
 	pendingq_count = 0;
 	spin_lock(&zcrypt_list_lock);
+	local_bh_disable();
 	for_each_zcrypt_card(zc) {
 		for_each_zcrypt_queue(zq, zc) {
 			if (AP_QID_QUEUE(zq->queue->qid) != ap_domain_index)
 				continue;
-			spin_lock_bh(&zq->queue->lock);
+			spin_lock(&zq->queue->lock);
 			pendingq_count += zq->queue->pendingq_count;
-			spin_unlock_bh(&zq->queue->lock);
+			spin_unlock(&zq->queue->lock);
 		}
 	}
+	local_bh_enable();
 	spin_unlock(&zcrypt_list_lock);
 	return pendingq_count;
 }
@@ -731,15 +737,17 @@ static int zcrypt_requestq_count(void)
 
 	requestq_count = 0;
 	spin_lock(&zcrypt_list_lock);
+	local_bh_disable();
 	for_each_zcrypt_card(zc) {
 		for_each_zcrypt_queue(zq, zc) {
 			if (AP_QID_QUEUE(zq->queue->qid) != ap_domain_index)
 				continue;
-			spin_lock_bh(&zq->queue->lock);
+			spin_lock(&zq->queue->lock);
 			requestq_count += zq->queue->requestq_count;
-			spin_unlock_bh(&zq->queue->lock);
+			spin_unlock(&zq->queue->lock);
 		}
 	}
+	local_bh_enable();
 	spin_unlock(&zcrypt_list_lock);
 	return requestq_count;
 }
