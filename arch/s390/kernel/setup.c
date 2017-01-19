@@ -12,6 +12,7 @@
  * This file handles the architecture-dependent parts of initialization
  */
 
+
 #define KMSG_COMPONENT "setup"
 #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
 
