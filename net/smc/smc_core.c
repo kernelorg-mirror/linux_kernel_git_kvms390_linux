@@ -509,7 +509,7 @@ int smc_sndbuf_create(struct smc_sock *smc)
 	struct smc_connection *conn = &smc->conn;
 	struct smc_link_group *lgr = conn->lgr;
 	int tmp_bufsize, tmp_bufsize_short;
-	struct smc_buf_desc *sndbuf_desc = NULL;
+	struct smc_buf_desc *sndbuf_desc;
 	int rc;
 
 	/* use socket send buffer size (w/o overhead) as start value */
@@ -575,7 +575,7 @@ int smc_rmb_create(struct smc_sock *smc)
 	struct smc_connection *conn = &smc->conn;
 	struct smc_link_group *lgr = conn->lgr;
 	int tmp_bufsize, tmp_bufsize_short;
-	struct smc_buf_desc *rmb_desc = NULL;
+	struct smc_buf_desc *rmb_desc;
 	int rc;
 
 	/* use socket recv buffer size (w/o overhead) as start value */
