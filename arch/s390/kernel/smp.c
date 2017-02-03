@@ -205,7 +205,7 @@ static int pcpu_alloc_lowcore(struct pcpu *pcpu, int cpu)
 				kmem_cache_alloc(pcpu_mcesa_cache, GFP_KERNEL);
 			if (!mcesa_origin)
 				goto out;
-			mcesa_bits = MACHINE_HAS_GS ? 11 : 10;
+			mcesa_bits = MACHINE_HAS_GS ? 11 : 0;
 		}
 	} else {
 		async_stack = pcpu->lowcore->async_stack - ASYNC_FRAME_OFFSET;

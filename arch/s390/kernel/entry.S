@@ -704,9 +704,13 @@ ENTRY(io_int_handler)
 # _TIF_GUARDED_STORAGE is set, call guarded_storage_load
 #
 .Lio_guarded_storage:
+	# TRACE_IRQS_ON already done at .Lio_return
+	ssm	__LC_SVC_NEW_PSW	# reenable interrupts
 	lgr	%r2,%r11		# pass pointer to pt_regs
-	larl	%r14,.Lio_return
-	jg	gs_load_bc_cb
+	brasl	%r14,gs_load_bc_cb
+	ssm	__LC_PGM_NEW_PSW	# disable I/O and ext. interrupts
+	TRACE_IRQS_OFF
+	j	.Lio_return
 
 #
 # _TIF_NEED_RESCHED is set, call schedule
