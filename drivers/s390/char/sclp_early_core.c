@@ -132,7 +132,7 @@ static void sclp_early_print_vt220(const char *str, unsigned int len)
 	sccb = (struct vt220_sccb *) &sclp_early_sccb;
 	if (sizeof(*sccb) + len >= sizeof(sclp_early_sccb))
 		len = sizeof(sclp_early_sccb) - sizeof(*sccb);
-	memset(sccb, 0 , sizeof(*sccb));
+	memset(sccb, 0, sizeof(*sccb));
 	memcpy(&sccb->msg.data, str, len);
 	sccb->header.length = sizeof(*sccb) + len;
 	sccb->msg.header.length = sizeof(sccb->msg) + len;
