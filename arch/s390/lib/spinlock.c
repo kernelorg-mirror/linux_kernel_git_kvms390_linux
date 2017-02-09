@@ -37,6 +37,35 @@ static inline void compare_and_delay(int *lock, int old)
 	asm(".insn rsy,0xeb0000000022,%0,0,%1" : : "d" (old), "Q" (*lock));
 }
 
+static inline int niai8_cmpxchg(int *lock, int old, int new)
+{
+	int old_expected = old;
+
+	asm volatile(
+		"	.long	0xb2fa0080\n"	/* NIAI 8 */
+		"       cs      %0,%3,%1"
+		: "=d" (old), "=Q" (*lock)
+		: "0" (old), "d" (new), "Q" (*lock)
+		: "cc", "memory" );
+	return old == old_expected;
+}
+
+static inline int niai4_load(int *lock)
+{
+	long owner;
+
+	asm volatile(
+		"	.long	0xb2fa0040\n"	/* NIAI 4 */
+		"	l	%0,%1\n"
+		: "=d" (owner) : "Q" (*lock) : "memory");
+	return owner;
+}
+
+static inline void niai7_release(void)
+{
+	asm volatile("	.long	0xb2fa0070\n");	/* NIAI 7 */
+}
+
 static inline int cpu_is_preempted(int cpu)
 {
 	if (test_cpu_flag_of(CIF_ENABLED_WAIT, cpu))
@@ -45,6 +74,8 @@ static inline int cpu_is_preempted(int cpu)
 		return 0;
 	return 1;
 }
+
+static DEFINE_STATIC_KEY_FALSE(have_niai);
 
 struct spin_wait {
 	struct spin_wait *next;
@@ -66,7 +97,7 @@ static DEFINE_PER_CPU_ALIGNED(struct spin_wait, spin_wait[4]);
 #define _Q_LOCK_MASK		(_Q_LOCK_CPU_MASK | _Q_LOCK_STEAL_MASK)
 #define _Q_TAIL_MASK		(_Q_TAIL_IDX_MASK | _Q_TAIL_CPU_MASK)
 
-void arch_spin_lock_wait(arch_spinlock_t *lp)
+static inline void arch_spin_queued_wait(arch_spinlock_t *lp)
 {
 	struct spin_wait *node, *prev, *next;
 	int lockval, ix, cpu, node_id, tail_id, old, new, owner, count;
@@ -161,7 +192,91 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
  out:
 	S390_lowcore.spinlock_index--;
 }
+
+static inline void arch_spin_niai_wait(arch_spinlock_t *lp)
+{
+	unsigned int cpu = SPINLOCK_LOCKVAL;
+	unsigned int owner;
+	int count, first_diag;
+
+	first_diag = 1;
+	while (1) {
+		owner = niai4_load(&lp->lock);
+		/* Try to get the lock if it is free. */
+		if (!owner) {
+			if (niai8_cmpxchg(&lp->lock, 0, cpu))
+				return;
+			niai7_release();
+			continue;
+		}
+		/* First iteration: check if the lock owner is running. */
+		if (first_diag && cpu_is_preempted(owner - 1)) {
+			smp_yield_cpu(owner - 1);
+			first_diag = 0;
+			continue;
+		}
+		/* Loop for a while on the lock value. */
+		count = spin_retry;
+		do {
+			if (MACHINE_HAS_CAD)
+				compare_and_delay(&lp->lock, owner);
+			owner = niai4_load(&lp->lock);
+		} while (owner && count-- > 0);
+		if (!owner)
+			continue;
+		/*
+		 * For multiple layers of hypervisors, e.g. z/VM + LPAR
+		 * yield the CPU unconditionally. For LPAR rely on the
+		 * sense running status.
+		 */
+		if (!MACHINE_IS_LPAR || cpu_is_preempted(owner - 1)) {
+			smp_yield_cpu(owner - 1);
+			first_diag = 0;
+		}
+	}
+}
+
+void arch_spin_lock_wait(arch_spinlock_t *lp)
+{
+	if (static_branch_likely(&have_niai)) {
+		arch_spin_niai_wait(lp);
+		return;
+	}
+	arch_spin_queued_wait(lp);
+}
 EXPORT_SYMBOL(arch_spin_lock_wait);
+
+static int __init arch_spin_wait_init(void)
+{
+	struct cpuid cpu_id;
+
+	get_cpu_id(&cpu_id);
+	switch (cpu_id.machine) {
+	case 0x2064:
+	case 0x2066:
+	case 0x2084:
+	case 0x2086:
+	case 0x2094:
+	case 0x2096:
+	case 0x2097:
+	case 0x2098:
+	case 0x2817:
+	case 0x2818:
+	case 0x2827:
+	case 0x2828:
+	case 0x2964:
+	case 0x2965:
+		/* Use queued spinlock code */
+		break;
+	case 0x3906:
+	default:
+		/* Use niai spinlock code */
+		static_branch_enable(&have_niai);
+		break;
+	}
+	return 0;
+}
+early_initcall(arch_spin_wait_init);
 
 int arch_spin_trylock_retry(arch_spinlock_t *lp)
 {
