@@ -169,7 +169,7 @@ int arch_spin_trylock_retry(arch_spinlock_t *lp)
 	int owner, count;
 
 	for (count = spin_retry; count > 0; count--) {
-		owner = ACCESS_ONCE(lp->lock);
+		owner = READ_ONCE(lp->lock);
 		/* Try to get the lock if it is free. */
 		if (!owner) {
 			if (__atomic_cmpxchg_bool(&lp->lock, 0, cpu))
