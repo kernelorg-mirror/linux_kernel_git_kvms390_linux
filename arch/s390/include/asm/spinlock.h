@@ -82,7 +82,6 @@ static inline void arch_spin_unlock(arch_spinlock_t *lp)
 {
 	asm volatile(
 		"       sth      %1,%0\n"
-		"	.long	0xb2fa0070\n"	/* NIAI 7 */
 		: : "Q" (((unsigned short *) &lp->lock)[1]),
 		    "d" (0) : "cc", "memory");
 }
