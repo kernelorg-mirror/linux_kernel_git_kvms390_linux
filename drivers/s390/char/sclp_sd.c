@@ -269,7 +269,7 @@ out:
  *
  * Return:
  *   %0:       Success - result is stored in @result. @result->data must be
- *             released using vfree() after use.
+ *	       released using vfree() after use.
  *   %-ENOENT: No data available for this entity
  *   %<0:      Other error
  */
