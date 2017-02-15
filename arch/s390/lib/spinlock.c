@@ -10,6 +10,7 @@
 #include <linux/spinlock.h>
 #include <linux/init.h>
 #include <linux/smp.h>
+#include <linux/percpu.h>
 #include <asm/io.h>
 
 int spin_retry = -1;
