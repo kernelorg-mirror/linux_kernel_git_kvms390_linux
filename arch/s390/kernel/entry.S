@@ -50,7 +50,8 @@ _TIF_WORK	= (_TIF_SIGPENDING | _TIF_NOTIFY_RESUME | _TIF_NEED_RESCHED | \
 		   _TIF_UPROBE | _TIF_GUARDED_STORAGE)
 _TIF_TRACE	= (_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SECCOMP | \
 		   _TIF_SYSCALL_TRACEPOINT)
-_CIF_WORK	= (_CIF_MCCK_PENDING | _CIF_ASCE_PRIMARY | _CIF_FPU)
+_CIF_WORK	= (_CIF_MCCK_PENDING | _CIF_ASCE_PRIMARY | \
+		   _CIF_ASCE_SECONDARY | _CIF_FPU)
 _PIF_WORK	= (_PIF_PER_TRAP)
 
 #define BASED(name) name-cleanup_critical(%r13)
@@ -341,8 +342,8 @@ ENTRY(system_call)
 	jo	.Lsysc_notify_resume
 	TSTMSK	__LC_CPU_FLAGS,_CIF_FPU
 	jo	.Lsysc_vxrs
-	TSTMSK	__LC_CPU_FLAGS,_CIF_ASCE_PRIMARY
-	jo	.Lsysc_asce_primary
+	TSTMSK	__LC_CPU_FLAGS,(_CIF_ASCE_PRIMARY|_CIF_ASCE_SECONDARY)
+	jnz	.Lsysc_asce
 	j	.Lsysc_return		# beware of critical section cleanup
 
 #
@@ -360,12 +361,15 @@ ENTRY(system_call)
 	jg	s390_handle_mcck	# TIF bit will be cleared by handler
 
 #
-# _CIF_ASCE_PRIMARY is set, load user space asce
+# _CIF_ASCE_PRIMARY and/or CIF_ASCE_SECONDARY set, load user space asce
 #
-.Lsysc_asce_primary:
+.Lsysc_asce:
 	ni	__LC_CPU_FLAGS+7,255-_CIF_ASCE_PRIMARY
 	lctlg	%c1,%c1,__LC_USER_ASCE		# load primary asce
-	j	.Lsysc_return
+	TSTMSK	__LC_CPU_FLAGS,_CIF_ASCE_SECONDARY
+	jz	.Lsysc_return
+	larl	%r14,.Lsysc_return
+	jg	set_fs_fixup
 
 #
 # CIF_FPU is set, restore floating-point controls and floating-point registers.
@@ -673,8 +677,8 @@ ENTRY(io_int_handler)
 	jo	.Lio_guarded_storage
 	TSTMSK	__LC_CPU_FLAGS,_CIF_FPU
 	jo	.Lio_vxrs
-	TSTMSK	__LC_CPU_FLAGS,_CIF_ASCE_PRIMARY
-	jo	.Lio_asce_primary
+	TSTMSK	__LC_CPU_FLAGS,(_CIF_ASCE_PRIMARY|_CIF_ASCE_SECONDARY)
+	jnz	.Lio_asce
 	j	.Lio_return		# beware of critical section cleanup
 
 #
@@ -687,12 +691,15 @@ ENTRY(io_int_handler)
 	j	.Lio_return
 
 #
-# _CIF_ASCE_PRIMARY is set, load user space asce
+# _CIF_ASCE_PRIMARY and/or CIF_ASCE_SECONDARY set, load user space asce
 #
-.Lio_asce_primary:
+.Lio_asce:
 	ni	__LC_CPU_FLAGS+7,255-_CIF_ASCE_PRIMARY
 	lctlg	%c1,%c1,__LC_USER_ASCE		# load primary asce
-	j	.Lio_return
+	TSTMSK	__LC_CPU_FLAGS,_CIF_ASCE_SECONDARY
+	jz	.Lio_return
+	larl	%r14,.Lio_return
+	jg	set_fs_fixup
 
 #
 # CIF_FPU is set, restore floating-point controls and floating-point registers.
