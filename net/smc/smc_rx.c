@@ -65,7 +65,7 @@ static int smc_rx_wait_data(struct smc_sock *smc, long *timeo)
 			   sk->sk_shutdown & RCV_SHUTDOWN ||
 			   sock_flag(sk, SOCK_DONE) ||
 			   atomic_read(&conn->bytes_to_rcv) ||
-			   smc_cdc_rxed_any_close_or_senddone(conn));
+			   smc_cdc_rxed_any_close_or_senddone(conn), &wait);
 	sk_clear_bit(SOCKWQ_ASYNC_WAITDATA, sk);
 	finish_wait(sk_sleep(sk), &wait);
 	return rc;

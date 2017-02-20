@@ -104,7 +104,7 @@ static int smc_tx_wait_memory(struct smc_sock *smc, int flags)
 			      sk->sk_err ||
 			      (sk->sk_shutdown & SEND_SHUTDOWN) ||
 			      smc_cdc_rxed_any_close_or_senddone(conn) ||
-			      atomic_read(&conn->sndbuf_space));
+			      atomic_read(&conn->sndbuf_space), &wait);
 		sk->sk_write_pending--;
 	}
 	finish_wait(sk_sleep(sk), &wait);

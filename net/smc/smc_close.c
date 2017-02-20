@@ -39,7 +39,7 @@ static void smc_close_wait_tx_pends(struct smc_sock *smc)
 
 		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
 		rc = sk_wait_event(sk, &timeout,
-				   !smc_cdc_tx_has_pending(&smc->conn));
+				   !smc_cdc_tx_has_pending(&smc->conn), &wait);
 		finish_wait(sk_sleep(sk), &wait);
 		if (rc)
 			break;
@@ -66,7 +66,7 @@ static void smc_close_stream_wait(struct smc_sock *smc, long timeout)
 		rc = sk_wait_event(sk, &timeout,
 				   !smc_tx_prepared_sends(&smc->conn) ||
 				   (sk->sk_err == ECONNABORTED) ||
-				   (sk->sk_err == ECONNRESET));
+				   (sk->sk_err == ECONNRESET), &wait);
 		finish_wait(sk_sleep(sk), &wait);
 		if (rc)
 			break;
