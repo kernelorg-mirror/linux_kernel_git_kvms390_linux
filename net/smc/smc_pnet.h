@@ -5,7 +5,7 @@
  *
  *  Copyright IBM Corp. 2016
  *
- *  Author(s):  Thomas Richter <tmricht@linux.vnet.ibm.com>
+ *  Author(s):	Thomas Richter <tmricht@linux.vnet.ibm.com>
  */
 
 #ifndef _SMC_PNET_H

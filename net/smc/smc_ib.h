@@ -5,7 +5,7 @@
  *
  *  Copyright IBM Corp. 2016
  *
- *  Author(s):  Ursula Braun <Ursula Braun@linux.vnet.ibm.com>
+ *  Author(s):	Ursula Braun <Ursula Braun@linux.vnet.ibm.com>
  */
 
 #ifndef _SMC_IB_H

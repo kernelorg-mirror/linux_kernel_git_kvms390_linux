@@ -6,7 +6,7 @@
  *
  *  Copyright IBM Corp. 2016
  *
- *  Author(s):  Ursula Braun <ubraun@linux.vnet.ibm.com>
+ *  Author(s):	Ursula Braun <ubraun@linux.vnet.ibm.com>
  */
 
 #ifndef _SMC_CLC_H
@@ -24,17 +24,17 @@
 /* eye catcher "SMCR" EBCDIC for CLC messages */
 static const char SMC_EYECATCHER[4] = {'\xe2', '\xd4', '\xc3', '\xd9'};
 
-#define SMC_CLC_V1		0x1		/* SMC version                */
+#define SMC_CLC_V1		0x1		/* SMC version		      */
 #define CLC_WAIT_TIME		(6 * HZ)	/* max. wait time on clcsock  */
 #define SMC_CLC_DECL_MEM	0x01010000  /* insufficient memory resources  */
-#define SMC_CLC_DECL_TIMEOUT	0x02000000  /* timeout                        */
-#define SMC_CLC_DECL_CNFERR	0x03000000  /* configuration error            */
-#define SMC_CLC_DECL_IPSEC	0x03030000  /* IPsec usage                    */
-#define SMC_CLC_DECL_SYNCERR	0x04000000  /* synchronization error          */
+#define SMC_CLC_DECL_TIMEOUT	0x02000000  /* timeout			      */
+#define SMC_CLC_DECL_CNFERR	0x03000000  /* configuration error	      */
+#define SMC_CLC_DECL_IPSEC	0x03030000  /* IPsec usage		      */
+#define SMC_CLC_DECL_SYNCERR	0x04000000  /* synchronization error	      */
 #define SMC_CLC_DECL_REPLY	0x06000000  /* reply to a received decline    */
-#define SMC_CLC_DECL_INTERR	0x99990000  /* internal error                 */
-#define SMC_CLC_DECL_TCL	0x02040000  /* timeout w4 QP confirm          */
-#define SMC_CLC_DECL_SEND	0x07000000  /* sending problem                */
+#define SMC_CLC_DECL_INTERR	0x99990000  /* internal error		      */
+#define SMC_CLC_DECL_TCL	0x02040000  /* timeout w4 QP confirm	      */
+#define SMC_CLC_DECL_SEND	0x07000000  /* sending problem		      */
 
 struct smc_clc_msg_hdr {	/* header1 of clc messages */
 	u8 eyecatcher[4];	/* eye catcher */

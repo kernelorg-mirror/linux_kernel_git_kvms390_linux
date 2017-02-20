@@ -18,6 +18,14 @@
 
 extern int spin_retry;
 
+#ifndef CONFIG_SMP
+static inline bool arch_vcpu_is_preempted(int cpu) { return false; }
+#else
+bool arch_vcpu_is_preempted(int cpu);
+#endif
+
+#define vcpu_is_preempted arch_vcpu_is_preempted
+
 /*
  * Simple spin lock operations.  There are two variants, one clears IRQ's
  * on the local processor, one does not.

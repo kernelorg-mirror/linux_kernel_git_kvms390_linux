@@ -38,15 +38,6 @@ static inline void compare_and_delay(int *lock, int old)
 	asm(".insn rsy,0xeb0000000022,%0,0,%1" : : "d" (old), "Q" (*lock));
 }
 
-static inline int cpu_is_preempted(int cpu)
-{
-	if (test_cpu_flag_of(CIF_ENABLED_WAIT, cpu))
-		return 0;
-	if (smp_vcpu_scheduled(cpu))
-		return 0;
-	return 1;
-}
-
 struct spin_wait {
 	struct spin_wait *next;
 	int lock_spin;
@@ -113,7 +104,7 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 
 	/* Pass the virtual CPU to the lock holder if it is not running */
 	owner = old & _Q_LOCK_CPU_MASK;
-	if (owner && cpu_is_preempted(owner - 1))
+	if (owner && arch_vcpu_is_preempted(owner - 1))
 		smp_yield_cpu(owner - 1);
 
 	/* Spin on the CPU local 'lock_spin' word */
@@ -147,7 +138,7 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 			compare_and_delay(&lp->lock, old);
 		if (count-- >= 0)
 			continue;
-		if (!MACHINE_IS_LPAR || cpu_is_preempted(owner - 1))
+		if (!MACHINE_IS_LPAR || arch_vcpu_is_preempted(owner - 1))
 			smp_yield_cpu(owner - 1);
 		count = spin_retry;
 	}
@@ -230,7 +221,7 @@ void arch_lock_relax(int cpu)
 {
 	if (!cpu)
 		return;
-	if (MACHINE_IS_LPAR && !cpu_is_preempted((cpu - 1) & 0xffff))
+	if (MACHINE_IS_LPAR && !arch_vcpu_is_preempted((cpu - 1) & 0xffff))
 		return;
 	smp_yield_cpu((cpu - 1) & 0xffff);
 }

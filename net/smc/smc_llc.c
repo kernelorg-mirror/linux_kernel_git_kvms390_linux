@@ -8,8 +8,8 @@
  *
  *  Copyright IBM Corp. 2016
  *
- *  Author(s):  Klaus Wacker <Klaus.Wacker@de.ibm.com>
- *              Ursula Braun <ubraun@linux.vnet.ibm.com>
+ *  Author(s):	Klaus Wacker <Klaus.Wacker@de.ibm.com>
+ *		Ursula Braun <ubraun@linux.vnet.ibm.com>
  */
 
 #include <net/tcp.h>

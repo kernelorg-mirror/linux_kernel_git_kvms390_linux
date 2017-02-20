@@ -15,8 +15,8 @@
  *
  *  Copyright IBM Corp. 2016
  *
- *  Author(s):  Ursula Braun <ubraun@linux.vnet.ibm.com>
- *              based on prototype from Frank Blaschka
+ *  Author(s):	Ursula Braun <ubraun@linux.vnet.ibm.com>
+ *		based on prototype from Frank Blaschka
  */
 
 #define KMSG_COMPONENT "smc"
