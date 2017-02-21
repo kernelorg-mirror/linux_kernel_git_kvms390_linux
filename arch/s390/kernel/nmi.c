@@ -117,6 +117,18 @@ static int notrace s390_validate_registers(union mci mci, int umode)
 			s390_handle_damage();
 		kill_task = 1;
 	}
+	/* Validate control registers */
+	if (!mci.cr) {
+		/*
+		 * Control registers have unknown contents.
+		 * Can't recover and therefore stopping machine.
+		 */
+		s390_handle_damage();
+	} else {
+		asm volatile(
+			"	lctlg	0,15,0(%0)"
+			: : "a" (&S390_lowcore.cregs_save_area) : "memory");
+	}
 	if (!mci.fp) {
 		/*
 		 * Floating point registers can't be restored. If the
@@ -209,18 +221,6 @@ static int notrace s390_validate_registers(union mci mci, int umode)
 		 * Terminating task.
 		 */
 		kill_task = 1;
-	}
-	/* Validate control registers */
-	if (!mci.cr) {
-		/*
-		 * Control registers have unknown contents.
-		 * Can't recover and therefore stopping machine.
-		 */
-		s390_handle_damage();
-	} else {
-		asm volatile(
-			"	lctlg	0,15,0(%0)"
-			: : "a" (&S390_lowcore.cregs_save_area) : "memory");
 	}
 	/* Validate guarded storage registers */
 	if (MACHINE_HAS_GS && (S390_lowcore.cregs_save_area[2] & (1UL << 4))) {
