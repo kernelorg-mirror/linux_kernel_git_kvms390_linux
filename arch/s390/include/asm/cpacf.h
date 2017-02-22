@@ -102,13 +102,13 @@
  * Function codes for the PCKMO (PERFORM CRYPTOGRAPHIC KEY MANAGEMENT)
  * instruction
  */
-#define CPACF_PCKMO_QUERY               0x00
-#define CPACF_PCKMO_ENC_DES_KEY         0x01
-#define CPACF_PCKMO_ENC_TDES_128_KEY    0x02
-#define CPACF_PCKMO_ENC_TDES_192_KEY    0x03
-#define CPACF_PCKMO_ENC_AES_128_KEY     0x12
-#define CPACF_PCKMO_ENC_AES_192_KEY     0x13
-#define CPACF_PCKMO_ENC_AES_256_KEY     0x14
+#define CPACF_PCKMO_QUERY		0x00
+#define CPACF_PCKMO_ENC_DES_KEY		0x01
+#define CPACF_PCKMO_ENC_TDES_128_KEY	0x02
+#define CPACF_PCKMO_ENC_TDES_192_KEY	0x03
+#define CPACF_PCKMO_ENC_AES_128_KEY	0x12
+#define CPACF_PCKMO_ENC_AES_192_KEY	0x13
+#define CPACF_PCKMO_ENC_AES_256_KEY	0x14
 
 /*
  * Function codes for the PPNO (PERFORM PSEUDORANDOM NUMBER OPERATION)
@@ -411,7 +411,7 @@ static inline void cpacf_pcc(unsigned long func, void *param)
 
 /**
  * cpacf_pckmo() - executes the PCKMO (PERFORM CRYPTOGRAPHIC KEY
- *                MANAGEMENT) instruction
+ *		  MANAGEMENT) instruction
  * @func: the function code passed to PCKMO; see CPACF_PCKMO_xxx defines
  * @param: address of parameter block; see POP for details on each func
  *
