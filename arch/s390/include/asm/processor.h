@@ -201,10 +201,12 @@ struct stack_frame {
 struct task_struct;
 struct mm_struct;
 struct seq_file;
+struct pt_regs;
 
 typedef int (*dump_trace_func_t)(void *data, unsigned long address, int reliable);
 void dump_trace(dump_trace_func_t func, void *data,
 		struct task_struct *task, unsigned long sp);
+void show_registers(struct pt_regs *regs);
 
 void show_cacheinfo(struct seq_file *m);
 
