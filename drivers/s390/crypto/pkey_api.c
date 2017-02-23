@@ -42,10 +42,10 @@ MODULE_DESCRIPTION("s390 protected key interface");
 
 static debug_info_t *debug_info;
 
-#define DEBUG_DBG(...)  debug_sprintf_event(debug_info, 6, ##__VA_ARGS__)
+#define DEBUG_DBG(...)	debug_sprintf_event(debug_info, 6, ##__VA_ARGS__)
 #define DEBUG_INFO(...) debug_sprintf_event(debug_info, 5, ##__VA_ARGS__)
 #define DEBUG_WARN(...) debug_sprintf_event(debug_info, 4, ##__VA_ARGS__)
-#define DEBUG_ERR(...)  debug_sprintf_event(debug_info, 3, ##__VA_ARGS__)
+#define DEBUG_ERR(...)	debug_sprintf_event(debug_info, 3, ##__VA_ARGS__)
 
 static void __init pkey_debug_init(void)
 {
@@ -259,7 +259,7 @@ int pkey_genseckey(u16 cardnr, u16 domain,
 	memcpy(preqparm->subfunc_code, "KG", 2);
 	preqparm->rule_array_len = sizeof(preqparm->rule_array_len);
 	preqparm->lv1.len = sizeof(struct lv1);
-	memcpy(preqparm->lv1.key_form,   "OP      ", 8);
+	memcpy(preqparm->lv1.key_form,	 "OP      ", 8);
 	switch (keytype) {
 	case PKEY_KEYTYPE_AES_128:
 		keysize = 16;
@@ -502,7 +502,7 @@ int pkey_sec2protkey(u16 cardnr, u16 domain,
 			u16 len;
 			u16 attr_len;
 			u16 attr_flags;
-			u8  token[0];         /* cca secure key token */
+			u8  token[0];	      /* cca secure key token */
 		} lv2 __packed;
 	} *preqparm;
 	struct uskrepparm {
@@ -1101,9 +1101,9 @@ static long pkey_unlocked_ioctl(struct file *filp, unsigned int cmd,
  * Sysfs and file io operations
  */
 static const struct file_operations pkey_fops = {
-	.owner          = THIS_MODULE,
-	.open           = nonseekable_open,
-	.llseek         = no_llseek,
+	.owner		= THIS_MODULE,
+	.open		= nonseekable_open,
+	.llseek		= no_llseek,
 	.unlocked_ioctl = pkey_unlocked_ioctl,
 };
 

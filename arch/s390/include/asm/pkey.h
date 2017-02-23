@@ -44,7 +44,7 @@ int pkey_clr2seckey(__u16 cardnr, __u16 domain, __u32 keytype,
  * @param domain may be -1 (use default domain)
  * @param seckey pointer to buffer with the input secure key
  * @param protkey pointer to buffer receiving the protected key and
- *        additional info (type, length)
+ *	  additional info (type, length)
  * @return 0 on success, negative errno value on failure
  */
 int pkey_sec2protkey(__u16 cardnr, __u16 domain,
@@ -56,7 +56,7 @@ int pkey_sec2protkey(__u16 cardnr, __u16 domain,
  * @param keytype one of the PKEY_KEYTYPE values
  * @param clrkey pointer to buffer with clear key data
  * @param protkey pointer to buffer receiving the protected key and
- *        additional info (type, length)
+ *	  additional info (type, length)
  * @return 0 on success, negative errno value on failure
  */
 int pkey_clr2protkey(__u32 keytype,
@@ -70,9 +70,9 @@ int pkey_clr2protkey(__u32 keytype,
  * @param cardnr pointer to cardnr, receives the card number on success
  * @param domain pointer to domain, receives the domain number on success
  * @param verify if set, always verify by fetching verification pattern
- *        from card
+ *	  from card
  * @return 0 on success, negative errno value on failure. If no card could be
- *         found, -ENODEV is returned.
+ *	   found, -ENODEV is returned.
  */
 int pkey_findcard(const struct pkey_seckey *seckey,
 		  __u16 *cardnr, __u16 *domain, int verify);
@@ -81,7 +81,7 @@ int pkey_findcard(const struct pkey_seckey *seckey,
  * Find card and transform secure key to protected key.
  * @param seckey pointer to buffer with the input secure key
  * @param protkey pointer to buffer receiving the protected key and
- *        additional info (type, length)
+ *	  additional info (type, length)
  * @return 0 on success, negative errno value on failure
  */
 int pkey_skey2pkey(const struct pkey_seckey *seckey,
