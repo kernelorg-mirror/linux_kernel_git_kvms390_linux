@@ -566,6 +566,8 @@ static void __ipl_run(void *unused)
 {
 	if (MACHINE_IS_LPAR && ipl_info.type == IPL_TYPE_CCW)
 		diag308(DIAG308_LOAD_NORMAL_DUMP, NULL);
+	if (MACHINE_IS_LPAR && ipl_info.type == IPL_TYPE_FCP)
+		diag308(DIAG308_LOAD_NORMAL, NULL);
 	diag308(DIAG308_LOAD_CLEAR, NULL);
 	if (MACHINE_IS_VM)
 		__cpcmd("IPL", NULL, 0, NULL);
@@ -1095,6 +1097,8 @@ static void __reipl_run(void *unused)
 		break;
 	case REIPL_METHOD_FCP_RW_DIAG:
 		diag308(DIAG308_SET, reipl_block_fcp);
+		if (MACHINE_IS_LPAR)
+			diag308(DIAG308_LOAD_NORMAL, NULL);
 		diag308(DIAG308_LOAD_CLEAR, NULL);
 		break;
 	case REIPL_METHOD_FCP_RO_DIAG:

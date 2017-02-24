@@ -146,6 +146,7 @@ enum diag308_subcode  {
 	DIAG308_LOAD_NORMAL_DUMP = 4,
 	DIAG308_SET = 5,
 	DIAG308_STORE = 6,
+	DIAG308_LOAD_NORMAL = 7,
 };
 
 enum diag308_ipl_type {
