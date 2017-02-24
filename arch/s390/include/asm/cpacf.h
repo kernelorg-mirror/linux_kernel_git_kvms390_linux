@@ -30,7 +30,7 @@
 /*
  * En/decryption modifier bits
  */
-#define CPACF_ENCRYPT           0x00
+#define CPACF_ENCRYPT		0x00
 #define CPACF_DECRYPT		0x80
 
 /*
