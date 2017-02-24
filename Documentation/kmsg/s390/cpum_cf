@@ -53,6 +53,18 @@
  */
 
 /*?
+ * Text: "CPU[%i] MT counter data was lost\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: cpu number
+ * Description:
+ * CPU counter data in the MT-diagnostic counter was lost because
+ * of machine internal high-priority activities.
+ * User action:
+ * None.
+ */
+
+/*?
  * Text: "Registering for CPU-measurement alerts failed with rc=%i\n"
  * Severity: Error
  * Parameter:
