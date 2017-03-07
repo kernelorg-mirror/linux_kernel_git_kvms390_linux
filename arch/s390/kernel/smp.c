@@ -574,6 +574,8 @@ int smp_store_status(int cpu)
 	if (!MACHINE_HAS_VX && !MACHINE_HAS_GS)
 		return 0;
 	pa = __pa(pcpu->lowcore->mcesad & MCESA_ORIGIN_MASK);
+	if (MACHINE_HAS_GS)
+		pa |= pcpu->lowcore->mcesad & MCESA_LC_MASK;
 	if (__pcpu_sigp_relax(pcpu->address, SIGP_STORE_ADDITIONAL_STATUS,
 			      pa) != SIGP_CC_ORDER_CODE_ACCEPTED)
 		return -EIO;
