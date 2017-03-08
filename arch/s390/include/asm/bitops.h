@@ -253,9 +253,9 @@ unsigned long find_first_bit_inv(const unsigned long *addr, unsigned long size);
 unsigned long find_next_bit_inv(const unsigned long *addr, unsigned long size,
 				unsigned long offset);
 
-#define for_each_set_bit_inv(bit, addr, size)			    \
-        for ((bit) = find_first_bit_inv((addr), (size));            \
-	     (bit) < (size);					    \
+#define for_each_set_bit_inv(bit, addr, size)				\
+	for ((bit) = find_first_bit_inv((addr), (size));		\
+	     (bit) < (size);						\
 	     (bit) = find_next_bit_inv((addr), (size), (bit) + 1))
 
 static inline void set_bit_inv(unsigned long nr, volatile unsigned long *ptr)
