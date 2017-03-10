@@ -35,15 +35,10 @@ bool arch_vcpu_is_preempted(int cpu);
  * (the type definitions are in asm/spinlock_types.h)
  */
 
-void arch_lock_relax(int cpu);
+void arch_spin_relax(arch_spinlock_t *lock);
 
 void arch_spin_lock_wait(arch_spinlock_t *);
 int arch_spin_trylock_retry(arch_spinlock_t *);
-
-static inline void arch_spin_relax(arch_spinlock_t *lock)
-{
-	arch_lock_relax(lock->lock);
-}
 
 static inline u32 arch_spin_lockval(int cpu)
 {

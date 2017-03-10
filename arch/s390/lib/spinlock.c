@@ -217,12 +217,15 @@ void arch_write_lock_wait(arch_rwlock_t *rw)
 }
 EXPORT_SYMBOL(arch_write_lock_wait);
 
-void arch_lock_relax(int cpu)
+void arch_spin_relax(arch_spinlock_t *lp)
 {
+	int cpu;
+
+	cpu = READ_ONCE(lp->lock) & _Q_LOCK_CPU_MASK;
 	if (!cpu)
 		return;
-	if (MACHINE_IS_LPAR && !arch_vcpu_is_preempted((cpu - 1) & 0xffff))
+	if (MACHINE_IS_LPAR && !arch_vcpu_is_preempted(cpu - 1))
 		return;
-	smp_yield_cpu((cpu - 1) & 0xffff);
+	smp_yield_cpu(cpu - 1);
 }
-EXPORT_SYMBOL(arch_lock_relax);
+EXPORT_SYMBOL(arch_spin_relax);
