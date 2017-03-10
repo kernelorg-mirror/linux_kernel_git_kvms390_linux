@@ -62,9 +62,9 @@ void smc_tx_sndbuf_nonfull(struct smc_sock *smc)
 /* blocks sndbuf producer until at least one byte of free space available */
 static int smc_tx_wait_memory(struct smc_sock *smc, int flags)
 {
+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 	struct smc_connection *conn = &smc->conn;
 	struct sock *sk = &smc->sk;
-	DEFINE_WAIT(wait);
 	bool noblock;
 	long timeo;
 	int rc = 0;
@@ -72,9 +72,9 @@ static int smc_tx_wait_memory(struct smc_sock *smc, int flags)
 	/* similar to sk_stream_wait_memory */
 	timeo = sock_sndtimeo(sk, flags & MSG_DONTWAIT);
 	noblock = timeo ? false : true;
+	add_wait_queue(sk_sleep(sk), &wait);
 	while (1) {
 		sk_set_bit(SOCKWQ_ASYNC_NOSPACE, sk);
-		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
 		if (sk->sk_err ||
 		    (sk->sk_shutdown & SEND_SHUTDOWN) ||
 		    conn->local_tx_ctrl.conn_state_flags.peer_done_writing) {
@@ -104,10 +104,11 @@ static int smc_tx_wait_memory(struct smc_sock *smc, int flags)
 			      sk->sk_err ||
 			      (sk->sk_shutdown & SEND_SHUTDOWN) ||
 			      smc_cdc_rxed_any_close_or_senddone(conn) ||
-			      atomic_read(&conn->sndbuf_space), &wait);
+			      atomic_read(&conn->sndbuf_space),
+			      &wait);
 		sk->sk_write_pending--;
 	}
-	finish_wait(sk_sleep(sk), &wait);
+	remove_wait_queue(sk_sleep(sk), &wait);
 	return rc;
 }
 

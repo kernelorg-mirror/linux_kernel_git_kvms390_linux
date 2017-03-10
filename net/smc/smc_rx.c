@@ -51,23 +51,24 @@ static void smc_rx_data_ready(struct sock *sk)
  */
 static int smc_rx_wait_data(struct smc_sock *smc, long *timeo)
 {
+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 	struct smc_connection *conn = &smc->conn;
 	struct sock *sk = &smc->sk;
-	DEFINE_WAIT(wait);
 	int rc;
 
 	if (atomic_read(&conn->bytes_to_rcv))
 		return 1;
-	prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
 	sk_set_bit(SOCKWQ_ASYNC_WAITDATA, sk);
+	add_wait_queue(sk_sleep(sk), &wait);
 	rc = sk_wait_event(sk, timeo,
 			   sk->sk_err ||
 			   sk->sk_shutdown & RCV_SHUTDOWN ||
 			   sock_flag(sk, SOCK_DONE) ||
 			   atomic_read(&conn->bytes_to_rcv) ||
-			   smc_cdc_rxed_any_close_or_senddone(conn), &wait);
+			   smc_cdc_rxed_any_close_or_senddone(conn),
+			   &wait);
+	remove_wait_queue(sk_sleep(sk), &wait);
 	sk_clear_bit(SOCKWQ_ASYNC_WAITDATA, sk);
-	finish_wait(sk_sleep(sk), &wait);
 	return rc;
 }
 

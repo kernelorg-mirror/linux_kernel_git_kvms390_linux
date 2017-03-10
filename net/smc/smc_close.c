@@ -5,7 +5,7 @@
  *
  *  Copyright IBM Corp. 2016
  *
- *  Author(s):	Ursula Braun <ubraun@linux.vnet.ibm.com>
+ *  Author(s):  Ursula Braun <ubraun@linux.vnet.ibm.com>
  */
 
 #include <linux/workqueue.h>
@@ -29,28 +29,29 @@ static void smc_close_cleanup_listen(struct sock *parent)
 
 static void smc_close_wait_tx_pends(struct smc_sock *smc)
 {
+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 	struct sock *sk = &smc->sk;
 	signed long timeout;
-	DEFINE_WAIT(wait);
 
 	timeout = SMC_CLOSE_WAIT_TX_PENDS_TIME;
+	add_wait_queue(sk_sleep(sk), &wait);
 	while (!signal_pending(current) && timeout) {
 		int rc;
 
-		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
 		rc = sk_wait_event(sk, &timeout,
-				   !smc_cdc_tx_has_pending(&smc->conn), &wait);
-		finish_wait(sk_sleep(sk), &wait);
+				   !smc_cdc_tx_has_pending(&smc->conn),
+				   &wait);
 		if (rc)
 			break;
 	}
+	remove_wait_queue(sk_sleep(sk), &wait);
 }
 
 /* wait for sndbuf data being transmitted */
 static void smc_close_stream_wait(struct smc_sock *smc, long timeout)
 {
+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 	struct sock *sk = &smc->sk;
-	DEFINE_WAIT(wait);
 
 	if (!timeout)
 		return;
@@ -59,18 +60,19 @@ static void smc_close_stream_wait(struct smc_sock *smc, long timeout)
 		return;
 
 	smc->wait_close_tx_prepared = 1;
+	add_wait_queue(sk_sleep(sk), &wait);
 	while (!signal_pending(current) && timeout) {
 		int rc;
 
-		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
 		rc = sk_wait_event(sk, &timeout,
 				   !smc_tx_prepared_sends(&smc->conn) ||
 				   (sk->sk_err == ECONNABORTED) ||
-				   (sk->sk_err == ECONNRESET), &wait);
-		finish_wait(sk_sleep(sk), &wait);
+				   (sk->sk_err == ECONNRESET),
+				   &wait);
 		if (rc)
 			break;
 	}
+	remove_wait_queue(sk_sleep(sk), &wait);
 	smc->wait_close_tx_prepared = 0;
 }
 
