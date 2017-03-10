@@ -146,7 +146,8 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 	/* Pass lock_spin job to next CPU in the queue */
 	if (tail_id != node_id) {
 		/* Wait until the next CPU has set up the 'next' pointer */
-		while ((next = READ_ONCE(node->next)) == 0);
+		while ((next = READ_ONCE(node->next)) == NULL)
+			;
 		next->lock_spin = 1;
 	}
 

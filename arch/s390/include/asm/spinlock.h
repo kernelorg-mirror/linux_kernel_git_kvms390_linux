@@ -157,7 +157,7 @@ static inline int arch_read_trylock(arch_rwlock_t *rw)
 {
 	int old;
 
-	old = ACCESS_ONCE(rw->cnts);
+	old = READ_ONCE(rw->cnts);
 	return (!(old & 0xffff0000) &&
 		__atomic_cmpxchg_bool(&rw->cnts, old, old + 1));
 }
@@ -166,8 +166,8 @@ static inline int arch_write_trylock(arch_rwlock_t *rw)
 {
 	int old;
 
-	old = ACCESS_ONCE(rw->cnts);
-	return !old &&__atomic_cmpxchg_bool(&rw->cnts, 0, 0x30000);
+	old = READ_ONCE(rw->cnts);
+	return !old && __atomic_cmpxchg_bool(&rw->cnts, 0, 0x30000);
 }
 
 #endif /* __ASM_SPINLOCK_H */
