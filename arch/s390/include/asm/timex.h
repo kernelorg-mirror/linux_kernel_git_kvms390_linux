@@ -233,7 +233,7 @@ static inline unsigned long long tod_to_ns(unsigned long long todval)
  */
 static inline int tod_after(unsigned long long a, unsigned long long b)
 {
-	if (MACHINE_USES_SCC)
+	if (MACHINE_HAS_SCC)
 		return (long long) a > (long long) b;
 	return a > b;
 }
@@ -247,7 +247,7 @@ static inline int tod_after(unsigned long long a, unsigned long long b)
  */
 static inline int tod_after_eq(unsigned long long a, unsigned long long b)
 {
-	if (MACHINE_USES_SCC)
+	if (MACHINE_HAS_SCC)
 		return (long long) a >= (long long) b;
 	return a >= b;
 }

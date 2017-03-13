@@ -361,6 +361,12 @@ static __init void detect_machine_facilities(void)
 	}
 	if (test_facility(133))
 		S390_lowcore.machine_flags |= MACHINE_FLAG_GS;
+	if (test_facility(139) && (tod_clock_base[1] & 0x80)) {
+		/* Enabled signed clock comparator comparisons */
+		S390_lowcore.machine_flags |= MACHINE_FLAG_SCC;
+		clock_comparator_max = -1ULL >> 1;
+		__ctl_set_bit(0, 53);
+	}
 }
 
 static inline void save_vector_registers(void)
@@ -504,12 +510,6 @@ static void __init append_to_cmdline(size_t (*ipl_data)(char *, size_t))
 			memmove(boot_command_line, parm + 1, rc);
 		else
 			*delim = ' ';		/* replace '\0' with space */
-	}
-	if (test_facility(139) && (tod_clock_base[1] & 0x80)) {
-		/* Enabled signed clock comparator comparisons */
-		S390_lowcore.machine_flags |= MACHINE_FLAG_SCC;
-		clock_comparator_max = -1ULL >> 1;
-		__ctl_set_bit(0, 53);
 	}
 }
 

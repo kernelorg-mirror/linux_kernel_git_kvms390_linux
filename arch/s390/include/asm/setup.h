@@ -75,7 +75,7 @@ extern void detect_memory_memblock(void);
 #define MACHINE_HAS_TLB_GUEST	(S390_lowcore.machine_flags & MACHINE_FLAG_TLB_GUEST)
 #define MACHINE_HAS_NX		(S390_lowcore.machine_flags & MACHINE_FLAG_NX)
 #define MACHINE_HAS_GS		(S390_lowcore.machine_flags & MACHINE_FLAG_GS)
-#define MACHINE_USES_SCC	(S390_lowcore.machine_flags & MACHINE_FLAG_SCC)
+#define MACHINE_HAS_SCC		(S390_lowcore.machine_flags & MACHINE_FLAG_SCC)
 
 /*
  * Console mode. Override with conmode=
