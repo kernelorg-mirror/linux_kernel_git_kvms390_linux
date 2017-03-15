@@ -145,7 +145,7 @@ unsigned long decompress_kernel(void)
 
 	output = (void *) ALIGN((unsigned long) &_end + HEAP_SIZE, PAGE_SIZE);
 	kernel_end = output + SZ__bss_start;
-	check_ipl_parmblock(0, (unsigned long) kernel_end);
+	check_ipl_parmblock((void *) 0, (unsigned long) kernel_end);
 
 #ifdef CONFIG_BLK_DEV_INITRD
 	/*
