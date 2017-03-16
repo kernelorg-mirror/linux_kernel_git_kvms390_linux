@@ -215,21 +215,6 @@
  */
 
 /*?
- * Text: "%s: Starting IP fragmentation support for %s failed\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the qeth device
- *   @2: network interface name
- * Description:
- * The qeth device driver could not start IP fragmentation support on the
- * network adapter.
- * User action:
- * Ungroup and regroup the subchannel triplet of the device. If this does not
- * resolve the problem, reboot Linux. If the problem persists, gather Linux
- * debug data and report the problem to your support organization.
- */
-
-/*?
  * Text: "%s: Starting VLAN support for %s failed\n"
  * Severity: Warning
  * Parameter:
@@ -635,13 +620,11 @@
 /*? Text: "%s: Device successfully recovered!\n" */
 /*? Text: "register layer 2 discipline\n" */
 /*? Text: "unregister layer 2 discipline\n" */
-/*? Text: "%s: Hardware IP fragmentation not supported on %s\n" */
 /*? Text: "%s: IPv6 not supported on %s\n" */
 /*? Text: "%s: VLAN not supported on %s\n" */
 /*? Text: "%s: Inbound source MAC-address not supported on %s\n" */
 /*? Text: "%s: IPV6 enabled\n" */
 /*? Text: "%s: ARP processing not supported on %s!\n" */
-/*? Text: "%s: Hardware IP fragmentation enabled \n" */
 /*? Text: "%s: set adapter parameters not supported.\n" */
 /*? Text: "%s: VLAN enabled\n" */
 /*? Text: "register layer 3 discipline\n" */
