@@ -99,10 +99,10 @@ int pkey_skey2pkey(const struct pkey_seckey *seckey,
  * @param pdomain pointer to domain, receives the domain number on success
  * @param pkeysize pointer to keysize, receives the bitsize of the key
  * @param pattributes pointer to attributes, receives additional info
- *        PKEY_VERIFY_ATTR_AES if the key is an AES key
- *        PKEY_VERIFY_ATTR_OLD_MKVP if key has old mkvp stored in
+ *	  PKEY_VERIFY_ATTR_AES if the key is an AES key
+ *	  PKEY_VERIFY_ATTR_OLD_MKVP if key has old mkvp stored in
  * @return 0 on success, negative errno value on failure. If no card could
- *         be found which is able to handle this key, -ENODEV is returned.
+ *	   be found which is able to handle this key, -ENODEV is returned.
  */
 int pkey_verifykey(const struct pkey_seckey *seckey,
 		   u16 *pcardnr, u16 *pdomain,

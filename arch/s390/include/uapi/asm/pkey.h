@@ -121,11 +121,11 @@ struct pkey_verifykey {
 	struct pkey_seckey seckey;	       /* in: the secure key blob */
 	__u16  cardnr;			       /* out: card number	  */
 	__u16  domain;			       /* out: domain number	  */
-	__u16  keysize;                        /* out: key size in bits   */
-	__u32  attributes;                     /* out: attribute bits     */
+	__u16  keysize;			       /* out: key size in bits   */
+	__u32  attributes;		       /* out: attribute bits	  */
 };
 #define PKEY_VERIFYKEY _IOWR(PKEY_IOCTL_MAGIC, 0x07, struct pkey_verifykey)
-#define PKEY_VERIFY_ATTR_AES       0x00000001  /* key is an AES key */
+#define PKEY_VERIFY_ATTR_AES	   0x00000001  /* key is an AES key */
 #define PKEY_VERIFY_ATTR_OLD_MKVP  0x00000100  /* key has old MKVP value */
 
 #endif /* _UAPI_PKEY_H */
