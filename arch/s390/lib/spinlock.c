@@ -18,7 +18,7 @@ int spin_retry = -1;
 static int __init spin_retry_init(void)
 {
 	if (spin_retry < 0)
-		spin_retry = MACHINE_HAS_CAD ? 10 : 1000;
+		spin_retry = 1000;
 	return 0;
 }
 early_initcall(spin_retry_init);
@@ -32,11 +32,6 @@ static int __init spin_retry_setup(char *str)
 	return 1;
 }
 __setup("spin_retry=", spin_retry_setup);
-
-static inline void compare_and_delay(int *lock, int old)
-{
-	asm(".insn rsy,0xeb0000000022,%0,0,%1" : : "d" (old), "Q" (*lock));
-}
 
 struct spin_wait {
 	struct spin_wait *next;
@@ -113,8 +108,6 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 		while (1) {
 			if (READ_ONCE(node->lock_spin))
 				break;
-			if (MACHINE_HAS_CAD)
-				compare_and_delay(&node->lock_spin, 0);
 			if (count-- >= 0)
 				continue;
 			count = spin_retry;
@@ -134,8 +127,6 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 				break;
 			continue;
 		}
-		if (MACHINE_HAS_CAD)
-			compare_and_delay(&lp->lock, old);
 		if (count-- >= 0)
 			continue;
 		if (!MACHINE_IS_LPAR || arch_vcpu_is_preempted(owner - 1))
@@ -167,8 +158,7 @@ int arch_spin_trylock_retry(arch_spinlock_t *lp)
 		if (!owner) {
 			if (__atomic_cmpxchg_bool(&lp->lock, 0, cpu))
 				return 1;
-		} else if (MACHINE_HAS_CAD)
-			compare_and_delay(&lp->lock, owner);
+		}
 	}
 	return 0;
 }
