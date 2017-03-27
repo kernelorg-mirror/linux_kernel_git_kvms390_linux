@@ -392,6 +392,9 @@ static ssize_t qeth_dev_layer2_store(struct device *dev,
 	if (!card)
 		return -EINVAL;
 
+	if (card->info.type == QETH_CARD_TYPE_OSM)
+		return -EOPNOTSUPP;
+
 	mutex_lock(&card->discipline_mutex);
 	if (card->state != CARD_STATE_DOWN) {
 		rc = -EPERM;
@@ -705,10 +708,11 @@ static struct attribute *qeth_blkt_device_attrs[] = {
 	&dev_attr_inter_jumbo.attr,
 	NULL,
 };
-static struct attribute_group qeth_device_blkt_group = {
+const struct attribute_group qeth_device_blkt_group = {
 	.name = "blkt",
 	.attrs = qeth_blkt_device_attrs,
 };
+EXPORT_SYMBOL_GPL(qeth_device_blkt_group);
 
 static struct attribute *qeth_device_attrs[] = {
 	&dev_attr_state.attr,
@@ -728,9 +732,10 @@ static struct attribute *qeth_device_attrs[] = {
 	&dev_attr_switch_attrs.attr,
 	NULL,
 };
-static struct attribute_group qeth_device_attr_group = {
+const struct attribute_group qeth_device_attr_group = {
 	.attrs = qeth_device_attrs,
 };
+EXPORT_SYMBOL_GPL(qeth_device_attr_group);
 
 const struct attribute_group *qeth_generic_attr_groups[] = {
 	&qeth_device_attr_group,
