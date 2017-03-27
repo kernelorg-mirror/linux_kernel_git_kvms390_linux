@@ -67,7 +67,7 @@ static inline int arch_spin_yield_target(int lock, struct spin_wait *node)
 	if (lock & _Q_LOCK_CPU_MASK)
 		return lock & _Q_LOCK_CPU_MASK;
 	if (node->prev == NULL)
-		return 0;       /* 0 -> no target cpu */
+		return 0;	/* 0 -> no target cpu */
 	while (node->prev)
 		node = node->prev;
 	return node->node_id >> _Q_TAIL_CPU_OFFSET;
