@@ -13,6 +13,7 @@
 #include <linux/memblock.h>
 #include <linux/gfp.h>
 #include <linux/init.h>
+#include <asm/facility.h>
 
 #define ESSA_GET_STATE		0
 #define ESSA_SET_STABLE		1
@@ -61,7 +62,7 @@ void __init cmma_init(void)
 		cmma_flag = 0;
 		return;
 	}
-	if (MACHINE_HAS_TLB_GUEST)
+	if (test_facility(147))
 		cmma_flag = 2;
 }
 
