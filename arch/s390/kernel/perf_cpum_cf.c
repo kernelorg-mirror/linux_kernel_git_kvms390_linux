@@ -70,10 +70,10 @@ struct cpu_hw_events {
 };
 static DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events) = {
 	.ctr_set = {
-		[CPUMF_CTR_SET_BASIC]   = ATOMIC_INIT(0),
-		[CPUMF_CTR_SET_USER]    = ATOMIC_INIT(0),
-		[CPUMF_CTR_SET_CRYPTO]  = ATOMIC_INIT(0),
-		[CPUMF_CTR_SET_EXT]     = ATOMIC_INIT(0),
+		[CPUMF_CTR_SET_BASIC]	= ATOMIC_INIT(0),
+		[CPUMF_CTR_SET_USER]	= ATOMIC_INIT(0),
+		[CPUMF_CTR_SET_CRYPTO]	= ATOMIC_INIT(0),
+		[CPUMF_CTR_SET_EXT]	= ATOMIC_INIT(0),
 		[CPUMF_CTR_SET_MT_DIAG] = ATOMIC_INIT(0),
 	},
 	.state = 0,
@@ -131,7 +131,7 @@ static int validate_ctr_version(const struct hw_perf_event *hwc)
 		 * is automatically enabled and activated on all CPUs with
 		 * multithreading (SMT).  Deactivation of multithreading
 		 * also disables the counter set.  State changes are ignored
-		 * by lcctl().  Because Linux controls SMT enablement through
+		 * by lcctl().	Because Linux controls SMT enablement through
 		 * a kernel parameter only, the counter set is either disabled
 		 * or enabled and active.
 		 *
