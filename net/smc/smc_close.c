@@ -115,7 +115,6 @@ void smc_close_active_abort(struct smc_sock *smc)
 	struct smc_cdc_conn_state_flags *txflags =
 		&smc->conn.local_tx_ctrl.conn_state_flags;
 
-	bh_lock_sock(&smc->sk);
 	smc->sk.sk_err = ECONNABORTED;
 	if (smc->clcsock && smc->clcsock->sk) {
 		smc->clcsock->sk->sk_err = ECONNABORTED;
@@ -123,6 +122,7 @@ void smc_close_active_abort(struct smc_sock *smc)
 	}
 	switch (smc->sk.sk_state) {
 	case SMC_INIT:
+	case SMC_ACTIVE:
 		smc->sk.sk_state = SMC_PEERABORTWAIT;
 		break;
 	case SMC_APPCLOSEWAIT1:
@@ -159,7 +159,6 @@ void smc_close_active_abort(struct smc_sock *smc)
 	}
 
 	sock_set_flag(&smc->sk, SOCK_DEAD);
-	bh_unlock_sock(&smc->sk);
 	smc->sk.sk_state_change(&smc->sk);
 }
 
@@ -183,7 +182,7 @@ again:
 	case SMC_INIT:
 		sk->sk_state = SMC_CLOSED;
 		if (smc->smc_listen_work.func)
-			flush_work(&smc->smc_listen_work);
+			cancel_work_sync(&smc->smc_listen_work);
 		sock_put(sk);
 		break;
 	case SMC_LISTEN:
@@ -196,7 +195,7 @@ again:
 		}
 		release_sock(sk);
 		smc_close_cleanup_listen(sk);
-		flush_work(&smc->tcp_listen_work);
+		cancel_work_sync(&smc->smc_listen_work);
 		lock_sock(sk);
 		break;
 	case SMC_ACTIVE:
@@ -304,22 +303,27 @@ static void smc_close_passive_abort_received(struct smc_sock *smc)
 
 /* Some kind of closing has been received: peer_conn_closed, peer_conn_abort,
  * or peer_done_writing.
- * Called under tasklet context.
  */
-void smc_close_passive_received(struct smc_sock *smc)
+static void smc_close_passive_work(struct work_struct *work)
 {
-	struct smc_cdc_conn_state_flags *rxflags =
-		&smc->conn.local_rx_ctrl.conn_state_flags;
+	struct smc_connection *conn = container_of(work,
+						   struct smc_connection,
+						   close_work);
+	struct smc_sock *smc = container_of(conn, struct smc_sock, conn);
+	struct smc_cdc_conn_state_flags *rxflags;
 	struct sock *sk = &smc->sk;
 	int old_state;
 
-	sk->sk_shutdown |= RCV_SHUTDOWN;
-	if (smc->clcsock && smc->clcsock->sk)
-		smc->clcsock->sk->sk_shutdown |= RCV_SHUTDOWN;
-	sock_set_flag(&smc->sk, SOCK_DONE);
-
+	lock_sock(&smc->sk);
 	old_state = sk->sk_state;
 
+	if (!conn->alert_token_local) {
+		/* abnormal termination */
+		smc_close_active_abort(smc);
+		goto wakeup;
+	}
+
+	rxflags = &smc->conn.local_rx_ctrl.conn_state_flags;
 	if (rxflags->peer_conn_abort) {
 		smc_close_passive_abort_received(smc);
 		goto wakeup;
@@ -371,11 +375,12 @@ wakeup:
 	sk->sk_write_space(sk); /* wakeup blocked sndbuf producers */
 
 	if ((sk->sk_state == SMC_CLOSED) &&
-	    (sock_flag(sk, SOCK_DEAD) || (old_state == SMC_INIT))) {
+	    (sock_flag(sk, SOCK_DEAD) || !sk->sk_socket)) {
 		smc_conn_free(&smc->conn);
 		schedule_delayed_work(&smc->sock_put_work,
 				      SMC_CLOSE_SOCK_PUT_DELAY);
 	}
+	release_sock(&smc->sk);
 }
 
 void smc_close_sock_put_work(struct work_struct *work)
@@ -439,4 +444,10 @@ again:
 	if (old_state != sk->sk_state)
 		sk->sk_state_change(&smc->sk);
 	return rc;
+}
+
+/* Initialize close properties on connection establishment. */
+void smc_close_init(struct smc_sock *smc)
+{
+	INIT_WORK(&smc->conn.close_work, smc_close_passive_work);
 }
