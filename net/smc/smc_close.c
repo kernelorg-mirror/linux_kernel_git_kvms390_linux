@@ -294,7 +294,7 @@ static void smc_close_passive_abort_received(struct smc_sock *smc)
 	case SMC_PEERCLOSEWAIT1:
 	case SMC_PEERCLOSEWAIT2:
 		if (txflags->peer_done_writing &&
-		    !smc_close_sent_any_close(&smc->conn)){
+		    !smc_close_sent_any_close(&smc->conn)) {
 			/* just shutdown, but not yet closed locally */
 			smc_close_abort(&smc->conn);
 			sk->sk_state = SMC_PROCESSABORT;
