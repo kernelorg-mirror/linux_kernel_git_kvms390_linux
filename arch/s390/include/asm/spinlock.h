@@ -39,6 +39,7 @@ void arch_spin_relax(arch_spinlock_t *lock);
 
 void arch_spin_lock_wait(arch_spinlock_t *);
 int arch_spin_trylock_retry(arch_spinlock_t *);
+void arch_spin_lock_setup(int cpu);
 
 static inline u32 arch_spin_lockval(int cpu)
 {

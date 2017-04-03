@@ -42,16 +42,30 @@ static DEFINE_PER_CPU_ALIGNED(struct spin_wait, spin_wait[4]);
 
 #define _Q_LOCK_CPU_OFFSET	0
 #define _Q_LOCK_STEAL_OFFSET	16
-#define _Q_TAIL_IDX_OFFSET	17
-#define _Q_TAIL_CPU_OFFSET	19
+#define _Q_TAIL_IDX_OFFSET	18
+#define _Q_TAIL_CPU_OFFSET	20
 
 #define _Q_LOCK_CPU_MASK	0x0000ffff
-#define _Q_LOCK_STEAL_MASK	0x00010000
-#define _Q_TAIL_IDX_MASK	0x00060000
-#define _Q_TAIL_CPU_MASK	0xfff80000
+#define _Q_LOCK_STEAL_ADD	0x00010000
+#define _Q_LOCK_STEAL_MASK	0x00030000
+#define _Q_TAIL_IDX_MASK	0x000c0000
+#define _Q_TAIL_CPU_MASK	0xfff00000
 
 #define _Q_LOCK_MASK		(_Q_LOCK_CPU_MASK | _Q_LOCK_STEAL_MASK)
 #define _Q_TAIL_MASK		(_Q_TAIL_IDX_MASK | _Q_TAIL_CPU_MASK)
+
+void arch_spin_lock_setup(int cpu)
+{
+	struct spin_wait *node;
+	int ix;
+
+	node = per_cpu_ptr(&spin_wait[0], cpu);
+	for (ix = 0; ix < 4; ix++, node++) {
+		memset(node, 0, sizeof(*node));
+		node->node_id = ((cpu + 1) << _Q_TAIL_CPU_OFFSET) +
+			(ix << _Q_TAIL_IDX_OFFSET);
+	}
+}
 
 static inline struct spin_wait *arch_spin_decode_tail(int lock)
 {
@@ -83,21 +97,21 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 	lockval = SPINLOCK_LOCKVAL;	/* cpu + 1 */
 	node = this_cpu_ptr(&spin_wait[ix]);
 	node->prev = node->next = NULL;
-	node->node_id = node_id =
-		(lockval << _Q_TAIL_CPU_OFFSET) | (ix << _Q_TAIL_IDX_OFFSET);
+	node_id = node->node_id;
 
 	/* Enqueue the node for this CPU in the spinlock wait queue */
 	while (1) {
 		old = READ_ONCE(lp->lock);
-		if ((old & _Q_LOCK_MASK) == 0) {
+		if ((old & _Q_LOCK_CPU_MASK) == 0 &&
+		    (old & _Q_LOCK_STEAL_MASK) != _Q_LOCK_STEAL_MASK) {
 			/*
 			 * The lock is free but there may be waiters.
 			 * With no waiters simply take the lock, if there
 			 * are waiters try to steal the lock. The lock may
-			 * only be stolen once before the next queued waiter
-			 * will get the lock.
+			 * be stolen three times before the next queued
+			 * waiter will get the lock.
 			 */
-			new = (old ? (old | _Q_LOCK_STEAL_MASK) : 0) | lockval;
+			new = (old ? (old + _Q_LOCK_STEAL_ADD) : 0) | lockval;
 			if (__atomic_cmpxchg_bool(&lp->lock, old, new))
 				/* Got the lock */
 				goto out;
@@ -150,9 +164,9 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 		}
 		if (count-- >= 0)
 			continue;
+		count = spin_retry;
 		if (!MACHINE_IS_LPAR || arch_vcpu_is_preempted(owner - 1))
 			smp_yield_cpu(owner - 1);
-		count = spin_retry;
 	}
 
 	/* Pass lock_spin job to next CPU in the queue */
