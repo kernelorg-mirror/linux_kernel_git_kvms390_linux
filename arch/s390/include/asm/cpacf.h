@@ -130,8 +130,8 @@
 #define CPACF_PRNO_QUERY		0x00
 #define CPACF_PRNO_SHA512_DRNG_GEN	0x03
 #define CPACF_PRNO_SHA512_DRNG_SEED	0x83
-#define CPACF_PRNO_TRNG_Q_R2C_RATIO     0x70
-#define CPACF_PRNO_TRNG                 0x72
+#define CPACF_PRNO_TRNG_Q_R2C_RATIO	0x70
+#define CPACF_PRNO_TRNG			0x72
 
 typedef struct { unsigned char bytes[16]; } cpacf_mask_t;
 
