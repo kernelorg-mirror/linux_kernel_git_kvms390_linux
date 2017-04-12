@@ -625,7 +625,6 @@
 /*? Text: "%s: Inbound source MAC-address not supported on %s\n" */
 /*? Text: "%s: IPV6 enabled\n" */
 /*? Text: "%s: ARP processing not supported on %s!\n" */
-/*? Text: "%s: set adapter parameters not supported.\n" */
 /*? Text: "%s: VLAN enabled\n" */
 /*? Text: "register layer 3 discipline\n" */
 /*? Text: "%s: Outbound TSO enabled\n" */
