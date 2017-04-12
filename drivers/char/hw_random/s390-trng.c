@@ -215,7 +215,7 @@ static void __init trng_debug_init(void)
 	debug_set_level(debug_info, 3);
 }
 
-static void __exit trng_debug_exit(void)
+static void trng_debug_exit(void)
 {
 	debug_unregister(debug_info);
 }
