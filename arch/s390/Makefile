@@ -101,7 +101,7 @@ head-y		:= arch/s390/kernel/head.o
 head-y		+= arch/s390/kernel/head64.o
 
 # See arch/s390/Kbuild for content of core part of the kernel
-core-y		+= arch/s390/
+core-y		+= arch/s390/ arch/s390/crypto/
 
 libs-y		+= arch/s390/lib/
 drivers-y	+= drivers/s390/
