@@ -96,7 +96,7 @@ static void update_mt_scaling(void)
  */
 static int do_account_vtime(struct task_struct *tsk)
 {
-	u64 timer, clock, user, system, steal;
+	u64 timer, clock, user, system;
 	u64 user_scaled, system_scaled;
 
 	timer = S390_lowcore.last_update_timer;
@@ -141,12 +141,6 @@ static int do_account_vtime(struct task_struct *tsk)
 	account_system_time(tsk, 0, system);
 	tsk->stimescaled += system_scaled;
 
-	steal = S390_lowcore.steal_timer;
-	if ((s64) steal > 0) {
-		S390_lowcore.steal_timer = 0;
-		account_steal_time(steal);
-	}
-
 	return virt_timer_forward(user + system);
 }
 
@@ -166,8 +160,19 @@ void vtime_task_switch(struct task_struct *prev)
  */
 void vtime_account_user(struct task_struct *tsk)
 {
+	u64 steal;
+
 	if (do_account_vtime(tsk))
 		virt_timer_expire();
+
+	steal = S390_lowcore.steal_timer;
+	if ((s64) steal > 0) {
+		S390_lowcore.avg_steal_timer =
+			(S390_lowcore.avg_steal_timer / 2) + steal;
+		S390_lowcore.steal_timer = 0;
+		account_steal_time(steal);
+	}
+
 }
 
 /*
