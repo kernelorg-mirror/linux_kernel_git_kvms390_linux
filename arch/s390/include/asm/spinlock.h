@@ -53,13 +53,25 @@ static inline int arch_spin_value_unlocked(arch_spinlock_t lock)
 
 static inline int arch_spin_is_locked(arch_spinlock_t *lp)
 {
-	return READ_ONCE(lp->lock) != 0;
+	asm_volatile_goto(
+		"	.long	0xb2fa0040\n"	/* NIAI 4 */
+#ifdef CONFIG_HAVE_MARCH_Z9_109_FEATURES
+		"	lt	0,%0\n"
+#else
+		"	icm	0,15,%0\n"
+#endif
+		"	jne	%l[locked]\n"
+		: : "Q" (lp->lock) : "0" : locked);
+	return 0;
+ locked:
+	return 1;
 }
 
 static inline int arch_spin_trylock_once(arch_spinlock_t *lp)
 {
 	barrier();
-	return likely(__atomic_cmpxchg_bool(&lp->lock, 0, SPINLOCK_LOCKVAL));
+	return likely(!arch_spin_is_locked(lp) &&
+		      __atomic_cmpxchg_bool(&lp->lock, 0, SPINLOCK_LOCKVAL));
 }
 
 static inline void arch_spin_lock(arch_spinlock_t *lp)
@@ -85,9 +97,10 @@ static inline int arch_spin_trylock(arch_spinlock_t *lp)
 static inline void arch_spin_unlock(arch_spinlock_t *lp)
 {
 	asm volatile(
-		"       sth      %1,%0\n"
-		: : "Q" (((unsigned short *) &lp->lock)[1]),
-		    "d" (0) : "cc", "memory");
+		"	.long	0xb2fa0070\n"	/* NIAI 7 */
+		"	sth	%1,%0\n"
+		: "=Q" (((unsigned short *) &lp->lock)[1])
+		: "d" (0) : "cc", "memory");
 }
 
 static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)

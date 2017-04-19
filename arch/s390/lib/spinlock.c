@@ -67,6 +67,19 @@ void arch_spin_lock_setup(int cpu)
 	}
 }
 
+static inline int arch_cmpxchg_niai8(int *lock, int old, int new)
+{
+	int expected = old;
+
+	asm volatile(
+		"	.long	0xb2fa0080\n"	/* NIAI 8 */
+		"	cs	%0,%3,%1\n"
+		: "=d" (old), "=Q" (*lock)
+		: "0" (old), "d" (new), "Q" (*lock)
+		: "cc", "memory");
+	return expected == old;
+}
+
 static inline struct spin_wait *arch_spin_decode_tail(int lock)
 {
 	int ix, cpu;
@@ -80,14 +93,14 @@ static inline int arch_spin_yield_target(int lock, struct spin_wait *node)
 {
 	if (lock & _Q_LOCK_CPU_MASK)
 		return lock & _Q_LOCK_CPU_MASK;
-	if (node->prev == NULL)
+	if (node == NULL || node->prev == NULL)
 		return 0;	/* 0 -> no target cpu */
 	while (node->prev)
 		node = node->prev;
 	return node->node_id >> _Q_TAIL_CPU_OFFSET;
 }
 
-void arch_spin_lock_wait(arch_spinlock_t *lp)
+static inline void arch_spin_lock_queued(arch_spinlock_t *lp)
 {
 	struct spin_wait *node, *next;
 	int lockval, ix, node_id, tail_id, old, new, owner, count;
@@ -170,7 +183,7 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 	}
 
 	/* Pass lock_spin job to next CPU in the queue */
-	if (tail_id != node_id) {
+	if (node_id && tail_id != node_id) {
 		/* Wait until the next CPU has set up the 'next' pointer */
 		while ((next = READ_ONCE(node->next)) == NULL)
 			;
@@ -179,6 +192,46 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 
  out:
 	S390_lowcore.spinlock_index--;
+}
+
+static inline void arch_spin_lock_niai(arch_spinlock_t *lp)
+{
+	int lockval, old, new, owner, count;
+
+	lockval = SPINLOCK_LOCKVAL;	/* cpu + 1 */
+
+	/* Pass the virtual CPU to the lock holder if it is not running */
+	owner = arch_spin_yield_target(ACCESS_ONCE(lp->lock), NULL);
+	if (owner && arch_vcpu_is_preempted(owner - 1))
+		smp_yield_cpu(owner - 1);
+
+	count = spin_retry;
+	while (1) {
+		old = ACCESS_ONCE(lp->lock);
+		owner = old & _Q_LOCK_CPU_MASK;
+		/* Try to get the lock if it is free. */
+		if (!owner) {
+			new = (old & _Q_TAIL_MASK) | lockval;
+			if (arch_cmpxchg_niai8(&lp->lock, old, new))
+				/* Got the lock */
+                               return;
+			continue;
+		}
+		if (count-- >= 0)
+			continue;
+		count = spin_retry;
+		if (!MACHINE_IS_LPAR || arch_vcpu_is_preempted(owner - 1))
+			smp_yield_cpu(owner - 1);
+        }
+}
+
+void arch_spin_lock_wait(arch_spinlock_t *lp)
+{
+	/* Use classic spinlocks + niai if the steal time is >= 10% */
+	if (S390_lowcore.avg_steal_timer >= (TICK_USEC << 12) / 10)
+		arch_spin_lock_niai(lp);
+	else
+		arch_spin_lock_queued(lp);
 }
 EXPORT_SYMBOL(arch_spin_lock_wait);
 
