@@ -172,7 +172,6 @@ void vtime_account_user(struct task_struct *tsk)
 		S390_lowcore.steal_timer = 0;
 		account_steal_time(steal);
 	}
-
 }
 
 /*

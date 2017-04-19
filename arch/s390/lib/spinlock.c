@@ -214,7 +214,7 @@ static inline void arch_spin_lock_niai(arch_spinlock_t *lp)
 			new = (old & _Q_TAIL_MASK) | lockval;
 			if (arch_cmpxchg_niai8(&lp->lock, old, new))
 				/* Got the lock */
-                               return;
+			       return;
 			continue;
 		}
 		if (count-- >= 0)
@@ -222,7 +222,7 @@ static inline void arch_spin_lock_niai(arch_spinlock_t *lp)
 		count = spin_retry;
 		if (!MACHINE_IS_LPAR || arch_vcpu_is_preempted(owner - 1))
 			smp_yield_cpu(owner - 1);
-        }
+	}
 }
 
 void arch_spin_lock_wait(arch_spinlock_t *lp)
