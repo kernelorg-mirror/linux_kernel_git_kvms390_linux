@@ -53,25 +53,13 @@ static inline int arch_spin_value_unlocked(arch_spinlock_t lock)
 
 static inline int arch_spin_is_locked(arch_spinlock_t *lp)
 {
-	asm_volatile_goto(
-		"	.long	0xb2fa0040\n"	/* NIAI 4 */
-#ifdef CONFIG_HAVE_MARCH_Z9_109_FEATURES
-		"	lt	0,%0\n"
-#else
-		"	icm	0,15,%0\n"
-#endif
-		"	jne	%l[locked]\n"
-		: : "Q" (lp->lock) : "0" : locked);
-	return 0;
- locked:
-	return 1;
+	return READ_ONCE(lp->lock) != 0;
 }
 
 static inline int arch_spin_trylock_once(arch_spinlock_t *lp)
 {
 	barrier();
-	return likely(!arch_spin_is_locked(lp) &&
-		      __atomic_cmpxchg_bool(&lp->lock, 0, SPINLOCK_LOCKVAL));
+	return likely(__atomic_cmpxchg_bool(&lp->lock, 0, SPINLOCK_LOCKVAL));
 }
 
 static inline void arch_spin_lock(arch_spinlock_t *lp)

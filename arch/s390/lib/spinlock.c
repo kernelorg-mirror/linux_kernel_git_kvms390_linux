@@ -67,6 +67,17 @@ void arch_spin_lock_setup(int cpu)
 	}
 }
 
+static inline int arch_load_niai4(int *lock)
+{
+	int owner;
+
+	asm volatile(
+		"	.long	0xb2fa0040\n"	/* NIAI 4 */
+		"	l	%0,%1\n"
+		: "=d" (owner) : "Q" (*lock) : "memory");
+       return owner;
+}
+
 static inline int arch_cmpxchg_niai8(int *lock, int old, int new)
 {
 	int expected = old;
@@ -194,7 +205,7 @@ static inline void arch_spin_lock_queued(arch_spinlock_t *lp)
 	S390_lowcore.spinlock_index--;
 }
 
-static inline void arch_spin_lock_niai(arch_spinlock_t *lp)
+static inline void arch_spin_lock_classic(arch_spinlock_t *lp)
 {
 	int lockval, old, new, owner, count;
 
@@ -207,7 +218,7 @@ static inline void arch_spin_lock_niai(arch_spinlock_t *lp)
 
 	count = spin_retry;
 	while (1) {
-		old = ACCESS_ONCE(lp->lock);
+		old = arch_load_niai4(&lp->lock);
 		owner = old & _Q_LOCK_CPU_MASK;
 		/* Try to get the lock if it is free. */
 		if (!owner) {
@@ -229,7 +240,7 @@ void arch_spin_lock_wait(arch_spinlock_t *lp)
 {
 	/* Use classic spinlocks + niai if the steal time is >= 10% */
 	if (S390_lowcore.avg_steal_timer >= (TICK_USEC << 12) / 10)
-		arch_spin_lock_niai(lp);
+		arch_spin_lock_classic(lp);
 	else
 		arch_spin_lock_queued(lp);
 }
