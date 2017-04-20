@@ -1282,35 +1282,44 @@ EXPORT_SYMBOL_GPL(gmap_mprotect_notify);
 int gmap_read_table(struct gmap *gmap, unsigned long gaddr, unsigned long *val)
 {
 	unsigned long address, vmaddr;
-	spinlock_t *ptl;
+	spinlock_t *ptl_pmd = NULL, *ptl_pte = NULL;
+	pmd_t *pmdp;
 	pte_t *ptep, pte;
 	int rc;
 
-	if (gmap_is_shadow(gmap))
-		return -EINVAL;
+	BUG_ON(gmap_is_shadow(gmap));
 
 	while (1) {
 		rc = -EAGAIN;
-		ptep = gmap_pte_op_walk(gmap, gaddr, &ptl);
-		if (ptep) {
-			pte = *ptep;
-			if (pte_present(pte) && (pte_val(pte) & _PAGE_READ)) {
-				address = pte_val(pte) & PAGE_MASK;
-				address += gaddr & ~PAGE_MASK;
+		vmaddr = __gmap_translate(gmap, gaddr);
+		if (IS_ERR_VALUE(vmaddr))
+			return vmaddr;
+		pmdp = gmap_pmd_op_walk(gmap, gaddr, vmaddr, &ptl_pmd);
+		if (pmdp && !(pmd_val(*pmdp) & _SEGMENT_ENTRY_INVALID)) {
+			if (!pmd_large(*pmdp)) {
+				ptep = gmap_pte_from_pmd(gmap, pmdp, vmaddr, &ptl_pte);
+				if (ptep) {
+					pte = *ptep;
+					if (pte_present(pte) && (pte_val(pte) & _PAGE_READ)) {
+						address = pte_val(pte) & PAGE_MASK;
+						address += gaddr & ~PAGE_MASK;
+						*val = *(unsigned long *) address;
+						pte_val(*ptep) |= _PAGE_YOUNG;
+						/* Do *NOT* clear the _PAGE_INVALID bit! */
+						rc = 0;
+					}
+				}
+				gmap_pte_op_end(ptl_pte);
+			} else {
+				address = pmd_val(*pmdp) & HPAGE_MASK;
+				address += gaddr & ~HPAGE_MASK;
 				*val = *(unsigned long *) address;
-				pte_val(*ptep) |= _PAGE_YOUNG;
-				/* Do *NOT* clear the _PAGE_INVALID bit! */
 				rc = 0;
 			}
-			gmap_pte_op_end(ptl);
+			gmap_pmd_op_end(ptl_pmd);
 		}
 		if (!rc)
 			break;
-		vmaddr = __gmap_translate(gmap, gaddr);
-		if (IS_ERR_VALUE(vmaddr)) {
-			rc = vmaddr;
-			break;
-		}
 		rc = gmap_fixup(gmap, gaddr, vmaddr, PROT_READ);
 		if (rc)
 			break;
