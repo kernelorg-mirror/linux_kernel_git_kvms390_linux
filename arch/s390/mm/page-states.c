@@ -14,11 +14,7 @@
 #include <linux/gfp.h>
 #include <linux/init.h>
 #include <asm/facility.h>
-
-#define ESSA_GET_STATE		0
-#define ESSA_SET_STABLE		1
-#define ESSA_SET_UNUSED		2
-#define ESSA_SET_STABLE_NODAT	7
+#include <asm/page-states.h>
 
 static int cmma_flag = 1;
 
