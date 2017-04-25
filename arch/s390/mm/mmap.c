@@ -180,7 +180,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
 			return addr;
 	}
 
- check_asce_limit:
+check_asce_limit:
 	if (addr + len > current->mm->context.asce_limit) {
 		rc = crst_table_upgrade(mm);
 		if (rc)
