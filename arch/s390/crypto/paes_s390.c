@@ -617,7 +617,6 @@ module_init(paes_s390_init);
 module_exit(paes_s390_fini);
 
 MODULE_ALIAS_CRYPTO("paes");
-MODULE_ALIAS_CRYPTO("aes-all");
 
 MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm with protected keys");
 MODULE_LICENSE("GPL");
