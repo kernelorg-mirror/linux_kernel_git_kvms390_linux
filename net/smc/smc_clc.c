@@ -6,11 +6,13 @@
  *
  *  Copyright IBM Corp. 2016
  *
- *  Author(s):	Ursula Braun <ubraun@linux.vnet.ibm.com>
+ *  Author(s):  Ursula Braun <ubraun@linux.vnet.ibm.com>
  */
 
 #include <linux/in.h>
 #include <linux/if_ether.h>
+#include <linux/sched/signal.h>
+
 #include <net/sock.h>
 #include <net/tcp.h>
 

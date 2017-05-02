@@ -297,7 +297,8 @@ config BPF_JIT
 
 	  Note, admin should enable this feature changing:
 	  /proc/sys/net/core/bpf_jit_enable
-	  /proc/sys/net/core/bpf_jit_harden (optional)
+	  /proc/sys/net/core/bpf_jit_harden   (optional)
+	  /proc/sys/net/core/bpf_jit_kallsyms (optional)
 
 config NET_FLOW_LIMIT
 	bool
@@ -390,6 +391,8 @@ source "net/9p/Kconfig"
 source "net/caif/Kconfig"
 source "net/ceph/Kconfig"
 source "net/nfc/Kconfig"
+source "net/psample/Kconfig"
+source "net/ife/Kconfig"
 
 config LWTUNNEL
 	bool "Network light weight tunnels"
@@ -408,6 +411,10 @@ config LWTUNNEL_BPF
 	  lookup for incoming and outgoing packets.
 
 config DST_CACHE
+	bool
+	default n
+
+config GRO_CELLS
 	bool
 	default n
 

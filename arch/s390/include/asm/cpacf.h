@@ -112,7 +112,6 @@
 #define CPACF_KMAC_TDEA_192	0x03
 
 /*
-<<<<<<< aae7fe514eeef4f8f2313ec14a490dd35c46976a
  * Function codes for the PCKMO (PERFORM CRYPTOGRAPHIC KEY MANAGEMENT)
  * instruction
  */

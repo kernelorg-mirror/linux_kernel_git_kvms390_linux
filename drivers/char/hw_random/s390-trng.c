@@ -24,6 +24,7 @@
 #include <linux/debugfs.h>
 #include <linux/atomic.h>
 #include <linux/random.h>
+#include <linux/sched/signal.h>
 #include <asm/debug.h>
 #include <asm/cpacf.h>
 
