@@ -453,7 +453,7 @@ int scm_blk_dev_setup(struct scm_blk_dev *bdev, struct scm_device *scmdev)
 		goto out;
 
 	rq = blk_mq_init_queue(&bdev->tag_set);
-	if (!rq)
+	if (IS_ERR(rq))
 		goto out_tag;
 
 	bdev->rq = rq;
