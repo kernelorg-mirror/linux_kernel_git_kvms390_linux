@@ -418,7 +418,7 @@ static const struct block_device_operations scm_blk_devops = {
 	.owner = THIS_MODULE,
 };
 
-static struct blk_mq_ops scm_mq_ops = {
+static const struct blk_mq_ops scm_mq_ops = {
 	.queue_rq = scm_blk_request,
 	.complete = scm_blk_request_done,
 	.init_hctx = scm_blk_init_hctx,
