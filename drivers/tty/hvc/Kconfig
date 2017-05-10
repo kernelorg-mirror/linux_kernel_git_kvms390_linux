@@ -44,8 +44,9 @@ config HVC_RTAS
 
 config HVC_IUCV
 	bool "z/VM IUCV Hypervisor console support (VM only)"
-	depends on S390 && IUCV
+	depends on S390
 	select HVC_DRIVER
+	select IUCV
 	default y
 	help
 	  This driver provides a Hypervisor console (HVC) back-end to access
