@@ -315,11 +315,10 @@ static int __init dasd_parse_range(const char *range)
 	char *features_str = NULL;
 	char *from_str = NULL;
 	char *to_str = NULL;
-	char *tmp;
+	size_t len = strlen(range) + 1;
+	char tmp[len];
 
-	tmp = kstrdup(range, GFP_KERNEL);
-	if (!tmp)
-		return -ENOMEM;
+	strlcpy(tmp, range, len);
 
 	if (dasd_evaluate_range_param(tmp, &from_str, &to_str, &features_str))
 		goto out_err;
