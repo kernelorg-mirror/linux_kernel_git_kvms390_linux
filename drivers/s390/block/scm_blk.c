@@ -427,9 +427,9 @@ static const struct blk_mq_ops scm_mq_ops = {
 
 int scm_blk_dev_setup(struct scm_blk_dev *bdev, struct scm_device *scmdev)
 {
-	struct request_queue *rq;
-	int len, ret = -ENOMEM;
 	unsigned int devindex, nr_max_blk;
+	struct request_queue *rq;
+	int len, ret;
 
 	devindex = atomic_inc_return(&nr_devices) - 1;
 	/* scma..scmz + scmaa..scmzz */
@@ -453,9 +453,10 @@ int scm_blk_dev_setup(struct scm_blk_dev *bdev, struct scm_device *scmdev)
 		goto out;
 
 	rq = blk_mq_init_queue(&bdev->tag_set);
-	if (IS_ERR(rq))
+	if (IS_ERR(rq)) {
+		ret = PTR_ERR(rq);
 		goto out_tag;
-
+	}
 	bdev->rq = rq;
 	nr_max_blk = min(scmdev->nr_max_block,
 			 (unsigned int) (PAGE_SIZE / sizeof(struct aidaw)));
@@ -467,9 +468,10 @@ int scm_blk_dev_setup(struct scm_blk_dev *bdev, struct scm_device *scmdev)
 	queue_flag_clear_unlocked(QUEUE_FLAG_ADD_RANDOM, rq);
 
 	bdev->gendisk = alloc_disk(SCM_NR_PARTS);
-	if (!bdev->gendisk)
+	if (!bdev->gendisk) {
+		ret = -ENOMEM;
 		goto out_queue;
-
+	}
 	rq->queuedata = scmdev;
 	bdev->gendisk->private_data = scmdev;
 	bdev->gendisk->fops = &scm_blk_devops;
