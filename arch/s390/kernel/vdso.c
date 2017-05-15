@@ -50,6 +50,52 @@ static struct page **vdso64_pagelist;
  */
 unsigned int __read_mostly vdso_enabled = 1;
 
+static int vdso_fault(const struct vm_special_mapping *sm,
+		      struct vm_area_struct *vma, struct vm_fault *vmf)
+{
+	struct page **vdso_pagelist;
+	unsigned long vdso_pages;
+
+	vdso_pagelist = vdso64_pagelist;
+	vdso_pages = vdso64_pages;
+	if (is_compat_task()) {
+		vdso_pagelist = vdso32_pagelist;
+		vdso_pages = vdso32_pages;
+	}
+
+	if (vmf->pgoff >= vdso_pages)
+		return VM_FAULT_SIGBUS;
+
+	vmf->page = vdso_pagelist[vmf->pgoff];
+	get_page(vmf->page);
+	return 0;
+}
+
+static int vdso_mremap(const struct vm_special_mapping *sm,
+		       struct vm_area_struct *vma)
+{
+	unsigned long vdso_pages;
+
+	vdso_pages = vdso64_pages;
+	if (is_compat_task())
+		vdso_pages = vdso32_pages;
+
+	if ((vdso_pages << PAGE_SHIFT) != vma->vm_end - vma->vm_start)
+		return -EINVAL;
+
+	if (WARN_ON_ONCE(current->mm != vma->vm_mm))
+		return -EFAULT;
+
+	current->mm->context.vdso_base = vma->vm_start;
+	return 0;
+}
+
+static const struct vm_special_mapping vdso_mapping = {
+	.name = "[vdso]",
+	.fault = vdso_fault,
+	.mremap = vdso_mremap,
+};
+
 static int __init vdso_setup(char *s)
 {
 	unsigned long val;
@@ -183,6 +229,7 @@ static void vdso_init_cr5(void)
 int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
 {
 	struct mm_struct *mm = current->mm;
+	struct vm_area_struct *vma;
 	struct page **vdso_pagelist;
 	unsigned long vdso_pages;
 	unsigned long vdso_base;
@@ -211,8 +258,6 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
 	if (vdso_pages == 0)
 		return 0;
 
-	current->mm->context.vdso_base = 0;
-
 	/*
 	 * pick a base address for the vDSO in process space. We try to put
 	 * it at vdso_base which is the "natural" base for it, but we might
@@ -227,13 +272,6 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
 	}
 
 	/*
-	 * Put vDSO base into mm struct. We need to do this before calling
-	 * install_special_mapping or the perf counter mmap tracking code
-	 * will fail to recognise it as a vDSO (since arch_vma_name fails).
-	 */
-	current->mm->context.vdso_base = vdso_base;
-
-	/*
 	 * our vma flags don't have VM_WRITE so by default, the process
 	 * isn't allowed to write those pages.
 	 * gdb can break that with ptrace interface, and thus trigger COW
@@ -243,22 +281,21 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
 	 * It's fine to use that for setting breakpoints in the vDSO code
 	 * pages though.
 	 */
-	rc = install_special_mapping(mm, vdso_base, vdso_pages << PAGE_SHIFT,
-				     VM_READ|VM_EXEC|
-				     VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
-				     vdso_pagelist);
-	if (rc)
-		current->mm->context.vdso_base = 0;
+	vma = _install_special_mapping(mm, vdso_base, vdso_pages << PAGE_SHIFT,
+				       VM_READ|VM_EXEC|
+				       VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
+				       &vdso_mapping);
+	if (IS_ERR(vma)) {
+		rc = PTR_ERR(vma);
+		goto out_up;
+	}
+
+	current->mm->context.vdso_base = vdso_base;
+	rc = 0;
+
 out_up:
 	up_write(&mm->mmap_sem);
 	return rc;
-}
-
-const char *arch_vma_name(struct vm_area_struct *vma)
-{
-	if (vma->vm_mm && vma->vm_start == vma->vm_mm->context.vdso_base)
-		return "[vdso]";
-	return NULL;
 }
 
 static int __init vdso_init(void)
