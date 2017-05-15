@@ -58,10 +58,12 @@ static int vdso_fault(const struct vm_special_mapping *sm,
 
 	vdso_pagelist = vdso64_pagelist;
 	vdso_pages = vdso64_pages;
+#ifdef CONFIG_COMPAT
 	if (is_compat_task()) {
 		vdso_pagelist = vdso32_pagelist;
 		vdso_pages = vdso32_pages;
 	}
+#endif
 
 	if (vmf->pgoff >= vdso_pages)
 		return VM_FAULT_SIGBUS;
@@ -77,8 +79,10 @@ static int vdso_mremap(const struct vm_special_mapping *sm,
 	unsigned long vdso_pages;
 
 	vdso_pages = vdso64_pages;
+#ifdef CONFIG_COMPAT
 	if (is_compat_task())
 		vdso_pages = vdso32_pages;
+#endif
 
 	if ((vdso_pages << PAGE_SHIFT) != vma->vm_end - vma->vm_start)
 		return -EINVAL;
@@ -230,7 +234,6 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;
-	struct page **vdso_pagelist;
 	unsigned long vdso_pages;
 	unsigned long vdso_base;
 	int rc;
@@ -243,13 +246,10 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
 	if (!uses_interp)
 		return 0;
 
-	vdso_pagelist = vdso64_pagelist;
 	vdso_pages = vdso64_pages;
 #ifdef CONFIG_COMPAT
-	if (is_compat_task()) {
-		vdso_pagelist = vdso32_pagelist;
+	if (is_compat_task())
 		vdso_pages = vdso32_pages;
-	}
 #endif
 	/*
 	 * vDSO has a problem and was disabled, just don't "enable" it for
