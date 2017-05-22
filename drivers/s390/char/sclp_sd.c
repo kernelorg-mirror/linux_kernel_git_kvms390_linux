@@ -218,6 +218,11 @@ static int sclp_sd_sync(unsigned long page, u8 eq, u8 di, u64 sat, u64 sa,
 		goto out;
 
 	/* Evaluate response */
+	if (sccb->hdr.response_code == 0x73f0) {
+		pr_debug("event not supported\n");
+		rc = -EIO;
+		goto out_remove;
+	}
 	if (sccb->hdr.response_code != 0x0020 || !(evbuf->hdr.flags & 0x80)) {
 		rc = -EIO;
 		goto out;
@@ -254,6 +259,8 @@ out:
 			eq, di, sccb->hdr.response_code, evbuf->hdr.flags,
 			evbuf->status, rc);
 	}
+
+out_remove:
 	sclp_sd_listener_remove(&listener);
 
 	return rc;
