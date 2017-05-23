@@ -1185,7 +1185,7 @@ static int s390_gs_cb_set(struct task_struct *target,
 		target->thread.gs_cb = data;
 		if (target == current)
 			__ctl_set_bit(2, 4);
-	} if (target == current) {
+	} else if (target == current) {
 		save_gs_cb(data);
 	}
 	rc = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
