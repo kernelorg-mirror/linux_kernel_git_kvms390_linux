@@ -1172,7 +1172,6 @@ static int s390_gs_cb_set(struct task_struct *target,
 			  const void *kbuf, const void __user *ubuf)
 {
 	struct gs_cb *data = target->thread.gs_cb;
-	unsigned long cr2;
 	int rc;
 
 	if (!MACHINE_HAS_GS)
@@ -1192,7 +1191,7 @@ static int s390_gs_cb_set(struct task_struct *target,
 				data, 0, sizeof(struct gs_cb));
 	if (target == current)
 		restore_gs_cb(data);
-	retunr rc;
+	return rc;
 }
 
 static int s390_gs_bc_get(struct task_struct *target,
