@@ -584,7 +584,11 @@ static struct device_type ap_queue_type = {
 
 static void ap_queue_device_release(struct device *dev)
 {
-	kfree(to_ap_queue(dev));
+	struct ap_queue *aq = to_ap_queue(dev);
+
+	if (!list_empty(&aq->list))
+		list_del(&aq->list);
+	kfree(aq);
 }
 
 struct ap_queue *ap_queue_create(ap_qid_t qid, int device_type)
