@@ -162,8 +162,11 @@ static void ap_card_device_release(struct device *dev)
 {
 	struct ap_card *ac = to_ap_card(dev);
 
-	if (!list_empty(&ac->list))
+	if (!list_empty(&ac->list)) {
+		spin_lock_bh(&ap_list_lock);
 		list_del(&ac->list);
+		spin_unlock_bh(&ap_list_lock);
+	}
 	kfree(ac);
 }
 
