@@ -56,7 +56,6 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
 #define TIF_NEED_RESCHED	2	/* rescheduling necessary */
 #define TIF_UPROBE		3	/* breakpointed or single-stepping */
 #define TIF_GUARDED_STORAGE	4	/* load guarded storage control block */
-#define TIF_PGSTE		5	/* New mm's will use 4K page tables */
 #define TIF_SYSCALL_TRACE	8	/* syscall trace active */
 #define TIF_SYSCALL_AUDIT	9	/* syscall auditing active */
 #define TIF_SECCOMP		10	/* secure computing */
