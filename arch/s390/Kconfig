@@ -51,6 +51,10 @@ config KEXEC
 	def_bool y
 	select KEXEC_CORE
 
+config KEXEC_FILE
+	def_bool y
+	select KEXEC_CORE
+
 config ARCH_HAS_KEXEC_PURGATORY
 	def_bool KEXEC_FILE
 
