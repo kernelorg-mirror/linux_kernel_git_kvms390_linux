@@ -1,11 +1,11 @@
-static struct ins_ops *s390__associate_instruction_ops(struct arch *arch, const char *name)
+static struct ins_ops *s390__associate_ins_ops(struct arch *arch, const char *name)
 {
 	struct ins_ops *ops = NULL;
 
 	/* catch all kind of jumps */
 	if (strchr(name, 'j') ||
-	    !strncmp(name,"bct",3) ||
-	    !strncmp(name,"br", 2))
+	    !strncmp(name, "bct", 3) ||
+	    !strncmp(name, "br", 2))
 		ops = &jump_ops;
 	/* override call/returns */
 	if (!strcmp(name, "bras") ||
@@ -23,7 +23,7 @@ static int s390__annotate_init(struct arch *arch)
 {
 	if (!arch->initialized) {
 		arch->initialized = true;
-		arch->associate_instruction_ops = s390__associate_instruction_ops;
+		arch->associate_instruction_ops = s390__associate_ins_ops;
 	}
 
 	return 0;

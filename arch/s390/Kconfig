@@ -125,7 +125,6 @@ config S390
 	select GENERIC_TIME_VSYSCALL
 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
 	select HAVE_ARCH_AUDITSYSCALL
-	select HAVE_ARCH_HARDENED_USERCOPY
 	select HAVE_ARCH_JUMP_LABEL
 	select CPU_NO_EFFICIENT_FFS if !HAVE_MARCH_Z9_109_FEATURES
 	select HAVE_ARCH_SECCOMP_FILTER
@@ -382,9 +381,6 @@ config COMPAT
 
 config SYSVIPC_COMPAT
 	def_bool y if COMPAT && SYSVIPC
-
-config KEYS_COMPAT
-	def_bool y if COMPAT && KEYS
 
 config SMP
 	def_bool y
@@ -715,6 +711,16 @@ config EADM_SCH
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called eadm_sch.
+
+config VFIO_CCW
+	def_tristate n
+	prompt "Support for VFIO-CCW subchannels"
+	depends on S390_CCW_IOMMU && VFIO_MDEV
+	help
+	  This driver allows usage of I/O subchannels via VFIO-CCW.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called vfio_ccw.
 
 endmenu
 

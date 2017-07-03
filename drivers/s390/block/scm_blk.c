@@ -251,8 +251,12 @@ static void scm_request_finish(struct scm_request *scmrq)
 	struct scm_blk_dev *bdev = scmrq->bdev;
 	int i;
 
-	for (i = 0; i < nr_requests_per_io && scmrq->request[i]; i++)
-		blk_mq_complete_request(scmrq->request[i], scmrq->error);
+	for (i = 0; i < nr_requests_per_io && scmrq->request[i]; i++) {
+		if (scmrq->error)
+			blk_mq_end_request(scmrq->request[i], scmrq->error);
+		else
+			blk_mq_complete_request(scmrq->request[i]);
+	}
 
 	atomic_dec(&bdev->queued_reqs);
 	scm_request_done(scmrq);
