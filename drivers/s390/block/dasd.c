@@ -3176,7 +3176,6 @@ static void dasd_setup_queue(struct dasd_block *block)
 	if (block->base->features & DASD_FEATURE_DISCARD) {
 		q->limits.discard_granularity = logical_block_size;
 		q->limits.discard_alignment = PAGE_SIZE;
-		q->limits.discard_zeroes_data = 1;
 
 		/* Calculate max_discard_sectors and make it PAGE aligned */
 		max_bytes = USHRT_MAX * logical_block_size;
