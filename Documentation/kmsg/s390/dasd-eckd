@@ -24,6 +24,18 @@
 */
 
 /*?
+ * Text: "%s: An error occurred in the DASD device driver, reason=09\n"
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: reason code
+ * Description:
+ * This problem indicates a program error in the DASD device driver.
+ * User action:
+ * Note the reason code and contact your support organization.
+*/
+
+/*?
  * Text: "%s: Allocating memory for private DASD data failed\n"
  * Severity: Warning
  * Parameter:
