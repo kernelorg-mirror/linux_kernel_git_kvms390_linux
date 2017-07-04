@@ -17,7 +17,7 @@
 #include <linux/export.h>
 #include <linux/mutex.h>
 
-#include <asm/lowcore.h>
+#include <asm/pgalloc.h>
 
 #include "sclp.h"
 
@@ -283,7 +283,7 @@ out_remove:
 static int sclp_sd_store_data(struct sclp_sd_data *result, u8 di)
 {
 	u32 dsize = 0, esize = 0;
-	unsigned long page;
+	unsigned long page, asce = 0;
 	void *data = NULL;
 	int rc;
 
@@ -305,9 +305,17 @@ static int sclp_sd_store_data(struct sclp_sd_data *result, u8 di)
 		goto out;
 	}
 
+	/* Get translation table for buffer */
+	asce = base_asce_alloc((unsigned long) data, dsize);
+	if (!asce) {
+		vfree(data);
+		rc = -ENOMEM;
+		goto out;
+	}
+
 	/* Get data */
-	rc = sclp_sd_sync(page, SD_EQ_STORE_DATA, di, S390_lowcore.kernel_asce,
-			 (u64) data, &dsize, &esize);
+	rc = sclp_sd_sync(page, SD_EQ_STORE_DATA, di, asce, (u64) data, &dsize,
+			  &esize);
 	if (rc) {
 		/* Cancel running request if interrupted */
 		if (rc == -ERESTARTSYS)
@@ -322,6 +330,7 @@ out_result:
 	result->data = data;
 
 out:
+	base_asce_free(asce);
 	free_page(page);
 
 	return rc;
