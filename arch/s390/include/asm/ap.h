@@ -62,14 +62,14 @@ struct ap_queue_status ap_test_queue(ap_qid_t qid,
 				     unsigned long *info);
 
 struct ap_config_info {
-	unsigned int apsc        : 1;   /* S bit */
-	unsigned int apxa        : 1;   /* N bit */
-	unsigned int qact        : 1;   /* C bit */
-	unsigned int rc8a        : 1;   /* R bit */
+	unsigned int apsc	 : 1;	/* S bit */
+	unsigned int apxa	 : 1;	/* N bit */
+	unsigned int qact	 : 1;	/* C bit */
+	unsigned int rc8a	 : 1;	/* R bit */
 	unsigned char _reserved1 : 4;
 	unsigned char _reserved2[3];
-	unsigned char Na;               /* max # of APs - 1 */
-	unsigned char Nd;               /* max # of Domains - 1 */
+	unsigned char Na;		/* max # of APs - 1 */
+	unsigned char Nd;		/* max # of Domains - 1 */
 	unsigned char _reserved3[10];
 	unsigned int apm[8];		/* AP ID mask */
 	unsigned int aqm[8];		/* AP queue mask */
