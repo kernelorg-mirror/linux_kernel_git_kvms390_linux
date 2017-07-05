@@ -562,7 +562,7 @@ static struct dasd_ccw_req *dasd_fba_build_cp(struct dasd_device *memdev,
 					      struct dasd_block *block,
 					      struct request *req)
 {
-	if (req_op(req) == REQ_OP_DISCARD)
+	if (req_op(req) == REQ_OP_DISCARD || req_op(req) == REQ_OP_WRITE_ZEROES)
 		return dasd_fba_build_cp_discard(memdev, block, req);
 	else
 		return dasd_fba_build_cp_regular(memdev, block, req);
