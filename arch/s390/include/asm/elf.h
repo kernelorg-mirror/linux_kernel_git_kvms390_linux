@@ -191,7 +191,7 @@ struct arch_elf_state {
 	} while (0)
 
 #define CORE_DUMP_USE_REGSET
-#define ELF_EXEC_PAGESIZE	4096
+#define ELF_EXEC_PAGESIZE	PAGE_SIZE
 
 /* This is the location that an ET_DYN program is loaded if exec'ed.  Typical
    use of this is to invoke "./ld.so someprog" to test out a new version of
