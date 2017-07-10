@@ -2663,7 +2663,7 @@ static netdev_tx_t qeth_l3_hard_start_xmit(struct sk_buff *skb,
 
 	/* Ignore segment size from skb_is_gso(), 1 page is always used. */
 	use_tso = skb_is_gso(skb) &&
-		  (skb_shinfo(skb)->gso_type == SKB_GSO_TCPV4);
+		  (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV4);
 
 	if (card->info.type == QETH_CARD_TYPE_IQD) {
 		new_skb = skb;
