@@ -297,26 +297,6 @@
 	MRXBOPC 0, 0x06, v1
 .endm
 
-/* VECTOR LOAD WITH LENGTH */
-.macro	VLL	v, gr, disp, base
-	VX_NUM	v1, \v
-	GR_NUM	r3, \gr
-	GR_NUM	b2, \base
-	.word	0xE700 | ((v1&15) << 4) | r3
-	.word	(b2 << 12) | (\disp)
-	MRXBOPC 0, 0x37, v1
-.endm
-
-/* VECTOR STORE */
-.macro	VST	v, disp, index="%r0", base
-	VX_NUM	v1, \v
-	GR_NUM	x2, \index
-	GR_NUM	b2, \base
-	.word	0xE700 | ((v1&15) << 4) | x2
-	.word	(b2 << 12) | (\disp)
-	MRXBOPC 0, 0x0e, v1
-.endm
-
 /* VECTOR LOAD ELEMENT */
 .macro	VLEx	vr1, disp, index="%r0", base, m3, opc
 	VX_NUM	v1, \vr1
@@ -508,37 +488,6 @@
 	MRXBOPC	0, 0x7D, v1, v2, v3
 .endm
 
-/* VECTOR PERMUTATE DOUBLEWORD IMMEDIATE */
-.macro	VPDI	vr1, vr2, vr3, m4
-	VX_NUM	v1, \vr1
-	VX_NUM	v2, \vr2
-	VX_NUM	v3, \vr3
-	.word	0xE700 | ((v1&15) << 4) | (v2&15)
-	.word	((v3&15) << 12)
-	MRXBOPC	\m4, 0x84, v1, v2, v3
-.endm
-
-/* VECTOR REPLICATE */
-.macro	VREP	vr1, vr3, imm2, m4
-	VX_NUM	v1, \vr1
-	VX_NUM	v3, \vr3
-	.word	0xE700 | ((v1&15) << 4) | (v3&15)
-	.word	\imm2
-	MRXBOPC	\m4, 0x4D, v1, v3
-.endm
-.macro	VREPB	vr1, vr3, imm2
-	VREP	\vr1, \vr3, \imm2, 0
-.endm
-.macro	VREPH	vr1, vr3, imm2
-	VREP	\vr1, \vr3, \imm2, 1
-.endm
-.macro	VREPF	vr1, vr3, imm2
-	VREP	\vr1, \vr3, \imm2, 2
-.endm
-.macro	VREPG	vr1, vr3, imm2
-	VREP	\vr1, \vr3, \imm2, 3
-.endm
-
 /* VECTOR REPLICATE IMMEDIATE */
 .macro	VREPI	vr1, imm2, m3
 	VX_NUM	v1, \vr1
@@ -557,16 +506,6 @@
 .endm
 .macro	VREPIG	vr1, imm2
 	VREP	\vr1, \imm2, 3
-.endm
-
-/* VECTOR SHIFT RIGHT LOGICAL */
-.macro	VSRL	vr1, vr2, vr3
-	VX_NUM	v1, \vr1
-	VX_NUM	v2, \vr2
-	VX_NUM	v3, \vr3
-	.word	0xE700 | ((v1&15) << 4) | (v2&15)
-	.word	((v3&15) << 12)
-	MRXBOPC	0, 0x7c, v1, v2, v3
 .endm
 
 /* VECTOR ADD */
@@ -592,57 +531,6 @@
 .endm
 .macro	VAQ	vr1, vr2, vr3
 	VA	\vr1, \vr2, \vr3, 4
-.endm
-
-/* VECTOR ADD COMPUTE CARRY */
-.macro	VACC	vr1, vr2, vr3, m4
-	VX_NUM	v1, \vr1
-	VX_NUM	v2, \vr2
-	VX_NUM	v3, \vr3
-	.word	0xE700 | ((v1&15) << 4) | (v2&15)
-	.word	((v3&15) << 12)
-	MRXBOPC	\m4, 0xF1, v1, v2, v3
-.endm
-.macro	VACCB	vr1, vr2, vr3
-	VACC	\vr1, \vr2, \vr3, 0
-.endm
-.macro	VACCH	vr1, vr2, vr3
-	VACC	\vr1, \vr2, \vr3, 1
-.endm
-.macro	VACCF	vr1, vr2, vr3
-	VACC	\vr1, \vr2, \vr3, 2
-.endm
-.macro	VACCG	vr1, vr2, vr3
-	VACC	\vr1, \vr2, \vr3, 3
-.endm
-.macro	VACCQ	vr1, vr2, vr3
-	VACC	\vr1, \vr2, \vr3, 4
-.endm
-
-/* VECTOR ADD WITH CARRY */
-.macro	VAC	vr1, vr2, vr3, vr4, m5
-	VX_NUM	v1, \vr1
-	VX_NUM	v2, \vr2
-	VX_NUM	v3, \vr3
-	VX_NUM	v4, \vr4
-	.word	0xE700 | ((v1&15) << 4) | (v2&15)
-	.word	((v3&15) << 12) | (\m5 << 8)
-	MRXBOPC	(v4&15), 0xBB, v1, v2, v3, v4
-.endm
-.macro	VACB	vr1, vr2, vr3, vr4
-	VAC	\vr1, \vr2, \vr3, \vr4, 0
-.endm
-.macro	VACH	vr1, vr2, vr3, vr4
-	VAC	\vr1, \vr2, \vr3, \vr4, 1
-.endm
-.macro	VACF	vr1, vr2, vr3, vr4
-	VAC	\vr1, \vr2, \vr3, \vr4, 2
-.endm
-.macro	VACG	vr1, vr2, vr3, vr4
-	VAC	\vr1, \vr2, \vr3, \vr4, 3
-.endm
-.macro	VACQ	vr1, vr2, vr3, vr4
-	VAC	\vr1, \vr2, \vr3, \vr4, 4
 .endm
 
 /* VECTOR ELEMENT SHIFT RIGHT ARITHMETIC */
