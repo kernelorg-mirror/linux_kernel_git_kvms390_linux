@@ -548,7 +548,7 @@ static struct smc_buf_desc *smc_new_buf_create(struct smc_link_group *lgr,
 static int __smc_buf_create(struct smc_sock *smc, bool is_rmb)
 {
 	struct smc_connection *conn = &smc->conn;
-struct smc_link_group *lgr = conn->lgr;
+	struct smc_link_group *lgr = conn->lgr;
 	struct smc_buf_desc *buf_desc = NULL;
 	struct list_head *buf_list;
 	int bufsize, bufsize_short;
@@ -587,7 +587,7 @@ struct smc_link_group *lgr = conn->lgr;
 		if (IS_ERR(buf_desc))
 			break;
 		if (!buf_desc)
-			break;
+			continue;
 
 		buf_desc->used = 1;
 		write_lock_bh(lock);
@@ -596,7 +596,7 @@ struct smc_link_group *lgr = conn->lgr;
 		break; /* found */
 	}
 
-	if (!buf_desc || !buf_desc->cpu_addr)
+	if (IS_ERR(buf_desc) || !buf_desc)
 		return -ENOMEM;
 
 	if (is_rmb) {
