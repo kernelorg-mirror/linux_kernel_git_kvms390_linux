@@ -85,7 +85,9 @@ static inline int arch_spin_trylock(arch_spinlock_t *lp)
 static inline void arch_spin_unlock(arch_spinlock_t *lp)
 {
 	asm volatile(
+#ifdef CONFIG_HAVE_MARCH_ZEC12_FEATURES
 		"	.long	0xb2fa0070\n"	/* NIAI 7 */
+#endif
 		"	sth	%1,%0\n"
 		: "=Q" (((unsigned short *) &lp->lock)[1])
 		: "d" (0) : "cc", "memory");
