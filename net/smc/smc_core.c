@@ -596,7 +596,7 @@ static int __smc_buf_create(struct smc_sock *smc, bool is_rmb)
 		break; /* found */
 	}
 
-	if (IS_ERR(buf_desc) || !buf_desc)
+	if (IS_ERR_OR_NULL(buf_desc))
 		return -ENOMEM;
 
 	if (is_rmb) {
