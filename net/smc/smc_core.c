@@ -506,7 +506,7 @@ static struct smc_buf_desc *smc_new_buf_create(struct smc_link_group *lgr,
 					 get_order(bufsize));
 	if (!buf_desc->cpu_addr) {
 		kfree(buf_desc);
-		return NULL;
+		return ERR_PTR(-EAGAIN);
 	}
 	buf_desc->order = get_order(bufsize);
 
@@ -516,7 +516,7 @@ static struct smc_buf_desc *smc_new_buf_create(struct smc_link_group *lgr,
 			    GFP_KERNEL);
 	if (rc) {
 		smc_buf_free(buf_desc, lnk, is_rmb);
-		return NULL;
+		return ERR_PTR(rc);
 	}
 	sg_set_buf(buf_desc->sgt[SMC_SINGLE_LINK].sgl,
 		   buf_desc->cpu_addr, bufsize);
@@ -527,7 +527,7 @@ static struct smc_buf_desc *smc_new_buf_create(struct smc_link_group *lgr,
 	/* SMC protocol depends on mapping to one DMA address only */
 	if (rc != 1)  {
 		smc_buf_free(buf_desc, lnk, is_rmb);
-		return NULL;
+		return ERR_PTR(-EAGAIN);
 	}
 
 	/* create a new memory region for the RMB */
@@ -538,7 +538,7 @@ static struct smc_buf_desc *smc_new_buf_create(struct smc_link_group *lgr,
 					      buf_desc);
 		if (rc) {
 			smc_buf_free(buf_desc, lnk, is_rmb);
-			return NULL;
+			return ERR_PTR(rc);
 		}
 	}
 
@@ -584,9 +584,9 @@ static int __smc_buf_create(struct smc_sock *smc, bool is_rmb)
 		}
 
 		buf_desc = smc_new_buf_create(lgr, is_rmb, bufsize);
-		if (IS_ERR(buf_desc))
+		if (PTR_ERR(buf_desc) == -ENOMEM)
 			break;
-		if (!buf_desc)
+		if (IS_ERR(buf_desc))
 			continue;
 
 		buf_desc->used = 1;
@@ -596,7 +596,7 @@ static int __smc_buf_create(struct smc_sock *smc, bool is_rmb)
 		break; /* found */
 	}
 
-	if (IS_ERR_OR_NULL(buf_desc))
+	if (IS_ERR(buf_desc))
 		return -ENOMEM;
 
 	if (is_rmb) {
