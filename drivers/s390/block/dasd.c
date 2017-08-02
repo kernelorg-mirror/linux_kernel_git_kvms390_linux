@@ -3154,8 +3154,8 @@ static int dasd_alloc_queue(struct dasd_block *block)
 		return rc;
 
 	block->request_queue = blk_mq_init_queue(&block->tag_set);
-	if (block->request_queue == NULL)
-		return -ENOMEM;
+	if (IS_ERR(block->request_queue))
+		return PTR_ERR(block->request_queue);
 
 	block->request_queue->queuedata = block;
 
