@@ -1616,8 +1616,10 @@ void dasd_generic_handle_state_change(struct dasd_device *device)
 
 	dasd_device_remove_stop_bits(device, DASD_STOPPED_PENDING);
 	dasd_schedule_device_bh(device);
-	if (device->block)
+	if (device->block) {
 		dasd_schedule_block_bh(device->block);
+		blk_mq_run_hw_queues(device->block->request_queue, true);
+	}
 }
 EXPORT_SYMBOL_GPL(dasd_generic_handle_state_change);
 
@@ -2609,6 +2611,7 @@ static void dasd_block_timeout(unsigned long ptr)
 	dasd_device_remove_stop_bits(block->base, DASD_STOPPED_PENDING);
 	spin_unlock_irqrestore(get_ccwdev_lock(block->base->cdev), flags);
 	dasd_schedule_block_bh(block);
+	blk_mq_run_hw_queues(block->request_queue, true);
 }
 
 /*
@@ -2828,10 +2831,10 @@ static void dasd_block_tasklet(struct dasd_block *block)
 		spin_unlock_irq(&dq->lock);
 	}
 
-	spin_lock(&block->queue_lock);
+	spin_lock_irq(&block->queue_lock);
 	/* Now check if the head of the ccw queue needs to be started. */
 	__dasd_block_start_head(block);
-	spin_unlock(&block->queue_lock);
+	spin_unlock_irq(&block->queue_lock);
 
 	if (waitqueue_active(&shutdown_waitq))
 		wake_up(&shutdown_waitq);
@@ -2872,6 +2875,7 @@ static int dasd_flush_block_queue(struct dasd_block *block)
 	struct dasd_ccw_req *cqr, *n;
 	int rc, i;
 	struct list_head flush_queue;
+	unsigned long flags;
 
 	INIT_LIST_HEAD(&flush_queue);
 	spin_lock_bh(&block->queue_lock);
@@ -2910,11 +2914,11 @@ restart_cb:
 			goto restart_cb;
 		}
 		/* call the callback function */
-		spin_lock(&cqr->dq->lock);
+		spin_lock_irqsave(&cqr->dq->lock, flags);
 		cqr->endclk = get_tod_clock();
 		list_del_init(&cqr->blocklist);
 		__dasd_cleanup_cqr(cqr);
-		spin_unlock(&cqr->dq->lock);
+		spin_unlock_irqrestore(&cqr->dq->lock, flags);
 	}
 	return rc;
 }
@@ -3028,8 +3032,6 @@ out:
 /*
  * Block timeout callback, called from the block layer
  *
- * request_queue lock is held on entry.
- *
  * Return values:
  * BLK_EH_RESET_TIMER if the request should be left running
  * BLK_EH_NOT_HANDLED if the request is handled or terminated
@@ -3040,15 +3042,18 @@ enum blk_eh_timer_return dasd_times_out(struct request *req, bool reserved)
 	struct dasd_ccw_req *cqr = req->completion_data;
 	struct dasd_block *block = req->q->queuedata;
 	struct dasd_device *device;
+	unsigned long flags;
 	int rc = 0;
 
 	if (!cqr)
 		return BLK_EH_NOT_HANDLED;
 
-	spin_lock(&cqr->dq->lock);
+	spin_lock_irqsave(&cqr->dq->lock, flags);
 	device = cqr->startdev ? cqr->startdev : block->base;
-	if (!device->blk_timeout)
+	if (!device->blk_timeout) {
+		spin_unlock_irqrestore(&cqr->dq->lock, flags);
 		return BLK_EH_RESET_TIMER;
+	}
 	DBF_DEV_EVENT(DBF_WARNING, device,
 		      " dasd_times_out cqr %p status %x",
 		      cqr, cqr->status);
@@ -3098,7 +3103,7 @@ enum blk_eh_timer_return dasd_times_out(struct request *req, bool reserved)
 	}
 	dasd_schedule_block_bh(block);
 	spin_unlock(&block->queue_lock);
-	spin_unlock(&cqr->dq->lock);
+	spin_unlock_irqrestore(&cqr->dq->lock, flags);
 
 	return rc ? BLK_EH_RESET_TIMER : BLK_EH_NOT_HANDLED;
 }
@@ -3718,8 +3723,10 @@ int dasd_generic_path_operational(struct dasd_device *device)
 		return 1;
 	}
 	dasd_schedule_device_bh(device);
-	if (device->block)
+	if (device->block) {
 		dasd_schedule_block_bh(device->block);
+		blk_mq_run_hw_queues(device->block->request_queue, true);
+		}
 
 	if (!device->stopped)
 		wake_up(&generic_waitq);
@@ -3982,8 +3989,10 @@ int dasd_generic_restore_device(struct ccw_device *cdev)
 		 */
 		device->stopped |= DASD_UNRESUMED_PM;
 
-	if (device->block)
+	if (device->block) {
 		dasd_schedule_block_bh(device->block);
+		blk_mq_run_hw_queues(device->block->request_queue, true);
+	}
 
 	clear_bit(DASD_FLAG_SUSPENDED, &device->flags);
 	dasd_put_device(device);
