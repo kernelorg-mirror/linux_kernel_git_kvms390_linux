@@ -5,7 +5,7 @@
  * IPL code, console detection, and device drivers like vmcp or vmlogrdr use
  * the cpcmd kernel function to send commands to the z/VM control program (CP).
  * If a program that uses the cpcmd function does not allocate a contiguous
- * response buffer below 2 GB guest real storage, cpcmd creates a bounce buffer
+ * response buffer in real storage, cpcmd creates a bounce buffer
  * to be used as the response buffer. Because of low memory or memory
  * fragmentation, cpcmd could not create the bounce buffer.
  * User action:
