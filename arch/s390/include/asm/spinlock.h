@@ -142,7 +142,7 @@ static inline void arch_read_lock(arch_rwlock_t *rw)
 
 static inline void arch_read_unlock(arch_rwlock_t *rw)
 {
-	__atomic_add_const(-1, &rw->cnts);
+	__atomic_add_const_barrier(-1, &rw->cnts);
 }
 
 static inline void arch_write_lock(arch_rwlock_t *rw)
@@ -153,7 +153,7 @@ static inline void arch_write_lock(arch_rwlock_t *rw)
 
 static inline void arch_write_unlock(arch_rwlock_t *rw)
 {
-	__atomic_add(-0x30000, &rw->cnts);
+	__atomic_add_barrier(-0x30000, &rw->cnts);
 }
 
 
