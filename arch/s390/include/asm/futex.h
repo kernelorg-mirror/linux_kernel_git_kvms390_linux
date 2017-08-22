@@ -29,7 +29,7 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
 	int cmparg = (encoded_op << 20) >> 20;
 	int oldval = 0, newval, ret;
 
-	load_kernel_asce();
+	enable_sacf_uaccess();
 	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
 		oparg = 1 << oparg;
 
@@ -59,6 +59,7 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
 		ret = -ENOSYS;
 	}
 	pagefault_enable();
+	disable_sacf_uaccess();
 
 	if (!ret) {
 		switch (cmp) {
@@ -79,7 +80,7 @@ static inline int futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
 {
 	int ret;
 
-	load_kernel_asce();
+	enable_sacf_uaccess();
 	asm volatile(
 		"   sacf 256\n"
 		"0: cs   %1,%4,0(%5)\n"
@@ -89,6 +90,7 @@ static inline int futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
 		: "=d" (ret), "+d" (oldval), "=m" (*uaddr)
 		: "0" (-EFAULT), "d" (newval), "a" (uaddr), "m" (*uaddr)
 		: "cc", "memory");
+	disable_sacf_uaccess();
 	*uval = oldval;
 	return ret;
 }

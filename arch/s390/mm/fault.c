@@ -103,21 +103,18 @@ void bust_spinlocks(int yes)
  */
 static inline int user_space_fault(struct pt_regs *regs)
 {
-	unsigned long trans_exc_code;
-
-	/*
-	 * The lowest two bits of the translation exception
-	 * identification indicate which paging table was used.
-	 */
-	trans_exc_code = regs->int_parm_long & 3;
-	if (trans_exc_code == 3) /* home space -> kernel */
-		return 0;
-	if (user_mode(regs))
-		return 1;
-	if (trans_exc_code == 2) /* secondary space -> set_fs */
+	switch (regs->int_parm_long & 3) {
+	case 0:	/* primary space */
+		if (current->flags & PF_VCPU)
+			return 1;
 		return current->thread.mm_segment.ar4;
-	if (current->flags & PF_VCPU)
-		return 1;
+	case 1:	/* access register mode */
+		return 1;	/* should not happen, claim user access */
+	case 2: /* secondary space */
+		return current->thread.mm_segment.ar4;
+	case 3:	/* home space */
+		return 0;	/* kernel access */
+	}
 	return 0;
 }
 

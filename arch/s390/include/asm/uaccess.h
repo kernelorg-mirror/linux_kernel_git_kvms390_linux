@@ -15,7 +15,7 @@
 #include <asm/processor.h>
 #include <asm/ctl_reg.h>
 #include <asm/extable.h>
-
+#include <asm/facility.h>
 
 /*
  * The fs value determines whether argument validity checking should be
@@ -39,11 +39,11 @@ static inline void set_fs(mm_segment_t fs)
 {
 	current->thread.mm_segment = fs;
 	if (uaccess_kernel()) {
-		set_cpu_flag(CIF_ASCE_SECONDARY);
-		__ctl_load(S390_lowcore.kernel_asce, 7, 7);
-	} else {
-		clear_cpu_flag(CIF_ASCE_SECONDARY);
-		__ctl_load(S390_lowcore.user_asce, 7, 7);
+		__ctl_load(S390_lowcore.kernel_asce, 1, 1);
+		set_cpu_flag(CIF_ASCE_PRIMARY);
+	} else if (test_facility(27)) {
+		__ctl_load(S390_lowcore.user_asce, 1, 1);
+		clear_cpu_flag(CIF_ASCE_PRIMARY);
 	}
 }
 
@@ -94,7 +94,7 @@ raw_copy_to_user(void __user *to, const void *from, unsigned long n);
 
 static inline int __put_user_fn(void *x, void __user *ptr, unsigned long size)
 {
-	unsigned long spec = 0x810000UL;
+	unsigned long spec = 0x010000UL;
 	int rc;
 
 	switch (size) {
@@ -124,7 +124,7 @@ static inline int __put_user_fn(void *x, void __user *ptr, unsigned long size)
 
 static inline int __get_user_fn(void *x, const void __user *ptr, unsigned long size)
 {
-	unsigned long spec = 0x81UL;
+	unsigned long spec = 0x01UL;
 	int rc;
 
 	switch (size) {

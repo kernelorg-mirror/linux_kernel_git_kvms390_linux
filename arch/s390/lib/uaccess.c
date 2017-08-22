@@ -42,7 +42,7 @@ static inline int copy_with_mvcos(void)
 static inline unsigned long copy_from_user_mvcos(void *x, const void __user *ptr,
 						 unsigned long size)
 {
-	register unsigned long reg0 asm("0") = 0x81UL;
+	register unsigned long reg0 asm("0") = 0x01UL;
 	unsigned long tmp1, tmp2;
 
 	tmp1 = -4096UL;
@@ -74,7 +74,7 @@ static inline unsigned long copy_from_user_mvcp(void *x, const void __user *ptr,
 {
 	unsigned long tmp1, tmp2;
 
-	load_kernel_asce();
+	enable_sacf_uaccess();
 	tmp1 = -256UL;
 	asm volatile(
 		"   sacf  0\n"
@@ -101,6 +101,7 @@ static inline unsigned long copy_from_user_mvcp(void *x, const void __user *ptr,
 		EX_TABLE(7b,3b) EX_TABLE(8b,3b) EX_TABLE(9b,6b)
 		: "+a" (size), "+a" (ptr), "+a" (x), "+a" (tmp1), "=a" (tmp2)
 		: : "cc", "memory");
+	disable_sacf_uaccess();
 	return size;
 }
 
@@ -115,7 +116,7 @@ EXPORT_SYMBOL(raw_copy_from_user);
 static inline unsigned long copy_to_user_mvcos(void __user *ptr, const void *x,
 					       unsigned long size)
 {
-	register unsigned long reg0 asm("0") = 0x810000UL;
+	register unsigned long reg0 asm("0") = 0x010000UL;
 	unsigned long tmp1, tmp2;
 
 	tmp1 = -4096UL;
@@ -147,7 +148,7 @@ static inline unsigned long copy_to_user_mvcs(void __user *ptr, const void *x,
 {
 	unsigned long tmp1, tmp2;
 
-	load_kernel_asce();
+	enable_sacf_uaccess();
 	tmp1 = -256UL;
 	asm volatile(
 		"   sacf  0\n"
@@ -174,6 +175,7 @@ static inline unsigned long copy_to_user_mvcs(void __user *ptr, const void *x,
 		EX_TABLE(7b,3b) EX_TABLE(8b,3b) EX_TABLE(9b,6b)
 		: "+a" (size), "+a" (ptr), "+a" (x), "+a" (tmp1), "=a" (tmp2)
 		: : "cc", "memory");
+	disable_sacf_uaccess();
 	return size;
 }
 
@@ -188,7 +190,7 @@ EXPORT_SYMBOL(raw_copy_to_user);
 static inline unsigned long copy_in_user_mvcos(void __user *to, const void __user *from,
 					       unsigned long size)
 {
-	register unsigned long reg0 asm("0") = 0x810081UL;
+	register unsigned long reg0 asm("0") = 0x010001UL;
 	unsigned long tmp1, tmp2;
 
 	tmp1 = -4096UL;
@@ -213,7 +215,7 @@ static inline unsigned long copy_in_user_mvc(void __user *to, const void __user 
 {
 	unsigned long tmp1;
 
-	load_kernel_asce();
+	enable_sacf_uaccess();
 	asm volatile(
 		"   sacf  256\n"
 		"   aghi  %0,-1\n"
@@ -237,6 +239,7 @@ static inline unsigned long copy_in_user_mvc(void __user *to, const void __user 
 		EX_TABLE(1b,6b) EX_TABLE(2b,0b) EX_TABLE(4b,0b)
 		: "+a" (size), "+a" (to), "+a" (from), "=a" (tmp1)
 		: : "cc", "memory");
+	disable_sacf_uaccess();
 	return size;
 }
 
@@ -250,7 +253,7 @@ EXPORT_SYMBOL(raw_copy_in_user);
 
 static inline unsigned long clear_user_mvcos(void __user *to, unsigned long size)
 {
-	register unsigned long reg0 asm("0") = 0x810000UL;
+	register unsigned long reg0 asm("0") = 0x010000UL;
 	unsigned long tmp1, tmp2;
 
 	tmp1 = -4096UL;
@@ -280,7 +283,7 @@ static inline unsigned long clear_user_xc(void __user *to, unsigned long size)
 {
 	unsigned long tmp1, tmp2;
 
-	load_kernel_asce();
+	enable_sacf_uaccess();
 	asm volatile(
 		"   sacf  256\n"
 		"   aghi  %0,-1\n"
@@ -309,6 +312,7 @@ static inline unsigned long clear_user_xc(void __user *to, unsigned long size)
 		EX_TABLE(1b,6b) EX_TABLE(2b,0b) EX_TABLE(4b,0b)
 		: "+a" (size), "+a" (to), "=a" (tmp1), "=a" (tmp2)
 		: : "cc", "memory");
+	disable_sacf_uaccess();
 	return size;
 }
 
@@ -344,10 +348,14 @@ static inline unsigned long strnlen_user_srst(const char __user *src,
 
 unsigned long __strnlen_user(const char __user *src, unsigned long size)
 {
+	unsigned long len;
+
 	if (unlikely(!size))
 		return 0;
-	load_kernel_asce();
-	return strnlen_user_srst(src, size);
+	enable_sacf_uaccess();
+	len = strnlen_user_srst(src, size);
+	disable_sacf_uaccess();
+	return len;
 }
 EXPORT_SYMBOL(__strnlen_user);
 
