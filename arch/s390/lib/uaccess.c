@@ -33,7 +33,7 @@ static inline copy_with_mvcos(void)
 	return 0;
 }
 #else
-static inline copy_with_mvcos(void)
+static inline int copy_with_mvcos(void)
 {
 	return 1;
 }
