@@ -26,7 +26,7 @@ static int __init uaccess_init(void)
 }
 early_initcall(uaccess_init);
 
-static inline copy_with_mvcos(void)
+static inline int copy_with_mvcos(void)
 {
 	if (static_branch_likely(&have_mvcos))
 		return 1;
