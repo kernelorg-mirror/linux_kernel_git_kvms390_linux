@@ -1243,7 +1243,7 @@ static void qeth_release_skbs(struct qeth_qdio_out_buffer *buf)
 				iucv->sk_txnotify(skb, TX_NOTIFY_GENERALERROR);
 			}
 		}
-		atomic_dec(&skb->users);
+		refcount_dec(&skb->users);
 		dev_kfree_skb_any(skb);
 		skb = skb_dequeue(&buf->skb_list);
 	}
@@ -4000,7 +4000,7 @@ static int qeth_fill_buffer(struct qeth_qdio_out_q *queue,
 	int flush_cnt = 0;
 
 	buffer = buf->buffer;
-	atomic_inc(&skb->users);
+	refcount_inc(&skb->users);
 	skb_queue_tail(&buf->skb_list, skb);
 
 	/* build dedicated header element */
@@ -4799,8 +4799,8 @@ static int qeth_query_card_info(struct qeth_card *card,
  */
 int qeth_vm_request_mac(struct qeth_card *card)
 {
-	struct diag26c_mac_req *request;
 	struct diag26c_mac_resp *response;
+	struct diag26c_mac_req *request;
 	struct ccw_dev_id id;
 	int rc;
 
@@ -4826,8 +4826,8 @@ int qeth_vm_request_mac(struct qeth_card *card)
 	if (rc)
 		goto out;
 
-	if ((request->resp_buf_len < sizeof(*response)) ||
-	    (response->version != request->resp_version)) {
+	if (request->resp_buf_len < sizeof(*response) ||
+	    response->version != request->resp_version) {
 		rc = -EIO;
 		QETH_DBF_TEXT(SETUP, 2, "badresp");
 		QETH_DBF_HEX(SETUP, 2, &request->resp_buf_len,
@@ -5227,12 +5227,11 @@ static int qeth_create_skb_frag(struct qeth_qdio_buffer *qethbuffer,
 
 		skb_reserve(*pskb, ETH_HLEN);
 		if (data_len <= QETH_RX_PULL_LEN) {
-			memcpy(skb_put(*pskb, data_len), element->addr + offset,
-				data_len);
+			skb_put_data(*pskb, element->addr + offset, data_len);
 		} else {
 			get_page(page);
-			memcpy(skb_put(*pskb, QETH_RX_PULL_LEN),
-			       element->addr + offset, QETH_RX_PULL_LEN);
+			skb_put_data(*pskb, element->addr + offset,
+				     QETH_RX_PULL_LEN);
 			skb_fill_page_desc(*pskb, *pfrag, page,
 				offset + QETH_RX_PULL_LEN,
 				data_len - QETH_RX_PULL_LEN);
@@ -5328,8 +5327,7 @@ struct sk_buff *qeth_core_get_next_skb(struct qeth_card *card,
 				    &skb, offset, &frag, data_len))
 					goto no_mem;
 			} else {
-				memcpy(skb_put(skb, data_len), data_ptr,
-					data_len);
+				skb_put_data(skb, data_ptr, data_len);
 			}
 		}
 		skb_len -= data_len;
@@ -5888,8 +5886,8 @@ static struct ccwgroup_driver qeth_core_ccwgroup_driver = {
 	.restore = qeth_core_restore,
 };
 
-static ssize_t qeth_core_driver_group_store(struct device_driver *ddrv,
-					    const char *buf, size_t count)
+static ssize_t group_store(struct device_driver *ddrv, const char *buf,
+			   size_t count)
 {
 	int err;
 
@@ -5898,7 +5896,7 @@ static ssize_t qeth_core_driver_group_store(struct device_driver *ddrv,
 
 	return err ? err : count;
 }
-static DRIVER_ATTR(group, 0200, NULL, qeth_core_driver_group_store);
+static DRIVER_ATTR_WO(group);
 
 static struct attribute *qeth_drv_attrs[] = {
 	&driver_attr_group.attr,

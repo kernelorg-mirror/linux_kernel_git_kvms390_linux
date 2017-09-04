@@ -242,13 +242,13 @@ struct diag26c_mac_req {
 	u16	op_code;
 	u16	devno;
 	u8	res[4];
-} __packed;
+};
 
 struct diag26c_mac_resp {
 	u32	version;
 	u8	mac[ETH_ALEN];
-	u16	res;
-} __packed __aligned(8);
+	u8	res[2];
+} __aligned(8);
 
 int diag204(unsigned long subcode, unsigned long size, void *addr);
 int diag224(void *ptr);

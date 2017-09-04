@@ -2680,22 +2680,30 @@ static void __dasd_process_erp(struct dasd_device *device,
 static void __dasd_cleanup_cqr(struct dasd_ccw_req *cqr)
 {
 	struct request *req;
-	int error = 0;
+	blk_status_t error = BLK_STS_OK;
 	int status;
 
 	req = (struct request *) cqr->callback_data;
 	dasd_profile_end(cqr->block, cqr, req);
+
 	status = cqr->block->base->discipline->free_cp(cqr, req);
 	if (status < 0)
-		error = status;
+		error = errno_to_blk_status(status);
 	else if (status == 0) {
-		if (cqr->intrc == -EPERM)
-			error = -EBADE;
-		else if (cqr->intrc == -ENOLINK ||
-			 cqr->intrc == -ETIMEDOUT)
-			error = cqr->intrc;
-		else
-			error = -EIO;
+		switch (cqr->intrc) {
+		case -EPERM:
+			error = BLK_STS_NEXUS;
+			break;
+		case -ENOLINK:
+			error = BLK_STS_TRANSPORT;
+			break;
+		case -ETIMEDOUT:
+			error = BLK_STS_TIMEOUT;
+			break;
+		default:
+			error = BLK_STS_IOERR;
+			break;
+		}
 	}
 
 	/*
@@ -2972,22 +2980,22 @@ EXPORT_SYMBOL(dasd_schedule_block_bh);
 /*
  * Dasd request queue function. Called from ll_rw_blk.c
  */
-static int do_dasd_request(struct blk_mq_hw_ctx *hctx,
-			   const struct blk_mq_queue_data *qd)
+static blk_status_t do_dasd_request(struct blk_mq_hw_ctx *hctx,
+				    const struct blk_mq_queue_data *qd)
 {
 	struct dasd_block *block = hctx->queue->queuedata;
 	struct dasd_queue *dq = hctx->driver_data;
 	struct request *req = qd->rq;
 	struct dasd_device *basedev;
 	struct dasd_ccw_req *cqr;
-	int rc = BLK_MQ_RQ_QUEUE_OK;
+	blk_status_t rc = BLK_STS_OK;
 
 	basedev = block->base;
 	spin_lock_irq(&dq->lock);
 	if (basedev->state < DASD_STATE_READY) {
 		DBF_DEV_EVENT(DBF_ERR, basedev,
 			      "device not ready for request %p", req);
-		rc = BLK_MQ_RQ_QUEUE_ERROR;
+		rc = BLK_STS_IOERR;
 		goto out;
 	}
 
@@ -2999,7 +3007,7 @@ static int do_dasd_request(struct blk_mq_hw_ctx *hctx,
 	if (basedev->stopped && !(basedev->features & DASD_FEATURE_FAILFAST)) {
 		DBF_DEV_EVENT(DBF_ERR, basedev,
 			      "device stopped request %p", req);
-		rc = BLK_MQ_RQ_QUEUE_BUSY;
+		rc = BLK_STS_RESOURCE;
 		goto out;
 	}
 
@@ -3007,7 +3015,7 @@ static int do_dasd_request(struct blk_mq_hw_ctx *hctx,
 	    rq_data_dir(req) == WRITE) {
 		DBF_DEV_EVENT(DBF_ERR, basedev,
 			      "Rejecting write request %p", req);
-		rc = BLK_MQ_RQ_QUEUE_ERROR;
+		rc = BLK_STS_IOERR;
 		goto out;
 	}
 
@@ -3016,7 +3024,7 @@ static int do_dasd_request(struct blk_mq_hw_ctx *hctx,
 	     blk_noretry_request(req))) {
 		DBF_DEV_EVENT(DBF_ERR, basedev,
 			      "Rejecting failfast request %p", req);
-		rc = BLK_MQ_RQ_QUEUE_ERROR;
+		rc = BLK_STS_IOERR;
 		goto out;
 	}
 
@@ -3025,13 +3033,13 @@ static int do_dasd_request(struct blk_mq_hw_ctx *hctx,
 		if (PTR_ERR(cqr) == -EBUSY ||
 		    PTR_ERR(cqr) == -ENOMEM ||
 		    PTR_ERR(cqr) == -EAGAIN) {
-			rc = BLK_MQ_RQ_QUEUE_BUSY;
+			rc = BLK_STS_RESOURCE;
 			goto out;
 		}
 		DBF_DEV_EVENT(DBF_ERR, basedev,
 			      "CCW creation failed (rc=%ld) on request %p",
 			      PTR_ERR(cqr), req);
-		rc = BLK_MQ_RQ_QUEUE_ERROR;
+		rc = BLK_STS_IOERR;
 		goto out;
 	}
 	/*
