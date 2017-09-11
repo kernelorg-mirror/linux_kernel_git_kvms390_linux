@@ -168,7 +168,6 @@ static inline void arch_spin_lock_queued(arch_spinlock_t *lp)
 	if (tail_id != 0) {
 		count = spin_retry;
 		while (READ_ONCE(node->prev) != NULL) {
-			smp_mb();
 			if (count-- >= 0)
 				continue;
 			count = spin_retry;
@@ -192,7 +191,6 @@ static inline void arch_spin_lock_queued(arch_spinlock_t *lp)
 				break;
 			continue;
 		}
-		smp_mb();
 		if (count-- >= 0)
 			continue;
 		count = spin_retry;
@@ -204,7 +202,7 @@ static inline void arch_spin_lock_queued(arch_spinlock_t *lp)
 	if (node_id && tail_id != node_id) {
 		/* Wait until the next CPU has set up the 'next' pointer */
 		while ((next = READ_ONCE(node->next)) == NULL)
-			smp_mb();
+			;
 		next->prev = NULL;
 	}
 
@@ -235,7 +233,6 @@ static inline void arch_spin_lock_classic(arch_spinlock_t *lp)
 			       return;
 			continue;
 		}
-		smp_mb();
 		if (count-- >= 0)
 			continue;
 		count = spin_retry;
@@ -266,7 +263,6 @@ int arch_spin_trylock_retry(arch_spinlock_t *lp)
 			if (__atomic_cmpxchg_bool(&lp->lock, 0, cpu))
 				return 1;
 		}
-		smp_mb();
 	}
 	return 0;
 }
@@ -276,7 +272,7 @@ void arch_read_lock_wait(arch_rwlock_t *rw)
 {
 	if (unlikely(in_interrupt())) {
 		while (READ_ONCE(rw->cnts) & 0x10000)
-			smp_mb();
+			barrier();
 		return;
 	}
 
@@ -288,7 +284,7 @@ void arch_read_lock_wait(arch_rwlock_t *rw)
 	__atomic_add_const(1, &rw->cnts);
 	/* Loop until the writer is done */
 	while (READ_ONCE(rw->cnts) & 0x10000)
-		smp_mb();
+		barrier();
 	arch_spin_unlock(&rw->wait);
 }
 EXPORT_SYMBOL(arch_read_lock_wait);
@@ -309,7 +305,7 @@ void arch_write_lock_wait(arch_rwlock_t *rw)
 		    __atomic_cmpxchg_bool(&rw->cnts, old, old | 0x10000))
 			/* Got the lock */
 			break;
-		smp_mb();
+		barrier();
 	}
 
 	arch_spin_unlock(&rw->wait);
