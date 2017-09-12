@@ -36,9 +36,7 @@ ENTRY(startup_continue)
 	larl	%r14,init_task
 	stg	%r14,__LC_CURRENT
 	larl	%r15,init_thread_union
-	aghi	%r15,1<<(PAGE_SHIFT+THREAD_SIZE_ORDER) # init_task_union + THREAD_SIZE
-	stg	%r15,__LC_KERNEL_STACK	# set end of kernel stack
-	aghi	%r15,-160
+	aghi	%r15,(1<<(PAGE_SHIFT+THREAD_SIZE_ORDER))-160
 #
 # Early setup functions that may not rely on an initialized bss section,
 # like moving the initrd. Returns with an initialized bss section.

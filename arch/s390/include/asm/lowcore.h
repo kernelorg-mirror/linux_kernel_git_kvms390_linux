@@ -103,9 +103,9 @@ struct lowcore {
 	__u64	current_task;			/* 0x0340 */
 	__u64	kernel_stack;			/* 0x0348 */
 
-	/* Interrupt, panic and restart stack. */
+	/* Interrupt, DAT-off and restartstack. */
 	__u64	async_stack;			/* 0x0350 */
-	__u64	panic_stack;			/* 0x0358 */
+	__u64	nodat_stack;			/* 0x0358 */
 	__u64	restart_stack;			/* 0x0360 */
 
 	/* Restart function and parameter. */
