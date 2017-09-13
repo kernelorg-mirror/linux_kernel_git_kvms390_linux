@@ -2475,7 +2475,7 @@ static void qeth_l2_vnicc_init(struct qeth_card *card)
 	if (qeth_l2_vnicc_query_chars(card)) {
 		if (card->options.vnicc.wanted_chars != QETH_VNICC_DEFAULT ||
 		    *timeout != QETH_VNICC_DEFAULT_TIMEOUT)
-			dev_err(&card->gdev->dev, "VNICC: Configuration failed.\n");
+			dev_err(&card->gdev->dev, "Configuring the VNIC characteristics failed\n");
 		/* fail quietly if user didn't change the default config */
 		card->options.vnicc.sup_chars = 0;
 		card->options.vnicc.cur_chars = 0;
@@ -2507,7 +2507,7 @@ static void qeth_l2_vnicc_init(struct qeth_card *card)
 		error |= qeth_l2_vnicc_recover_char(card, vnicc, enable);
 	}
 	if (error)
-		dev_err(&card->gdev->dev, "VNICC: Configuration failed.\n");
+		dev_err(&card->gdev->dev, "Configuring the VNIC characteristics failed\n");
 }
 
 /* configure default values of VNIC characteristics */

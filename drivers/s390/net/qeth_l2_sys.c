@@ -21,7 +21,7 @@ static ssize_t qeth_bridge_port_role_state_show(struct device *dev,
 		return -EINVAL;
 
 	if (qeth_l2_vnicc_is_in_use(card))
-		return sprintf(buf, "n/a (VNICC configured)\n");
+		return sprintf(buf, "n/a (VNIC characteristics)\n");
 
 	if (qeth_card_hw_is_reachable(card) &&
 					card->options.sbp.supported_funcs)
@@ -66,7 +66,7 @@ static ssize_t qeth_bridge_port_role_show(struct device *dev,
 	struct qeth_card *card = dev_get_drvdata(dev);
 
 	if (qeth_l2_vnicc_is_in_use(card))
-		return sprintf(buf, "n/a (VNICC configured)\n");
+		return sprintf(buf, "n/a (VNIC characteristics)\n");
 
 	return qeth_bridge_port_role_state_show(dev, attr, buf, 0);
 }
@@ -117,7 +117,7 @@ static ssize_t qeth_bridge_port_state_show(struct device *dev,
 	struct qeth_card *card = dev_get_drvdata(dev);
 
 	if (qeth_l2_vnicc_is_in_use(card))
-		return sprintf(buf, "n/a (VNICC configured)\n");
+		return sprintf(buf, "n/a (VNIC characteristics)\n");
 
 	return qeth_bridge_port_role_state_show(dev, attr, buf, 1);
 }
@@ -135,7 +135,7 @@ static ssize_t qeth_bridgeport_hostnotification_show(struct device *dev,
 		return -EINVAL;
 
 	if (qeth_l2_vnicc_is_in_use(card))
-		return sprintf(buf, "n/a (VNICC configured)\n");
+		return sprintf(buf, "n/a (VNIC characteristics)\n");
 
 	enabled = card->options.sbp.hostnotification;
 
@@ -189,7 +189,7 @@ static ssize_t qeth_bridgeport_reflect_show(struct device *dev,
 		return -EINVAL;
 
 	if (qeth_l2_vnicc_is_in_use(card))
-		return sprintf(buf, "n/a (VNICC configured)\n");
+		return sprintf(buf, "n/a (VNIC characteristics)\n");
 
 	if (card->options.sbp.reflect_promisc) {
 		if (card->options.sbp.reflect_promisc_primary)
@@ -366,7 +366,7 @@ static ssize_t qeth_vnicc_char_show(struct device *dev,
 	rc = qeth_l2_vnicc_get_state(card, vnicc, &state);
 
 	if (rc == -EBUSY)
-		return sprintf(buf, "n/a (BridgePort configured)\n");
+		return sprintf(buf, "n/a (BridgePort)\n");
 	if (rc == -EOPNOTSUPP)
 		return sprintf(buf, "n/a\n");
 	return rc ? rc : sprintf(buf, "%d\n", state);
