@@ -657,6 +657,20 @@
  */
 
 /*?
+ * Text: "%s: Incorrect FCP_CMND length %d, FCP device closed\n"
+ * Severity: Error
+ * Parameter:
+ *   @1: bus ID of the zfcp device
+ *   @2: value in length field
+ * Description:
+ * The FCP command length field in an FCP request is not valid or
+ * too large for the FCP adapter. The zfcp device driver closed down the FCP
+ * device.
+ * User action:
+ * Gather Linux debug data and report this problem to your support organization.
+ */
+
+/*?
  * Text: "%s: Opening WKA port 0x%x failed\n"
  * Severity: Warning
  * Parameter:
