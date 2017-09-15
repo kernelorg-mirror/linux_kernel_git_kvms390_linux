@@ -37,6 +37,7 @@ extern void smp_cpu_set_polarization(int cpu, int val);
 extern int smp_cpu_get_polarization(int cpu);
 extern void smp_fill_possible_mask(void);
 extern void smp_detect_cpus(void);
+extern void smp_emergency_stop(void);
 
 #else /* CONFIG_SMP */
 
