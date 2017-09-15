@@ -31,6 +31,7 @@
 #include <asm/unistd.h>
 #include <asm/switch_to.h>
 #include <asm/runtime_instr.h>
+#include <asm/facility.h>
 
 #include "entry.h"
 
