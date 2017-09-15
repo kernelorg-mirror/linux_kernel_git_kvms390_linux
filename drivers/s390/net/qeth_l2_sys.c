@@ -322,7 +322,7 @@ static ssize_t qeth_vnicc_timeout_show(struct device *dev,
 
 	rc = qeth_l2_vnicc_get_timeout(card, &timeout);
 	if (rc == -EBUSY)
-		return sprintf(buf, "n/a (BridgePort configured)\n");
+		return sprintf(buf, "n/a (BridgePort)\n");
 	if (rc == -EOPNOTSUPP)
 		return sprintf(buf, "n/a\n");
 	return rc ? rc : sprintf(buf, "%d\n", timeout);
