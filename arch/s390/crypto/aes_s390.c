@@ -843,8 +843,7 @@ static int gcm_sg_walk_go(struct gcm_sg_walk *gw, unsigned int minbytesneeded)
 {
 	int n;
 
-	BUG_ON(minbytesneeded > AES_BLOCK_SIZE);
-
+	/* minbytesneeded <= AES_BLOCK_SIZE */
 	if (gw->buf_bytes && gw->buf_bytes >= minbytesneeded) {
 		gw->ptr = gw->buf;
 		gw->nbytes = gw->buf_bytes;
