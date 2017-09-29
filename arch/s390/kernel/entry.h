@@ -77,6 +77,7 @@ long sys_s390_runtime_instr(int command, int signum);
 long sys_s390_guarded_storage(int command, struct gs_cb __user *);
 long sys_s390_pci_mmio_write(unsigned long, const void __user *, size_t);
 long sys_s390_pci_mmio_read(unsigned long, void __user *, size_t);
+long sys_s390_sthyi(unsigned long code, void __user *info, u64 __user *rc, unsigned long flags);
 
 DECLARE_PER_CPU(u64, mt_cycles[8]);
 
