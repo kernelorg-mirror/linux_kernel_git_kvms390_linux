@@ -379,11 +379,11 @@ static struct kmem_cache *base_pgt_cache;
 
 static unsigned long base_pgt_alloc(void)
 {
-	unsigned long *table;
+	u64 *table;
 
 	table = kmem_cache_alloc(base_pgt_cache, GFP_KERNEL);
 	if (table)
-		clear_table(table, _PAGE_INVALID, _PAGE_TABLE_SIZE);
+		memset64(table, _PAGE_INVALID, PTRS_PER_PTE);
 	return (unsigned long) table;
 }
 
