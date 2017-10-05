@@ -49,6 +49,13 @@
 #define VM_FAULT_SIGNAL		0x080000
 #define VM_FAULT_PFAULT		0x100000
 
+enum fault_type {
+	KERNEL_FAULT,
+	USER_FAULT,
+	VDSO_FAULT,
+	GMAP_FAULT,
+};
+
 static unsigned long store_indication __read_mostly;
 
 static int __init fault_init(void)
@@ -98,24 +105,34 @@ void bust_spinlocks(int yes)
 }
 
 /*
- * Returns the address space associated with the fault.
- * Returns 0 for kernel space and 1 for user space.
+ * Find out which address space caused the exception.
+ * Access register mode is impossible, ignore space == 3.
  */
-static inline int user_space_fault(struct pt_regs *regs)
+static inline enum fault_type get_fault_type(struct pt_regs *regs)
 {
-	switch (regs->int_parm_long & 3) {
-	case 0:	/* primary space */
-		if (test_pt_regs_flag(regs, PIF_GUEST_FAULT))
-			return 1;
-		return current->thread.mm_segment.ar4;
-	case 1:	/* access register mode */
-		return 1;	/* should not happen, claim user access */
-	case 2: /* secondary space */
-		return current->thread.mm_segment.ar4;
-	case 3:	/* home space */
-		return 0;	/* kernel access */
+	unsigned long trans_exc_code;
+
+	trans_exc_code = regs->int_parm_long & 3;
+	if (likely(trans_exc_code == 0)) {
+		/* primary space exception */
+		if (IS_ENABLED(CONFIG_PGSTE) &&
+		    test_pt_regs_flag(regs, PIF_GUEST_FAULT))
+			return GMAP_FAULT;
+		if (test_thread_flag(TIF_UACCESS) || uaccess_kernel())
+			return KERNEL_FAULT;
+		return USER_FAULT;
 	}
-	return 0;
+	if (trans_exc_code == 2) {
+		/* secondary space exception */
+		if (test_thread_flag(TIF_UACCESS)) {
+			if (uaccess_kernel())
+				return KERNEL_FAULT;
+			return USER_FAULT;
+		}
+		return VDSO_FAULT;
+	}
+	/* home space exception -> access via kernel ASCE */
+	return KERNEL_FAULT;
 }
 
 static int bad_address(void *p)
@@ -200,20 +217,23 @@ static void dump_fault_info(struct pt_regs *regs)
 		break;
 	}
 	pr_cont("mode while using ");
-	if (!user_space_fault(regs)) {
-		asce = S390_lowcore.kernel_asce;
-		pr_cont("kernel ");
-	}
-#ifdef CONFIG_PGSTE
-	else if (test_pt_regs_flag(regs, PIF_GUEST_FAULT)) {
-		struct gmap *gmap = (struct gmap *)S390_lowcore.gmap;
-		asce = gmap->asce;
-		pr_cont("gmap ");
-	}
-#endif
-	else {
+	switch (get_fault_type(regs)) {
+	case USER_FAULT:
 		asce = S390_lowcore.user_asce;
 		pr_cont("user ");
+		break;
+	case VDSO_FAULT:
+		asce = S390_lowcore.user_asce;
+		pr_cont("vdso ");
+		break;
+	case GMAP_FAULT:
+		asce = ((struct gmap *) S390_lowcore.gmap)->asce;
+		pr_cont("gmap ");
+		break;
+	case KERNEL_FAULT:
+		asce = S390_lowcore.kernel_asce;
+		pr_cont("kernel ");
+		break;
 	}
 	pr_cont("ASCE.\n");
 	dump_pagetable(asce, regs->int_parm_long & __FAIL_ADDR_MASK);
@@ -269,7 +289,7 @@ static noinline void do_no_context(struct pt_regs *regs)
 	 * Oops. The kernel tried to access some bad page. We'll have to
 	 * terminate things with extreme prejudice.
 	 */
-	if (!user_space_fault(regs))
+	if (get_fault_type(regs) == KERNEL_FAULT)
 		printk(KERN_ALERT "Unable to handle kernel pointer dereference"
 		       " in virtual kernel address space\n");
 	else
@@ -391,12 +411,11 @@ static noinline void do_fault_error(struct pt_regs *regs, int access, int fault)
  */
 static inline int do_exception(struct pt_regs *regs, int access)
 {
-#ifdef CONFIG_PGSTE
 	struct gmap *gmap;
-#endif
 	struct task_struct *tsk;
 	struct mm_struct *mm;
 	struct vm_area_struct *vma;
+	enum fault_type type;
 	unsigned long trans_exc_code;
 	unsigned long address;
 	unsigned int flags;
@@ -421,8 +440,19 @@ static inline int do_exception(struct pt_regs *regs, int access)
 	 * user context.
 	 */
 	fault = VM_FAULT_BADCONTEXT;
-	if (unlikely(!user_space_fault(regs) || faulthandler_disabled() || !mm))
+	type = get_fault_type(regs);
+	switch (type) {
+	case KERNEL_FAULT:
 		goto out;
+	case VDSO_FAULT:
+		fault = VM_FAULT_BADMAP;
+		goto out;
+	case USER_FAULT:
+	case GMAP_FAULT:
+		if (faulthandler_disabled() || !mm)
+			goto out;
+		break;
+	}
 
 	address = trans_exc_code & __FAIL_ADDR_MASK;
 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
@@ -433,10 +463,9 @@ static inline int do_exception(struct pt_regs *regs, int access)
 		flags |= FAULT_FLAG_WRITE;
 	down_read(&mm->mmap_sem);
 
-#ifdef CONFIG_PGSTE
-	gmap = test_pt_regs_flag(regs, PIF_GUEST_FAULT) ?
-		(struct gmap *) S390_lowcore.gmap : NULL;
-	if (gmap) {
+	gmap = NULL;
+	if (IS_ENABLED(CONFIG_PGSTE) && type == GMAP_FAULT) {
+		gmap = (struct gmap *) S390_lowcore.gmap;
 		current->thread.gmap_addr = address;
 		current->thread.gmap_write_flag = !!(flags & FAULT_FLAG_WRITE);
 		current->thread.gmap_int_code = regs->int_code & 0xffff;
@@ -448,7 +477,6 @@ static inline int do_exception(struct pt_regs *regs, int access)
 		if (gmap->pfault_enabled)
 			flags |= FAULT_FLAG_RETRY_NOWAIT;
 	}
-#endif
 
 retry:
 	fault = VM_FAULT_BADMAP;
@@ -503,15 +531,14 @@ retry:
 				      regs, address);
 		}
 		if (fault & VM_FAULT_RETRY) {
-#ifdef CONFIG_PGSTE
-			if (gmap && (flags & FAULT_FLAG_RETRY_NOWAIT)) {
+			if (IS_ENABLED(CONFIG_PGSTE) && gmap &&
+			    (flags & FAULT_FLAG_RETRY_NOWAIT)) {
 				/* FAULT_FLAG_RETRY_NOWAIT has been set,
 				 * mmap_sem has not been released */
 				current->thread.gmap_pfault = 1;
 				fault = VM_FAULT_PFAULT;
 				goto out_up;
 			}
-#endif
 			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
 			 * of starvation. */
 			flags &= ~(FAULT_FLAG_ALLOW_RETRY |
@@ -521,8 +548,7 @@ retry:
 			goto retry;
 		}
 	}
-#ifdef CONFIG_PGSTE
-	if (gmap) {
+	if (IS_ENABLED(CONFIG_PGSTE) && gmap) {
 		address =  __gmap_link(gmap, current->thread.gmap_addr,
 				       address);
 		if (address == -EFAULT) {
@@ -534,7 +560,6 @@ retry:
 			goto out_up;
 		}
 	}
-#endif
 	fault = 0;
 out_up:
 	up_read(&mm->mmap_sem);

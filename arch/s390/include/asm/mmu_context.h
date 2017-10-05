@@ -102,11 +102,12 @@ static inline int update_secondary_asce(unsigned long new)
 	return old != new;
 }
 
-static inline void enable_sacf_uaccess(void)
+static inline int enable_sacf_uaccess(void)
 {
 	unsigned long asce;
 
-	set_thread_flag(TIF_UACCESS);
+	if (test_and_set_thread_flag(TIF_UACCESS))
+		return 1;
 	asce = S390_lowcore.kernel_asce;
 	if (!uaccess_kernel()) {
 		if (update_primary_asce(asce))
@@ -115,10 +116,13 @@ static inline void enable_sacf_uaccess(void)
 	}
 	if (update_secondary_asce(asce))
 		set_cpu_flag(CIF_ASCE_SECONDARY);
+	return 0;
 }
 
-static inline void disable_sacf_uaccess(void)
+static inline void disable_sacf_uaccess(int prev_state)
 {
+	if (prev_state)
+		return;
 	clear_thread_flag(TIF_UACCESS);
 	if (test_facility(27) && !uaccess_kernel()) {
 		clear_cpu_flag(CIF_ASCE_PRIMARY);

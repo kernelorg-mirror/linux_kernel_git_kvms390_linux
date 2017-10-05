@@ -73,8 +73,9 @@ static inline unsigned long copy_from_user_mvcp(void *x, const void __user *ptr,
 						unsigned long size)
 {
 	unsigned long tmp1, tmp2;
+	int prev_state;
 
-	enable_sacf_uaccess();
+	prev_state = enable_sacf_uaccess();
 	tmp1 = -256UL;
 	asm volatile(
 		"   sacf  0\n"
@@ -101,7 +102,7 @@ static inline unsigned long copy_from_user_mvcp(void *x, const void __user *ptr,
 		EX_TABLE(7b,3b) EX_TABLE(8b,3b) EX_TABLE(9b,6b)
 		: "+a" (size), "+a" (ptr), "+a" (x), "+a" (tmp1), "=a" (tmp2)
 		: : "cc", "memory");
-	disable_sacf_uaccess();
+	disable_sacf_uaccess(prev_state);
 	return size;
 }
 
@@ -147,8 +148,9 @@ static inline unsigned long copy_to_user_mvcs(void __user *ptr, const void *x,
 					      unsigned long size)
 {
 	unsigned long tmp1, tmp2;
+	int prev_state;
 
-	enable_sacf_uaccess();
+	prev_state = enable_sacf_uaccess();
 	tmp1 = -256UL;
 	asm volatile(
 		"   sacf  0\n"
@@ -175,7 +177,7 @@ static inline unsigned long copy_to_user_mvcs(void __user *ptr, const void *x,
 		EX_TABLE(7b,3b) EX_TABLE(8b,3b) EX_TABLE(9b,6b)
 		: "+a" (size), "+a" (ptr), "+a" (x), "+a" (tmp1), "=a" (tmp2)
 		: : "cc", "memory");
-	disable_sacf_uaccess();
+	disable_sacf_uaccess(prev_state);
 	return size;
 }
 
@@ -214,8 +216,9 @@ static inline unsigned long copy_in_user_mvc(void __user *to, const void __user 
 					     unsigned long size)
 {
 	unsigned long tmp1;
+	int prev_state;
 
-	enable_sacf_uaccess();
+	prev_state = enable_sacf_uaccess();
 	asm volatile(
 		"   sacf  256\n"
 		"   aghi  %0,-1\n"
@@ -239,7 +242,7 @@ static inline unsigned long copy_in_user_mvc(void __user *to, const void __user 
 		EX_TABLE(1b,6b) EX_TABLE(2b,0b) EX_TABLE(4b,0b)
 		: "+a" (size), "+a" (to), "+a" (from), "=a" (tmp1)
 		: : "cc", "memory");
-	disable_sacf_uaccess();
+	disable_sacf_uaccess(prev_state);
 	return size;
 }
 
@@ -282,8 +285,9 @@ static inline unsigned long clear_user_mvcos(void __user *to, unsigned long size
 static inline unsigned long clear_user_xc(void __user *to, unsigned long size)
 {
 	unsigned long tmp1, tmp2;
+	int prev_state;
 
-	enable_sacf_uaccess();
+	prev_state = enable_sacf_uaccess();
 	asm volatile(
 		"   sacf  256\n"
 		"   aghi  %0,-1\n"
@@ -312,7 +316,7 @@ static inline unsigned long clear_user_xc(void __user *to, unsigned long size)
 		EX_TABLE(1b,6b) EX_TABLE(2b,0b) EX_TABLE(4b,0b)
 		: "+a" (size), "+a" (to), "=a" (tmp1), "=a" (tmp2)
 		: : "cc", "memory");
-	disable_sacf_uaccess();
+	disable_sacf_uaccess(prev_state);
 	return size;
 }
 
@@ -349,12 +353,13 @@ static inline unsigned long strnlen_user_srst(const char __user *src,
 unsigned long __strnlen_user(const char __user *src, unsigned long size)
 {
 	unsigned long len;
+	int prev_state;
 
 	if (unlikely(!size))
 		return 0;
-	enable_sacf_uaccess();
+	prev_state = enable_sacf_uaccess();
 	len = strnlen_user_srst(src, size);
-	disable_sacf_uaccess();
+	disable_sacf_uaccess(prev_state);
 	return len;
 }
 EXPORT_SYMBOL(__strnlen_user);
