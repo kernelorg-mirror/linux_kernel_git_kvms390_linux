@@ -5,8 +5,8 @@
  *
  *  Copyright IBM Corp. 2017
  *
- *  Author(s):  Hans Wippel <hwippel@linux.vnet.ibm.com>
- *              Ursula Braun <ubraun@linux.vnet.ibm.com>
+ *  Author(s):	Hans Wippel <hwippel@linux.vnet.ibm.com>
+ *		Ursula Braun <ubraun@linux.vnet.ibm.com>
  */
 
 #ifndef _SMC_RV_H
