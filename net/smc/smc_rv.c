@@ -99,9 +99,7 @@ static bool smc_rv_has_smc_option(struct sk_buff *skb)
 	return false;
 }
 
-/* Add SMC option to TCP header. Note: This assumes that there are no data after
- * the TCP header.
- */
+/* Add SMC option to TCP header */
 static int smc_rv_add_smc_option(struct sk_buff *skb)
 {
 	unsigned char smc_opt[] = {TCPOPT_NOP, TCPOPT_NOP,
@@ -112,11 +110,14 @@ static int smc_rv_add_smc_option(struct sk_buff *skb)
 	struct iphdr *iph = ip_hdr(skb);
 	int tcplen = 0;
 
-	if (skb_tailroom(skb) < TCPOLEN_SMC)
+	if (skb_availroom(skb) < TCPOLEN_SMC)
 		return -EFAULT;
 
-	if (((tcph->doff << 2) - sizeof(*tcph) + TCPOLEN_SMC) >
-							MAX_TCP_OPTION_SPACE)
+	if (tcp_optlen(skb) + TCPOLEN_SMC > MAX_TCP_OPTION_SPACE)
+		return -EFAULT;
+
+	/* give up if there is data after the TCP header */
+	if (skb_headlen(skb) > ip_hdrlen(skb) + tcp_hdrlen(skb))
 		return -EFAULT;
 
 	if (smc_rv_has_smc_option(skb))
