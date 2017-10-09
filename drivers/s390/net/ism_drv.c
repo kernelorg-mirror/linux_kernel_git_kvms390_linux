@@ -15,6 +15,8 @@
 #include <linux/err.h>
 #include <net/smc.h>
 
+#include <asm/debug.h>
+
 #include "ism.h"
 
 MODULE_DESCRIPTION("ISM driver for s390");
@@ -29,6 +31,8 @@ static const struct pci_device_id ism_device_table[] = {
 };
 MODULE_DEVICE_TABLE(pci, ism_device_table);
 
+static debug_info_t *ism_debug_info;
+
 static int ism_cmd(struct ism_dev *ism, void *cmd)
 {
 	struct ism_req_hdr *req = cmd;
@@ -40,9 +44,11 @@ static int ism_cmd(struct ism_dev *ism, void *cmd)
 	WRITE_ONCE(resp->ret, ISM_ERROR);
 
 	memcpy_fromio(resp, ism->ctl, sizeof(*resp));
-	if (resp->ret)
+	if (resp->ret) {
+		debug_text_event(ism_debug_info, 0, "cmd failure");
+		debug_event(ism_debug_info, 0, resp, sizeof(*resp));
 		goto out;
-
+	}
 	memcpy_fromio(resp + 1, ism->ctl + sizeof(*resp),
 		      resp->len - sizeof(*resp));
 out:
@@ -58,6 +64,23 @@ static int ism_cmd_simple(struct ism_dev *ism, u32 cmd_code)
 	cmd.request.hdr.len = sizeof(cmd.request);
 
 	return ism_cmd(ism, &cmd);
+}
+
+static int query_info(struct ism_dev *ism)
+{
+	union ism_qi cmd;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd.request.hdr.cmd = ISM_QUERY_INFO;
+	cmd.request.hdr.len = sizeof(cmd.request);
+
+	if (ism_cmd(ism, &cmd))
+		goto out;
+
+	debug_text_event(ism_debug_info, 3, "query info");
+	debug_event(ism_debug_info, 3, &cmd.response, sizeof(cmd.response));
+out:
+	return 0;
 }
 
 static int register_sba(struct ism_dev *ism)
@@ -367,6 +390,7 @@ static void ism_handle_event(struct ism_dev *ism)
 			ism->ieq_idx = 0;
 
 		entry = &ism->ieq->entry[ism->ieq_idx];
+		debug_event(ism_debug_info, 2, entry, sizeof(*entry));
 		smcd_handle_event(ism->smcd, entry);
 	}
 }
@@ -479,6 +503,7 @@ static int ism_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	if (ret)
 		goto err_ieq;
 
+	query_info(ism);
 	return 0;
 
 err_ieq:
@@ -529,12 +554,24 @@ static struct pci_driver ism_driver = {
 
 static int __init ism_init(void)
 {
-	return pci_register_driver(&ism_driver);
+	int ret;
+
+	ism_debug_info = debug_register("ism", 2, 1, 16);
+	if (!ism_debug_info)
+		return -ENODEV;
+
+	debug_register_view(ism_debug_info, &debug_hex_ascii_view);
+	ret = pci_register_driver(&ism_driver);
+	if (ret)
+		debug_unregister(ism_debug_info);
+
+	return ret;
 }
 
 static void __exit ism_exit(void)
 {
 	pci_unregister_driver(&ism_driver);
+	debug_unregister(ism_debug_info);
 }
 
 module_init(ism_init);

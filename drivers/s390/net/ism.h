@@ -76,6 +76,28 @@ union ism_read_gid {
 	} response;
 } __aligned(16);
 
+union ism_qi {
+	struct {
+		struct ism_req_hdr hdr;
+	} request;
+	struct {
+		struct ism_resp_hdr hdr;
+		u32 version;
+		u32 max_len;
+		u64 ism_state;
+		u64 my_gid;
+		u64 sba;
+		u64 ieq;
+		u32 ieq_len;
+		u32 : 32;
+		u32 dmbs_owned;
+		u32 dmbs_used;
+		u32 vlan_required;
+		u32 vlan_nr_ids;
+		u16 vlan_id[64];
+	} response;
+} __aligned(64);
+
 union ism_query_rgid {
 	struct {
 		struct ism_req_hdr hdr;
