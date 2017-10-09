@@ -223,7 +223,7 @@ static void dump_fault_info(struct pt_regs *regs)
 		pr_cont("user ");
 		break;
 	case VDSO_FAULT:
-		asce = S390_lowcore.user_asce;
+		asce = S390_lowcore.vdso_asce;
 		pr_cont("vdso ");
 		break;
 	case GMAP_FAULT:
