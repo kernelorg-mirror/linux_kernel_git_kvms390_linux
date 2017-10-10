@@ -12,7 +12,6 @@
 #include <linux/mm_types.h>
 #include <asm/tlbflush.h>
 #include <asm/ctl_reg.h>
-#include <asm/facility.h>
 #include <asm-generic/mm_hooks.h>
 
 static inline int init_new_context(struct task_struct *tsk,
@@ -82,53 +81,8 @@ static inline void clear_user_asce(void)
 	set_cpu_flag(CIF_ASCE_PRIMARY);
 }
 
-static inline int update_primary_asce(unsigned long new)
-{
-	unsigned long old;
-
-	__ctl_store(old, 1, 1);
-	if (old != new)
-		__ctl_load(new, 1, 1);
-	return old != new;
-}
-
-static inline int update_secondary_asce(unsigned long new)
-{
-	unsigned long old;
-
-	__ctl_store(old, 7, 7);
-	if (old != new)
-		__ctl_load(new, 7, 7);
-	return old != new;
-}
-
-static inline int enable_sacf_uaccess(void)
-{
-	unsigned long asce;
-
-	if (test_and_set_thread_flag(TIF_UACCESS))
-		return 1;
-	asce = S390_lowcore.kernel_asce;
-	if (!uaccess_kernel()) {
-		if (update_primary_asce(asce))
-			set_cpu_flag(CIF_ASCE_PRIMARY);
-		asce = S390_lowcore.user_asce;
-	}
-	if (update_secondary_asce(asce))
-		set_cpu_flag(CIF_ASCE_SECONDARY);
-	return 0;
-}
-
-static inline void disable_sacf_uaccess(int prev_state)
-{
-	if (prev_state)
-		return;
-	clear_thread_flag(TIF_UACCESS);
-	if (test_facility(27) && !uaccess_kernel()) {
-		clear_cpu_flag(CIF_ASCE_PRIMARY);
-		__ctl_load(S390_lowcore.user_asce, 1, 1);
-	}
-}
+mm_segment_t enable_sacf_uaccess(void);
+void disable_sacf_uaccess(mm_segment_t old_fs);
 
 static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 			     struct task_struct *tsk)
@@ -140,10 +94,14 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	S390_lowcore.user_asce = next->context.asce;
 	cpumask_set_cpu(cpu, &next->context.cpu_attach_mask);
 	/* Clear previous user-ASCE from CR1 and CR7 */
-	if (update_primary_asce(S390_lowcore.kernel_asce))
+	if (!test_cpu_flag(CIF_ASCE_PRIMARY)) {
+		__ctl_load(S390_lowcore.kernel_asce, 1, 1);
 		set_cpu_flag(CIF_ASCE_PRIMARY);
-	if (update_secondary_asce(S390_lowcore.vdso_asce))
+	}
+	if (test_cpu_flag(CIF_ASCE_SECONDARY)) {
+		__ctl_load(S390_lowcore.vdso_asce, 7, 7);
 		clear_cpu_flag(CIF_ASCE_SECONDARY);
+	}
 	cpumask_clear_cpu(cpu, &prev->context.cpu_attach_mask);
 }
 
@@ -152,7 +110,6 @@ static inline void finish_arch_post_lock_switch(void)
 {
 	struct task_struct *tsk = current;
 	struct mm_struct *mm = tsk->mm;
-	unsigned long asce;
 
 	if (mm) {
 		preempt_disable();
@@ -162,19 +119,7 @@ static inline void finish_arch_post_lock_switch(void)
 		__tlb_flush_mm_lazy(mm);
 		preempt_enable();
 	}
-	if (test_thread_flag(TIF_UACCESS) || uaccess_kernel()) {
-		if (update_primary_asce(S390_lowcore.kernel_asce))
-			set_cpu_flag(CIF_ASCE_PRIMARY);
-	} else if (test_facility(27)) {
-		if (update_primary_asce(S390_lowcore.user_asce))
-			clear_cpu_flag(CIF_ASCE_PRIMARY);
-	}
-	if (test_thread_flag(TIF_UACCESS)) {
-		asce = uaccess_kernel() ?
-			S390_lowcore.kernel_asce : S390_lowcore.user_asce;
-		if (update_secondary_asce(asce))
-			set_cpu_flag(CIF_ASCE_SECONDARY);
-	}
+	set_fs(current->thread.mm_segment);
 }
 
 #define enter_lazy_tlb(mm,tsk)	do { } while (0)

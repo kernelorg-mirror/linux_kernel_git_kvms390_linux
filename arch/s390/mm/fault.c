@@ -118,16 +118,16 @@ static inline enum fault_type get_fault_type(struct pt_regs *regs)
 		if (IS_ENABLED(CONFIG_PGSTE) &&
 		    test_pt_regs_flag(regs, PIF_GUEST_FAULT))
 			return GMAP_FAULT;
-		if (test_thread_flag(TIF_UACCESS) || uaccess_kernel())
-			return KERNEL_FAULT;
-		return USER_FAULT;
+		if (current->thread.mm_segment == USER_DS)
+			return USER_FAULT;
+		return KERNEL_FAULT;
 	}
 	if (trans_exc_code == 2) {
 		/* secondary space exception */
-		if (test_thread_flag(TIF_UACCESS)) {
-			if (uaccess_kernel())
-				return KERNEL_FAULT;
-			return USER_FAULT;
+		if (current->thread.mm_segment & 1) {
+			if (current->thread.mm_segment == USER_DS_SACF)
+				return USER_FAULT;
+			return KERNEL_FAULT;
 		}
 		return VDSO_FAULT;
 	}

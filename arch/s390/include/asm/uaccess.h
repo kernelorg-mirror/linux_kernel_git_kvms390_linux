@@ -25,27 +25,16 @@
  * For historical reasons, these macros are grossly misnamed.
  */
 
-#define MAKE_MM_SEG(a)  ((mm_segment_t) { (a) })
-
-
-#define KERNEL_DS       MAKE_MM_SEG(0)
-#define USER_DS         MAKE_MM_SEG(1)
+#define KERNEL_DS	(0)
+#define KERNEL_DS_SACF	(1)
+#define USER_DS		(2)
+#define USER_DS_SACF	(3)
 
 #define get_ds()        (KERNEL_DS)
 #define get_fs()        (current->thread.mm_segment)
-#define segment_eq(a,b) ((a).ar4 == (b).ar4)
+#define segment_eq(a,b) (((a) & 2) == ((b) & 2))
 
-static inline void set_fs(mm_segment_t fs)
-{
-	current->thread.mm_segment = fs;
-	if (uaccess_kernel()) {
-		__ctl_load(S390_lowcore.kernel_asce, 1, 1);
-		set_cpu_flag(CIF_ASCE_PRIMARY);
-	} else if (test_facility(27)) {
-		__ctl_load(S390_lowcore.user_asce, 1, 1);
-		clear_cpu_flag(CIF_ASCE_PRIMARY);
-	}
-}
+void set_fs(mm_segment_t fs);
 
 static inline int __range_ok(unsigned long addr, unsigned long size)
 {

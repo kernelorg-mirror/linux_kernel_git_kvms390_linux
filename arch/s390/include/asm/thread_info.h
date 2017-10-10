@@ -66,7 +66,6 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
 #define TIF_SINGLE_STEP		19	/* This task is single stepped */
 #define TIF_BLOCK_STEP		20	/* This task is block stepped */
 #define TIF_UPROBE_SINGLESTEP	21	/* This task is uprobe single stepped */
-#define TIF_UACCESS		22	/* This task is in a uaccess section */
 
 /* _TIF_TRACE bits */
 #define TIF_SYSCALL_TRACE	24	/* syscall trace active */
