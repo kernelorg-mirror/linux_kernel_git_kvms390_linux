@@ -90,15 +90,6 @@ int __initdata memory_end_set;
 unsigned long __initdata memory_end;
 unsigned long __initdata max_physmem_end;
 
-/*
- * The initial vdso_data structure for the boot CPU. Eventually
- * it is replaced with a properly allocated structure in vdso_init.
- * This is necessary because a valid S390_lowcore.vdso_per_cpu_data
- * pointer is required to be able to return from an interrupt or
- * program check. See the exit paths in entry.S.
- */
-struct vdso_data __initdata boot_vdso_data;
-
 unsigned long VMALLOC_START;
 EXPORT_SYMBOL(VMALLOC_START);
 
@@ -358,7 +349,7 @@ static void __init setup_lowcore(void)
 		if (MACHINE_HAS_GS)
 			lc->mcesad |= bits;
 	}
-	lc->vdso_per_cpu_data = (unsigned long) &boot_vdso_data;
+	vdso_alloc_boot_cpu(lc);
 	lc->sync_enter_timer = S390_lowcore.sync_enter_timer;
 	lc->async_enter_timer = S390_lowcore.async_enter_timer;
 	lc->exit_timer = S390_lowcore.exit_timer;
