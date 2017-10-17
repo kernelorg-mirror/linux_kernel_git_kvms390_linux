@@ -63,7 +63,7 @@ static inline unsigned long nmi_get_mcesa_size(void)
  */
 static struct mcesa boot_mcesa __initdata __aligned(MCESA_MAX_SIZE);
 
-void nmi_alloc_boot_cpu(struct lowcore *lc)
+void __init nmi_alloc_boot_cpu(struct lowcore *lc)
 {
 	if (!nmi_needs_mcesa())
 		return;
