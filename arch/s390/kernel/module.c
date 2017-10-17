@@ -431,14 +431,18 @@ int module_finalize(const Elf_Ehdr *hdr,
 		    struct module *me)
 {
 	const Elf_Shdr *s;
-	char *secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
+	char *secstrings;
 
-	for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
-		if (!strcmp(".altinstructions", secstrings + s->sh_name)) {
-			/* patch .altinstructions */
-			void *aseg = (void *)s->sh_addr;
+	if (IS_ENABLED(CONFIG_ALTERNATIVES)) {
+		secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
+		for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
+			if (!strcmp(".altinstructions",
+				    secstrings + s->sh_name)) {
+				/* patch .altinstructions */
+				void *aseg = (void *)s->sh_addr;
 
-			apply_alternatives(aseg, aseg + s->sh_size);
+				apply_alternatives(aseg, aseg + s->sh_size);
+			}
 		}
 	}
 
