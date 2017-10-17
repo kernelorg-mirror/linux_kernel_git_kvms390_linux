@@ -34,7 +34,7 @@ static void zfcp_fsf_request_timeout_handler(struct timer_list *t)
 static void zfcp_fsf_start_timer(struct zfcp_fsf_req *fsf_req,
 				 unsigned long timeout)
 {
-	fsf_req->timer.function = (TIMER_FUNC_TYPE)zfcp_fsf_request_timeout_handler;
+	timer_setup(&fsf_req->timer, zfcp_fsf_request_timeout_handler, 0);
 	fsf_req->timer.expires = jiffies + timeout;
 	add_timer(&fsf_req->timer);
 }
@@ -42,7 +42,7 @@ static void zfcp_fsf_start_timer(struct zfcp_fsf_req *fsf_req,
 static void zfcp_fsf_start_erp_timer(struct zfcp_fsf_req *fsf_req)
 {
 	BUG_ON(!fsf_req->erp_action);
-	fsf_req->timer.function = (TIMER_FUNC_TYPE)zfcp_erp_timeout_handler;
+	timer_setup(&fsf_req->timer, zfcp_erp_timeout_handler, 0);
 	fsf_req->timer.expires = jiffies + 30 * HZ;
 	add_timer(&fsf_req->timer);
 }
@@ -692,7 +692,6 @@ static struct zfcp_fsf_req *zfcp_fsf_req_create(struct zfcp_qdio *qdio,
 		adapter->req_no++;
 
 	INIT_LIST_HEAD(&req->list);
-	timer_setup(&req->timer, NULL, 0);
 	init_completion(&req->completion);
 
 	req->adapter = adapter;
