@@ -78,9 +78,9 @@ static int zcrypt_cex4_card_probe(struct ap_device *ap_dev)
 	static const int CEX4A_SPEED_IDX[] = {
 		 14, 19, 249, 42, 228, 1458, 0, 0};
 	static const int CEX5A_SPEED_IDX[] = {
-		  8,  9,  20, 18,  66,  458, 0, 0};
+		  8,  9,  20, 18,  66,	458, 0, 0};
 	static const int CEX6A_SPEED_IDX[] = {
-		  6,  9,  20, 17,  65,  438, 0, 0};
+		  6,  9,  20, 17,  65,	438, 0, 0};
 
 	static const int CEX4C_SPEED_IDX[] = {
 		 59,  69, 308, 83, 278, 2204, 209, 40};

@@ -134,8 +134,8 @@ struct ap_qact_ap_info {
  * ap_qact(): Query AP combatibility type.
  * @qid: The AP queue number
  * @apinfo: On input the info about the AP queue (content of GR1
- *          according to the AR). On output the alternate AP queue
- *          info provided by the qact function in GR2 is stored in.
+ *	    according to the AR). On output the alternate AP queue
+ *	    info provided by the qact function in GR2 is stored in.
  *
  * Returns AP queue status. Check response_code field for failures.
  */
