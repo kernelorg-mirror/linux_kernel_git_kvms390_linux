@@ -53,7 +53,7 @@ static inline void smp_call_online_cpu(void (*func)(void *), void *data)
 	func(data);
 }
 
-static void smp_emergency_stop(void)
+static inline void smp_emergency_stop(void)
 {
 }
 
