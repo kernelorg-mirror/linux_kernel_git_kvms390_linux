@@ -325,11 +325,12 @@
  */
 
 /*?
- * Text: "%s: Starting HW checksumming for %s failed, using SW checksumming\n"
+ * Text: "%s: Starting HW IPv%d checksumming for %s failed, using SW checksumming\n"
  * Severity: Warning
  * Parameter:
  *   @1: bus ID of the qeth device
- *   @2: network interface name
+ *   @2: IP version
+ *   @3: network interface name
  * Description:
  * The network adapter supports hardware checksumming for IP packages
  * but the qeth device driver could not start hardware checksumming on the
@@ -366,11 +367,12 @@
  */
 
 /*?
- * Text: "%s: Enabling HW checksumming for %s failed, using SW checksumming\n"
+ * Text: "%s: Enabling HW IPv%d checksumming for %s failed, using SW checksumming\n"
  * Severity: Warning
  * Parameter:
  *   @1: bus ID of the qeth device
- *   @2: network interface name
+ *   @2: IP version
+ *   @3: network interface name
  * Description:
  * The network adapter supports hardware checksumming for IP packages
  * but the qeth device driver could not enable hardware checksumming on the
@@ -621,7 +623,7 @@
 /*? Text: "%s: Broadcast enabled\n" */
 /*? Text: "%s: Multicast not supported on %s\n" */
 /*? Text: "%s: Using SW checksumming on %s.\n" */
-/*? Text: "%s: HW Checksumming (%sbound) enabled\n" */
+/*? Text: "%s: HW Checksumming (%sbound IPv%d) enabled\n" */
 /*? Text: "unregister layer 3 discipline\n" */
 /*? Text: "%s: Multicast enabled\n" */
 /*? Text: "%s: QDIO data connection isolation is deactivated\n" */
