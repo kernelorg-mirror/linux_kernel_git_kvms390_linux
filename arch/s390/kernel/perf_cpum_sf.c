@@ -1257,7 +1257,8 @@ static int aux_output_begin(struct perf_output_handle *handle,
 	unsigned long head, base, offset;
 	struct hws_trailer_entry *te;
 
-	BUG_ON(handle->head & ~PAGE_MASK);
+	if (WARN_ON_ONCE(handle->head & ~PAGE_MASK))
+		return -EINVAL;
 
 	aux->head = handle->head >> PAGE_SHIFT;
 	range = (handle->size + 1) >> PAGE_SHIFT;
@@ -1425,7 +1426,8 @@ static void hw_collect_aux(struct cpu_hw_sf *cpuhw)
 	unsigned long num_sdb;
 
 	aux = perf_get_aux(handle);
-	BUG_ON(!aux);
+	if (WARN_ON_ONCE(!aux))
+		return;
 
 	/* Inform user space new data arrived */
 	size = AUX_SDB_NUM_ALERT(aux) << PAGE_SHIFT;
@@ -1442,7 +1444,8 @@ static void hw_collect_aux(struct cpu_hw_sf *cpuhw)
 			debug_sprintf_event(sfdbg, 1, "AUX buffer used up\n");
 			break;
 		}
-		BUG_ON(!aux);
+		if (WARN_ON_ONCE(!aux))
+			return;
 
 		/* Update head and alert_mark to new position */
 		aux->head = handle->head >> PAGE_SHIFT;
