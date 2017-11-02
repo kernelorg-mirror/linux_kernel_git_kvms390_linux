@@ -1486,12 +1486,13 @@ static void hw_collect_aux(struct cpu_hw_sf *cpuhw)
 static void aux_buffer_free(void *data)
 {
 	struct aux_buffer *aux = data;
-	unsigned long i, num_sdbt = aux->sfb.num_sdbt;
+	unsigned long i, num_sdbt;
 
 	if (!aux)
 		return;
 
 	/* Free SDBT. SDB is freed by the caller */
+	num_sdbt = aux->sfb.num_sdbt;
 	for (i = 0; i < num_sdbt; i++)
 		free_page(aux->sdbt_index[i]);
 
