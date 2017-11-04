@@ -124,11 +124,11 @@ static inline int ap_qci(void *config)
 union ap_qact_ap_info {
 	unsigned long val;
 	struct {
-		unsigned int      : 3;
+		unsigned int	  : 3;
 		unsigned int mode : 3;
-		unsigned int      : 26;
+		unsigned int	  : 26;
 		unsigned int cat  : 8;
-		unsigned int      : 8;
+		unsigned int	  : 8;
 		unsigned char ver[2];
 	};
 };
@@ -137,8 +137,8 @@ union ap_qact_ap_info {
  * ap_qact(): Query AP combatibility type.
  * @qid: The AP queue number
  * @apinfo: On input the info about the AP queue. On output the
- *          alternate AP queue info provided by the qact function
- *          in GR2 is stored in.
+ *	    alternate AP queue info provided by the qact function
+ *	    in GR2 is stored in.
  *
  * Returns AP queue status. Check response_code field for failures.
  */
