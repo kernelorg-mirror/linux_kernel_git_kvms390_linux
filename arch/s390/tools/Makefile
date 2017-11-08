@@ -13,11 +13,11 @@ define filechk_facilities.h
 endef
 
 define filechk_dis.h
-	( $(obj)/gen_opcode_table < $(obj)/opcodes.txt )
+	( $(obj)/gen_opcode_table < $(srctree)/arch/$(ARCH)/tools/opcodes.txt )
 endef
 
 include/generated/facilities.h: $(obj)/gen_facilities FORCE
 	$(call filechk,facilities.h)
 
-arch/$(ARCH)/include/generated/dis.h: $(obj)/gen_opcode_table FORCE
+include/generated/dis.h: $(obj)/gen_opcode_table FORCE
 	$(call filechk,dis.h,__FUN)
