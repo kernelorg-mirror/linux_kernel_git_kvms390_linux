@@ -126,8 +126,8 @@ static void print_facility_lists(void)
 
 int main(int argc, char **argv)
 {
-	printf("#ifndef __S390_GENERATED_FACILITIES_H__\n");
-	printf("#define __S390_GENERATED_FACILITIES_H__\n");
+	printf("#ifndef __ASM_S390_FACILITIES__\n");
+	printf("#define __ASM_S390_FACILITIES__\n");
 	printf("/*\n");
 	printf(" * DO NOT MODIFY.\n");
 	printf(" *\n");

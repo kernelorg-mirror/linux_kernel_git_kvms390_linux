@@ -132,7 +132,7 @@ archclean:
 	$(Q)$(MAKE) $(clean)=$(tools)
 
 archprepare:
-	$(Q)$(MAKE) $(build)=$(tools) arch/$(ARCH)/include/generated/facilities.h
+	$(Q)$(MAKE) $(build)=$(tools) include/generated/facilities.h
 	$(Q)$(MAKE) $(build)=$(tools) arch/$(ARCH)/include/generated/dis.h
 
 # Don't use tabs in echo arguments
