@@ -83,7 +83,8 @@ struct smc_clc_msg_proposal {	/* clc proposal message sent by Linux */
 #define SMC_CLC_PROPOSAL_MAX_PREFIX	(8 * sizeof(struct smc_clc_ipv6_prefix))
 #define SMC_CLC_MAX_LEN		(sizeof(struct smc_clc_msg_proposal) + \
 				 SMC_CLC_PROPOSAL_MAX_OFFSET + \
-				 SMC_CLC_PROPOSAL_MAX_PREFIX)
+				 SMC_CLC_PROPOSAL_MAX_PREFIX + \
+				 sizeof(struct smc_clc_msg_trail))
 
 struct smc_clc_msg_accept_confirm {	/* clc accept / confirm message */
 	struct smc_clc_msg_hdr hdr;
