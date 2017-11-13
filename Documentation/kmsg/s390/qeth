@@ -418,19 +418,6 @@
  */
 
 /*?
- * Text: "There is no IPv6 support for the layer 3 discipline\n"
- * Severity: Warning
- * Description:
- * If you want to use IPv6 with the layer 3 discipline, you need a Linux kernel
- * with IPv6 support. Because your Linux kernel has not been compiled with
- * IPv6 support, you cannot use IPv6 with the layer 3 discipline, even if your
- * adapter supports IPv6.
- * User action:
- * Use a Linux kernel that has been complied to include IPv6 support if you
- * want to use IPv6 with layer 3 qeth devices.
- */
-
-/*?
  * Text: "%s: The qeth device is not configured for the OSI layer required by z/VM\n"
  * Severity: Error
  * Parameter:
