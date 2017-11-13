@@ -476,7 +476,8 @@ static void qeth_cleanup_handled_pending(struct qeth_qdio_out_q *q, int bidx,
 
 
 static void qeth_qdio_handle_aob(struct qeth_card *card,
-				 unsigned long phys_aob_addr) {
+				 unsigned long phys_aob_addr)
+{
 	struct qaob *aob;
 	struct qeth_qdio_out_buffer *buffer;
 	enum iucv_tx_notify notification;
@@ -3879,7 +3880,7 @@ int qeth_push_hdr(struct sk_buff *skb, struct qeth_hdr **hdr, unsigned int len)
 	if (skb_headroom(skb) >= len &&
 	    qeth_get_elements_for_range((addr_t)skb->data - len,
 					(addr_t)skb->data) == 1) {
-		*hdr = (struct qeth_hdr *)skb_push(skb, len);
+		*hdr = skb_push(skb, len);
 		return len;
 	}
 	/* fall back */
@@ -3968,11 +3969,10 @@ static int qeth_fill_buffer(struct qeth_qdio_out_q *queue,
 			    struct sk_buff *skb, struct qeth_hdr *hdr,
 			    unsigned int offset, unsigned int hd_len)
 {
-	struct qdio_buffer *buffer;
+	struct qdio_buffer *buffer = buf->buffer;
 	bool is_first_elem = true;
 	int flush_cnt = 0;
 
-	buffer = buf->buffer;
 	refcount_inc(&skb->users);
 	skb_queue_tail(&buf->skb_list, skb);
 
@@ -4877,7 +4877,8 @@ static void qeth_qdio_establish_cq(struct qeth_card *card,
 				   struct qdio_buffer **in_sbal_ptrs,
 				   void (**queue_start_poll)
 					(struct ccw_device *, int,
-					 unsigned long)) {
+					 unsigned long))
+{
 	int i;
 
 	if (card->options.cq == QETH_CQ_ENABLED) {

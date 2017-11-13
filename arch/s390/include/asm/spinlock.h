@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  *  S390 version
  *    Copyright IBM Corp. 1999
@@ -91,13 +92,6 @@ static inline void arch_spin_unlock(arch_spinlock_t *lp)
 		"	sth	%1,%0\n"
 		: "=Q" (((unsigned short *) &lp->lock)[1])
 		: "d" (0) : "cc", "memory");
-}
-
-static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
-{
-	while (arch_spin_is_locked(lock))
-		arch_spin_relax(lock);
-	smp_acquire__after_ctrl_dep();
 }
 
 /*

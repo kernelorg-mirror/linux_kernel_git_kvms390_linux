@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _ASM_S390_FUTEX_H
 #define _ASM_S390_FUTEX_H
 
@@ -21,19 +22,13 @@
 		: "0" (-EFAULT), "d" (oparg), "a" (uaddr),		\
 		  "m" (*uaddr) : "cc");
 
-static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
+static inline int arch_futex_atomic_op_inuser(int op, int oparg, int *oval,
+		u32 __user *uaddr)
 {
-	int op = (encoded_op >> 28) & 7;
-	int cmp = (encoded_op >> 24) & 15;
-	int oparg = (encoded_op << 8) >> 20;
-	int cmparg = (encoded_op << 20) >> 20;
 	int oldval = 0, newval, ret;
 	mm_segment_t old_fs;
 
 	old_fs = enable_sacf_uaccess();
-	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
-		oparg = 1 << oparg;
-
 	pagefault_disable();
 	switch (op) {
 	case FUTEX_OP_SET:
@@ -62,17 +57,9 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
 	pagefault_enable();
 	disable_sacf_uaccess(old_fs);
 
-	if (!ret) {
-		switch (cmp) {
-		case FUTEX_OP_CMP_EQ: ret = (oldval == cmparg); break;
-		case FUTEX_OP_CMP_NE: ret = (oldval != cmparg); break;
-		case FUTEX_OP_CMP_LT: ret = (oldval < cmparg); break;
-		case FUTEX_OP_CMP_GE: ret = (oldval >= cmparg); break;
-		case FUTEX_OP_CMP_LE: ret = (oldval <= cmparg); break;
-		case FUTEX_OP_CMP_GT: ret = (oldval > cmparg); break;
-		default: ret = -ENOSYS;
-		}
-	}
+	if (!ret)
+		*oval = oldval;
+
 	return ret;
 }
 

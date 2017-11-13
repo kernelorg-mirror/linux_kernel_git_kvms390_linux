@@ -1,5 +1,6 @@
 #include <linux/module.h>
 #include <asm/alternative.h>
+#include <asm/facility.h>
 
 #define MAX_PATCH_LEN (255 - 1)
 
