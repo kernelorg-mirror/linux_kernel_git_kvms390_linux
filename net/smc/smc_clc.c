@@ -27,11 +27,10 @@
  */
 static bool smc_clc_msg_hdr_valid(struct smc_clc_msg_hdr *clcm)
 {
-	struct smc_clc_msg_decline *dclc = (struct smc_clc_msg_decline *)clcm;
-	struct smc_clc_msg_accept_confirm *clc =
-				(struct smc_clc_msg_accept_confirm *)clcm;
 	struct smc_clc_msg_proposal_prefix *pclc_prfx;
+	struct smc_clc_msg_accept_confirm *clc;
 	struct smc_clc_msg_proposal *pclc;
+	struct smc_clc_msg_decline *dclc;
 	struct smc_clc_msg_trail *trl;
 
 	if (memcmp(clcm->eyecatcher, SMC_EYECATCHER, sizeof(SMC_EYECATCHER)))
@@ -52,12 +51,14 @@ static bool smc_clc_msg_hdr_valid(struct smc_clc_msg_hdr *clcm)
 		break;
 	case SMC_CLC_ACCEPT:
 	case SMC_CLC_CONFIRM:
-		if (ntohs(clcm->length) != sizeof(*clc))
+		clc = (struct smc_clc_msg_accept_confirm *)clcm;
+		if (ntohs(clc->hdr.length) != sizeof(*clc))
 			return false;
 		trl = &clc->trl;
 		break;
 	case SMC_CLC_DECLINE:
-		if (ntohs(clcm->length) != sizeof(*dclc))
+		dclc = (struct smc_clc_msg_decline *)clcm;
+		if (ntohs(dclc->hdr.length) != sizeof(*dclc))
 			return false;
 		trl = &dclc->trl;
 		break;
