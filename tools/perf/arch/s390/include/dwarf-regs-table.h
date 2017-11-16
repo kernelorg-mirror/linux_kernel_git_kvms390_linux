@@ -2,7 +2,7 @@
 #ifndef S390_DWARF_REGS_TABLE_H
 #define S390_DWARF_REGS_TABLE_H
 
-#define REG_DWARFNUM_NAME(reg, idx)     [idx] = "%" #reg
+#define REG_DWARFNUM_NAME(reg, idx)	[idx] = "%" #reg
 
 /*
  * For reference, see DWARF register mapping:
