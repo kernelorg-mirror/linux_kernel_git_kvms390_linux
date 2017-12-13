@@ -30,7 +30,7 @@ extern int input_len;
 extern char _text, _end;
 extern char _bss, _ebss;
 
-static void error(char *m) __noreturn;
+static void error(char *m);
 
 static unsigned long free_mem_ptr;
 static unsigned long free_mem_end_ptr;
@@ -117,7 +117,6 @@ static void error(char *x)
 	puts("\n\n -- System halted");
 
 	asm volatile("lpsw %0" : : "Q" (psw));
-	unreachable();
 }
 
 /*
