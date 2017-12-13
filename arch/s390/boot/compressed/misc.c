@@ -174,7 +174,3 @@ unsigned long decompress_kernel(void)
 	return (unsigned long) output;
 }
 
-void fortify_panic(const char *name)
-{
-	error("detected buffer overflow");
-}
