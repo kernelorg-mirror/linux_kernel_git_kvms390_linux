@@ -209,9 +209,6 @@ static void __init conmode_default(void)
 #endif
 		}
 	} else if (MACHINE_IS_KVM) {
-		if (IS_ENABLED(CONFIG_VT) && IS_ENABLED(CONFIG_DUMMY_CONSOLE))
-			conswitchp = &dummy_con;
-
 		if (sclp.has_vt220 && IS_ENABLED(CONFIG_SCLP_VT220_CONSOLE))
 			SET_CONSOLE_VT220;
 		else if (sclp.has_linemode && IS_ENABLED(CONFIG_SCLP_CONSOLE))
