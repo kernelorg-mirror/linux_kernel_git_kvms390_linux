@@ -58,7 +58,7 @@ kbd_alloc(void) {
 	if (!kbd->key_maps)
 		goto out_kbd;
 	for (i = 0; i < ARRAY_SIZE(ebc_key_maps); i++) {
-		if (ebc_key_maps[i]) {
+		if (key_maps[i]) {
 			kbd->key_maps[i] = kmemdup(ebc_key_maps[i],
 						   sizeof(u_short) * NR_KEYS,
 						   GFP_KERNEL);
@@ -70,8 +70,8 @@ kbd_alloc(void) {
 	if (!kbd->func_table)
 		goto out_maps;
 	for (i = 0; i < ARRAY_SIZE(ebc_func_table); i++) {
-		if (ebc_func_table[i]) {
-			kbd->func_table[i] = kstrdup(ebc_func_table[i],
+		if (func_table[i]) {
+			kbd->func_table[i] = kstrdup(func_table[i],
 						     GFP_KERNEL);
 			if (!kbd->func_table[i])
 				goto out_func;
