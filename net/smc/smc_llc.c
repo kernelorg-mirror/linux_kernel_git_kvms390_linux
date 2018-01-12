@@ -21,6 +21,8 @@
 #include "smc_clc.h"
 #include "smc_llc.h"
 
+#define SMC_LLC_DATA_LEN		40
+
 struct smc_llc_hdr {
 	struct smc_wr_rx_hdr common;
 	u8 length;	/* 44 */
@@ -46,8 +48,6 @@ union smc_llc_msg {
 		u8 data[SMC_LLC_DATA_LEN];
 	} raw;
 };
-
-#define SMC_LLC_DATA_LEN		40
 
 #define SMC_LLC_FLAG_RESP		0x80
 

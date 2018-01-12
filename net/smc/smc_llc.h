@@ -28,8 +28,6 @@ enum smc_llc_msg_type {
 	SMC_LLC_CONFIRM_LINK		= 0x01,
 };
 
-#define SMC_LLC_DATA_LEN		40
-
 /* transmit */
 int smc_llc_send_confirm_link(struct smc_link *lnk, u8 mac[], union ib_gid *gid,
 			      enum smc_llc_reqresp reqresp);
