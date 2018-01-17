@@ -47,8 +47,50 @@ struct smc_llc_msg_test_link {		/* type 0x07 */
 	u8 reserved[24];
 };
 
+struct smc_rmb_rtoken3 {
+	union {
+		u8 num_rkeys;	/* first rtoken byte of CONFIRM LINK msg */
+				/* is actually the num of rtokens, first */
+				/* rtoken is always for the current link */
+		u8 link_id;	/* link id of the rtoken */
+	};
+	__be32 rmb_key;
+	__be64 rmb_vaddr;
+} __packed;
+
+#define SMC_LLC_RKEYS_PER_MSG	3
+
+struct smc_llc_msg_confirm_rkey {	/* type 0x06 */
+	struct smc_llc_hdr hd;
+	struct smc_rmb_rtoken3 rtoken[SMC_LLC_RKEYS_PER_MSG];
+	u8 reserved[1];
+} __packed;
+
+struct smc_llc_msg_confirm_rkey_cont {	/* type 0x08 */
+	struct smc_llc_hdr hd;
+	u8 num_rkeys;
+	struct smc_rmb_rtoken3 rtoken[SMC_LLC_RKEYS_PER_MSG];
+} __packed;
+
+#define SMC_LLC_DEL_RKEY_RKEYS_PER_MSG	8
+#define SMC_LLC_FLAG_RKEY_NEG	0x20
+
+struct smc_llc_msg_delete_rkey {	/* type 0x09 */
+	struct smc_llc_hdr hd;
+	u8 num_rkeys;
+	u8 err_mask;
+	u8 reserved[2];
+	__be32 rkey[8];
+	u8 reserved2[4];
+} __packed;
+
 union smc_llc_msg {
 	struct smc_llc_msg_confirm_link confirm_link;
+
+	struct smc_llc_msg_confirm_rkey confirm_rkey;
+	struct smc_llc_msg_confirm_rkey_cont confirm_rkey_cont;
+	struct smc_llc_msg_delete_rkey delete_rkey;
+
 	struct smc_llc_msg_test_link test_link;
 	struct {
 		struct smc_llc_hdr hdr;
@@ -161,6 +203,22 @@ int smc_llc_send_test_link(struct smc_link *link, u8 user_data[16],
 	return rc;
 }
 
+/* send a prepared message */
+int smc_llc_send_message(struct smc_link *link, void *srcbuf, int srclen)
+{
+	struct smc_wr_tx_pend_priv *pend;
+	struct smc_wr_buf *wr_buf;
+	int rc;
+
+	rc = smc_llc_add_pending_send(link, &wr_buf, &pend);
+	if (rc)
+		return rc;
+	memcpy(wr_buf, srcbuf, srclen);
+	/* send llc message */
+	rc = smc_wr_tx_send(link, pend);
+	return rc;
+}
+
 /********************************* receive ***********************************/
 
 static void smc_llc_rx_confirm_link(struct smc_link *link,
@@ -190,6 +248,78 @@ static void smc_llc_rx_test_link(struct smc_link *link,
 	}
 }
 
+static void smc_llc_rx_confirm_rkey(struct smc_link *link,
+				    struct smc_llc_msg_confirm_rkey *llc)
+{
+	struct smc_link_group *lgr;
+	int rc;
+
+	lgr = container_of(link, struct smc_link_group, lnk[SMC_SINGLE_LINK]);
+
+	if (llc->hd.flags & SMC_LLC_FLAG_RESP) {
+		/* unused as long as we don't send this type of msg */
+	} else {
+		rc = smc_rtoken_add(lgr,
+				    llc->rtoken[0].rmb_vaddr,
+				    llc->rtoken[0].rmb_key);
+
+		/* ignore rtokens for other links, we have only one link */
+
+		llc->hd.flags |= SMC_LLC_FLAG_RESP;
+		if (rc < 0)
+			llc->hd.flags |= SMC_LLC_FLAG_RKEY_NEG;
+		smc_llc_send_message(link, (void *)llc, sizeof(*llc));
+	}
+}
+
+static void smc_llc_rx_confirm_rkey_cont(struct smc_link *link,
+				struct smc_llc_msg_confirm_rkey_cont *llc)
+{
+	struct smc_link_group *lgr;
+
+	lgr = container_of(link, struct smc_link_group, lnk[SMC_SINGLE_LINK]);
+
+	if (llc->hd.flags & SMC_LLC_FLAG_RESP) {
+		/* unused as long as we don't send this type of msg */
+	} else {
+		/* ignore rtokens for other links, we have only one link */
+		llc->hd.flags |= SMC_LLC_FLAG_RESP;
+		smc_llc_send_message(link, (void *)llc, sizeof(*llc));
+	}
+}
+
+static void smc_llc_rx_delete_rkey(struct smc_link *link,
+				   struct smc_llc_msg_delete_rkey *llc)
+{
+	struct smc_link_group *lgr;
+	u8 err_mask_idx = 0x80;
+	u8 err_mask = 0;
+	int rc;
+	int i;
+
+	lgr = container_of(link, struct smc_link_group, lnk[SMC_SINGLE_LINK]);
+
+	if (llc->hd.flags & SMC_LLC_FLAG_RESP) {
+		/* unused as long as we don't send this type of msg */
+	} else {
+		for (i = 0; i < min_t(u8, llc->num_rkeys,
+				      SMC_LLC_DEL_RKEY_RKEYS_PER_MSG); i++) {
+			rc = smc_rtoken_delete(lgr, llc->rkey[i]);
+			if (rc < 0)
+				err_mask = err_mask + err_mask_idx;
+			err_mask_idx = err_mask_idx >> 1;
+		}
+
+		if (err_mask) {
+			llc->hd.flags |= SMC_LLC_FLAG_RKEY_NEG;
+			llc->err_mask = err_mask;
+		}
+
+		llc->hd.flags |= SMC_LLC_FLAG_RESP;
+		smc_llc_send_message(link, (void *)llc, sizeof(*llc));
+	}
+}
+
 static void smc_llc_rx_handler(struct ib_wc *wc, void *buf)
 {
 	struct smc_link *link = (struct smc_link *)wc->qp->qp_context;
@@ -203,6 +333,12 @@ static void smc_llc_rx_handler(struct ib_wc *wc, void *buf)
 		smc_llc_rx_confirm_link(link, &llc->confirm_link);
 	if (llc->raw.hdr.common.type == SMC_LLC_TEST_LINK)
 		smc_llc_rx_test_link(link, &llc->test_link);
+	if (llc->raw.hdr.common.type == SMC_LLC_CONFIRM_RKEY)
+		smc_llc_rx_confirm_rkey(link, &llc->confirm_rkey);
+	if (llc->raw.hdr.common.type == SMC_LLC_CONFIRM_RKEY_CONT)
+		smc_llc_rx_confirm_rkey_cont(link, &llc->confirm_rkey_cont);
+	if (llc->raw.hdr.common.type == SMC_LLC_DELETE_RKEY)
+		smc_llc_rx_delete_rkey(link, &llc->delete_rkey);
 }
 
 /***************************** init, exit, misc ******************************/
@@ -215,6 +351,18 @@ static struct smc_wr_rx_handler smc_llc_rx_handlers[] = {
 	{
 		.handler	= smc_llc_rx_handler,
 		.type		= SMC_LLC_TEST_LINK
+	},
+	{
+		.handler	= smc_llc_rx_handler,
+		.type		= SMC_LLC_CONFIRM_RKEY
+	},
+	{
+		.handler	= smc_llc_rx_handler,
+		.type		= SMC_LLC_CONFIRM_RKEY_CONT
+	},
+	{
+		.handler	= smc_llc_rx_handler,
+		.type		= SMC_LLC_DELETE_RKEY
 	},
 	{
 		.handler	= NULL,
