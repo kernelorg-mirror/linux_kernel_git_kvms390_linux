@@ -33,6 +33,7 @@
 #define SMC_CLC_DECL_INTERR	0x99990000  /* internal error                 */
 #define SMC_CLC_DECL_TCL	0x02040000  /* timeout w4 QP confirm          */
 #define SMC_CLC_DECL_SEND	0x07000000  /* sending problem                */
+#define SMC_CLC_DECL_NO_ARW	0x08000000  /* remote does not support ARW    */
 
 struct smc_clc_msg_hdr {	/* header1 of clc messages */
 	u8 eyecatcher[4];	/* eye catcher */
