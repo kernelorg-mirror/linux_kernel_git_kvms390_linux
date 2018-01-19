@@ -150,6 +150,7 @@ static int smc_link_init(struct smc_link *lnk, struct smc_link_group *lgr,
 	u8 rndvec[3];
 	int rc;
 
+	lnk->lgr = lgr;
 	lnk->link_id = SMC_SINGLE_LINK;
 	lnk->smcibdev = smcibdev;
 	lnk->ibport = ibport;

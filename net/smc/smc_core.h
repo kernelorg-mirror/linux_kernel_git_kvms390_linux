@@ -87,6 +87,8 @@ struct smc_link {
 	u8			peer_mac[ETH_ALEN];	/* = gid[8:10||13:15] */
 	u8			peer_gid[sizeof(union ib_gid)];	/* gid of peer*/
 	u8			link_id;	/* unique # within link group */
+
+	struct smc_link_group	*lgr;		/* parent link group */
 	struct completion	llc_confirm;	/* wait for rx of conf link */
 	struct completion	llc_confirm_resp; /* wait 4 rx of cnf lnk rsp */
 	s32			llc_confirm_rc; /* rc from confirm link msg */

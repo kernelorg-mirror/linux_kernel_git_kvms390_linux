@@ -239,8 +239,7 @@ static void smc_cdc_msg_recv_action(struct smc_sock *smc,
 static inline void smc_cdc_msg_recv(struct smc_cdc_msg *cdc,
 				    struct smc_link *link, u64 wr_id)
 {
-	struct smc_link_group *lgr = container_of(link, struct smc_link_group,
-						  lnk[SMC_SINGLE_LINK]);
+	struct smc_link_group *lgr = link->lgr;
 	struct smc_connection *connection;
 	struct smc_sock *smc;
 

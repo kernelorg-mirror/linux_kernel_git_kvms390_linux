@@ -154,8 +154,6 @@ int smc_llc_send_confirm_link(struct smc_link *link, u8 mac[],
 			      union ib_gid *gid,
 			      enum smc_llc_reqresp reqresp)
 {
-	struct smc_link_group *lgr = container_of(link, struct smc_link_group,
-						  lnk[SMC_SINGLE_LINK]);
 	struct smc_llc_msg_confirm_link *confllc;
 	struct smc_wr_tx_pend_priv *pend;
 	struct smc_wr_buf *wr_buf;
@@ -175,7 +173,7 @@ int smc_llc_send_confirm_link(struct smc_link *link, u8 mac[],
 	memcpy(confllc->sender_gid, gid, SMC_GID_SIZE);
 	hton24(confllc->sender_qp_num, link->roce_qp->qp_num);
 	confllc->link_num = link->link_id;
-	memcpy(confllc->link_uid, lgr->id, SMC_LGR_ID_SIZE);
+	memcpy(confllc->link_uid, link->lgr->id, SMC_LGR_ID_SIZE);
 	confllc->max_links = SMC_LINKS_PER_LGR_MAX;
 	/* send llc message */
 	rc = smc_wr_tx_send(link, pend);
@@ -227,10 +225,7 @@ int smc_llc_send_message(struct smc_link *link, void *srcbuf, int srclen)
 static void smc_llc_rx_confirm_link(struct smc_link *link,
 				    struct smc_llc_msg_confirm_link *llc)
 {
-	struct smc_link_group *lgr;
 	s32 conf_rc;
-
-	lgr = container_of(link, struct smc_link_group, lnk[SMC_SINGLE_LINK]);
 
 	/* we do not support eyecatcher in RMBE */
 	if (llc->hd.flags & SMC_LLC_FLAG_NO_RMBE_EYEC)
@@ -239,12 +234,12 @@ static void smc_llc_rx_confirm_link(struct smc_link *link,
 		conf_rc = ENOTSUPP;
 
 	if (llc->hd.flags & SMC_LLC_FLAG_RESP) {
-		if (lgr->role == SMC_SERV) {
+		if (link->lgr->role == SMC_SERV) {
 			link->llc_confirm_resp_rc = conf_rc;
 			complete(&link->llc_confirm_resp);
 		}
 	} else {
-		if (lgr->role == SMC_CLNT) {
+		if (link->lgr->role == SMC_CLNT) {
 			link->llc_confirm_rc = conf_rc;
 			link->link_id = llc->link_num;
 			complete(&link->llc_confirm);
@@ -265,15 +260,12 @@ static void smc_llc_rx_test_link(struct smc_link *link,
 static void smc_llc_rx_confirm_rkey(struct smc_link *link,
 				    struct smc_llc_msg_confirm_rkey *llc)
 {
-	struct smc_link_group *lgr;
 	int rc;
-
-	lgr = container_of(link, struct smc_link_group, lnk[SMC_SINGLE_LINK]);
 
 	if (llc->hd.flags & SMC_LLC_FLAG_RESP) {
 		/* unused as long as we don't send this type of msg */
 	} else {
-		rc = smc_rtoken_add(lgr,
+		rc = smc_rtoken_add(link->lgr,
 				    llc->rtoken[0].rmb_vaddr,
 				    llc->rtoken[0].rmb_key);
 
@@ -289,10 +281,6 @@ static void smc_llc_rx_confirm_rkey(struct smc_link *link,
 static void smc_llc_rx_confirm_rkey_cont(struct smc_link *link,
 				struct smc_llc_msg_confirm_rkey_cont *llc)
 {
-	struct smc_link_group *lgr;
-
-	lgr = container_of(link, struct smc_link_group, lnk[SMC_SINGLE_LINK]);
-
 	if (llc->hd.flags & SMC_LLC_FLAG_RESP) {
 		/* unused as long as we don't send this type of msg */
 	} else {
@@ -305,20 +293,17 @@ static void smc_llc_rx_confirm_rkey_cont(struct smc_link *link,
 static void smc_llc_rx_delete_rkey(struct smc_link *link,
 				   struct smc_llc_msg_delete_rkey *llc)
 {
-	struct smc_link_group *lgr;
 	u8 err_mask_idx = 0x80;
 	u8 err_mask = 0;
 	int rc;
 	int i;
-
-	lgr = container_of(link, struct smc_link_group, lnk[SMC_SINGLE_LINK]);
 
 	if (llc->hd.flags & SMC_LLC_FLAG_RESP) {
 		/* unused as long as we don't send this type of msg */
 	} else {
 		for (i = 0; i < min_t(u8, llc->num_rkeys,
 				      SMC_LLC_DEL_RKEY_RKEYS_PER_MSG); i++) {
-			rc = smc_rtoken_delete(lgr, llc->rkey[i]);
+			rc = smc_rtoken_delete(link->lgr, llc->rkey[i]);
 			if (rc < 0)
 				err_mask = err_mask + err_mask_idx;
 			err_mask_idx = err_mask_idx >> 1;
