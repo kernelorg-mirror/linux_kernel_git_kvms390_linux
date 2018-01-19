@@ -143,6 +143,47 @@ free:
 	smc_lgr_free(lgr);
 }
 
+/* initialize a new link */
+static int smc_link_init(struct smc_link *lnk, struct smc_link_group *lgr,
+			 struct smc_ib_device *smcibdev, u8 ibport)
+{
+	u8 rndvec[3];
+	int rc;
+
+	lnk->link_id = SMC_SINGLE_LINK;
+	lnk->smcibdev = smcibdev;
+	lnk->ibport = ibport;
+	lnk->path_mtu = smcibdev->pattr[ibport - 1].active_mtu;
+	if (!smcibdev->initialized)
+		smc_ib_setup_per_ibdev(smcibdev);
+	get_random_bytes(rndvec, sizeof(rndvec));
+	lnk->psn_initial = rndvec[0] + (rndvec[1] << 8) + (rndvec[2] << 16);
+	rc = smc_wr_alloc_link_mem(lnk);
+	if (rc)
+		goto out;
+	rc = smc_ib_create_protection_domain(lnk);
+	if (rc)
+		goto free_link_mem;
+	rc = smc_ib_create_queue_pair(lnk);
+	if (rc)
+		goto dealloc_pd;
+	rc = smc_wr_create_link(lnk);
+	if (rc)
+		goto destroy_qp;
+	init_completion(&lnk->llc_confirm);
+	init_completion(&lnk->llc_confirm_resp);
+	return 0;
+
+destroy_qp:
+	smc_ib_destroy_queue_pair(lnk);
+dealloc_pd:
+	smc_ib_dealloc_protection_domain(lnk);
+free_link_mem:
+	smc_wr_free_link_mem(lnk);
+out:
+	return rc;
+}
+
 /* create a new SMC link group */
 static int smc_lgr_create(struct smc_sock *smc, __be32 peer_in_addr,
 			  struct smc_ib_device *smcibdev, u8 ibport,
@@ -150,7 +191,6 @@ static int smc_lgr_create(struct smc_sock *smc, __be32 peer_in_addr,
 {
 	struct smc_link_group *lgr;
 	struct smc_link *lnk;
-	u8 rndvec[3];
 	int rc = 0;
 	int i;
 
@@ -176,29 +216,10 @@ static int smc_lgr_create(struct smc_sock *smc, __be32 peer_in_addr,
 	lgr->conns_all = RB_ROOT;
 
 	lnk = &lgr->lnk[SMC_SINGLE_LINK];
-	/* initialize link */
-	lnk->link_id = SMC_SINGLE_LINK;
-	lnk->smcibdev = smcibdev;
-	lnk->ibport = ibport;
-	lnk->path_mtu = smcibdev->pattr[ibport - 1].active_mtu;
-	if (!smcibdev->initialized)
-		smc_ib_setup_per_ibdev(smcibdev);
-	get_random_bytes(rndvec, sizeof(rndvec));
-	lnk->psn_initial = rndvec[0] + (rndvec[1] << 8) + (rndvec[2] << 16);
-	rc = smc_wr_alloc_link_mem(lnk);
+
+	rc = smc_link_init(lnk, lgr, smcibdev, ibport);
 	if (rc)
 		goto free_lgr;
-	rc = smc_ib_create_protection_domain(lnk);
-	if (rc)
-		goto free_link_mem;
-	rc = smc_ib_create_queue_pair(lnk);
-	if (rc)
-		goto dealloc_pd;
-	rc = smc_wr_create_link(lnk);
-	if (rc)
-		goto destroy_qp;
-	init_completion(&lnk->llc_confirm);
-	init_completion(&lnk->llc_confirm_resp);
 
 	smc->conn.lgr = lgr;
 	rwlock_init(&lgr->conns_lock);
@@ -207,12 +228,6 @@ static int smc_lgr_create(struct smc_sock *smc, __be32 peer_in_addr,
 	spin_unlock_bh(&smc_lgr_list.lock);
 	return 0;
 
-destroy_qp:
-	smc_ib_destroy_queue_pair(lnk);
-dealloc_pd:
-	smc_ib_dealloc_protection_domain(lnk);
-free_link_mem:
-	smc_wr_free_link_mem(lnk);
 free_lgr:
 	kfree(lgr);
 out:
