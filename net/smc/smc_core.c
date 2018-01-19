@@ -151,6 +151,7 @@ static int smc_link_init(struct smc_link *lnk, struct smc_link_group *lgr,
 	int rc;
 
 	lnk->lgr = lgr;
+	lnk->state = SMC_LNK_ACTIVATING;
 	lnk->link_id = SMC_SINGLE_LINK;
 	lnk->smcibdev = smcibdev;
 	lnk->ibport = ibport;
@@ -173,6 +174,8 @@ static int smc_link_init(struct smc_link *lnk, struct smc_link_group *lgr,
 		goto destroy_qp;
 	init_completion(&lnk->llc_confirm);
 	init_completion(&lnk->llc_confirm_resp);
+	init_completion(&lnk->llc_add);
+	init_completion(&lnk->llc_add_resp);
 	return 0;
 
 destroy_qp:

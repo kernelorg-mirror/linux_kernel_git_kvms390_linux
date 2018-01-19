@@ -32,6 +32,11 @@ enum smc_lgr_role {		/* possible roles of a link group */
 	SMC_SERV	/* server */
 };
 
+enum smc_link_state {			/* possible states of a link */
+	SMC_LNK_ACTIVATING,	/* link is being activated */
+	SMC_LNK_ACTIVE		/* link is active */
+};
+
 #define SMC_WR_BUF_SIZE		48	/* size of work request buffer */
 
 struct smc_wr_buf {
@@ -89,10 +94,13 @@ struct smc_link {
 	u8			link_id;	/* unique # within link group */
 
 	struct smc_link_group	*lgr;		/* parent link group */
+	enum smc_link_state	state;		/* state of link */
 	struct completion	llc_confirm;	/* wait for rx of conf link */
 	struct completion	llc_confirm_resp; /* wait 4 rx of cnf lnk rsp */
 	s32			llc_confirm_rc; /* rc from confirm link msg */
 	s32			llc_confirm_resp_rc; /* rc from conf_resp msg */
+	struct completion	llc_add;	/* wait for rx of add link */
+	struct completion	llc_add_resp;	/* wait for rx of add link rsp*/
 };
 
 /* For now we just allow one parallel link per link group. The SMC protocol
