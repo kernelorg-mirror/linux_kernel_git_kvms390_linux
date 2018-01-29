@@ -422,7 +422,7 @@ int smc_ib_remember_port_attr(struct smc_ib_device *smcibdev, u8 ibport)
 			   &smcibdev->pattr[ibport - 1]);
 	if (rc)
 		goto out;
-	/* the SMC protocol requires specification of the roce MAC address */
+	/* the SMC protocol requires specification of the RoCE MAC address */
 	rc = smc_ib_fill_gid_and_mac(smcibdev, ibport);
 	if (rc)
 		goto out;
