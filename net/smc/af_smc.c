@@ -7,7 +7,6 @@
  *  applicable with RoCE-cards only
  *
  *  Initial restrictions:
- *    - non-blocking connect postponed
  *    - IPv6 support postponed
  *    - support for alternate links postponed
  *    - partial support for non-blocking sockets only
@@ -371,7 +370,6 @@ static void smc_lgr_forget(struct smc_link_group *lgr)
 /* setup for RDMA connection of client */
 static int smc_connect_rdma(struct smc_sock *smc)
 {
-	struct sockaddr_in *inaddr = (struct sockaddr_in *)smc->addr;
 	struct smc_clc_msg_accept_confirm aclc;
 	int local_contact = SMC_FIRST_CONTACT;
 	struct smc_ib_device *smcibdev;
@@ -425,8 +423,8 @@ static int smc_connect_rdma(struct smc_sock *smc)
 
 	srv_first_contact = aclc.hdr.flag;
 	mutex_lock(&smc_create_lgr_pending);
-	local_contact = smc_conn_create(smc, inaddr->sin_addr.s_addr, smcibdev,
-					ibport, &aclc.lcl, srv_first_contact);
+	local_contact = smc_conn_create(smc, smcibdev, ibport, &aclc.lcl,
+					srv_first_contact);
 	if (local_contact < 0) {
 		rc = local_contact;
 		if (rc == -ENOMEM)
@@ -544,7 +542,6 @@ static int smc_connect(struct socket *sock, struct sockaddr *addr,
 		goto out_err;
 	if (addr->sa_family != AF_INET)
 		goto out_err;
-	smc->addr = addr;	/* needed for nonblocking connect */
 
 	lock_sock(sk);
 	switch (sk->sk_state) {
@@ -839,8 +836,8 @@ static void smc_listen_work(struct work_struct *work)
 
 	/* allocate connection / link group */
 	mutex_lock(&smc_create_lgr_pending);
-	local_contact = smc_conn_create(new_smc, peeraddr.sin_addr.s_addr,
-					smcibdev, ibport, &pclc->lcl, 0);
+	local_contact = smc_conn_create(new_smc, smcibdev, ibport, &pclc->lcl,
+					0);
 	if (local_contact < 0) {
 		rc = local_contact;
 		if (rc == -ENOMEM)
