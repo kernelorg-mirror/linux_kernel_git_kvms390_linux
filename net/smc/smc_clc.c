@@ -11,10 +11,15 @@
  */
 
 #include <linux/in.h>
+#include <linux/in6.h>
+#include <linux/list.h>
 #include <linux/inetdevice.h>
 #include <linux/if_ether.h>
 #include <linux/sched/signal.h>
 
+#include <net/addrconf.h>
+#include <net/if_inet6.h>
+#include <net/ipv6.h>
 #include <net/sock.h>
 #include <net/tcp.h>
 
@@ -74,15 +79,65 @@ static bool smc_clc_msg_hdr_valid(struct smc_clc_msg_hdr *clcm)
 	return true;
 }
 
+/* check if proposed prefixes match our devices prefixes */
+int smc_clc_netinfo_match(struct smc_clc_netinfo *netinfo,
+			  struct smc_clc_msg_proposal_prefix *pclc_prfx)
+{
+#if IS_ENABLED(CONFIG_IPV6)
+	struct smc_clc_ipv6_prefix *ipv6_prefix;
+	int i, j, max_cnt;
+#endif
+
+	/* do we agree about the address family? */
+	if ((!pclc_prfx->ipv6_prefixes_cnt && netinfo->ipv6_prefix_cnt) ||
+	    (pclc_prfx->ipv6_prefixes_cnt && !netinfo->ipv6_prefix_cnt))
+		return -ENOENT;
+
+	/* IPv4 matching */
+	if (!netinfo->ipv6_prefix_cnt) {
+		if (pclc_prfx->outgoing_subnet == netinfo->ipv4_subnet &&
+		    pclc_prfx->prefix_len == netinfo->ipv4_prefix_len)
+			return 0;
+		else
+			return -ENOENT;
+	}
+
+#if IS_ENABLED(CONFIG_IPV6)
+	/* IPv6 matching */
+	ipv6_prefix = (struct smc_clc_ipv6_prefix *)	/* prefix list starts */
+			((u8 *)pclc_prfx +		/* behind count field */
+			 sizeof(*pclc_prfx));
+
+	max_cnt = min_t(u8, pclc_prfx->ipv6_prefixes_cnt,
+			SMC_CLC_MAX_V6_PREFIXES);
+
+	for (i = 0; i < netinfo->ipv6_prefix_cnt; i++) {/* our ip prefixes  */
+		for (j = 0; j < max_cnt; j++) {		/* peer ip prefixes */
+			if (netinfo->ipv6_prefix[i].prefix_len ==
+			    ipv6_prefix[j].prefix_len &&
+			    ipv6_prefix_equal(&netinfo->ipv6_prefix[i].prefix,
+					      &ipv6_prefix[j].prefix,
+					      ipv6_prefix[j].prefix_len))
+				return 0;
+		}
+	}
+#endif
+	return -ENOENT;
+}
+
 /* determine subnet and mask of internal TCP socket */
 int smc_clc_netinfo_by_tcpsk(struct socket *clcsock,
-			     __be32 *subnet, u8 *prefix_len)
+			     struct smc_clc_netinfo *netinfo)
 {
 	struct dst_entry *dst = sk_dst_get(clcsock->sk);
+	struct sockaddr_storage addrs;
+	struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addrs;
 	struct in_device *in_dev;
-	struct sockaddr_in addr;
+	__be32 ipv4_addr = 0;
 	int rc = -ENOENT;
 	int len;
+
+	memset(netinfo, 0, sizeof(*netinfo));
 
 	if (!dst) {
 		rc = -ENOTCONN;
@@ -94,20 +149,78 @@ int smc_clc_netinfo_by_tcpsk(struct socket *clcsock,
 	}
 
 	/* get address to which the internal TCP socket is bound */
-	kernel_getsockname(clcsock, (struct sockaddr *)&addr, &len);
-	/* analyze IPv4 specific data of net_device belonging to TCP socket */
+	kernel_getsockname(clcsock, (struct sockaddr *)&addrs, &len);
+
+	/* analyze IP specific data of net_device belonging to TCP socket */
+	if (addrs.ss_family == PF_INET) {
+		struct sockaddr_in *addr = (struct sockaddr_in *)&addrs;
+		/* real IPv4, handled below */
+		ipv4_addr = addr->sin_addr.s_addr;
+
+	} else if (addrs.ss_family == PF_INET6 &&
+		   ipv6_addr_v4mapped(&addr6->sin6_addr)) {
+		/* mapped IPv4 address - peer is IPv4 only, handled below */
+		ipv4_addr = addr6->sin6_addr.in6_u.u6_addr32[3];
+	} else {
+#if IS_ENABLED(CONFIG_IPV6)
+		/* real IPv6 */
+		struct inet6_dev *in6_dev;
+		struct inet6_ifaddr *ifa;
+		int cnt;
+
+		if (!ipv6_chk_prefix(&addr6->sin6_addr, dst->dev)) {
+			/* prefix is not on this device */
+			goto out_rel;
+		}
+
+		rcu_read_lock();
+		in6_dev = __in6_dev_get(dst->dev);
+		if (!in6_dev) {
+			rc = -ENODEV;
+			goto out_rcu;
+		}
+		/* use a maximum of 8 IPv6 prefixes from this device */
+		cnt = 0;
+		list_for_each_entry(ifa, &in6_dev->addr_list, if_list) {
+			ipv6_addr_prefix(&netinfo->ipv6_prefix[cnt].prefix,
+					 &ifa->addr, ifa->prefix_len);
+
+			netinfo->ipv6_prefix[cnt].prefix_len = ifa->prefix_len;
+
+			cnt++;
+			if (cnt == SMC_CLC_MAX_V6_PREFIXES)
+				break;
+		}
+		netinfo->ipv6_prefix_cnt = cnt;
+		rc = 0;
+		goto out_rcu;
+#else
+		goto out_rel;
+#endif
+	}
+
+	if (!ipv4_addr)
+		goto out_rel;
+
+	/* PF_INET or fallback for mapped IPv4 */
 	rcu_read_lock();
 	in_dev = __in_dev_get_rcu(dst->dev);
+	if (!in_dev) {
+		rc = -ENODEV;
+		goto out_rcu;
+	}
 	for_ifa(in_dev) {
-		if (!inet_ifa_match(addr.sin_addr.s_addr, ifa))
+		if (!inet_ifa_match(ipv4_addr, ifa))
 			continue;
-		*prefix_len = inet_mask_len(ifa->ifa_mask);
-		*subnet = ifa->ifa_address & ifa->ifa_mask;
+		netinfo->ipv4_prefix_len = inet_mask_len(ifa->ifa_mask);
+		netinfo->ipv4_subnet = ifa->ifa_address & ifa->ifa_mask;
+		netinfo->ipv6_prefix_cnt = 0;
 		rc = 0;
 		break;
 	} endfor_ifa(in_dev);
-	rcu_read_unlock();
 
+out_rcu:
+	rcu_read_unlock();
 out_rel:
 	dst_release(dst);
 out:
@@ -234,13 +347,21 @@ int smc_clc_send_proposal(struct smc_sock *smc,
 	struct smc_clc_msg_proposal_prefix pclc_prfx;
 	struct smc_clc_msg_proposal pclc;
 	struct smc_clc_msg_trail trl;
+	struct smc_clc_netinfo netinfo;
 	int reason_code = 0;
-	struct kvec vec[3];
+	struct kvec vec[4];
 	struct msghdr msg;
-	int len, plen, rc;
+	int len, ix, plen, rc;
+
+	/* determine subnet and mask from internal TCP socket */
+	rc = smc_clc_netinfo_by_tcpsk(smc->clcsock, &netinfo);
+	if (rc)
+		return SMC_CLC_DECL_CNFERR; /* configuration error */
 
 	/* send SMC Proposal CLC message */
-	plen = sizeof(pclc) + sizeof(pclc_prfx) + sizeof(trl);
+	plen = sizeof(pclc) + sizeof(pclc_prfx) +
+	       (netinfo.ipv6_prefix_cnt * sizeof(netinfo.ipv6_prefix[0])) +
+	       sizeof(trl);
 	memset(&pclc, 0, sizeof(pclc));
 	memcpy(pclc.hdr.eyecatcher, SMC_EYECATCHER, sizeof(SMC_EYECATCHER));
 	pclc.hdr.type = SMC_CLC_PROPOSAL;
@@ -252,22 +373,29 @@ int smc_clc_send_proposal(struct smc_sock *smc,
 	pclc.iparea_offset = htons(0);
 
 	memset(&pclc_prfx, 0, sizeof(pclc_prfx));
-	/* determine subnet and mask from internal TCP socket */
-	rc = smc_clc_netinfo_by_tcpsk(smc->clcsock, &pclc_prfx.outgoing_subnet,
-				      &pclc_prfx.prefix_len);
-	if (rc)
-		return SMC_CLC_DECL_CNFERR; /* configuration error */
-	pclc_prfx.ipv6_prefixes_cnt = 0;
+
+	pclc_prfx.ipv6_prefixes_cnt = netinfo.ipv6_prefix_cnt;
+	if (netinfo.ipv6_prefix_cnt == 0) {
+		pclc_prfx.outgoing_subnet = netinfo.ipv4_subnet;
+		pclc_prfx.prefix_len = netinfo.ipv4_prefix_len;
+	}
+
 	memcpy(trl.eyecatcher, SMC_EYECATCHER, sizeof(SMC_EYECATCHER));
 	memset(&msg, 0, sizeof(msg));
-	vec[0].iov_base = &pclc;
-	vec[0].iov_len = sizeof(pclc);
-	vec[1].iov_base = &pclc_prfx;
-	vec[1].iov_len = sizeof(pclc_prfx);
-	vec[2].iov_base = &trl;
-	vec[2].iov_len = sizeof(trl);
+	ix = 0;
+	vec[ix].iov_base = &pclc;
+	vec[ix++].iov_len = sizeof(pclc);
+	vec[ix].iov_base = &pclc_prfx;
+	vec[ix++].iov_len = sizeof(pclc_prfx);
+	if (netinfo.ipv6_prefix_cnt > 0) {
+		vec[ix].iov_base = &netinfo.ipv6_prefix[0];
+		vec[ix++].iov_len = netinfo.ipv6_prefix_cnt *
+				    sizeof(netinfo.ipv6_prefix[0]);
+	}
+	vec[ix].iov_base = &trl;
+	vec[ix++].iov_len = sizeof(trl);
 	/* due to the few bytes needed for clc-handshake this cannot block */
-	len = kernel_sendmsg(smc->clcsock, &msg, vec, 3, plen);
+	len = kernel_sendmsg(smc->clcsock, &msg, vec, ix, plen);
 	if (len < sizeof(pclc)) {
 		if (len >= 0) {
 			reason_code = -ENETUNREACH;

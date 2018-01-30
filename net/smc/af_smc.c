@@ -7,7 +7,6 @@
  *  applicable with RoCE-cards only
  *
  *  Initial restrictions:
- *    - IPv6 support postponed
  *    - support for alternate links postponed
  *    - partial support for non-blocking sockets only
  *    - support for urgent data postponed
@@ -64,6 +63,10 @@ static struct smc_hashinfo smc_v4_hashinfo = {
 	.lock = __RW_LOCK_UNLOCKED(smc_v4_hashinfo.lock),
 };
 
+static struct smc_hashinfo smc_v6_hashinfo = {
+	.lock = __RW_LOCK_UNLOCKED(smc_v6_hashinfo.lock),
+};
+
 int smc_hash_sk(struct sock *sk)
 {
 	struct smc_hashinfo *h = sk->sk_prot->h.smc_hash;
@@ -102,6 +105,18 @@ struct proto smc_proto = {
 	.slab_flags	= SLAB_TYPESAFE_BY_RCU,
 };
 EXPORT_SYMBOL_GPL(smc_proto);
+
+struct proto smc_proto6 = {
+	.name		= "SMC6",
+	.owner		= THIS_MODULE,
+	.keepalive	= smc_set_keepalive,
+	.hash		= smc_hash_sk,
+	.unhash		= smc_unhash_sk,
+	.obj_size	= sizeof(struct smc_sock),
+	.h.smc_hash	= &smc_v6_hashinfo,
+	.slab_flags	= SLAB_TYPESAFE_BY_RCU,
+};
+EXPORT_SYMBOL_GPL(smc_proto6);
 
 static int smc_release(struct socket *sock)
 {
@@ -159,19 +174,23 @@ static void smc_destruct(struct sock *sk)
 	sk_refcnt_debug_dec(sk);
 }
 
-static struct sock *smc_sock_alloc(struct net *net, struct socket *sock)
+static struct sock *smc_sock_alloc(struct net *net, struct socket *sock,
+				   int protocol)
 {
 	struct smc_sock *smc;
 	struct sock *sk;
 
-	sk = sk_alloc(net, PF_SMC, GFP_KERNEL, &smc_proto, 0);
+	if (protocol == SMCPROTO_SMC6)
+		sk = sk_alloc(net, PF_SMC, GFP_KERNEL, &smc_proto6, 0);
+	else
+		sk = sk_alloc(net, PF_SMC, GFP_KERNEL, &smc_proto, 0);
 	if (!sk)
 		return NULL;
 
 	sock_init_data(sock, sk); /* sets sk_refcnt to 1 */
 	sk->sk_state = SMC_INIT;
 	sk->sk_destruct = smc_destruct;
-	sk->sk_protocol = SMCPROTO_SMC;
+	sk->sk_protocol = protocol;
 	smc = smc_sk(sk);
 	INIT_WORK(&smc->tcp_listen_work, smc_tcp_listen_work);
 	INIT_LIST_HEAD(&smc->accept_q);
@@ -198,11 +217,15 @@ static int smc_bind(struct socket *sock, struct sockaddr *uaddr,
 		goto out;
 
 	rc = -EAFNOSUPPORT;
-	/* accept AF_UNSPEC (mapped to AF_INET) only if s_addr is INADDR_ANY */
-	if ((addr->sin_family != AF_INET) &&
-	    ((addr->sin_family != AF_UNSPEC) ||
-	     (addr->sin_addr.s_addr != htonl(INADDR_ANY))))
+	if (addr->sin_family != AF_INET &&
+	    addr->sin_family != AF_INET6 &&
+	    addr->sin_family != AF_UNSPEC)
 		goto out;
+	/* accept AF_UNSPEC (mapped to AF_INET) only if s_addr is INADDR_ANY */
+	if (addr->sin_family == AF_UNSPEC &&
+	    addr->sin_addr.s_addr != htonl(INADDR_ANY)) {
+		goto out;
+	}
 
 	lock_sock(sk);
 
@@ -540,7 +563,7 @@ static int smc_connect(struct socket *sock, struct sockaddr *addr,
 	/* separate smc parameter checking to be safe */
 	if (alen < sizeof(addr->sa_family))
 		goto out_err;
-	if (addr->sa_family != AF_INET)
+	if (addr->sa_family != AF_INET && addr->sa_family != AF_INET6)
 		goto out_err;
 
 	lock_sock(sk);
@@ -582,7 +605,7 @@ static int smc_clcsock_accept(struct smc_sock *lsmc, struct smc_sock **new_smc)
 	int rc;
 
 	release_sock(lsk);
-	new_sk = smc_sock_alloc(sock_net(lsk), NULL);
+	new_sk = smc_sock_alloc(sock_net(lsk), NULL, lsk->sk_protocol);
 	if (!new_sk) {
 		rc = -ENOMEM;
 		lsk->sk_err = ENOMEM;
@@ -775,13 +798,11 @@ static void smc_listen_work(struct work_struct *work)
 	struct sock *newsmcsk = &new_smc->sk;
 	struct smc_clc_msg_proposal *pclc;
 	struct smc_ib_device *smcibdev;
-	struct sockaddr_in peeraddr;
+	struct smc_clc_netinfo netinfo;
 	u8 buf[SMC_CLC_MAX_LEN];
 	struct smc_link *link;
 	int reason_code = 0;
-	int rc = 0, len;
-	__be32 subnet;
-	u8 prefix_len;
+	int rc = 0;
 	u8 ibport;
 
 	/* check if peer is smc capable */
@@ -816,8 +837,8 @@ static void smc_listen_work(struct work_struct *work)
 		goto decline_rdma;
 	}
 
-	/* determine subnet and mask from internal TCP socket */
-	rc = smc_clc_netinfo_by_tcpsk(newclcsock, &subnet, &prefix_len);
+	/* determine netinfo from internal TCP socket */
+	rc = smc_clc_netinfo_by_tcpsk(newclcsock, &netinfo);
 	if (rc) {
 		reason_code = SMC_CLC_DECL_CNFERR; /* configuration error */
 		goto decline_rdma;
@@ -825,14 +846,12 @@ static void smc_listen_work(struct work_struct *work)
 
 	pclc = (struct smc_clc_msg_proposal *)&buf;
 	pclc_prfx = smc_clc_proposal_get_prefix(pclc);
-	if (pclc_prfx->outgoing_subnet != subnet ||
-	    pclc_prfx->prefix_len != prefix_len) {
+
+	rc = smc_clc_netinfo_match(&netinfo, pclc_prfx);
+	if (rc) {
 		reason_code = SMC_CLC_DECL_CNFERR; /* configuration error */
 		goto decline_rdma;
 	}
-
-	/* get address of the peer connected to the internal TCP socket */
-	kernel_getpeername(newclcsock, (struct sockaddr *)&peeraddr, &len);
 
 	/* allocate connection / link group */
 	mutex_lock(&smc_create_lgr_pending);
@@ -1400,20 +1419,27 @@ static int smc_create(struct net *net, struct socket *sock, int protocol,
 		goto out;
 
 	rc = -EPROTONOSUPPORT;
-	if ((protocol != IPPROTO_IP) && (protocol != IPPROTO_TCP))
+	if (protocol != SMCPROTO_SMC &&
+	    protocol != SMCPROTO_SMC6)
 		goto out;
 
 	rc = -ENOBUFS;
 	sock->ops = &smc_sock_ops;
-	sk = smc_sock_alloc(net, sock);
+	sk = smc_sock_alloc(net, sock, protocol);
 	if (!sk)
 		goto out;
 
 	/* create internal TCP socket for CLC handshake and fallback */
 	smc = smc_sk(sk);
 	smc->use_fallback = false; /* assume rdma capability first */
-	rc = sock_create_kern(net, PF_INET, SOCK_STREAM,
-			      IPPROTO_TCP, &smc->clcsock);
+	if (protocol == SMCPROTO_SMC6) {
+		rc = sock_create_kern(net, PF_INET6, SOCK_STREAM,
+				      IPPROTO_TCP, &smc->clcsock);
+	} else {
+		rc = sock_create_kern(net, PF_INET, SOCK_STREAM,
+				      IPPROTO_TCP, &smc->clcsock);
+	}
+
 	if (rc)
 		sk_common_release(sk);
 	smc->sk.sk_sndbuf = max(smc->clcsock->sk->sk_sndbuf, SMC_BUF_MIN_SIZE);
@@ -1451,16 +1477,23 @@ static int __init smc_init(void)
 
 	rc = proto_register(&smc_proto, 1);
 	if (rc) {
-		pr_err("%s: proto_register fails with %d\n", __func__, rc);
+		pr_err("%s: proto_register(v4) fails with %d\n", __func__, rc);
 		goto out_pnet;
+	}
+
+	rc = proto_register(&smc_proto6, 1);
+	if (rc) {
+		pr_err("%s: proto_register(v6) fails with %d\n", __func__, rc);
+		goto out_proto;
 	}
 
 	rc = sock_register(&smc_sock_family_ops);
 	if (rc) {
 		pr_err("%s: sock_register fails with %d\n", __func__, rc);
-		goto out_proto;
+		goto out_proto6;
 	}
 	INIT_HLIST_HEAD(&smc_v4_hashinfo.ht);
+	INIT_HLIST_HEAD(&smc_v6_hashinfo.ht);
 
 	rc = smc_ib_register_client();
 	if (rc) {
@@ -1473,6 +1506,8 @@ static int __init smc_init(void)
 
 out_sock:
 	sock_unregister(PF_SMC);
+out_proto6:
+	proto_unregister(&smc_proto6);
 out_proto:
 	proto_unregister(&smc_proto);
 out_pnet:
@@ -1497,6 +1532,7 @@ static void __exit smc_exit(void)
 	smc_ib_unregister_client();
 	sock_unregister(PF_SMC);
 	proto_unregister(&smc_proto);
+	proto_unregister(&smc_proto6);
 	smc_pnet_exit();
 }
 
