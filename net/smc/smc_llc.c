@@ -458,20 +458,30 @@ static void smc_llc_rx_handler(struct ib_wc *wc, void *buf)
 		return; /* short message */
 	if (llc->raw.hdr.length != sizeof(*llc))
 		return; /* invalid message */
-	if (llc->raw.hdr.common.type == SMC_LLC_CONFIRM_LINK)
-		smc_llc_rx_confirm_link(link, &llc->confirm_link);
-	if (llc->raw.hdr.common.type == SMC_LLC_TEST_LINK)
+
+	switch(llc->raw.hdr.common.type) {
+	case SMC_LLC_TEST_LINK:
 		smc_llc_rx_test_link(link, &llc->test_link);
-	if (llc->raw.hdr.common.type == SMC_LLC_ADD_LINK)
+		break;
+	case SMC_LLC_CONFIRM_LINK:
+		smc_llc_rx_confirm_link(link, &llc->confirm_link);
+		break;
+	case SMC_LLC_ADD_LINK:
 		smc_llc_rx_add_link(link, &llc->add_link);
-	if (llc->raw.hdr.common.type == SMC_LLC_DELETE_LINK)
+		break;
+	case SMC_LLC_DELETE_LINK:
 		smc_llc_rx_delete_link(link, &llc->delete_link);
-	if (llc->raw.hdr.common.type == SMC_LLC_CONFIRM_RKEY)
+		break;
+	case SMC_LLC_CONFIRM_RKEY:
 		smc_llc_rx_confirm_rkey(link, &llc->confirm_rkey);
-	if (llc->raw.hdr.common.type == SMC_LLC_CONFIRM_RKEY_CONT)
+		break;
+	case SMC_LLC_CONFIRM_RKEY_CONT:
 		smc_llc_rx_confirm_rkey_cont(link, &llc->confirm_rkey_cont);
-	if (llc->raw.hdr.common.type == SMC_LLC_DELETE_RKEY)
+		break;
+	case SMC_LLC_DELETE_RKEY:
 		smc_llc_rx_delete_rkey(link, &llc->delete_rkey);
+		break;
+	}
 }
 
 /***************************** init, exit, misc ******************************/
