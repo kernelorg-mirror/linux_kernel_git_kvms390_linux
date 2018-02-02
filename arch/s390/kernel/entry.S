@@ -248,8 +248,8 @@ ENTRY(sie64a)
 sie_exit:
 	lg	%r14,__SF_EMPTY+8(%r15)		# load guest register save area
 	stmg	%r0,%r13,0(%r14)		# save guest gprs 0-13
-	xgr	%r0,%r0				# clear guest registers
-	xgr	%r1,%r1
+	xgr	%r0,%r0				# clear guest registers to
+	xgr	%r1,%r1				# prevent speculative use
 	xgr	%r2,%r2
 	xgr	%r3,%r3
 	xgr	%r4,%r4
@@ -288,6 +288,7 @@ ENTRY(system_call)
 .Lsysc_vtime:
 	UPDATE_VTIME %r8,%r9,__LC_SYNC_ENTER_TIMER
 	stmg	%r0,%r7,__PT_R0(%r11)
+	# clear user controlled register to prevent speculative use
 	xgr	%r0,%r0
 	mvc	__PT_R8(64,%r11),__LC_SAVE_AREA_SYNC
 	mvc	__PT_PSW(16,%r11),__LC_SVC_OLD_PSW
@@ -568,7 +569,8 @@ ENTRY(pgm_check_handler)
 4:	lgr	%r13,%r11
 	la	%r11,STACK_FRAME_OVERHEAD(%r15)
 	stmg	%r0,%r7,__PT_R0(%r11)
-	xgr	%r0,%r0			# clear user space registers
+	# clear user controlled registers to prevent speculative use
+	xgr	%r0,%r0
 	xgr	%r1,%r1
 	xgr	%r2,%r2
 	xgr	%r3,%r3
@@ -641,7 +643,8 @@ ENTRY(io_int_handler)
 	lmg	%r8,%r9,__LC_IO_OLD_PSW
 	SWITCH_ASYNC __LC_SAVE_AREA_ASYNC,__LC_ASYNC_ENTER_TIMER
 	stmg	%r0,%r7,__PT_R0(%r11)
-	xgr	%r0,%r0			# clear user space registers
+	# clear user controlled registers to prevent speculative use
+	xgr	%r0,%r0
 	xgr	%r1,%r1
 	xgr	%r2,%r2
 	xgr	%r3,%r3
@@ -863,7 +866,8 @@ ENTRY(ext_int_handler)
 	lmg	%r8,%r9,__LC_EXT_OLD_PSW
 	SWITCH_ASYNC __LC_SAVE_AREA_ASYNC,__LC_ASYNC_ENTER_TIMER
 	stmg	%r0,%r7,__PT_R0(%r11)
-	xgr	%r0,%r0			# clear user space registers
+	# clear user controlled registers to prevent speculative use
+	xgr	%r0,%r0
 	xgr	%r1,%r1
 	xgr	%r2,%r2
 	xgr	%r3,%r3
@@ -1079,7 +1083,9 @@ ENTRY(mcck_int_handler)
 .Lmcck_skip:
 	lghi	%r14,__LC_GPREGS_SAVE_AREA+64
 	stmg	%r0,%r7,__PT_R0(%r11)
-	xgr	%r0,%r0			# clear user space registers
+	# clear user controlled registers to prevent speculative use
+	xgr	%r0,%r0
+	xgr	%r1,%r1
 	xgr	%r2,%r2
 	xgr	%r3,%r3
 	xgr	%r4,%r4
