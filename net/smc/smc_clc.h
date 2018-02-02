@@ -22,6 +22,9 @@
 #define SMC_CLC_CONFIRM		0x03
 #define SMC_CLC_DECLINE		0x04
 
+/* eye catcher "SMCR" EBCDIC for CLC messages */
+static const char SMC_EYECATCHER[4] = {'\xe2', '\xd4', '\xc3', '\xd9'};
+
 #define SMC_CLC_V1		0x1		/* SMC version                */
 #define CLC_WAIT_TIME		(6 * HZ)	/* max. wait time on clcsock  */
 #define SMC_CLC_DECL_MEM	0x01010000  /* insufficient memory resources  */
@@ -33,7 +36,6 @@
 #define SMC_CLC_DECL_INTERR	0x99990000  /* internal error                 */
 #define SMC_CLC_DECL_TCL	0x02040000  /* timeout w4 QP confirm          */
 #define SMC_CLC_DECL_SEND	0x07000000  /* sending problem                */
-#define SMC_CLC_DECL_NO_ARW	0x08000000  /* remote does not support ARW    */
 
 struct smc_clc_msg_hdr {	/* header1 of clc messages */
 	u8 eyecatcher[4];	/* eye catcher */
@@ -60,12 +62,10 @@ struct smc_clc_msg_local {	/* header2 of clc messages */
 	u8 mac[6];		/* mac of ib_device port */
 };
 
-#define SMC_CLC_MAX_V6_PREFIXES	8
-
 struct smc_clc_ipv6_prefix {
-	struct in6_addr prefix;
+	u8 prefix[4];
 	u8 prefix_len;
-} __packed;			/* format defined in RFC7609 */
+} __packed;
 
 struct smc_clc_msg_proposal_prefix {	/* prefix part of clc proposal message*/
 	__be32 outgoing_subnet;	/* subnet mask */
@@ -81,11 +81,9 @@ struct smc_clc_msg_proposal {	/* clc proposal message sent by Linux */
 } __aligned(4);
 
 #define SMC_CLC_PROPOSAL_MAX_OFFSET	0x28
-#define SMC_CLC_PROPOSAL_MAX_PREFIX	(SMC_CLC_MAX_V6_PREFIXES * \
-					 sizeof(struct smc_clc_ipv6_prefix))
+#define SMC_CLC_PROPOSAL_MAX_PREFIX	(8 * sizeof(struct smc_clc_ipv6_prefix))
 #define SMC_CLC_MAX_LEN		(sizeof(struct smc_clc_msg_proposal) + \
 				 SMC_CLC_PROPOSAL_MAX_OFFSET + \
-				 sizeof(struct smc_clc_msg_proposal_prefix) + \
 				 SMC_CLC_PROPOSAL_MAX_PREFIX + \
 				 sizeof(struct smc_clc_msg_trail))
 
@@ -118,13 +116,6 @@ struct smc_clc_msg_decline {	/* clc decline message */
 	struct smc_clc_msg_trail trl; /* eye catcher "SMCR" EBCDIC */
 } __aligned(4);
 
-struct smc_clc_netinfo {
-	__be32	ipv4_subnet;
-	u8	ipv4_prefix_len;
-	u8	ipv6_prefix_cnt;	/* if zero then ipv4 fields are set */
-	struct smc_clc_ipv6_prefix ipv6_prefix[SMC_CLC_MAX_V6_PREFIXES];
-};
-
 /* determine start of the prefix area within the proposal message */
 static inline struct smc_clc_msg_proposal_prefix *
 smc_clc_proposal_get_prefix(struct smc_clc_msg_proposal *pclc)
@@ -133,10 +124,9 @@ smc_clc_proposal_get_prefix(struct smc_clc_msg_proposal *pclc)
 	       ((u8 *)pclc + sizeof(*pclc) + ntohs(pclc->iparea_offset));
 }
 
-int smc_clc_netinfo_match(struct smc_clc_netinfo *netinfo,
-			  struct smc_clc_msg_proposal_prefix *pclc_prfx);
-int smc_clc_netinfo_by_tcpsk(struct socket *clcsock,
-			     struct smc_clc_netinfo *netinfo);
+struct smc_sock;
+struct smc_ib_device;
+
 int smc_clc_wait_msg(struct smc_sock *smc, void *buf, int buflen,
 		     u8 expected_type);
 int smc_clc_send_decline(struct smc_sock *smc, u32 peer_diag_info);

@@ -82,7 +82,7 @@ static inline void smc_cdc_add_pending_send(struct smc_connection *conn,
 		sizeof(struct smc_cdc_msg) > SMC_WR_BUF_SIZE,
 		"must increase SMC_WR_BUF_SIZE to at least sizeof(struct smc_cdc_msg)");
 	BUILD_BUG_ON_MSG(
-		sizeof(struct smc_cdc_msg) != SMC_WR_TX_SIZE,
+		offsetof(struct smc_cdc_msg, reserved) > SMC_WR_TX_SIZE,
 		"must adapt SMC_WR_TX_SIZE to sizeof(struct smc_cdc_msg); if not all smc_wr upper layer protocols use the same message size any more, must start to set link->wr_tx_sges[i].length on each individual smc_wr_tx_send()");
 	BUILD_BUG_ON_MSG(
 		sizeof(struct smc_cdc_tx_pend) > SMC_WR_TX_PEND_PRIV_SIZE,
@@ -239,7 +239,8 @@ static void smc_cdc_msg_recv_action(struct smc_sock *smc,
 static inline void smc_cdc_msg_recv(struct smc_cdc_msg *cdc,
 				    struct smc_link *link, u64 wr_id)
 {
-	struct smc_link_group *lgr = link->lgr;
+	struct smc_link_group *lgr = container_of(link, struct smc_link_group,
+						  lnk[SMC_SINGLE_LINK]);
 	struct smc_connection *connection;
 	struct smc_sock *smc;
 
@@ -273,12 +274,26 @@ static void smc_cdc_rx_handler(struct ib_wc *wc, void *buf)
 	smc_cdc_msg_recv(cdc, link, wc->wr_id);
 }
 
+static struct smc_wr_rx_handler smc_cdc_rx_handlers[] = {
+	{
+		.handler	= smc_cdc_rx_handler,
+		.type		= SMC_CDC_MSG_TYPE
+	},
+	{
+		.handler	= NULL,
+	}
+};
+
 int __init smc_cdc_init(void)
 {
-	struct smc_wr_rx_handler handler = {
-			.handler = smc_cdc_rx_handler,
-			.type = SMC_WR_RX_HANDLER_CDC
-	};
+	struct smc_wr_rx_handler *handler;
+	int rc = 0;
 
-	return smc_wr_rx_register_handler(&handler);
+	for (handler = smc_cdc_rx_handlers; handler->handler; handler++) {
+		INIT_HLIST_NODE(&handler->list);
+		rc = smc_wr_rx_register_handler(handler);
+		if (rc)
+			break;
+	}
+	return rc;
 }

@@ -110,7 +110,8 @@ int smc_ib_modify_qp_reset(struct smc_link *lnk)
 
 int smc_ib_ready_link(struct smc_link *lnk)
 {
-	struct smc_link_group *lgr = lnk->lgr;
+	struct smc_link_group *lgr =
+		container_of(lnk, struct smc_link_group, lnk[0]);
 	int rc = 0;
 
 	rc = smc_ib_modify_qp_init(lnk);
