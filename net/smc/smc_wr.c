@@ -23,19 +23,20 @@
  */
 
 #include <linux/atomic.h>
-#include <linux/hashtable.h>
 #include <linux/wait.h>
 #include <rdma/ib_verbs.h>
 #include <asm/div64.h>
 
 #include "smc.h"
 #include "smc_wr.h"
+#include "smc_cdc.h"
 
 #define SMC_WR_MAX_POLL_CQE 10	/* max. # of compl. queue elements in 1 poll */
 
-#define SMC_WR_RX_HASH_BITS 4
-static DEFINE_HASHTABLE(smc_wr_rx_hash, SMC_WR_RX_HASH_BITS);
-static DEFINE_SPINLOCK(smc_wr_rx_hash_lock);
+static struct smc_wr_rx_handler_list {
+	void	(*cdcHandler)(struct ib_wc *, void *);
+	void	(*llcHandler)(struct ib_wc *, void *);
+} smc_wr_rx_handler_list = {0};
 
 struct smc_wr_tx_pend {	/* control data for a pending send request */
 	u64			wr_id;		/* work request id sent */
@@ -313,20 +314,21 @@ void smc_wr_tx_dismiss_slots(struct smc_link *link, u8 wr_tx_hdr_type,
 
 int smc_wr_rx_register_handler(struct smc_wr_rx_handler *handler)
 {
-	struct smc_wr_rx_handler *h_iter;
-	int rc = 0;
-
-	spin_lock(&smc_wr_rx_hash_lock);
-	hash_for_each_possible(smc_wr_rx_hash, h_iter, list, handler->type) {
-		if (h_iter->type == handler->type) {
-			rc = -EEXIST;
-			goto out_unlock;
-		}
+	switch(handler->type) {
+	case SMC_WR_RX_HANDLER_CDC:
+		if (smc_wr_rx_handler_list.cdcHandler)
+			return -EEXIST;
+		smc_wr_rx_handler_list.cdcHandler = handler->handler;
+		break;
+	case SMC_WR_RX_HANDLER_LLC:
+		if (smc_wr_rx_handler_list.llcHandler)
+			return -EEXIST;
+		smc_wr_rx_handler_list.llcHandler = handler->handler;
+		break;
+	default:
+		return -EINVAL;
 	}
-	hash_add(smc_wr_rx_hash, &handler->list, handler->type);
-out_unlock:
-	spin_unlock(&smc_wr_rx_hash_lock);
-	return rc;
+	return 0;
 }
 
 /* Demultiplex a received work request based on the message type to its handler.
@@ -336,7 +338,6 @@ out_unlock:
 static inline void smc_wr_rx_demultiplex(struct ib_wc *wc)
 {
 	struct smc_link *link = (struct smc_link *)wc->qp->qp_context;
-	struct smc_wr_rx_handler *handler;
 	struct smc_wr_rx_hdr *wr_rx;
 	u64 temp_wr_id;
 	u32 index;
@@ -346,9 +347,16 @@ static inline void smc_wr_rx_demultiplex(struct ib_wc *wc)
 	temp_wr_id = wc->wr_id;
 	index = do_div(temp_wr_id, link->wr_rx_cnt);
 	wr_rx = (struct smc_wr_rx_hdr *)&link->wr_rx_bufs[index];
-	hash_for_each_possible(smc_wr_rx_hash, handler, list, wr_rx->type) {
-		if (handler->type == wr_rx->type)
-			handler->handler(wc, wr_rx);
+
+	switch(wr_rx->type) {
+	case SMC_CDC_MSG_TYPE:
+		if (smc_wr_rx_handler_list.cdcHandler)
+			smc_wr_rx_handler_list.cdcHandler(wc, wr_rx);
+		break;
+	default:
+		/* delegate all other msg types to LLC layer */
+		if (smc_wr_rx_handler_list.llcHandler)
+			smc_wr_rx_handler_list.llcHandler(wc, wr_rx);
 	}
 }
 

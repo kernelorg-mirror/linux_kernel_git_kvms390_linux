@@ -273,26 +273,12 @@ static void smc_cdc_rx_handler(struct ib_wc *wc, void *buf)
 	smc_cdc_msg_recv(cdc, link, wc->wr_id);
 }
 
-static struct smc_wr_rx_handler smc_cdc_rx_handlers[] = {
-	{
-		.handler	= smc_cdc_rx_handler,
-		.type		= SMC_CDC_MSG_TYPE
-	},
-	{
-		.handler	= NULL,
-	}
-};
-
 int __init smc_cdc_init(void)
 {
-	struct smc_wr_rx_handler *handler;
-	int rc = 0;
+	struct smc_wr_rx_handler handler = {
+			.handler = smc_cdc_rx_handler,
+			.type = SMC_WR_RX_HANDLER_CDC
+	};
 
-	for (handler = smc_cdc_rx_handlers; handler->handler; handler++) {
-		INIT_HLIST_NODE(&handler->list);
-		rc = smc_wr_rx_register_handler(handler);
-		if (rc)
-			break;
-	}
-	return rc;
+	return smc_wr_rx_register_handler(&handler);
 }

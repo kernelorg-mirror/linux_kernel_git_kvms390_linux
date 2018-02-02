@@ -42,8 +42,12 @@ typedef bool (*smc_wr_tx_filter)(struct smc_wr_tx_pend_priv *,
 
 typedef void (*smc_wr_tx_dismisser)(struct smc_wr_tx_pend_priv *);
 
+enum smc_wr_rx_handler_type {
+	SMC_WR_RX_HANDLER_CDC,
+	SMC_WR_RX_HANDLER_LLC
+};
+
 struct smc_wr_rx_handler {
-	struct hlist_node	list;	/* hash table collision resolution */
 	void			(*handler)(struct ib_wc *, void *);
 	u8			type;
 };

@@ -476,50 +476,12 @@ static void smc_llc_rx_handler(struct ib_wc *wc, void *buf)
 
 /***************************** init, exit, misc ******************************/
 
-static struct smc_wr_rx_handler smc_llc_rx_handlers[] = {
-	{
-		.handler	= smc_llc_rx_handler,
-		.type		= SMC_LLC_CONFIRM_LINK
-	},
-	{
-		.handler	= smc_llc_rx_handler,
-		.type		= SMC_LLC_TEST_LINK
-	},
-	{
-		.handler	= smc_llc_rx_handler,
-		.type		= SMC_LLC_ADD_LINK
-	},
-	{
-		.handler	= smc_llc_rx_handler,
-		.type		= SMC_LLC_DELETE_LINK
-	},
-	{
-		.handler	= smc_llc_rx_handler,
-		.type		= SMC_LLC_CONFIRM_RKEY
-	},
-	{
-		.handler	= smc_llc_rx_handler,
-		.type		= SMC_LLC_CONFIRM_RKEY_CONT
-	},
-	{
-		.handler	= smc_llc_rx_handler,
-		.type		= SMC_LLC_DELETE_RKEY
-	},
-	{
-		.handler	= NULL,
-	}
-};
-
 int __init smc_llc_init(void)
 {
-	struct smc_wr_rx_handler *handler;
-	int rc = 0;
+	struct smc_wr_rx_handler handler = {
+			.handler = smc_llc_rx_handler,
+			.type = SMC_WR_RX_HANDLER_LLC
+	};
 
-	for (handler = smc_llc_rx_handlers; handler->handler; handler++) {
-		INIT_HLIST_NODE(&handler->list);
-		rc = smc_wr_rx_register_handler(handler);
-		if (rc)
-			break;
-	}
-	return rc;
+	return smc_wr_rx_register_handler(&handler);
 }
