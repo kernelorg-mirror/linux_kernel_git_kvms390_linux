@@ -3198,6 +3198,8 @@ struct sk_buff *tcp_make_synack(const struct sock *sk, struct dst_entry *dst,
 		/* Under synflood, we do not attach skb to a socket,
 		 * to avoid false sharing.
 		 */
+		if (IS_ENABLED(CONFIG_SMC))
+			ireq->smc_ok = 0;
 		break;
 	case TCP_SYNACK_FASTOPEN:
 		/* sk is a const pointer, because we want to express multiple
