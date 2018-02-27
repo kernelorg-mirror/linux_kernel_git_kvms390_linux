@@ -1,5 +1,6 @@
 /*? Text: "%s: smc_cdc_init fails with %d\n" */
-/*? Text: "%s: proto_register fails with %d\n" */
+/*? Text: "%s: proto_register(v4) fails with %d\n" */
+/*? Text: "%s: proto_register(v6) fails with %d\n" */
 /*? Text: "%s: smc_llc_init fails with %d\n" */
 /*? Text: "%s: %d output lines suppressed due to ratelimiting\n" */
 /*? Text: "flen=%u proglen=%u pass=%u image=%pK from=%s pid=%d\n" */
