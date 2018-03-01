@@ -605,6 +605,24 @@
  */
 
 /*?
+ * Text: "%s: LUN 0x%016Lx on port 0x%016Lx is already in use by CSS%d, MIF Image ID %x\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the zfcp device
+ *   @2: LUN
+ *   @3: remote port WWPN
+ *   @4: channel subsystem ID
+ *   @5: MIF Image ID of the LPAR
+ * Description:
+ * The SCSI device at the indicated LUN is already in use by another system.
+ * Your setup is not using NPIV, so only one system at a time can use the
+ * SCSI device.
+ * User action:
+ * Ensure that the other system stops using the device before trying to use it.
+ * If you really want to share a SCSI device, use NPIV.
+ */
+
+/*?
  * Text: "%s: No handle is available for LUN 0x%016Lx on port 0x%016Lx\n"
  * Severity: Warning
  * Parameter:
