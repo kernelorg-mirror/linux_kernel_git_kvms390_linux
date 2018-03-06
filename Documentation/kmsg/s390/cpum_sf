@@ -144,7 +144,7 @@
 * Description:
 * The CPU-measurement sampling facility uses an AUX buffer
 * to hold sampling data until it is consumed by an application, for example, perf.
-* The size of AUX buffer specified is too large than the maximum sampling buffer limit.
+* The AUX buffer size must not exceed the maximum sampling buffer limit.
 * User action:
 * Repeat your measurements with a smaller AUX buffer.
 * If you are using perf, you can set the buffer size with the -m option.
@@ -159,7 +159,8 @@
 * Description:
 * The CPU-measurement sampling facility uses an AUX buffer
 * to hold sampling data until it is consumed by an application, for example, perf.
-* The size of AUX buffer specified is less than the minimum sampling buffer limit.
+* The AUX buffer size must not be smaller than the minimum sampling buffer
+* limit.
 * User action:
 * Repeat your measurements with a larger AUX buffer.
 * If you are using perf, you can set the buffer size with the -m option.
