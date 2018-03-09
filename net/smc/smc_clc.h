@@ -63,7 +63,7 @@ struct smc_clc_msg_local {	/* header2 of clc messages */
 #define SMC_CLC_MAX_V6_PREFIX	8
 
 /* Struct would be 4 byte aligned, but it is used in an array that is sent
- * to peers and must conform to RFC7609, hence we need to use packed here.
+ * to peers and must conform to RFC7609, hence we need to use packed here. 
  */
 struct smc_clc_ipv6_prefix {
 	struct in6_addr prefix;
