@@ -951,20 +951,6 @@ out_err:
 	goto enqueue; /* queue new sock with sk_err set */
 }
 
-/* a non-interruptible variant of sock_def_wakeup() for wakeup of
- * smc_close_wait_listen_clcsock()
- */
-static void smc_sock_wakeup(struct sock *sk)
-{
-	struct socket_wq *wq;
-
-	rcu_read_lock();
-	wq = rcu_dereference(sk->sk_wq);
-	if (skwq_has_sleeper(wq))
-		wake_up_all(&wq->wait);
-	rcu_read_unlock();
-}
-
 static void smc_tcp_listen_work(struct work_struct *work)
 {
 	struct smc_sock *lsmc = container_of(work, struct smc_sock,
@@ -997,10 +983,6 @@ out:
 		lsmc->clcsock = NULL;
 	}
 	release_sock(lsk);
-	/* no more listening, wake up smc_close_wait_listen_clcsock and
-	 * accept
-	 */
-	smc_sock_wakeup(lsk);
 	sock_put(&lsmc->sk); /* sock_hold in smc_listen */
 }
 
