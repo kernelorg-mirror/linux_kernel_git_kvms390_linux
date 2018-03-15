@@ -1092,9 +1092,29 @@ static int smc_accept(struct socket *sock, struct socket *new_sock,
 
 	if (!rc)
 		rc = sock_error(nsk);
+	release_sock(sk);
+	if (rc)
+		goto out;
+
+	if (lsmc->sockopt_defer_accept && !(flags & O_NONBLOCK)) {
+		/* wait till data arrives on the socket */
+		timeo = msecs_to_jiffies(lsmc->sockopt_defer_accept *
+								MSEC_PER_SEC);
+		if (smc_sk(nsk)->use_fallback) {
+			struct sock *clcsk = smc_sk(nsk)->clcsock->sk;
+
+			lock_sock(clcsk);
+			if (skb_queue_empty(&clcsk->sk_receive_queue))
+				sk_wait_data(clcsk, &timeo, NULL);
+			release_sock(clcsk);
+		} else if (!atomic_read(&smc_sk(nsk)->conn.bytes_to_rcv)) {
+			lock_sock(nsk);
+			smc_rx_wait_data(smc_sk(nsk), &timeo);
+			release_sock(nsk);
+		}
+	}
 
 out:
-	release_sock(sk);
 	sock_put(sk); /* sock_hold above */
 	return rc;
 }
@@ -1361,6 +1381,14 @@ static int smc_setsockopt(struct socket *sock, int level, int optname,
 		else
 			smc->deferred_cork_set = 0;
 		break;
+	case TCP_DEFER_ACCEPT:
+		if (sk->sk_state != SMC_INIT && sk->sk_state != SMC_LISTEN) {
+			release_sock(sk);
+			goto clcsock;
+		}
+		/* for the CLC-handshake TCP_DEFER_ACCEPT is not desired */
+		smc->sockopt_defer_accept = val;
+		break;
 	case TCP_FASTOPEN:
 	case TCP_FASTOPEN_CONNECT:
 	case TCP_FASTOPEN_KEY:
@@ -1414,6 +1442,12 @@ static int smc_getsockopt(struct socket *sock, int level, int optname,
 	case TCP_CORK:
 		if (smc->deferred_cork_set)
 			val = 1;
+		else
+			goto clcsock;
+		break;
+	case TCP_DEFER_ACCEPT:
+		if (smc->sockopt_defer_accept)
+			val = smc->sockopt_defer_accept;
 		else
 			goto clcsock;
 		break;
