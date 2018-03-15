@@ -14,6 +14,7 @@
 
 #include <linux/socket.h>
 #include <linux/types.h>
+#include <net/tcp.h>
 
 #include "smc.h"
 #include "smc_cdc.h"
@@ -25,6 +26,13 @@ static inline int smc_tx_prepared_sends(struct smc_connection *conn)
 	smc_curs_write(&sent, smc_curs_read(&conn->tx_curs_sent, conn), conn);
 	smc_curs_write(&prep, smc_curs_read(&conn->tx_curs_prep, conn), conn);
 	return smc_curs_diff(conn->sndbuf_size, &sent, &prep);
+}
+
+static inline bool smc_tx_is_corked(struct smc_sock *smc)
+{
+	struct tcp_sock *tp = tcp_sk(smc->clcsock->sk);
+
+	return (tp->nonagle & TCP_NAGLE_CORK) ? true : false;
 }
 
 void smc_tx_init(struct smc_sock *smc);

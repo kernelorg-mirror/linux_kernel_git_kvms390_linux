@@ -391,6 +391,12 @@ static void smc_apply_deferred_sockopts(struct smc_sock *smc)
 				  sizeof(val));
 		opt_smc->deferred_nodelay_reset = 0;
 	}
+	if (opt_smc->deferred_cork_set) {
+		val = 1;
+		kernel_setsockopt(smc->clcsock, SOL_TCP, TCP_CORK, &val,
+				  sizeof(val));
+		opt_smc->deferred_cork_set = 0;
+	}
 }
 
 /* setup for RDMA connection of client */
@@ -1323,6 +1329,9 @@ static int smc_setsockopt(struct socket *sock, int level, int optname,
 	switch (optname) {
 	case TCP_NODELAY:
 		if (sk->sk_state != SMC_INIT && sk->sk_state != SMC_LISTEN) {
+			if (val && smc_tx_is_corked(smc))
+				mod_delayed_work(system_wq, &smc->conn.tx_work,
+						 0);
 			release_sock(sk);
 			goto clcsock;
 		}
@@ -1334,6 +1343,23 @@ static int smc_setsockopt(struct socket *sock, int level, int optname,
 			smc->deferred_nodelay_reset = 0;
 		else
 			smc->deferred_nodelay_reset = 1;
+		break;
+	case TCP_CORK:
+		if (sk->sk_state != SMC_INIT && sk->sk_state != SMC_LISTEN) {
+			if (!val)
+				mod_delayed_work(system_wq, &smc->conn.tx_work,
+						 0);
+			release_sock(sk);
+			goto clcsock;
+		}
+		/* for the CLC-handshake TCP_CORK is not desired;
+		 * in case of fallback to TCP, cork setting is
+		 * triggered afterwards.
+		 */
+		if (val)
+			smc->deferred_cork_set = 1;
+		else
+			smc->deferred_cork_set = 0;
 		break;
 	case TCP_FASTOPEN:
 	case TCP_FASTOPEN_CONNECT:
@@ -1382,6 +1408,12 @@ static int smc_getsockopt(struct socket *sock, int level, int optname,
 	case TCP_NODELAY:
 		if (smc->deferred_nodelay_reset)
 			val = 0;
+		else
+			goto clcsock;
+		break;
+	case TCP_CORK:
+		if (smc->deferred_cork_set)
+			val = 1;
 		else
 			goto clcsock;
 		break;

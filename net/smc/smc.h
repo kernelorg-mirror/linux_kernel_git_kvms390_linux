@@ -189,6 +189,10 @@ struct smc_sock {				/* smc sock container */
 						/* defer Nagle after CLC
 						 * handshake
 						 */
+	u8			deferred_cork_set : 1;
+						/* defer corking after CLC
+						 * handshake
+						 */
 };
 
 static inline struct smc_sock *smc_sk(const struct sock *sk)
