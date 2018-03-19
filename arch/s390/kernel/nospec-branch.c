@@ -35,6 +35,8 @@ early_param("nospec", nospec_setup_early);
 
 static int __init nospec_report(void)
 {
+	if (test_facility(156))
+		pr_info("Spectre V2 mitigation: execution tokens.\n");
 	if (IS_ENABLED(CC_USING_EXPOLINE) && !nospec_disable)
 		pr_info("Spectre V2 mitigation: execute trampolines.\n");
 	if (__test_facility(82, S390_lowcore.alt_stfle_fac_list))
@@ -53,6 +55,8 @@ ssize_t cpu_show_spectre_v1(struct device *dev,
 ssize_t cpu_show_spectre_v2(struct device *dev,
 			    struct device_attribute *attr, char *buf)
 {
+	if (test_facility(156))
+		return sprintf(buf, "Mitigation: execution tokens\n");
 	if (IS_ENABLED(CC_USING_EXPOLINE) && !nospec_disable)
 		return sprintf(buf, "Mitigation: execute trampolines\n");
 	if (__test_facility(82, S390_lowcore.alt_stfle_fac_list))
@@ -74,7 +78,15 @@ early_param("nospectre_v2", nospectre_v2_setup_early);
 
 void __init nospec_auto_detect(void)
 {
-	if (IS_ENABLED(CC_USING_EXPOLINE)) {
+	if (test_facility(156)) {
+		/*
+		 * The machine supports execution tokens.
+		 * Disabled expoines and disabled nobp.
+		 */
+		if (IS_ENABLED(CC_USING_EXPOLINE))
+			nospec_disable = 1;
+		__clear_facility(82, S390_lowcore.alt_stfle_fac_list);
+	} else if (IS_ENABLED(CC_USING_EXPOLINE)) {
 		/*
 		 * The kernel has been compiled with expolines.
 		 * Keep expolines enabled and disable nobp.
