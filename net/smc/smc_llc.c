@@ -523,6 +523,7 @@ static void smc_llc_testlink_worker(struct work_struct *work)
 		next_interval = expire_time - jiffies;
 		goto out;
 	}
+	reinit_completion(&link->llc_testlink_resp);
 	smc_llc_send_test_link(link, user_data, SMC_LLC_REQ);
 	/* receive TEST LINK response over RoCE fabric */
 	rc = wait_for_completion_interruptible_timeout(&link->llc_testlink_resp,
