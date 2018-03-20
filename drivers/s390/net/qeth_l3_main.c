@@ -2662,11 +2662,12 @@ static int __qeth_l3_set_online(struct ccwgroup_device *gdev, int recovery_mode)
 		netif_carrier_off(card->dev);
 	if (recover_flag == CARD_STATE_RECOVER) {
 		rtnl_lock();
-		if (recovery_mode)
+		if (recovery_mode) {
 			__qeth_l3_open(card->dev);
-		else
+			qeth_l3_set_rx_mode(card->dev);
+		} else {
 			dev_open(card->dev);
-		qeth_l3_set_rx_mode(card->dev);
+		}
 		qeth_recover_features(card->dev);
 		rtnl_unlock();
 	}
