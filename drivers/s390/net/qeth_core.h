@@ -584,7 +584,7 @@ struct qeth_cmd_buffer {
 
 static inline struct qeth_ipa_cmd *__ipa_cmd(struct qeth_cmd_buffer *iob)
 {
-	return (struct qeth_ipa_cmd *)(iob->data+IPA_PDU_HEADER_SIZE);
+	return (struct qeth_ipa_cmd *)(iob->data + IPA_PDU_HEADER_SIZE);
 }
 
 /**

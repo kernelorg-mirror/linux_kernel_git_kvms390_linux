@@ -82,8 +82,6 @@ ifdef CONFIG_EXPOLINE
     CC_FLAGS_EXPOLINE += -mindirect-branch-table
     export CC_FLAGS_EXPOLINE
     cflags-y += $(CC_FLAGS_EXPOLINE)
-  else
-    $(warning "Your gcc lacks the -mindirect-branch= option")
   endif
 endif
 
