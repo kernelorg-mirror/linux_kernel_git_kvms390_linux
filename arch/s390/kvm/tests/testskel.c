@@ -22,4 +22,3 @@ static void __exit skel_exit(void)
 
 module_init(skel_init);
 module_exit(skel_exit);
-
