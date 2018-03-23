@@ -206,6 +206,7 @@ static int smc_lgr_create(struct smc_sock *smc,
 	rc = smc_wr_create_link(lnk);
 	if (rc)
 		goto destroy_qp;
+	lnk->workqueue = alloc_ordered_workqueue("llc_work", WQ_MEM_RECLAIM);
 	init_completion(&lnk->llc_confirm);
 	init_completion(&lnk->llc_confirm_resp);
 	init_completion(&lnk->llc_add);
@@ -270,6 +271,7 @@ void smc_conn_free(struct smc_connection *conn)
 static void smc_link_clear(struct smc_link *lnk)
 {
 	lnk->peer_qpn = 0;
+	destroy_workqueue(lnk->workqueue);
 	smc_ib_modify_qp_reset(lnk);
 	smc_wr_free_link(lnk);
 	smc_ib_destroy_queue_pair(lnk);
