@@ -56,7 +56,8 @@ config KEXEC_FILE
 	select KEXEC_CORE
 
 config ARCH_HAS_KEXEC_PURGATORY
-	def_bool KEXEC_FILE
+	def_bool y
+	depends on KEXEC_FILE
 
 config AUDIT_ARCH
 	def_bool y
