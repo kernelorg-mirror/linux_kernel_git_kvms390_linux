@@ -103,6 +103,6 @@
 	.popsection
 .endm
 
-#endif  /*  __ASSEMBLY__  */
+#endif	/*  __ASSEMBLY__  */
 
 #endif /* _ASM_S390_ALTERNATIVE_ASM_H */

@@ -151,7 +151,7 @@ ENTRY(purgatory_start)
 	lghi	%r11,bufsz
 	larl	%r12,stack
 
-	MEMCPY	%r12,%r9,%r11	/* dst  -> (crash) buf */
+	MEMCPY	%r12,%r9,%r11	/* dst	-> (crash) buf */
 	MEMCPY	%r9,%r8,%r11	/* self -> dst */
 
 	/* Jump to new location. */

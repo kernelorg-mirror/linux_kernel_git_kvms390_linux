@@ -206,7 +206,7 @@ int arch_kexec_apply_relocations_add(struct purgatory_info *pi,
 		case R_390_64:		/* Direct 64 bit.  */
 			*(u64 *)loc = val;
 			break;
-		case R_390_PC16:	/* PC relative 16 bit.  */
+		case R_390_PC16:	/* PC relative 16 bit.	*/
 			*(u16 *)loc = (val - addr);
 			break;
 		case R_390_PC16DBL:	/* PC relative 16 bit shifted by 1.  */
@@ -215,10 +215,10 @@ int arch_kexec_apply_relocations_add(struct purgatory_info *pi,
 		case R_390_PC32DBL:	/* PC relative 32 bit shifted by 1.  */
 			*(u32 *)loc = (val - addr) >> 1;
 			break;
-		case R_390_PC32:	/* PC relative 32 bit.  */
+		case R_390_PC32:	/* PC relative 32 bit.	*/
 			*(u32 *)loc = (val - addr);
 			break;
-		case R_390_PC64:	/* PC relative 64 bit.  */
+		case R_390_PC64:	/* PC relative 64 bit.	*/
 			*(u64 *)loc = (val - addr);
 			break;
 		default:
