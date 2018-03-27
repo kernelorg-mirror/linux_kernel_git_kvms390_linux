@@ -532,7 +532,7 @@ static void smc_llc_rx_handler(struct ib_wc *wc, void *buf)
 
 /***************************** worker, utils *********************************/
 
-static void smc_llc_testlink_worker(struct work_struct *work)
+static void smc_llc_testlink_work(struct work_struct *work)
 {
 	struct smc_link *link = container_of(to_delayed_work(work),
 					     struct smc_link, llc_testlink_wrk);
@@ -567,7 +567,7 @@ out:
 void smc_llc_link_active(struct smc_link *link, int testlink_time)
 {
 	init_completion(&link->llc_testlink_resp);
-	INIT_DELAYED_WORK(&link->llc_testlink_wrk, smc_llc_testlink_worker);
+	INIT_DELAYED_WORK(&link->llc_testlink_wrk, smc_llc_testlink_work);
 	link->state = SMC_LNK_ACTIVE;
 	if (testlink_time) {
 		link->llc_testlink_time = testlink_time;
