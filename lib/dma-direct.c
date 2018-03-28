@@ -47,6 +47,9 @@ void *dma_direct_alloc(struct device *dev, size_t size, dma_addr_t *dma_handle,
 	int page_order = get_order(size);
 	struct page *page = NULL;
 
+	/* we always manually zero the memory once we are done: */
+	gfp &= ~__GFP_ZERO;
+
 	/* GFP_DMA32 and GFP_DMA are no ops without the corresponding zones: */
 	if (dev->coherent_dma_mask <= DMA_BIT_MASK(ARCH_ZONE_DMA_BITS))
 		gfp |= GFP_DMA;
