@@ -1216,7 +1216,7 @@ static struct reset_call ap_reset_call = {
 	.fn = ap_reset_all,
 };
 
-int __init ap_debug_init(void)
+static int __init ap_debug_init(void)
 {
 	ap_dbf_info = debug_register("ap", 1, 1,
 				     DBF_MAX_SPRINTF_ARGS * sizeof(long));
@@ -1231,7 +1231,7 @@ int __init ap_debug_init(void)
  *
  * Initializes the module.
  */
-int __init ap_module_init(void)
+static int __init ap_module_init(void)
 {
 	int max_domain_id;
 	int rc, i;
