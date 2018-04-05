@@ -1181,9 +1181,9 @@ static int smc_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
 		goto out;
 	}
 
-	if (smc->use_fallback)
+	if (smc->use_fallback) {
 		rc = smc->clcsock->ops->recvmsg(smc->clcsock, msg, len, flags);
-	else {
+	} else {
 		msg->msg_namelen = 0;
 		rc = smc_rx_recvmsg(smc, msg, NULL, len, flags);
 	}

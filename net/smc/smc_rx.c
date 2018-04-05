@@ -121,7 +121,7 @@ static int smc_rx_splice(struct pipe_inode_info *pipe, char *src, size_t len,
 	int bytes;
 
 	page = virt_to_page(smc->conn.rmb_desc->cpu_addr);
-	priv = kzalloc(sizeof(struct smc_spd_priv), GFP_KERNEL);
+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
 	if (!priv)
 		return -ENOMEM;
 	priv->len = len;
@@ -298,11 +298,11 @@ copy:
 		smc_rmb_sync_sg_for_cpu(conn);
 		for (chunk = 0; chunk < 2; chunk++) {
 			if (!(flags & MSG_TRUNC)) {
-				if (msg)
+				if (msg) {
 					rc = memcpy_to_msg(msg, rcvbuf_base +
 							   chunk_off,
 							   chunk_len);
-				else {
+				} else {
 					rc = smc_rx_splice(pipe, rcvbuf_base +
 							chunk_off, chunk_len,
 							smc);
