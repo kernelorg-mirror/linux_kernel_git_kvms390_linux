@@ -57,7 +57,7 @@ static void do_stnsm(unsigned long dummy)
 	unsigned long buf;
 
 	for (i = 0; i < LOOPS; i++)
-		asm volatile("stnsm %0,0xff\n" : "=m" (buf) :: "memory");
+		asm volatile("stnsm %0,0xff\n" : "=Q" (buf) :: "memory");
 }
 
 static void do_stosm(unsigned long dummy)
@@ -66,7 +66,7 @@ static void do_stosm(unsigned long dummy)
 	unsigned long buf;
 
 	for (i = 0; i < LOOPS; i++)
-		asm volatile("stosm %0,0\n":"=m" (buf):: "memory");
+		asm volatile("stosm %0,0\n":"=Q" (buf):: "memory");
 }
 
 static void do_ssm(unsigned long dummy)
@@ -74,16 +74,16 @@ static void do_ssm(unsigned long dummy)
 	int i;
 	unsigned long buf;
 
-	asm volatile("stosm %0,0\n":"=m" (buf):: "memory");
+	asm volatile("stosm %0,0\n":"=Q" (buf):: "memory");
 	for (i = 0; i < LOOPS; i++)
-		asm volatile("ssm %0\n":"=m" (buf):: "memory");
+		asm volatile("ssm %0\n":"=Q" (buf):: "memory");
 }
 static void lpp(unsigned long dummy)
 {
 	unsigned long i;
 
 	for (i = 0; i < LOOPS; i++)
-		asm volatile(".insn s,0xb2800000,%0\n" :: "m" (i) : "memory");
+		asm volatile(".insn s,0xb2800000,%0\n" :: "Q" (i) : "memory");
 }
 
 static void lctl4(unsigned long dummy)
@@ -91,7 +91,7 @@ static void lctl4(unsigned long dummy)
 	unsigned long i;
 
 	for (i = 0; i < LOOPS; i++)
-		asm volatile("lctl 4,4,%0\n" :: "m" (i) : "cc", "memory");
+		asm volatile("lctl 4,4,%0\n" :: "Q" (i) : "cc", "memory");
 }
 
 static void do_stpx(unsigned long dummy)
@@ -100,7 +100,7 @@ static void do_stpx(unsigned long dummy)
 	unsigned int prefix;
 
 	for (i = 0; i < LOOPS; i++)
-		asm volatile("stpx %0\n" :: "m" (prefix) : "cc", "memory");
+		asm volatile("stpx %0\n" :: "Q" (prefix) : "cc", "memory");
 }
 
 static void do_stfl(unsigned long dummy)
