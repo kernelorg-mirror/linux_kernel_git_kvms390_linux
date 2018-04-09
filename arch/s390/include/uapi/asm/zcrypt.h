@@ -318,10 +318,4 @@ struct zcrypt_device_matrix {
 #define Z90STAT_QDEPTH_MASK	_IOR(ZCRYPT_IOCTL_MAGIC, 0x59, char[MAX_ZDEV_CARDIDS])
 #define Z90STAT_PERDEV_REQCNT	_IOR(ZCRYPT_IOCTL_MAGIC, 0x5a, int[MAX_ZDEV_CARDIDS])
 
-/*
- * The ioctl number ranges 0x40 - 0x42 and 0x4b - 0x4e had been used in the
- * past, don't assign new ioctls for these. The range 0x48 - 0x4a and 0x4f
- * are deprecated but still supported ioctls.
- */
-
 #endif /* __ASM_S390_ZCRYPT_H */
