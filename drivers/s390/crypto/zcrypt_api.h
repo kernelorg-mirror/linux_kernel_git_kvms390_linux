@@ -21,12 +21,6 @@
 #include <asm/zcrypt.h>
 #include "ap_bus.h"
 
-/* deprecated status calls */
-#define DEPRECATED_ZDEVICESTATUS _IOC(_IOC_READ|_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x4f, 0)
-#define DEPRECATED_Z90STAT_STATUS_MASK _IOR(ZCRYPT_IOCTL_MAGIC, 0x48, char[64])
-#define DEPRECATED_Z90STAT_QDEPTH_MASK _IOR(ZCRYPT_IOCTL_MAGIC, 0x49, char[64])
-#define DEPRECATED_Z90STAT_PERDEV_REQCNT _IOR(ZCRYPT_IOCTL_MAGIC, 0x4a, int[64])
-
 /**
  * device type for an actual device is either PCICA, PCICC, PCIXCC_MCL2,
  * PCIXCC_MCL3, CEX2C, or CEX2A
@@ -161,7 +155,6 @@ struct zcrypt_ops *zcrypt_msgtype(unsigned char *, int);
 int zcrypt_api_init(void);
 void zcrypt_api_exit(void);
 long zcrypt_send_cprb(struct ica_xcRB *xcRB);
-void zcrypt_device_status_mask(struct zcrypt_device_status *devstatus,
-			       size_t max_adapters);
+void zcrypt_device_status_mask(struct zcrypt_device_matrix *devstatus);
 
 #endif /* _ZCRYPT_API_H_ */
