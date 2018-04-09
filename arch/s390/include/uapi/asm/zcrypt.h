@@ -222,20 +222,15 @@ struct zcrypt_device_status {
 	unsigned int reserved:3;
 };
 
-#define MAX_ZDEV_CARDIDS 64
-#define MAX_ZDEV_DOMAINS 256
+#define MAX_ZDEV_CARDIDS2 256
+#define MAX_ZDEV_DOMAINS2 256
 
-/**
- * Maximum number of zcrypt devices
- */
-#define MAX_ZDEV_ENTRIES (MAX_ZDEV_CARDIDS * MAX_ZDEV_DOMAINS)
+/* Maximum number of zcrypt devices */
+#define MAX_ZDEV_ENTRIES2 (MAX_ZDEV_CARDIDS2 * MAX_ZDEV_DOMAINS2)
 
-/**
- * zcrypt_device_matrix
- * Device matrix of all zcrypt devices
- */
-struct zcrypt_device_matrix {
-	struct zcrypt_device_status device[MAX_ZDEV_ENTRIES];
+/* Device matrix of all zcrypt devices */
+struct zcrypt_device_matrix2 {
+	struct zcrypt_device_status device[MAX_ZDEV_ENTRIES2];
 };
 
 #define AUTOSELECT ((unsigned int)0xFFFFFFFF)
@@ -270,25 +265,30 @@ struct zcrypt_device_matrix {
  *   ZSENDEP11CPRB
  *     Send an arbitrary EP11 CPRB to an EP11 coprocessor crypto card.
  *
- *   Z90STAT_STATUS_MASK
- *     Return an 64 element array of unsigned chars for the status of
- *     all devices.
+ *   Z90STAT_STATUS_MASK2
+ *     Return an MAX_ZDEV_CARDIDS2 element array of unsigned chars for the
+ *     status of all devices.
  *	 0x01: PCICA
  *	 0x02: PCICC
  *	 0x03: PCIXCC_MCL2
  *	 0x04: PCIXCC_MCL3
  *	 0x05: CEX2C
  *	 0x06: CEX2A
+ *	 0x07: CEX3C
+ *	 0x08: CEX3A
+ *	 0x0a: CEX4
+ *	 0x0b: CEX5
+ *	 0x0c: CEX6
  *	 0x0d: device is disabled via the proc filesystem
  *
- *   Z90STAT_QDEPTH_MASK
- *     Return an 64 element array of unsigned chars for the queue
- *     depth of all devices.
+ *   Z90STAT_QDEPTH_MASK2
+ *     Return an MAX_ZDEV_CARDIDS2 element array of unsigned chars for the
+ *     queue depth of all devices.
  *
- *   Z90STAT_PERDEV_REQCNT
- *     Return an 64 element array of unsigned integers for the number
- *     of successfully completed requests per device since the device
- *     was detected and made available.
+ *   Z90STAT_PERDEV_REQCNT2
+ *     Return an MAX_ZDEV_CARDIDS2 element array of unsigned integers for
+ *     the number of successfully completed requests per device since the
+ *     device was detected and made available.
  *
  *   Z90STAT_REQUESTQ_COUNT
  *     Return an integer count of the number of entries waiting to be
@@ -312,15 +312,46 @@ struct zcrypt_device_matrix {
 #define ICARSACRT	_IOC(_IOC_READ|_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x06, 0)
 #define ZSECSENDCPRB	_IOC(_IOC_READ|_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x81, 0)
 #define ZSENDEP11CPRB	_IOC(_IOC_READ|_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x04, 0)
-#define ZDEVICESTATUS	_IOC(_IOC_READ|_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x4f, 0)
+#define ZDEVICESTATUS2	_IOC(_IOC_READ|_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x5f, 0)
 
 /* Status ioctl calls */
 #define Z90STAT_REQUESTQ_COUNT	_IOR(ZCRYPT_IOCTL_MAGIC, 0x44, int)
 #define Z90STAT_PENDINGQ_COUNT	_IOR(ZCRYPT_IOCTL_MAGIC, 0x45, int)
 #define Z90STAT_TOTALOPEN_COUNT _IOR(ZCRYPT_IOCTL_MAGIC, 0x46, int)
 #define Z90STAT_DOMAIN_INDEX	_IOR(ZCRYPT_IOCTL_MAGIC, 0x47, int)
-#define Z90STAT_STATUS_MASK	_IOR(ZCRYPT_IOCTL_MAGIC, 0x48, char[64])
-#define Z90STAT_QDEPTH_MASK	_IOR(ZCRYPT_IOCTL_MAGIC, 0x49, char[64])
-#define Z90STAT_PERDEV_REQCNT	_IOR(ZCRYPT_IOCTL_MAGIC, 0x4a, int[64])
+#define Z90STAT_STATUS_MASK2    _IOR(ZCRYPT_IOCTL_MAGIC, 0x58, char[MAX_ZDEV_CARDIDS2])
+#define Z90STAT_QDEPTH_MASK2	_IOR(ZCRYPT_IOCTL_MAGIC, 0x59, char[MAX_ZDEV_CARDIDS2])
+#define Z90STAT_PERDEV_REQCNT2	_IOR(ZCRYPT_IOCTL_MAGIC, 0x5a, int[MAX_ZDEV_CARDIDS2])
+
+/*
+ * Only deprecated defines, structs and ioctls below this line.
+ */
+
+/* Deprecated: use MAX_ZDEV_CARDIDS2 */
+#define MAX_ZDEV_CARDIDS 64
+/* Deprecated: use MAX_ZDEV_DOMAINS2 */
+#define MAX_ZDEV_DOMAINS 256
+
+/* Deprecated: use MAX_ZDEV_ENTRIES2 */
+#define MAX_ZDEV_ENTRIES (MAX_ZDEV_CARDIDS * MAX_ZDEV_DOMAINS)
+
+/* Deprecated: use struct zcrypt_device_matrix2 */
+struct zcrypt_device_matrix {
+	struct zcrypt_device_status device[MAX_ZDEV_ENTRIES];
+};
+
+/* Deprecated: use ZDEVICESTATUS2 */
+#define ZDEVICESTATUS _IOC(_IOC_READ|_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x4f, 0)
+/* Deprecated: use Z90STAT_STATUS_MASK2 */
+#define Z90STAT_STATUS_MASK _IOR(ZCRYPT_IOCTL_MAGIC, 0x48, char[64])
+/* Deprecated: use Z90STAT_QDEPTH_MASK2 */
+#define Z90STAT_QDEPTH_MASK _IOR(ZCRYPT_IOCTL_MAGIC, 0x49, char[64])
+/* Deprecated: use Z90STAT_PERDEV_REQCNT2 */
+#define Z90STAT_PERDEV_REQCNT _IOR(ZCRYPT_IOCTL_MAGIC, 0x4a, int[64])
+
+/*
+ * The ioctl number ranges 0x40 - 0x42 and 0x4b - 0x4e had been used in the
+ * past, don't assign new ioctls for these.
+ */
 
 #endif /* __ASM_S390_ZCRYPT_H */
