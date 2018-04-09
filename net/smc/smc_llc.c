@@ -372,7 +372,7 @@ static int smc_llc_send_message(struct smc_link *link, void *llcbuf, int llclen)
 	wrk->link = link;
 	wrk->llclen = llclen;
 	memcpy(&wrk->llcbuf, llcbuf, llclen);
-	queue_work(link->workqueue, &wrk->work);
+	queue_work(link->llc_wq, &wrk->work);
 	return 0;
 }
 
@@ -605,7 +605,7 @@ static void smc_llc_testlink_work(struct work_struct *work)
 	}
 	next_interval = link->llc_testlink_time;
 out:
-	queue_delayed_work(link->workqueue, &link->llc_testlink_wrk,
+	queue_delayed_work(link->llc_wq, &link->llc_testlink_wrk,
 			   next_interval);
 }
 
@@ -616,8 +616,7 @@ void smc_llc_link_active(struct smc_link *link, int testlink_time)
 	link->state = SMC_LNK_ACTIVE;
 	if (testlink_time) {
 		link->llc_testlink_time = testlink_time;
-		queue_delayed_work(link->workqueue,
-				   &link->llc_testlink_wrk,
+		queue_delayed_work(link->llc_wq, &link->llc_testlink_wrk,
 				   link->llc_testlink_time);
 	}
 }
@@ -632,7 +631,7 @@ void smc_llc_link_inactive(struct smc_link *link)
 /* called in worker context */
 void smc_llc_link_flush(struct smc_link *link)
 {
-	flush_workqueue(link->workqueue);
+	flush_workqueue(link->llc_wq);
 }
 
 /* register a new rtoken at the remote peer */
