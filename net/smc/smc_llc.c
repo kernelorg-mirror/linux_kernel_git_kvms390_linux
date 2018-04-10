@@ -611,10 +611,27 @@ out:
 			   next_interval);
 }
 
-void smc_llc_link_active(struct smc_link *link, int testlink_time)
+int smc_llc_link_init(struct smc_link *link)
 {
+	struct smc_link_group *lgr = container_of(link, struct smc_link_group,
+						  lnk[SMC_SINGLE_LINK]);
+	link->llc_wq = alloc_ordered_workqueue("llc_wq-%x:%x)", WQ_MEM_RECLAIM,
+					       *((u32 *)lgr->id),
+					       link->link_id);
+	if (!link->llc_wq)
+		return -ENOMEM;
+	init_completion(&link->llc_confirm);
+	init_completion(&link->llc_confirm_resp);
+	init_completion(&link->llc_add);
+	init_completion(&link->llc_add_resp);
+	init_completion(&link->llc_confirm_rkey);
 	init_completion(&link->llc_testlink_resp);
 	INIT_DELAYED_WORK(&link->llc_testlink_wrk, smc_llc_testlink_work);
+	return 0;
+}
+
+void smc_llc_link_active(struct smc_link *link, int testlink_time)
+{
 	link->state = SMC_LNK_ACTIVE;
 	if (testlink_time) {
 		link->llc_testlink_time = testlink_time;
@@ -631,9 +648,10 @@ void smc_llc_link_inactive(struct smc_link *link)
 }
 
 /* called in worker context */
-void smc_llc_link_flush(struct smc_link *link)
+void smc_llc_link_clear(struct smc_link *link)
 {
 	flush_workqueue(link->llc_wq);
+	destroy_workqueue(link->llc_wq);
 }
 
 /* register a new rtoken at the remote peer */

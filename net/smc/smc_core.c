@@ -197,9 +197,12 @@ static int smc_lgr_create(struct smc_sock *smc,
 		smc_ib_setup_per_ibdev(smcibdev);
 	get_random_bytes(rndvec, sizeof(rndvec));
 	lnk->psn_initial = rndvec[0] + (rndvec[1] << 8) + (rndvec[2] << 16);
-	rc = smc_wr_alloc_link_mem(lnk);
+	rc = smc_llc_link_init(lnk);
 	if (rc)
 		goto free_lgr;
+	rc = smc_wr_alloc_link_mem(lnk);
+	if (rc)
+		goto clear_llc_lnk;
 	rc = smc_ib_create_protection_domain(lnk);
 	if (rc)
 		goto free_link_mem;
@@ -209,12 +212,6 @@ static int smc_lgr_create(struct smc_sock *smc,
 	rc = smc_wr_create_link(lnk);
 	if (rc)
 		goto destroy_qp;
-	lnk->llc_wq = alloc_ordered_workqueue("llc_wq", WQ_MEM_RECLAIM);
-	init_completion(&lnk->llc_confirm);
-	init_completion(&lnk->llc_confirm_resp);
-	init_completion(&lnk->llc_add);
-	init_completion(&lnk->llc_add_resp);
-	init_completion(&lnk->llc_confirm_rkey);
 
 	smc->conn.lgr = lgr;
 	rwlock_init(&lgr->conns_lock);
@@ -229,6 +226,8 @@ dealloc_pd:
 	smc_ib_dealloc_protection_domain(lnk);
 free_link_mem:
 	smc_wr_free_link_mem(lnk);
+clear_llc_lnk:
+	smc_llc_link_clear(lnk);
 free_lgr:
 	kfree(lgr);
 out:
@@ -274,7 +273,7 @@ void smc_conn_free(struct smc_connection *conn)
 static void smc_link_clear(struct smc_link *lnk)
 {
 	lnk->peer_qpn = 0;
-	destroy_workqueue(lnk->llc_wq);
+	smc_llc_link_clear(lnk);
 	smc_ib_modify_qp_reset(lnk);
 	smc_wr_free_link(lnk);
 	smc_ib_destroy_queue_pair(lnk);
@@ -332,7 +331,6 @@ static void smc_lgr_free_bufs(struct smc_link_group *lgr)
 /* remove a link group */
 void smc_lgr_free(struct smc_link_group *lgr)
 {
-	smc_llc_link_flush(&lgr->lnk[SMC_SINGLE_LINK]);
 	smc_lgr_free_bufs(lgr);
 	smc_link_clear(&lgr->lnk[SMC_SINGLE_LINK]);
 	kfree(lgr);
