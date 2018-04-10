@@ -605,22 +605,21 @@ out:
 	return rc;
 }
 
-void zcrypt_device_status_mask(struct zcrypt_device_status *devstatus,
-			       size_t max_adapters)
+static void zcrypt_device_status_mask(struct zcrypt_device_status *devstatus)
 {
 	struct zcrypt_card *zc;
 	struct zcrypt_queue *zq;
 	struct zcrypt_device_status *stat;
 	int card, queue;
 
-	memset(devstatus, 0, max_adapters * AP_DOMAINS
+	memset(devstatus, 0, MAX_ZDEV_ENTRIES
 	       * sizeof(struct zcrypt_device_status));
 
 	spin_lock(&zcrypt_list_lock);
 	for_each_zcrypt_card(zc) {
 		for_each_zcrypt_queue(zq, zc) {
 			card = AP_QID_CARD(zq->queue->qid);
-			if (card >= max_adapters)
+			if (card >= MAX_ZDEV_CARDIDS)
 				continue;
 			queue = AP_QID_QUEUE(zq->queue->qid);
 			stat = &devstatus[card * AP_DOMAINS + queue];
@@ -632,7 +631,32 @@ void zcrypt_device_status_mask(struct zcrypt_device_status *devstatus,
 	}
 	spin_unlock(&zcrypt_list_lock);
 }
-EXPORT_SYMBOL(zcrypt_device_status_mask);
+
+void zcrypt_device_status_mask_ext(struct zcrypt_device_status_ext *devstatus)
+{
+	struct zcrypt_card *zc;
+	struct zcrypt_queue *zq;
+	struct zcrypt_device_status_ext *stat;
+	int card, queue;
+
+	memset(devstatus, 0, MAX_ZDEV_ENTRIES_EXT
+	       * sizeof(struct zcrypt_device_status_ext));
+
+	spin_lock(&zcrypt_list_lock);
+	for_each_zcrypt_card(zc) {
+		for_each_zcrypt_queue(zq, zc) {
+			card = AP_QID_CARD(zq->queue->qid);
+			queue = AP_QID_QUEUE(zq->queue->qid);
+			stat = &devstatus[card * AP_DOMAINS + queue];
+			stat->hwtype = zc->card->ap_dev.device_type;
+			stat->functions = zc->card->functions >> 26;
+			stat->qid = zq->queue->qid;
+			stat->online = zq->online ? 0x01 : 0x00;
+		}
+	}
+	spin_unlock(&zcrypt_list_lock);
+}
+EXPORT_SYMBOL(zcrypt_device_status_mask_ext);
 
 static void zcrypt_status_mask(char status[], size_t max_adapters)
 {
@@ -832,22 +856,22 @@ static long zcrypt_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			return -EFAULT;
 		return rc;
 	}
-	case ZDEVICESTATUS2: {
-		struct zcrypt_device_status *device_status;
-		size_t total_size = AP_DEVICES * AP_DOMAINS
-			* sizeof(struct zcrypt_device_status);
+	case ZCRYPT_DEVICE_STATUS: {
+		struct zcrypt_device_status_ext *device_status;
+		size_t total_size = MAX_ZDEV_ENTRIES_EXT
+			* sizeof(struct zcrypt_device_status_ext);
 
 		device_status = kzalloc(total_size, GFP_KERNEL);
 		if (!device_status)
 			return -ENOMEM;
-		zcrypt_device_status_mask(device_status, AP_DEVICES);
+		zcrypt_device_status_mask_ext(device_status);
 		if (copy_to_user((char __user *) arg, device_status,
 				 total_size))
 			rc = -EFAULT;
 		kfree(device_status);
 		return rc;
 	}
-	case Z90STAT_STATUS_MASK2: {
+	case ZCRYPT_STATUS_MASK: {
 		char status[AP_DEVICES];
 
 		zcrypt_status_mask(status, AP_DEVICES);
@@ -855,7 +879,7 @@ static long zcrypt_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			return -EFAULT;
 		return 0;
 	}
-	case Z90STAT_QDEPTH_MASK2: {
+	case ZCRYPT_QDEPTH_MASK: {
 		char qdepth[AP_DEVICES];
 
 		zcrypt_qdepth_mask(qdepth, AP_DEVICES);
@@ -863,7 +887,7 @@ static long zcrypt_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			return -EFAULT;
 		return 0;
 	}
-	case Z90STAT_PERDEV_REQCNT2: {
+	case ZCRYPT_PERDEV_REQCNT: {
 		int *reqcnt;
 
 		reqcnt = kcalloc(AP_DEVICES, sizeof(int), GFP_KERNEL);
@@ -890,13 +914,13 @@ static long zcrypt_unlocked_ioctl(struct file *filp, unsigned int cmd,
 	case ZDEVICESTATUS: {
 		/* the old ioctl supports only 64 adapters */
 		struct zcrypt_device_status *device_status;
-		size_t total_size = MAX_ZDEV_CARDIDS * MAX_ZDEV_DOMAINS
+		size_t total_size = MAX_ZDEV_ENTRIES
 			* sizeof(struct zcrypt_device_status);
 
 		device_status = kzalloc(total_size, GFP_KERNEL);
 		if (!device_status)
 			return -ENOMEM;
-		zcrypt_device_status_mask(device_status, MAX_ZDEV_CARDIDS);
+		zcrypt_device_status_mask(device_status);
 		if (copy_to_user((char __user *) arg, device_status,
 				 total_size))
 			rc = -EFAULT;

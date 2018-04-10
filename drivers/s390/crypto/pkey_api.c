@@ -889,7 +889,7 @@ int pkey_findcard(const struct pkey_seckey *seckey,
 		  u16 *pcardnr, u16 *pdomain, int verify)
 {
 	struct secaeskeytoken *t = (struct secaeskeytoken *) seckey;
-	struct zcrypt_device_status *device_status;
+	struct zcrypt_device_status_ext *device_status;
 	u16 card, dom;
 	u64 mkvp[2];
 	int i, rc, oi = -1;
@@ -899,15 +899,15 @@ int pkey_findcard(const struct pkey_seckey *seckey,
 		return -EINVAL;
 
 	/* fetch status of all crypto cards */
-	device_status = kmalloc(MAX_ZDEV_CARDIDS2 * MAX_ZDEV_DOMAINS2
-				* sizeof(struct zcrypt_device_status),
+	device_status = kmalloc(MAX_ZDEV_ENTRIES_EXT
+				* sizeof(struct zcrypt_device_status_ext),
 				GFP_KERNEL);
 	if (!device_status)
 		return -ENOMEM;
-	zcrypt_device_status_mask(device_status, MAX_ZDEV_CARDIDS);
+	zcrypt_device_status_mask_ext(device_status);
 
 	/* walk through all crypto cards */
-	for (i = 0; i < MAX_ZDEV_ENTRIES; i++) {
+	for (i = 0; i < MAX_ZDEV_ENTRIES_EXT; i++) {
 		card = AP_QID_CARD(device_status[i].qid);
 		dom = AP_QID_QUEUE(device_status[i].qid);
 		if (device_status[i].online &&
@@ -931,9 +931,9 @@ int pkey_findcard(const struct pkey_seckey *seckey,
 			mkvp_cache_scrub(card, dom);
 		}
 	}
-	if (i >= MAX_ZDEV_ENTRIES) {
+	if (i >= MAX_ZDEV_ENTRIES_EXT) {
 		/* nothing found, so this time without cache */
-		for (i = 0; i < MAX_ZDEV_ENTRIES; i++) {
+		for (i = 0; i < MAX_ZDEV_ENTRIES_EXT; i++) {
 			if (!(device_status[i].online &&
 			      device_status[i].functions & 0x04))
 				continue;
@@ -948,13 +948,13 @@ int pkey_findcard(const struct pkey_seckey *seckey,
 					oi = i;
 			}
 		}
-		if (i >= MAX_ZDEV_ENTRIES && oi >= 0) {
+		if (i >= MAX_ZDEV_ENTRIES_EXT && oi >= 0) {
 			/* old mkvp matched, use this card then */
 			card = AP_QID_CARD(device_status[oi].qid);
 			dom = AP_QID_QUEUE(device_status[oi].qid);
 		}
 	}
-	if (i < MAX_ZDEV_ENTRIES || oi >= 0) {
+	if (i < MAX_ZDEV_ENTRIES_EXT || oi >= 0) {
 		if (pcardnr)
 			*pcardnr = card;
 		if (pdomain)
