@@ -350,7 +350,7 @@ static void smc_llc_send_message_work(struct work_struct *work)
 	struct smc_wr_buf *wr_buf;
 	int rc;
 
-	if (llcwrk->link->state != SMC_LNK_ACTIVE)
+	if (llcwrk->link->state == SMC_LNK_INACTIVE)
 		goto out;
 	rc = smc_llc_add_pending_send(llcwrk->link, &wr_buf, &pend);
 	if (rc)
