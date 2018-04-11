@@ -380,7 +380,7 @@ static int shadow_scb(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 
 	/* Execution Token */
 	if (test_kvm_facility(vcpu->kvm, 156))
-		scb_s->ecd |= scb_o->ecd & ECD_EXECTF;
+		scb_s->ecd |= scb_o->ecd & ECD_ETOKENF;
 
 	prepare_ibc(vcpu, vsie_page);
 	rc = shadow_crycb(vcpu, vsie_page);
@@ -632,7 +632,7 @@ static int pin_blocks(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 		scb_s->riccbd = hpa;
 	}
 	if (((scb_s->ecb & ECB_GS) && !(scb_s->ecd & ECD_HOSTREGMGMT)) ||
-	    (scb_s->ecd & ECD_EXECTF)) {
+	    (scb_s->ecd & ECD_ETOKENF)) {
 		unsigned long sdnxc;
 
 		gpa = READ_ONCE(scb_o->sdnxo) & ~0xfUL;
