@@ -99,7 +99,6 @@ void __init nospec_auto_detect(void)
 	 * nobp setting decides what is done, this depends on the
 	 * CONFIG_KERNEL_NP option and the nobp/nospec parameters.
 	 */
-	return 0;
 }
 
 static int __init spectre_v2_setup_early(char *str)
