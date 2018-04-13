@@ -600,7 +600,7 @@ static void smc_llc_testlink_work(struct work_struct *work)
 	smc_llc_send_test_link(link, user_data);
 	/* receive TEST LINK response over RoCE fabric */
 	rc = wait_for_completion_interruptible_timeout(&link->llc_testlink_resp,
-						       link->llc_testlink_time);
+						       SMC_LLC_WAIT_TIME);
 	if (rc <= 0) {
 		smc_lgr_terminate(lgr);
 		return;
@@ -634,7 +634,7 @@ void smc_llc_link_active(struct smc_link *link, int testlink_time)
 {
 	link->state = SMC_LNK_ACTIVE;
 	if (testlink_time) {
-		link->llc_testlink_time = testlink_time;
+		link->llc_testlink_time = testlink_time * HZ;
 		queue_delayed_work(link->llc_wq, &link->llc_testlink_wrk,
 				   link->llc_testlink_time);
 	}
