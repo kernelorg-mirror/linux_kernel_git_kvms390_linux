@@ -48,6 +48,15 @@ void flush_thread(void)
 {
 }
 
+void arch_setup_new_exec(void)
+{
+	if (S390_lowcore.current_pid != current->pid) {
+		S390_lowcore.current_pid = current->pid;
+		if (test_facility(40))
+			lpp(&S390_lowcore.lpp);
+	}
+}
+
 void arch_release_task_struct(struct task_struct *tsk)
 {
 	runtime_instr_release(tsk);
