@@ -41,7 +41,7 @@ int arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
 {
 	/* We don't support crash kernels yet. */
 	if (image->type == KEXEC_TYPE_CRASH)
-		return -ENOTSUPP;
+		return -EOPNOTSUPP;
 
 	return kexec_image_probe_default(image, buf, buf_len);
 }

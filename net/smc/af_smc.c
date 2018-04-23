@@ -1128,7 +1128,7 @@ out:
 }
 
 static int smc_getname(struct socket *sock, struct sockaddr *addr,
-		       int *len, int peer)
+		       int peer)
 {
 	struct smc_sock *smc;
 
@@ -1138,7 +1138,7 @@ static int smc_getname(struct socket *sock, struct sockaddr *addr,
 
 	smc = smc_sk(sock->sk);
 
-	return smc->clcsock->ops->getname(smc->clcsock, addr, len, peer);
+	return smc->clcsock->ops->getname(smc->clcsock, addr, peer);
 }
 
 static int smc_sendmsg(struct socket *sock, struct msghdr *msg, size_t len)

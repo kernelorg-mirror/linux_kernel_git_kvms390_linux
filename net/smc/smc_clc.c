@@ -134,7 +134,6 @@ static int smc_clc_prfx_set(struct socket *clcsock,
 	struct sockaddr_in6 *addr6;
 	struct sockaddr_in *addr;
 	int rc = -ENOENT;
-	int len;
 
 	memset(prop, 0, sizeof(*prop));
 	if (!dst) {
@@ -146,7 +145,7 @@ static int smc_clc_prfx_set(struct socket *clcsock,
 		goto out_rel;
 	}
 	/* get address to which the internal TCP socket is bound */
-	kernel_getsockname(clcsock, (struct sockaddr *)&addrs, &len);
+	kernel_getsockname(clcsock, (struct sockaddr *)&addrs);
 	/* analyze IP specific data of net_device belonging to TCP socket */
 	addr6 = (struct sockaddr_in6 *)&addrs;
 	rcu_read_lock();
@@ -182,6 +181,7 @@ static int smc_clc_prfx_match4_rcu(struct net_device *dev,
 		    inet_ifa_match(prop->outgoing_subnet, ifa))
 			return 0;
 	} endfor_ifa(in_dev);
+
 	return -ENOENT;
 }
 
