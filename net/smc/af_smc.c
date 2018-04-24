@@ -913,7 +913,7 @@ static int smc_listen_rdma_check(struct smc_sock *new_smc,
 static int smc_listen_rdma_init(struct smc_sock *new_smc,
 				struct smc_clc_msg_proposal *pclc,
 				struct smc_ib_device *ibdev, u8 ibport,
-				u8 *local_contact)
+				int *local_contact)
 {
 	/* allocate connection / link group */
 	*local_contact = smc_conn_create(new_smc, ibdev, ibport, &pclc->lcl, 0);
@@ -931,7 +931,7 @@ static int smc_listen_rdma_init(struct smc_sock *new_smc,
 }
 
 /* listen worker: register buffers */
-static int smc_listen_rdma_reg(struct smc_sock *new_smc, u8 local_contact)
+static int smc_listen_rdma_reg(struct smc_sock *new_smc, int local_contact)
 {
 	struct smc_link *link = &new_smc->conn.lgr->lnk[SMC_SINGLE_LINK];
 
@@ -949,7 +949,7 @@ static int smc_listen_rdma_reg(struct smc_sock *new_smc, u8 local_contact)
 /* listen worker: finish RDMA setup */
 static void smc_listen_rdma_finish(struct smc_sock *new_smc,
 				   struct smc_clc_msg_accept_confirm *cclc,
-				   u8 local_contact)
+				   int local_contact)
 {
 	struct smc_link *link = &new_smc->conn.lgr->lnk[SMC_SINGLE_LINK];
 	int reason_code = 0;
@@ -989,7 +989,7 @@ static void smc_listen_work(struct work_struct *work)
 	struct smc_clc_msg_proposal *pclc;
 	struct smc_ib_device *ibdev;
 	u8 buf[SMC_CLC_MAX_LEN];
-	u8 local_contact = 0;
+	int local_contact = 0;
 	int reason_code = 0;
 	int rc = 0;
 	u8 ibport;
