@@ -324,10 +324,13 @@ static void smcr_buf_free(struct smc_link_group *lgr, bool is_rmb,
 static void smcd_buf_free(struct smc_link_group *lgr, bool is_dmb,
 			  struct smc_buf_desc *buf_desc)
 {
-	if (is_dmb)
+	if (is_dmb) {
+		/* restore original buf len */
+		buf_desc->len += sizeof(struct smcd_cdc_msg);
 		smc_ism_unregister_dmb(lgr->smcd, buf_desc);
-	else
+	} else {
 		kfree(buf_desc->cpu_addr);
+	}
 	kfree(buf_desc);
 }
 
@@ -632,6 +635,10 @@ create:
 	conn->local_tx_ctrl.common.type = SMC_CDC_MSG_TYPE;
 	conn->local_tx_ctrl.len = SMC_WR_TX_SIZE;
 	conn->urg_state = SMC_URG_READ;
+	if (is_smcd) {
+		conn->rx_off = sizeof(struct smcd_cdc_msg);
+		smcd_cdc_rx_init(conn); /* init tasklet for this conn */
+	}
 #ifndef KERNEL_HAS_ATOMIC64
 	spin_lock_init(&conn->acurs_lock);
 #endif
@@ -777,7 +784,8 @@ static struct smc_buf_desc *smcd_new_buf_create(struct smc_link_group *lgr,
 			return ERR_PTR(-EAGAIN);
 		}
 		memset(buf_desc->cpu_addr, 0, bufsize);
-		buf_desc->len = bufsize;
+		/* CDC header stored in buf. So, pretend it was smaller */
+		buf_desc->len = bufsize - sizeof(struct smcd_cdc_msg);
 	} else {
 		buf_desc->cpu_addr = kzalloc(bufsize, GFP_KERNEL |
 					     __GFP_NOWARN | __GFP_NORETRY |
@@ -854,7 +862,8 @@ static int __smc_buf_create(struct smc_sock *smc, bool is_smcd, bool is_rmb)
 		conn->rmbe_size_short = bufsize_short;
 		smc->sk.sk_rcvbuf = bufsize * 2;
 		atomic_set(&conn->bytes_to_rcv, 0);
-		conn->rmbe_update_limit = smc_rmb_wnd_update_limit(bufsize);
+		conn->rmbe_update_limit =
+			smc_rmb_wnd_update_limit(buf_desc->len);
 		if (is_smcd)
 			smc_ism_set_conn(conn); /* map RMB/smcd_dev to conn */
 	} else {
