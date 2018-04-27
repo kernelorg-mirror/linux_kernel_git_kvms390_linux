@@ -358,7 +358,7 @@ static void smc_llc_send_message_work(struct work_struct *work)
 	memcpy(wr_buf, &llcwrk->llcbuf, llcwrk->llclen);
 	smc_wr_tx_send(llcwrk->link, pend);
 out:
-	kfree(work);
+	kfree(llcwrk);
 }
 
 /* copy llcbuf and schedule an llc send on link */
