@@ -191,14 +191,6 @@ struct smc_sock {				/* smc sock container */
 						 * started, waiting for unsent
 						 * data to be sent
 						 */
-	u8			deferred_nodelay_reset : 1;
-						/* defer Nagle after CLC
-						 * handshake
-						 */
-	u8			deferred_cork_set : 1;
-						/* defer corking after CLC
-						 * handshake
-						 */
 };
 
 static inline struct smc_sock *smc_sk(const struct sock *sk)

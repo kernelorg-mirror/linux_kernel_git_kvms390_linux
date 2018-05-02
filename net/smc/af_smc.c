@@ -394,33 +394,10 @@ static void smc_link_save_peer_info(struct smc_link *link,
 	link->peer_mtu = clc->qp_mtu;
 }
 
-/* deferred setsockopt's not desired during clc handshake */
-static void smc_apply_deferred_sockopts(struct smc_sock *smc)
-{
-	struct smc_sock *opt_smc = smc;
-	u8 val;
-
-	if (smc->listen_smc)
-		opt_smc = smc->listen_smc;
-	if (opt_smc->deferred_nodelay_reset) {
-		val = 0;
-		kernel_setsockopt(smc->clcsock, SOL_TCP, TCP_NODELAY, &val,
-				  sizeof(val));
-		opt_smc->deferred_nodelay_reset = 0;
-	}
-	if (opt_smc->deferred_cork_set) {
-		val = 1;
-		kernel_setsockopt(smc->clcsock, SOL_TCP, TCP_CORK, &val,
-				  sizeof(val));
-		opt_smc->deferred_cork_set = 0;
-	}
-}
-
 /* fall back during connect */
 static int smc_connect_fallback(struct smc_sock *smc)
 {
 	smc->use_fallback = true;
-	smc_apply_deferred_sockopts(smc);
 	smc_copy_sock_settings_to_clc(smc);
 	if (smc->sk.sk_state == SMC_INIT)
 		smc->sk.sk_state = SMC_ACTIVE;
@@ -554,7 +531,6 @@ static int smc_connect_rdma(struct smc_sock *smc,
 	}
 	mutex_unlock(&smc_create_lgr_pending);
 
-	smc_apply_deferred_sockopts(smc);
 	smc_copy_sock_settings_to_clc(smc);
 	if (smc->sk.sk_state == SMC_INIT)
 		smc->sk.sk_state = SMC_ACTIVE;
@@ -571,6 +547,9 @@ static int __smc_connect(struct smc_sock *smc)
 	u8 ibport;
 
 	sock_hold(&smc->sk); /* sock put in passive closing */
+
+	if (smc->use_fallback)
+		return smc_connect_fallback(smc);
 
 	/* if peer has not signalled SMC-capability, fall back */
 	if (!tcp_sk(smc->clcsock->sk)->syn_smc)
@@ -852,7 +831,6 @@ static void smc_listen_out_connected(struct smc_sock *new_smc)
 {
 	struct sock *newsmcsk = &new_smc->sk;
 
-	smc_apply_deferred_sockopts(new_smc);
 	sk_refcnt_debug_inc(newsmcsk);
 	if (newsmcsk->sk_state == SMC_INIT)
 		newsmcsk->sk_state = SMC_ACTIVE;
@@ -994,6 +972,11 @@ static void smc_listen_work(struct work_struct *work)
 	int rc = 0;
 	u8 ibport;
 
+	if (new_smc->use_fallback) {
+		smc_listen_out_connected(new_smc);
+		return;
+	}
+
 	/* check if peer is smc capable */
 	if (!tcp_sk(newclcsock->sk)->syn_smc) {
 		new_smc->use_fallback = true;
@@ -1076,7 +1059,7 @@ static void smc_tcp_listen_work(struct work_struct *work)
 			continue;
 
 		new_smc->listen_smc = lsmc;
-		new_smc->use_fallback = false; /* assume rdma capability first*/
+		new_smc->use_fallback = lsmc->use_fallback;
 		sock_hold(lsk); /* sock_put in smc_listen_work */
 		INIT_WORK(&new_smc->smc_listen_work, smc_listen_work);
 		smc_copy_sock_settings_to_smc(new_smc);
@@ -1112,7 +1095,8 @@ static int smc_listen(struct socket *sock, int backlog)
 	 * them to the clc socket -- copy smc socket options to clc socket
 	 */
 	smc_copy_sock_settings_to_clc(smc);
-	tcp_sk(smc->clcsock->sk)->syn_smc = 1;
+	if (!smc->use_fallback)
+		tcp_sk(smc->clcsock->sk)->syn_smc = 1;
 
 	rc = kernel_listen(smc->clcsock, backlog);
 	if (rc)
@@ -1145,6 +1129,7 @@ static int smc_accept(struct socket *sock, struct socket *new_sock,
 
 	if (lsmc->sk.sk_state != SMC_LISTEN) {
 		rc = -EINVAL;
+		release_sock(sk);
 		goto out;
 	}
 
@@ -1225,6 +1210,16 @@ static int smc_sendmsg(struct socket *sock, struct msghdr *msg, size_t len)
 	    (sk->sk_state != SMC_APPCLOSEWAIT1) &&
 	    (sk->sk_state != SMC_INIT))
 		goto out;
+
+	if (msg->msg_flags & MSG_FASTOPEN) {
+		if (sk->sk_state == SMC_INIT) {
+			smc->use_fallback = true;
+		} else {
+			rc = -EINVAL;
+			goto out;
+		}
+	}
+
 	if (smc->use_fallback)
 		rc = smc->clcsock->ops->sendmsg(smc->clcsock, msg, len);
 	else
@@ -1404,145 +1399,73 @@ static int smc_setsockopt(struct socket *sock, int level, int optname,
 {
 	struct sock *sk = sock->sk;
 	struct smc_sock *smc;
-	int val;
+	int val, rc;
 
 	smc = smc_sk(sk);
-	if (smc->use_fallback || level != SOL_TCP)
-		goto clcsock;
 
-	/* level SOL_TCP */
-	switch (optname) {
-	case TCP_CONGESTION:
-	case TCP_ULP:
-		/* sockopts without integer value; do not apply to SMC */
-		goto clcsock;
-	default:
-		break;
+	/* generic setsockopts reaching us here always apply to the
+	 * CLC socket
+	 */
+	rc = smc->clcsock->ops->setsockopt(smc->clcsock, level, optname,
+					   optval, optlen);
+	if (smc->clcsock->sk->sk_err) {
+		sk->sk_err = smc->clcsock->sk->sk_err;
+		sk->sk_error_report(sk);
 	}
+	if (rc)
+		return rc;
 
 	if (optlen < sizeof(int))
-		return -EINVAL;
-	if (get_user(val, (int __user *)optval))
-		return -EFAULT;
+		return rc;
+	get_user(val, (int __user *)optval);
 
 	lock_sock(sk);
 	switch (optname) {
+	case TCP_ULP:
+	case TCP_FASTOPEN:
+	case TCP_FASTOPEN_CONNECT:
+	case TCP_FASTOPEN_KEY:
+	case TCP_FASTOPEN_NO_COOKIE:
+		/* option not supported by SMC */
+		if (sk->sk_state == SMC_INIT) {
+			smc->use_fallback = true;
+		} else {
+			if (!smc->use_fallback)
+				rc = -EINVAL;
+		}
+		break;
 	case TCP_NODELAY:
 		if (sk->sk_state != SMC_INIT && sk->sk_state != SMC_LISTEN) {
-			if (val && smc_tx_is_corked(smc))
+			if (val)
 				mod_delayed_work(system_wq, &smc->conn.tx_work,
 						 0);
-			release_sock(sk);
-			goto clcsock;
 		}
-		/* for the CLC-handshake TCP_NODELAY is desired;
-		 * in case of fallback to TCP, a nodelay reset is
-		 * triggered afterwards.
-		 */
-		if (val)
-			smc->deferred_nodelay_reset = 0;
-		else
-			smc->deferred_nodelay_reset = 1;
 		break;
 	case TCP_CORK:
 		if (sk->sk_state != SMC_INIT && sk->sk_state != SMC_LISTEN) {
 			if (!val)
 				mod_delayed_work(system_wq, &smc->conn.tx_work,
 						 0);
-			release_sock(sk);
-			goto clcsock;
 		}
-		/* for the CLC-handshake TCP_CORK is not desired;
-		 * in case of fallback to TCP, cork setting is
-		 * triggered afterwards.
-		 */
-		if (val)
-			smc->deferred_cork_set = 1;
-		else
-			smc->deferred_cork_set = 0;
 		break;
 	case TCP_DEFER_ACCEPT:
-		if (sk->sk_state != SMC_INIT && sk->sk_state != SMC_LISTEN) {
-			release_sock(sk);
-			goto clcsock;
-		}
-		/* for the CLC-handshake TCP_DEFER_ACCEPT is not desired */
 		smc->sockopt_defer_accept = val;
 		break;
-	case TCP_FASTOPEN:
-	case TCP_FASTOPEN_CONNECT:
-	case TCP_FASTOPEN_KEY:
-	case TCP_FASTOPEN_NO_COOKIE:
-		/* ignore these options; 3-way handshake shouldn't be
-		 * bypassed with SMC
-		 */
-		break;
 	default:
-		/* apply option to the CLC socket */
-		release_sock(sk);
-		goto clcsock;
+		break;
 	}
 	release_sock(sk);
-	return 0;
 
-clcsock:
-	/* generic setsockopts reaching us here always apply to the
-	 * CLC socket
-	 */
-	return smc->clcsock->ops->setsockopt(smc->clcsock, level, optname,
-					     optval, optlen);
+	return rc;
 }
 
 static int smc_getsockopt(struct socket *sock, int level, int optname,
 			  char __user *optval, int __user *optlen)
 {
-	struct sock *sk = sock->sk;
 	struct smc_sock *smc;
-	int val, len;
 
-	smc = smc_sk(sk);
-
-	if (smc->use_fallback || level != SOL_TCP)
-		goto clcsock;
-
-	if (get_user(len, optlen))
-		return -EFAULT;
-	len = min_t(unsigned int, len, sizeof(int));
-	if (len < 0)
-		return -EINVAL;
-
-	/* level SOL_TCP */
-	switch (optname) {
-	case TCP_NODELAY:
-		if (smc->deferred_nodelay_reset)
-			val = 0;
-		else
-			goto clcsock;
-		break;
-	case TCP_CORK:
-		if (smc->deferred_cork_set)
-			val = 1;
-		else
-			goto clcsock;
-		break;
-	case TCP_DEFER_ACCEPT:
-		if (smc->sockopt_defer_accept)
-			val = smc->sockopt_defer_accept;
-		else
-			goto clcsock;
-		break;
-	default:
-		goto clcsock;
-	}
-
-	if (put_user(len, optlen))
-		return -EFAULT;
-	if (copy_to_user(optval, &val, len))
-		return -EFAULT;
-	return 0;
-
-clcsock:
-	/* socket options applying to the CLC socket */
+	smc = smc_sk(sock->sk);
+	/* socket options apply to the CLC socket */
 	return smc->clcsock->ops->getsockopt(smc->clcsock, level, optname,
 					     optval, optlen);
 }
@@ -1685,7 +1608,6 @@ static int smc_create(struct net *net, struct socket *sock, int protocol,
 	int family = (protocol == SMCPROTO_SMC6) ? PF_INET6 : PF_INET;
 	struct smc_sock *smc;
 	struct sock *sk;
-	u8 val = 1;
 	int rc;
 
 	rc = -ESOCKTNOSUPPORT;
@@ -1711,10 +1633,6 @@ static int smc_create(struct net *net, struct socket *sock, int protocol,
 		sk_common_release(sk);
 		goto out;
 	}
-	/* clc handshake should run with disabled Nagle algorithm */
-	kernel_setsockopt(smc->clcsock, SOL_TCP, TCP_NODELAY, &val,
-			  sizeof(val));
-	smc->deferred_nodelay_reset = 1; /* TCP_NODELAY is not the default */
 	smc->sk.sk_sndbuf = max(smc->clcsock->sk->sk_sndbuf, SMC_BUF_MIN_SIZE);
 	smc->sk.sk_rcvbuf = max(smc->clcsock->sk->sk_rcvbuf, SMC_BUF_MIN_SIZE);
 

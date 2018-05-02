@@ -19,6 +19,7 @@
 #include <linux/sched/signal.h>
 
 #include <net/sock.h>
+#include <net/tcp.h>
 
 #include "smc.h"
 #include "smc_wr.h"
@@ -114,6 +115,13 @@ static int smc_tx_wait_memory(struct smc_sock *smc, int flags)
 	}
 	remove_wait_queue(sk_sleep(sk), &wait);
 	return rc;
+}
+
+static bool smc_tx_is_corked(struct smc_sock *smc)
+{
+	struct tcp_sock *tp = tcp_sk(smc->clcsock->sk);
+
+	return (tp->nonagle & TCP_NAGLE_CORK) ? true : false;
 }
 
 /* sndbuf producer: main API called by socket layer.
