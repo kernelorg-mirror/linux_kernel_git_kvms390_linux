@@ -101,3 +101,6 @@ obj-$(CONFIG_COMPAT)		+= vdso32/
 
 # kernel message catalog
 obj-$(CONFIG_KMSG_IDS)		+= kmsg.o
+
+chkbss := head.o head64.o als.o early_nobss.o
+include $(srctree)/arch/s390/scripts/Makefile.chkbss
