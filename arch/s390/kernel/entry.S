@@ -1357,7 +1357,7 @@ cleanup_critical:
 	stg	%r15,56(%r11)		# r15 stack pointer
 	# set new psw address and exit
 	larl	%r9,.Lsysc_do_svc
-	BR_EX 	%r14,%r11
+	BR_EX	%r14,%r11
 .Lcleanup_system_call_insn:
 	.quad	system_call
 	.quad	.Lsysc_stmg

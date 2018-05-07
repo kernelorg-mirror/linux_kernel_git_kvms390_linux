@@ -40,18 +40,18 @@ _LC_BR_R1 = __LC_BR_R1
 	.endm
 
 	.macro __THUNK_BR r1,r2
-	jg      __s390x_indirect_jump_r\r2\()use_r\r1
+	jg	__s390x_indirect_jump_r\r2\()use_r\r1
 	.endm
 
 	.macro __THUNK_BC d0,r1,r2
-	jg      __s390x_indirect_branch_\d0\()_\r2\()use_\r1
+	jg	__s390x_indirect_branch_\d0\()_\r2\()use_\r1
 	.endm
 
 	.macro __THUNK_BRASL r1,r2,r3
-	brasl   \r1,__s390x_indirect_jump_r\r3\()use_r\r2
+	brasl	\r1,__s390x_indirect_jump_r\r3\()use_r\r2
 	.endm
 
-	.macro  __DECODE_RR expand,reg,ruse
+	.macro	__DECODE_RR expand,reg,ruse
 	.set __decode_fail,1
 	.irp r1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 	.ifc \reg,%r\r1
@@ -68,7 +68,7 @@ _LC_BR_R1 = __LC_BR_R1
 	.endif
 	.endm
 
-	.macro  __DECODE_RRR expand,rsave,rtarget,ruse
+	.macro	__DECODE_RRR expand,rsave,rtarget,ruse
 	.set __decode_fail,1
 	.irp r1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 	.ifc \rsave,%r\r1
@@ -89,7 +89,7 @@ _LC_BR_R1 = __LC_BR_R1
 	.endif
 	.endm
 
-	.macro  __DECODE_DRR expand,disp,reg,ruse
+	.macro	__DECODE_DRR expand,disp,reg,ruse
 	.set __decode_fail,1
 	.irp r1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 	.ifc \reg,%r\r1
