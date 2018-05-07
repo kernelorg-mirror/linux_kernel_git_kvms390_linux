@@ -107,6 +107,9 @@ _LC_BR_R1 = __LC_BR_R1
 	.endm
 
 	.macro __THUNK_EX_BR reg,ruse
+	# Be very careful when adding instructions to this macro!
+	# The ALTERNATIVE replacement code has a .+10 which targets
+	# the "br \reg" after the code has been patched.
 #ifdef CONFIG_HAVE_MARCH_Z10_FEATURES
 	exrl	0,555f
 	j	.
