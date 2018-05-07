@@ -125,7 +125,6 @@ struct thread_struct {
 	unsigned long softirq_timer;	/* task cputime in softirq context */
 	unsigned long sys_call_table;	/* system call table address */
 	mm_segment_t mm_segment;
-	unsigned long etoken;		/* 64-bit random execution token */
 	unsigned long gmap_addr;	/* address of last gmap fault. */
 	unsigned int gmap_write_flag;	/* gmap fault write indication */
 	unsigned int gmap_int_code;	/* int code of last gmap fault */
@@ -150,9 +149,6 @@ struct thread_struct {
 	 */
 	struct fpu fpu;			/* FP and VX register save area */
 };
-
-void init_etoken(struct task_struct *tsk);
-void set_etoken(struct task_struct *tsk);
 
 /* Flag to disable transactions. */
 #define PER_FLAG_NO_TE			1UL

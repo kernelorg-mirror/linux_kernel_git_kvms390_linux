@@ -42,7 +42,6 @@ int main(void)
 	OFFSET(__THREAD_per_address, thread_struct, per_event.address);
 	OFFSET(__THREAD_per_paid, thread_struct, per_event.paid);
 	OFFSET(__THREAD_trap_tdb, thread_struct, trap_tdb);
-	OFFSET(__THREAD_etoken, thread_struct, etoken);
 	BLANK();
 	/* thread info offsets */
 	OFFSET(__TI_flags, task_struct, thread_info.flags);

@@ -223,12 +223,10 @@ ENTRY(__switch_to)
 	stg	%r3,__LC_CURRENT		# store task struct of next
 	stg	%r15,__LC_KERNEL_STACK		# store end of kernel stack
 	lg	%r15,__THREAD_ksp(%r1,%r3)	# load kernel stack of next
-	lg	%r1,__THREAD_etoken(%r1,%r3)
 	aghi	%r3,__TASK_pid
 	mvc	__LC_CURRENT_PID(4,%r0),0(%r3)	# store pid of next
 	lmg	%r6,%r15,__SF_GPRS(%r15)	# load gprs of next task
 	ALTERNATIVE "", ".insn s,0xb2800000,_LPP_OFFSET", 40
-	ALTERNATIVE "", ".long 0xb2e82010", 156
 	BR_EX	%r14
 
 .L__critical_start:

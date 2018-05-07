@@ -30,7 +30,6 @@
 #include <linux/export.h>
 #include <linux/init_task.h>
 #include <asm/cpu_mf.h>
-#include <asm/alternative.h>
 #include <asm/io.h>
 #include <asm/processor.h>
 #include <asm/vtimer.h>
@@ -79,23 +78,6 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
 	return 0;
 }
 
-void init_etoken(struct task_struct *tsk)
-{
-	if (!test_facility(156))
-		return;
-	/* Create a new, non-zero execution token */
-	tsk->thread.etoken = 0;
-	while (tsk->thread.etoken == 0)
-		tsk->thread.etoken = get_random_long();
-}
-
-void set_etoken(struct task_struct *tsk)
-{
-	asm volatile(
-		ALTERNATIVE("", ".insn rrf,0xb2e80000,%0,0,2,0", 156)
-		: : "a" (tsk->thread.etoken));
-}
-
 int copy_thread_tls(unsigned long clone_flags, unsigned long new_stackp,
 		    unsigned long arg, struct task_struct *p, unsigned long tls)
 {
@@ -141,8 +123,6 @@ int copy_thread_tls(unsigned long clone_flags, unsigned long new_stackp,
 		frame->childregs.gprs[10] = arg;
 		frame->childregs.gprs[11] = (unsigned long) do_exit;
 		frame->childregs.orig_gpr2 = -1;
-		/* Set execution token for kernel threads to zero */
-		p->thread.etoken = 0;
 
 		return 0;
 	}
@@ -168,13 +148,6 @@ int copy_thread_tls(unsigned long clone_flags, unsigned long new_stackp,
 			p->thread.acrs[1] = (unsigned int)tls;
 		}
 	}
-	/*
-	 * For a process with a new mm create a new random, non-zero
-	 * execution token. For a new thread that shares the old mm
-	 * the old token gets reused.
-	 */
-	if (!(clone_flags & CLONE_VM))
-		init_etoken(p);
 	return 0;
 }
 
