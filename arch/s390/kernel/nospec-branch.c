@@ -61,7 +61,7 @@ void __init nospec_auto_detect(void)
 	if (test_facility(156)) {
 		/*
 		 * The machine supports execution tokens.
-		 * Disable expolines and disabled nobp.
+		 * Disable expolines and disable nobp.
 		 */
 		if (IS_ENABLED(CC_USING_EXPOLINE))
 			nospec_disable = 1;
