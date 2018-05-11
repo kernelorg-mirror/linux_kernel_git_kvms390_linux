@@ -269,7 +269,7 @@ static void zfcp_scsi_forget_cmnds(struct zfcp_scsi_dev *zsdev, u8 tm_flags)
  * zfcp_scsi_task_mgmt_function() - Send a task management function (sync).
  * @sdev: Pointer to SCSI device to send the task management command to.
  * @tm_flags: Task management flags,
- *            here we only handle %FCP_TMF_TGT_RESET or %FCP_TMF_LUN_RESET.
+ *	      here we only handle %FCP_TMF_TGT_RESET or %FCP_TMF_LUN_RESET.
  */
 static int zfcp_scsi_task_mgmt_function(struct scsi_device *sdev, u8 tm_flags)
 {
