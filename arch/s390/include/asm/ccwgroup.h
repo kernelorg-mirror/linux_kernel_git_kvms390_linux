@@ -77,7 +77,7 @@ extern void ccwgroup_remove_ccwdev(struct ccw_device *cdev);
 #if IS_ENABLED(CONFIG_CCWGROUP)
 bool dev_is_ccwgroup(struct device *dev);
 #else /* CONFIG_CCWGROUP */
-bool dev_is_ccwgroup(struct device *dev)
+static inline bool dev_is_ccwgroup(struct device *dev)
 {
 	return false;
 }
