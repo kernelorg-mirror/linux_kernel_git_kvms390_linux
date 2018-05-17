@@ -346,7 +346,7 @@ void smc_lgr_forget(struct smc_link_group *lgr)
 }
 
 /* terminate linkgroup abnormally */
-void __smc_lgr_terminate(struct smc_link_group *lgr)
+static void __smc_lgr_terminate(struct smc_link_group *lgr)
 {
 	struct smc_connection *conn;
 	struct smc_sock *smc;
