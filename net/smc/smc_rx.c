@@ -76,8 +76,7 @@ static int smc_rx_update_consumer(struct smc_sock *smc,
 				force = true;
 				smc_curs_add(conn->rmb_desc->len, &cons, 1);
 				conn->urg_rx_skip_pend = false;
-			}
-			else if (diff < -1)
+			} else if (diff < -1)
 				/* we read past urgent byte */
 				conn->urg_state = SMC_URG_READ;
 		}
@@ -93,7 +92,8 @@ static int smc_rx_update_consumer(struct smc_sock *smc,
 	return rc;
 }
 
-static void smc_rx_update_cons(struct smc_sock *smc, size_t len) {
+static void smc_rx_update_cons(struct smc_sock *smc, size_t len)
+{
 	struct smc_connection *conn = &smc->conn;
 	union smc_host_cursor cons;
 
