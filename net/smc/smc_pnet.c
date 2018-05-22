@@ -358,9 +358,6 @@ static int smc_pnet_add(struct sk_buff *skb, struct genl_info *info)
 		kfree(pnetelem);
 		return rc;
 	}
-	rc = smc_ib_remember_port_attr(pnetelem->smcibdev, pnetelem->ib_port);
-	if (rc)
-		smc_pnet_remove_by_pnetid(pnetelem->pnet_name);
 	return rc;
 }
 
