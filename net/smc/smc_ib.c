@@ -186,6 +186,12 @@ static int smc_ib_remember_port_attr(struct smc_ib_device *smcibdev, u8 ibport)
 			   &smcibdev->pattr[ibport - 1]);
 	if (rc)
 		goto out;
+
+	if (!smcibdev->ndev[ibport - 1])
+		/* increases the net_device refcount */
+		smcibdev->ndev[ibport - 1] =
+			smcibdev->ibdev->get_netdev(smcibdev->ibdev, ibport);
+
 	/* the SMC protocol requires specification of the RoCE MAC address */
 	rc = smc_ib_fill_gid_and_mac(smcibdev, ibport);
 	if (rc)
@@ -465,9 +471,20 @@ err:
 
 static void smc_ib_cleanup_per_ibdev(struct smc_ib_device *smcibdev)
 {
+	int i;
+
 	if (!smcibdev->initialized)
 		return;
 	smcibdev->initialized = 0;
+	for (i = 0;
+	     i < min_t(size_t, smcibdev->ibdev->phys_port_cnt, SMC_MAX_PORTS);
+	     i++) {
+		if (smcibdev->ndev[i]) {
+			/* pendant to get_netdev refcount increase */
+			dev_put(smcibdev->ndev[i]);
+			smcibdev->ndev[i] = NULL;
+		}
+	}
 	smc_wr_remove_dev(smcibdev);
 	ib_unregister_event_handler(&smcibdev->event_handler);
 	ib_destroy_cq(smcibdev->roce_cq_recv);

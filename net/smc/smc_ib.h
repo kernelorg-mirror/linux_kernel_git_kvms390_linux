@@ -31,6 +31,7 @@ extern struct smc_ib_devices	smc_ib_devices; /* list of smc ib devices */
 struct smc_ib_device {				/* ib-device infos for smc */
 	struct list_head	list;
 	struct ib_device	*ibdev;
+	struct net_device	*ndev[SMC_MAX_PORTS];	/* ROCE net_devices */
 	struct ib_port_attr	pattr[SMC_MAX_PORTS];	/* ib dev. port attrs */
 	struct ib_event_handler	event_handler;	/* global ib_event handler */
 	struct ib_cq		*roce_cq_send;	/* send completion queue */

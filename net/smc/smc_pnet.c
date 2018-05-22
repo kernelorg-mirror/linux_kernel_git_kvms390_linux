@@ -473,6 +473,46 @@ static struct genl_family smc_pnet_nl_family = {
 	.n_ops =  ARRAY_SIZE(smc_pnet_ops)
 };
 
+/* Reduce netdev refcount if it exists in the smc_ib_devices list */
+static void smc_pnet_cleanup_netdev(struct net_device *ndev)
+{
+	struct smc_ib_device *smcibdev;
+	int i;
+
+	spin_lock(&smc_ib_devices.lock);
+	list_for_each_entry(smcibdev, &smc_ib_devices.list, list) {
+		for (i = 0; i < SMC_MAX_PORTS; i++) {
+			if (smcibdev->ndev[i] == ndev) {
+				dev_put(smcibdev->ndev[i]);
+				smcibdev->ndev[i] = NULL;
+				goto out;
+			}
+		}
+	}
+out:
+	spin_unlock(&smc_ib_devices.lock);
+}
+
+/* Trigger update of port attributes of the corresponding IB device */
+static void smc_pnet_port_attr_netdev(struct net_device *ndev)
+{
+	struct smc_ib_device *smcibdev;
+	int i;
+
+	spin_lock(&smc_ib_devices.lock);
+	list_for_each_entry(smcibdev, &smc_ib_devices.list, list) {
+		for (i = 0; i < SMC_MAX_PORTS; i++) {
+			if (smcibdev->ndev[i] == ndev) {
+				set_bit(i, &smcibdev->port_event_mask);
+				schedule_work(&smcibdev->port_event_work);
+				goto out;
+			}
+		}
+	}
+out:
+	spin_unlock(&smc_ib_devices.lock);
+}
+
 static int smc_pnet_netdev_event(struct notifier_block *this,
 				 unsigned long event, void *ptr)
 {
@@ -482,10 +522,15 @@ static int smc_pnet_netdev_event(struct notifier_block *this,
 	case NETDEV_REBOOT:
 	case NETDEV_UNREGISTER:
 		smc_pnet_remove_by_ndev(event_dev);
+		smc_pnet_cleanup_netdev(event_dev);
+		return NOTIFY_OK;
+	case NETDEV_UP:
+	case NETDEV_DOWN:
+		smc_pnet_port_attr_netdev(event_dev);
+		return NOTIFY_OK;
 	default:
-		break;
+		return NOTIFY_DONE;
 	}
-	return NOTIFY_DONE;
 }
 
 static struct notifier_block smc_netdev_notifier = {
