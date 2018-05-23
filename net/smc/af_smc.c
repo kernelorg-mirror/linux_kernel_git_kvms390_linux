@@ -1493,31 +1493,49 @@ static int smc_ioctl(struct socket *sock, unsigned int cmd,
 	case SIOCINQ: /* same as FIONREAD */
 		if (smc->sk.sk_state == SMC_LISTEN)
 			return -EINVAL;
-		answ = atomic_read(&smc->conn.bytes_to_rcv);
+		if (smc->sk.sk_state == SMC_INIT ||
+		    smc->sk.sk_state == SMC_CLOSED)
+			answ = 0;
+		else
+			answ = atomic_read(&smc->conn.bytes_to_rcv);
 		break;
 	case SIOCOUTQ:
 		/* output queue size (not send + not acked) */
 		if (smc->sk.sk_state == SMC_LISTEN)
 			return -EINVAL;
-		answ = smc->conn.sndbuf_desc->len -
+		if (smc->sk.sk_state == SMC_INIT ||
+		    smc->sk.sk_state == SMC_CLOSED)
+			answ = 0;
+		else
+			answ = smc->conn.sndbuf_desc->len -
 					atomic_read(&smc->conn.sndbuf_space);
 		break;
 	case SIOCOUTQNSD:
 		/* output queue size (not send only) */
 		if (smc->sk.sk_state == SMC_LISTEN)
 			return -EINVAL;
-		answ = smc_tx_prepared_sends(&smc->conn);
+		if (smc->sk.sk_state == SMC_INIT ||
+		    smc->sk.sk_state == SMC_CLOSED)
+			answ = 0;
+		else
+			answ = smc_tx_prepared_sends(&smc->conn);
 		break;
 	case SIOCATMARK:
 		if (smc->sk.sk_state == SMC_LISTEN)
 			return -EINVAL;
-		smc_curs_write(&cons,
+		if (smc->sk.sk_state == SMC_INIT ||
+		    smc->sk.sk_state == SMC_CLOSED) {
+			answ = 0;
+		} else {
+			smc_curs_write(&cons,
 			       smc_curs_read(&conn->local_tx_ctrl.cons, conn),
-			       conn);
-		smc_curs_write(&urg,
-			       smc_curs_read(&conn->urg_curs, conn),
-			       conn);
-		answ = smc_curs_diff(conn->rmb_desc->len, &cons, &urg) == 1;
+				       conn);
+			smc_curs_write(&urg,
+				       smc_curs_read(&conn->urg_curs, conn),
+				       conn);
+			answ = smc_curs_diff(conn->rmb_desc->len,
+					     &cons, &urg) == 1;
+		}
 		break;
 	default:
 		return -ENOIOCTLCMD;
