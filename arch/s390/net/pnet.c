@@ -12,7 +12,8 @@
 #include <asm/ccwdev.h>
 #include <asm/pnet.h>
 
-/* Get the PNETIDs from a device.
+/*
+ * Get the PNETIDs from a device.
  * s390 hardware supports the definition of a so-called Physical Network
  * Identifier (short PNETID) per network device port. These PNETIDs can be
  * used to identify network devices that are attached to the same physical
@@ -23,8 +24,8 @@
  * - a PCI attached network device
  *
  * Returns:
- * 0:           PNETIDs extracted from device.
- * -ENOMEM:     No memory to extract utility string.
+ * 0:		PNETIDs extracted from device.
+ * -ENOMEM:	No memory to extract utility string.
  * -EOPNOTSUPP: Device type without utility string support
  */
 static int pnet_ids_by_device(struct device *dev, u8 *pnetids)
@@ -50,7 +51,8 @@ static int pnet_ids_by_device(struct device *dev, u8 *pnetids)
 	return -EOPNOTSUPP;
 }
 
-/* Extract the pnetid for a device port.
+/*
+ * Extract the pnetid for a device port.
  *
  * Return 0 if a pnetid is found and -ENOENT otherwise.
  */
