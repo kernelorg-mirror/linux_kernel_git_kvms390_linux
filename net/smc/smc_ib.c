@@ -490,7 +490,6 @@ static void smc_ib_cleanup_per_ibdev(struct smc_ib_device *smcibdev)
 		}
 	}
 	smc_wr_remove_dev(smcibdev);
-	ib_unregister_event_handler(&smcibdev->event_handler);
 	ib_destroy_cq(smcibdev->roce_cq_recv);
 	ib_destroy_cq(smcibdev->roce_cq_send);
 }
@@ -548,6 +547,7 @@ static void smc_ib_remove_dev(struct ib_device *ibdev, void *client_data)
 	spin_unlock(&smc_ib_devices.lock);
 	smc_pnet_remove_by_ibdev(smcibdev);
 	smc_ib_cleanup_per_ibdev(smcibdev);
+	ib_unregister_event_handler(&smcibdev->event_handler);
 	kfree(smcibdev);
 }
 
