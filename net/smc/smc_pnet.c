@@ -22,6 +22,7 @@
 
 #include "smc_pnet.h"
 #include "smc_ib.h"
+#include "smc_ism.h"
 
 #ifdef CONFIG_HAVE_PNETID
 #include <asm/pnet.h>
@@ -569,6 +570,26 @@ static void smc_pnet_find_roce_by_pnetid(struct net_device *ndev,
 	}
 	spin_unlock(&smc_ib_devices.lock);
 }
+
+static void smc_pnet_find_ism_by_pnetid(struct net_device *ndev,
+					struct smcd_dev **smcismdev)
+{
+	u8 ndev_pnetid[MAX_PNETID_LEN];
+	struct smcd_dev *ismdev;
+
+	ndev = pnet_find_base_ndev(ndev);
+	if (pnet_id_by_dev_port(ndev->dev.parent, ndev->dev_port, ndev_pnetid))
+		return; /* pnetid could not be determined */
+
+	spin_lock(&smcd_dev_list.lock);
+	list_for_each_entry(ismdev, &smcd_dev_list.list, list) {
+		if (!memcmp(ismdev->pnetid, ndev_pnetid, MAX_PNETID_LEN)) {
+			*smcismdev = ismdev;
+			break;
+		}
+	}
+	spin_unlock(&smcd_dev_list.lock);
+}
 #endif
 
 /* Lookup of coupled ib_device via SMC pnet table */
@@ -618,6 +639,27 @@ void smc_pnet_find_roce_resource(struct sock *sk,
 
 	/* lookup via SMC PNET table */
 	smc_pnet_find_roce_by_table(dst->dev, smcibdev, ibport);
+
+out_rel:
+	dst_release(dst);
+out:
+	return;
+}
+
+void smc_pnet_find_ism_resource(struct sock *sk, struct smcd_dev **smcismdev)
+{
+	struct dst_entry *dst = sk_dst_get(sk);
+
+	*smcismdev = NULL;
+	if (!dst)
+		goto out;
+	if (!dst->dev)
+		goto out_rel;
+
+#ifdef CONFIG_HAVE_PNETID
+	/* if possible, lookup via hardware-defined pnetid */
+	smc_pnet_find_ism_by_pnetid(dst->dev, smcismdev);
+#endif
 
 out_rel:
 	dst_release(dst);

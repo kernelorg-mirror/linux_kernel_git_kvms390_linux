@@ -11,6 +11,10 @@
 #ifndef _SMC_H
 #define _SMC_H
 
+#ifdef CONFIG_HAVE_PNETID
+#include <asm/pnet.h>
+#endif
+
 struct smc_hashinfo {
 	rwlock_t lock;
 	struct hlist_head ht;
@@ -71,6 +75,9 @@ struct smcd_dev {
 	struct smc_connection **conn;
 	struct list_head vlan;
 	struct workqueue_struct *event_wq;
+#ifdef CONFIG_HAVE_PNETID
+	u8 pnetid[MAX_PNETID_LEN];
+#endif
 };
 
 struct smcd_dev *smcd_alloc_dev(struct device *parent, const char *name,
