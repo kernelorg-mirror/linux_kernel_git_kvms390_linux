@@ -6,6 +6,7 @@
  */
 
 #include <linux/device.h>
+#include <linux/module.h>
 #include <linux/pci.h>
 #include <linux/types.h>
 #include <asm/ccwgroup.h>
@@ -74,3 +75,6 @@ int pnet_id_by_dev_port(struct device *dev, unsigned short port, u8 *pnetid)
 	return rc;
 }
 EXPORT_SYMBOL_GPL(pnet_id_by_dev_port);
+
+MODULE_DESCRIPTION("pnetid determination from utility strings");
+MODULE_LICENSE("GPL");
