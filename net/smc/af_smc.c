@@ -1585,9 +1585,9 @@ static ssize_t smc_splice_read(struct socket *sock, loff_t *ppos,
 	smc = smc_sk(sk);
 	lock_sock(sk);
 
-	if ((sk->sk_state == SMC_INIT) ||
-	    (sk->sk_state == SMC_LISTEN) ||
-	    (sk->sk_state == SMC_CLOSED))
+	if (sk->sk_state == SMC_INIT ||
+	    sk->sk_state == SMC_LISTEN ||
+	    sk->sk_state == SMC_CLOSED)
 		goto out;
 
 	if (sk->sk_state == SMC_PEERFINCLOSEWAIT) {
