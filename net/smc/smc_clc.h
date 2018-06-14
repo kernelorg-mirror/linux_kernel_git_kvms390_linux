@@ -165,7 +165,7 @@ smc_clc_proposal_get_prefix(struct smc_clc_msg_proposal *pclc)
 static inline struct smc_clc_msg_smcd *
 smc_get_clc_msg_smcd(struct smc_clc_msg_proposal *prop)
 {
-	if (prop->iparea_offset != sizeof(struct smc_clc_msg_smcd))
+	if (ntohs(prop->iparea_offset) != sizeof(struct smc_clc_msg_smcd))
 		return NULL;
 
 	return (struct smc_clc_msg_smcd *)(prop + 1);

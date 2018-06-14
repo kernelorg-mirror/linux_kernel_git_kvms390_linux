@@ -416,7 +416,7 @@ int smc_clc_send_proposal(struct smc_sock *smc, int smc_type,
 		/* add SMC-D specifics */
 		memset(&pclc_smcd, 0, sizeof(pclc_smcd));
 		plen += sizeof(pclc_smcd);
-		pclc.iparea_offset = SMC_CLC_PROPOSAL_MAX_OFFSET;
+		pclc.iparea_offset = htons(SMC_CLC_PROPOSAL_MAX_OFFSET);
 		pclc_smcd.gid = ismdev->local_gid;
 	}
 	pclc.hdr.length = htons(plen);
