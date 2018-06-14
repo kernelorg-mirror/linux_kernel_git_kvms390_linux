@@ -117,7 +117,7 @@ int smc_cdc_msg_send(struct smc_connection *conn,
 	return rc;
 }
 
-int smcr_cdc_get_slot_and_msg_send(struct smc_connection *conn)
+static int smcr_cdc_get_slot_and_msg_send(struct smc_connection *conn)
 {
 	struct smc_cdc_tx_pend *pend;
 	struct smc_wr_buf *wr_buf;
