@@ -52,14 +52,14 @@ struct smc_cdc_msg {
 
 /* CDC message for SMC-D */
 struct smcd_cdc_msg {
-	struct smc_wr_rx_hdr common;    /* Type = 0xFE */
+	struct smc_wr_rx_hdr common;	/* Type = 0xFE */
 	u8 res1[7];
 	u16 prod_wrap;
 	u32 prod_count;
 	u8 res2[2];
 	u16 cons_wrap;
 	u32 cons_count;
-	struct smc_cdc_producer_flags   prod_flags;
+	struct smc_cdc_producer_flags	prod_flags;
 	struct smc_cdc_conn_state_flags conn_state_flags;
 	u8 res3[8];
 } __packed;

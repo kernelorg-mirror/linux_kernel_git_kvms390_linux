@@ -187,7 +187,7 @@ struct smc_connection {
 	u8			rx_off;		/* receive offset:
 						 * 0 for SMC-R, 32 for SMC-D
 						 */
-	u64                     peer_token;	/* SMC-D token of peer */
+	u64			peer_token;	/* SMC-D token of peer */
 };
 
 struct smc_sock {				/* smc sock container */
