@@ -228,7 +228,7 @@ struct smcd_dev *smcd_alloc_dev(struct device *parent, const char *name,
 	device_initialize(&smcd->dev);
 	dev_set_name(&smcd->dev, name);
 	smcd->ops = ops;
-	pnet_id_by_dev_port(parent, 0, smcd->pnetid);
+	smc_pnetid_by_dev_port(parent, 0, smcd->pnetid);
 
 	spin_lock_init(&smcd->lock);
 	INIT_LIST_HEAD(&smcd->vlan);

@@ -24,16 +24,10 @@
 #include "smc_ib.h"
 #include "smc_ism.h"
 
-#ifdef CONFIG_HAVE_PNETID
-#include <asm/pnet.h>
-#endif
-
-#define SMC_MAX_PNET_ID_LEN	16	/* Max. length of PNET id */
-
 static struct nla_policy smc_pnet_policy[SMC_PNETID_MAX + 1] = {
 	[SMC_PNETID_NAME] = {
 		.type = NLA_NUL_STRING,
-		.len = SMC_MAX_PNET_ID_LEN - 1
+		.len = SMC_MAX_PNETID_LEN - 1
 	},
 	[SMC_PNETID_ETHNAME] = {
 		.type = NLA_NUL_STRING,
@@ -70,7 +64,7 @@ static struct smc_pnettable {
  */
 struct smc_pnetentry {
 	struct list_head list;
-	char pnet_name[SMC_MAX_PNET_ID_LEN + 1];
+	char pnet_name[SMC_MAX_PNETID_LEN + 1];
 	struct net_device *ndev;
 	struct smc_ib_device *smcibdev;
 	u8 ib_port;
@@ -214,7 +208,7 @@ static bool smc_pnetid_valid(const char *pnet_name, char *pnetid)
 		return false;
 	while (--end >= bf && isspace(*end))
 		;
-	if (end - bf >= SMC_MAX_PNET_ID_LEN)
+	if (end - bf >= SMC_MAX_PNETID_LEN)
 		return false;
 	while (bf <= end) {
 		if (!isalnum(*bf))
@@ -517,7 +511,6 @@ void smc_pnet_exit(void)
 	genl_unregister_family(&smc_pnet_nl_family);
 }
 
-#ifdef CONFIG_HAVE_PNETID
 /* Determine one base device for stacked net devices.
  * If the lower device level contains more than one devices
  * (for instance with bonding slaves), just the first device
@@ -548,19 +541,20 @@ static void smc_pnet_find_roce_by_pnetid(struct net_device *ndev,
 					 struct smc_ib_device **smcibdev,
 					 u8 *ibport)
 {
-	u8 ndev_pnetid[MAX_PNETID_LEN];
+	u8 ndev_pnetid[SMC_MAX_PNETID_LEN];
 	struct smc_ib_device *ibdev;
 	int i;
 
 	ndev = pnet_find_base_ndev(ndev);
-	if (pnet_id_by_dev_port(ndev->dev.parent, ndev->dev_port, ndev_pnetid))
+	if (smc_pnetid_by_dev_port(ndev->dev.parent, ndev->dev_port,
+				   ndev_pnetid))
 		return; /* pnetid could not be determined */
 
 	spin_lock(&smc_ib_devices.lock);
 	list_for_each_entry(ibdev, &smc_ib_devices.list, list) {
 		for (i = 1; i <= SMC_MAX_PORTS; i++) {
 			if (!memcmp(ibdev->pnetid[i - 1], ndev_pnetid,
-				    MAX_PNETID_LEN) &&
+				    SMC_MAX_PNETID_LEN) &&
 			    smc_ib_port_active(ibdev, i)) {
 				*smcibdev = ibdev;
 				*ibport = i;
@@ -574,23 +568,23 @@ static void smc_pnet_find_roce_by_pnetid(struct net_device *ndev,
 static void smc_pnet_find_ism_by_pnetid(struct net_device *ndev,
 					struct smcd_dev **smcismdev)
 {
-	u8 ndev_pnetid[MAX_PNETID_LEN];
+	u8 ndev_pnetid[SMC_MAX_PNETID_LEN];
 	struct smcd_dev *ismdev;
 
 	ndev = pnet_find_base_ndev(ndev);
-	if (pnet_id_by_dev_port(ndev->dev.parent, ndev->dev_port, ndev_pnetid))
+	if (smc_pnetid_by_dev_port(ndev->dev.parent, ndev->dev_port,
+				   ndev_pnetid))
 		return; /* pnetid could not be determined */
 
 	spin_lock(&smcd_dev_list.lock);
 	list_for_each_entry(ismdev, &smcd_dev_list.list, list) {
-		if (!memcmp(ismdev->pnetid, ndev_pnetid, MAX_PNETID_LEN)) {
+		if (!memcmp(ismdev->pnetid, ndev_pnetid, SMC_MAX_PNETID_LEN)) {
 			*smcismdev = ismdev;
 			break;
 		}
 	}
 	spin_unlock(&smcd_dev_list.lock);
 }
-#endif
 
 /* Lookup of coupled ib_device via SMC pnet table */
 static void smc_pnet_find_roce_by_table(struct net_device *netdev,
@@ -630,12 +624,10 @@ void smc_pnet_find_roce_resource(struct sock *sk,
 	if (!dst->dev)
 		goto out_rel;
 
-#ifdef CONFIG_HAVE_PNETID
 	/* if possible, lookup via hardware-defined pnetid */
 	smc_pnet_find_roce_by_pnetid(dst->dev, smcibdev, ibport);
 	if (*smcibdev)
 		goto out_rel;
-#endif
 
 	/* lookup via SMC PNET table */
 	smc_pnet_find_roce_by_table(dst->dev, smcibdev, ibport);
@@ -656,10 +648,8 @@ void smc_pnet_find_ism_resource(struct sock *sk, struct smcd_dev **smcismdev)
 	if (!dst->dev)
 		goto out_rel;
 
-#ifdef CONFIG_HAVE_PNETID
 	/* if possible, lookup via hardware-defined pnetid */
 	smc_pnet_find_ism_by_pnetid(dst->dev, smcismdev);
-#endif
 
 out_rel:
 	dst_release(dst);

@@ -11,9 +11,7 @@
 #ifndef _SMC_H
 #define _SMC_H
 
-#ifdef CONFIG_HAVE_PNETID
-#include <asm/pnet.h>
-#endif
+#define SMC_MAX_PNETID_LEN	16	/* Max. length of PNET id */
 
 struct smc_hashinfo {
 	rwlock_t lock;
@@ -23,7 +21,7 @@ struct smc_hashinfo {
 int smc_hash_sk(struct sock *sk);
 void smc_unhash_sk(struct sock *sk);
 
-/* SMCD/ISM device driver interface*/
+/* SMCD/ISM device driver interface */
 struct smcd_dmb {
 	u64 dmb_tok;
 	u64 rgid;
@@ -75,9 +73,7 @@ struct smcd_dev {
 	struct smc_connection **conn;
 	struct list_head vlan;
 	struct workqueue_struct *event_wq;
-#ifdef CONFIG_HAVE_PNETID
-	u8 pnetid[MAX_PNETID_LEN];
-#endif
+	u8 pnetid[SMC_MAX_PNETID_LEN];
 };
 
 struct smcd_dev *smcd_alloc_dev(struct device *parent, const char *name,

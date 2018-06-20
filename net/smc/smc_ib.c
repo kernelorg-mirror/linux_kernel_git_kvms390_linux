@@ -23,10 +23,6 @@
 #include "smc_wr.h"
 #include "smc.h"
 
-#ifdef CONFIG_HAVE_PNETID
-#include <asm/pnet.h>
-#endif
-
 #define SMC_MAX_CQE 32766	/* max. # of completion queue elements */
 
 #define SMC_QP_MIN_RNR_TIMER		5
@@ -510,10 +506,9 @@ static void smc_ib_add_dev(struct ib_device *ibdev)
 	     i < min_t(size_t, port_cnt, SMC_MAX_PORTS);
 	     i++) {
 		set_bit(i, &smcibdev->port_event_mask);
-#ifdef CONFIG_HAVE_PNETID
 		/* determine pnetids of the port */
-		pnet_id_by_dev_port(ibdev->dev.parent, i, smcibdev->pnetid[i]);
-#endif
+		smc_pnetid_by_dev_port(ibdev->dev.parent, i,
+				       smcibdev->pnetid[i]);
 	}
 	schedule_work(&smcibdev->port_event_work);
 }

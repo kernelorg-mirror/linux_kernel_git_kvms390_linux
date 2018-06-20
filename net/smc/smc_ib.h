@@ -15,10 +15,7 @@
 #include <linux/interrupt.h>
 #include <linux/if_ether.h>
 #include <rdma/ib_verbs.h>
-
-#ifdef CONFIG_HAVE_PNETID
-#include <asm/pnet.h>
-#endif
+#include <net/smc.h>
 
 #define SMC_MAX_PORTS			2	/* Max # of ports */
 #define SMC_GID_SIZE			sizeof(union ib_gid)
@@ -44,10 +41,8 @@ struct smc_ib_device {				/* ib-device infos for smc */
 	char			mac[SMC_MAX_PORTS][ETH_ALEN];
 						/* mac address per port*/
 	union ib_gid		gid[SMC_MAX_PORTS]; /* gid per port */
-#ifdef CONFIG_HAVE_PNETID
-	u8			pnetid[SMC_MAX_PORTS][MAX_PNETID_LEN];
+	u8			pnetid[SMC_MAX_PORTS][SMC_MAX_PNETID_LEN];
 						/* pnetid per port */
-#endif
 	u8			initialized : 1; /* ib dev CQ, evthdl done */
 	struct work_struct	port_event_work;
 	unsigned long		port_event_mask;
