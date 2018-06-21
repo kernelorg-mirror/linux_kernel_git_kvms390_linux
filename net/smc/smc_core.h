@@ -161,6 +161,8 @@ struct smc_rtoken {				/* address/key of remote RMB */
  * struct smc_clc_msg_accept_confirm.rmbe_size being a 4 bit value (0..15)
  */
 
+struct smcd_dev;
+
 struct smc_link_group {
 	struct list_head	list;
 	struct rb_root		conns_all;	/* connection tree */

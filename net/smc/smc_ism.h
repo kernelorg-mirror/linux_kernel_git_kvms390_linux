@@ -33,6 +33,8 @@ struct smc_ism_position {	/* ISM device position to write to */
 	u8 signal;		/* Generate interrupt on owner side */
 };
 
+struct smcd_dev;
+
 int smc_ism_cantalk(u64 peer_gid, unsigned short vlan_id, struct smcd_dev *dev);
 void smc_ism_set_conn(struct smc_connection *conn);
 void smc_ism_unset_conn(struct smc_connection *conn);
