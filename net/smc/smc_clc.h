@@ -171,6 +171,8 @@ smc_get_clc_msg_smcd(struct smc_clc_msg_proposal *prop)
 	return (struct smc_clc_msg_smcd *)(prop + 1);
 }
 
+struct smcd_dev;
+
 int smc_clc_prfx_match(struct socket *clcsock,
 		       struct smc_clc_msg_proposal_prefix *prop);
 int smc_clc_wait_msg(struct smc_sock *smc, void *buf, int buflen,
