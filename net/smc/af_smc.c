@@ -615,15 +615,15 @@ static int smc_connect_ism(struct smc_sock *smc,
 	/* Create send and receive buffers */
 	if (smc_buf_create(smc, true))
 		return smc_connect_abort(smc, SMC_CLC_DECL_MEM, local_contact);
+
 	smc_conn_save_peer_info(smc, aclc);
+	smc_close_init(smc);
+	smc_rx_init(smc);
+	smc_tx_init(smc);
 
 	rc = smc_clc_send_confirm(smc);
 	if (rc)
 		return smc_connect_abort(smc, rc, local_contact);
-
-	smc_tx_init(smc);
-	smc_rx_init(smc);
-	smc_close_init(smc);
 	mutex_unlock(&smc_create_lgr_pending);
 
 	smc_copy_sock_settings_to_clc(smc);
@@ -1782,6 +1782,10 @@ static ssize_t smc_splice_read(struct socket *sock, loff_t *ppos,
 		rc = smc->clcsock->ops->splice_read(smc->clcsock, ppos,
 						    pipe, len, flags);
 	} else {
+		if (smc->conn.lgr->is_smcd) {
+			rc = -EOPNOTSUPP;
+			goto out;
+		}
 		if (*ppos) {
 			rc = -ESPIPE;
 			goto out;
