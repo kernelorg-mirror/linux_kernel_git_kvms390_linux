@@ -24,7 +24,7 @@ KBUILD_CFLAGS_DECOMPRESSOR += -fno-asynchronous-unwind-tables
 KBUILD_CFLAGS_DECOMPRESSOR += $(call cc-option,-ffreestanding)
 UTS_MACHINE	:= s390x
 STACK_SIZE	:= 16384
-CHECKFLAGS	+= -D__s390__ -D__s390x__ -mbig-endian
+CHECKFLAGS	+= -D__s390__ -D__s390x__
 
 export LD_BFD
 

@@ -1729,7 +1729,7 @@ static int kvm_s390_set_cmma_bits(struct kvm *kvm,
 	if (args->count == 0)
 		return 0;
 
-	bits = vmalloc(sizeof(*bits) * args->count);
+	bits = vmalloc(array_size(sizeof(*bits), args->count));
 	if (!bits)
 		return -ENOMEM;
 
@@ -3997,7 +3997,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
 	return r;
 }
 
-int kvm_arch_vcpu_fault(struct kvm_vcpu *vcpu, struct vm_fault *vmf)
+vm_fault_t kvm_arch_vcpu_fault(struct kvm_vcpu *vcpu, struct vm_fault *vmf)
 {
 #ifdef CONFIG_KVM_S390_UCONTROL
 	if ((vmf->pgoff == KVM_S390_SIE_PAGE_OFFSET)
