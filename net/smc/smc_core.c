@@ -281,10 +281,12 @@ void smc_conn_free(struct smc_connection *conn)
 {
 	if (!conn->lgr)
 		return;
-	if (conn->lgr->is_smcd)
+	if (conn->lgr->is_smcd) {
 		smc_ism_unset_conn(conn);
-	else
+		tasklet_kill(&conn->rx_tsklet);
+	} else {
 		smc_cdc_tx_dismiss_slots(conn);
+	}
 	smc_lgr_unregister_conn(conn);
 	smc_buf_unuse(conn);
 }
