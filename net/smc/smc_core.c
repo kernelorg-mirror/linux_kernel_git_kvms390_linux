@@ -785,7 +785,7 @@ static struct smc_buf_desc *smcd_new_buf_create(struct smc_link_group *lgr,
 			kfree(buf_desc);
 			return ERR_PTR(-EAGAIN);
 		}
-		memset(buf_desc->cpu_addr, 0, bufsize);
+		buf_desc->pages = virt_to_page(buf_desc->cpu_addr);
 		/* CDC header stored in buf. So, pretend it was smaller */
 		buf_desc->len = bufsize - sizeof(struct smcd_cdc_msg);
 	} else {
