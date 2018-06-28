@@ -1811,10 +1811,6 @@ static ssize_t smc_splice_read(struct socket *sock, loff_t *ppos,
 		rc = smc->clcsock->ops->splice_read(smc->clcsock, ppos,
 						    pipe, len, flags);
 	} else {
-		if (smc->conn.lgr->is_smcd) {
-			rc = -EOPNOTSUPP;
-			goto out;
-		}
 		if (*ppos) {
 			rc = -ESPIPE;
 			goto out;
