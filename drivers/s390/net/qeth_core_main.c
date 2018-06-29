@@ -2283,8 +2283,13 @@ static int qeth_update_max_mtu(struct qeth_card *card, unsigned int max_mtu)
 	struct net_device *dev = card->dev;
 	unsigned int new_mtu;
 
-	if (!max_mtu)
-		return -EINVAL;
+	if (!max_mtu) {
+		/* IQD needs accurate max MTU to set up its RX buffers: */
+		if (IS_IQD(card))
+			return -EINVAL;
+		/* tolerate quirky HW: */
+		max_mtu = ETH_MAX_MTU;
+	}
 
 	rtnl_lock();
 	if (IS_IQD(card)) {
