@@ -19,6 +19,11 @@
 /* Status bits only for huge segment entries */
 #define _SEGMENT_ENTRY_GMAP_IN		0x8000	/* invalidation notify bit */
 #define _SEGMENT_ENTRY_GMAP_UC		0x4000	/* dirty (migration) */
+/* Status bits in the gmap segment entry. */
+#define _SEGMENT_ENTRY_GMAP_SPLIT	0x0001  /* split huge pmd */
+
+#define GMAP_SEGMENT_STATUS_BITS (_SEGMENT_ENTRY_GMAP_UC | _SEGMENT_ENTRY_GMAP_SPLIT)
+#define GMAP_SEGMENT_NOTIFY_BITS _SEGMENT_ENTRY_GMAP_IN
 
 /**
  * struct gmap_struct - guest address space
@@ -62,6 +67,8 @@ struct gmap {
 	struct radix_tree_root host_to_rmap;
 	struct list_head children;
 	struct list_head pt_list;
+	struct list_head split_list;
+	spinlock_t split_list_lock;
 	spinlock_t shadow_lock;
 	struct gmap *parent;
 	unsigned long orig_asce;
@@ -100,6 +107,17 @@ struct gmap_notifier {
 static inline int gmap_is_shadow(struct gmap *gmap)
 {
 	return !!gmap->parent;
+}
+
+/**
+ * gmap_pmd_is_split - Returns if a huge gmap pmd has been split.
+ * @pmdp: pointer to the pmd
+ *
+ * Returns true if the passed huge gmap pmd has been split.
+ */
+static inline bool gmap_pmd_is_split(pmd_t *pmdp)
+{
+	return !!(pmd_val(*pmdp) & _SEGMENT_ENTRY_GMAP_SPLIT);
 }
 
 struct gmap *gmap_create(struct mm_struct *mm, unsigned long limit);

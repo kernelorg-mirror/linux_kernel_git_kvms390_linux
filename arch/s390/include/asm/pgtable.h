@@ -1147,6 +1147,9 @@ int ptep_shadow_pte(struct mm_struct *mm, unsigned long saddr,
 		    pte_t *sptep, pte_t *tptep, pte_t pte);
 void ptep_unshadow_pte(struct mm_struct *mm, unsigned long saddr, pte_t *ptep);
 
+unsigned long ptep_get_and_clear_notification_bits(pte_t *ptep);
+void ptep_remove_protection_split(struct mm_struct *mm, pte_t *ptep,
+				  unsigned long gaddr);
 bool ptep_test_and_clear_uc(struct mm_struct *mm, unsigned long address,
 			    pte_t *ptep);
 int set_guest_storage_key(struct mm_struct *mm, unsigned long addr,

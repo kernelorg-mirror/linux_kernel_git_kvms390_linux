@@ -739,6 +739,39 @@ void ptep_zap_key(struct mm_struct *mm, unsigned long addr, pte_t *ptep)
 	preempt_enable();
 }
 
+unsigned long ptep_get_and_clear_notification_bits(pte_t *ptep)
+{
+	pgste_t pgste;
+	unsigned long bits;
+
+	pgste = pgste_get_lock(ptep);
+	bits = pgste_val(pgste) & (PGSTE_IN_BIT | PGSTE_VSIE_BIT);
+	pgste_val(pgste) ^= bits;
+	pgste_set_unlock(ptep, pgste);
+
+	return bits;
+}
+EXPORT_SYMBOL_GPL(ptep_get_and_clear_notification_bits);
+
+void ptep_remove_protection_split(struct mm_struct *mm, pte_t *ptep,
+				  unsigned long gaddr)
+{
+	pte_t pte;
+	pgste_t pgste;
+
+	pgste = pgste_get_lock(ptep);
+	pgste_val(pgste) |= PGSTE_UC_BIT;
+	pte = *ptep;
+	pte_val(pte) &= ~_PAGE_PROTECT;
+
+	pgste = pgste_pte_notify(mm, gaddr, ptep, pgste);
+	ptep_ipte_global(mm, gaddr, ptep, 0);
+
+	*ptep = pte;
+	pgste_set_unlock(ptep, pgste);
+}
+EXPORT_SYMBOL_GPL(ptep_remove_protection_split);
+
 /*
  * Test and reset if a guest page is dirty
  */
