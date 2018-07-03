@@ -2001,16 +2001,17 @@ static int qeth_l3_get_cast_type(struct sk_buff *skb)
 }
 
 static void qeth_l3_fill_af_iucv_hdr(struct qeth_hdr *hdr, struct sk_buff *skb,
-				     struct af_iucv_trans_hdr *iucv_hdr,
 				     unsigned int data_len)
 {
 	char daddr[16];
+	struct af_iucv_trans_hdr *iucv_hdr;
 
 	memset(hdr, 0, sizeof(struct qeth_hdr));
 	hdr->hdr.l3.id = QETH_HEADER_TYPE_LAYER3;
 	hdr->hdr.l3.length = data_len;
 	hdr->hdr.l3.flags = QETH_HDR_IPV6 | QETH_CAST_UNICAST;
 
+	iucv_hdr = (struct af_iucv_trans_hdr *)(skb_mac_header(skb) + ETH_HLEN);
 	memset(daddr, 0, sizeof(daddr));
 	daddr[0] = 0xfe;
 	daddr[1] = 0x80;
@@ -2165,7 +2166,6 @@ static int qeth_l3_xmit_offload(struct qeth_card *card, struct sk_buff *skb,
 				int cast_type)
 {
 	const unsigned int hw_hdr_len = sizeof(struct qeth_hdr);
-	struct af_iucv_trans_hdr *iucv_hdr;
 	unsigned int frame_len, nr_frags;
 	unsigned char eth_hdr[ETH_HLEN];
 	unsigned int hdr_elements = 0;
@@ -2192,7 +2192,7 @@ static int qeth_l3_xmit_offload(struct qeth_card *card, struct sk_buff *skb,
 	if (rc)
 		return rc;
 	skb_copy_from_linear_data(skb, eth_hdr, ETH_HLEN);
-	iucv_hdr = skb_pull(skb, ETH_HLEN);
+	skb_pull(skb, ETH_HLEN);
 	frame_len = skb->len;
 	nr_frags = skb_shinfo(skb)->nr_frags;
 
@@ -2213,7 +2213,7 @@ static int qeth_l3_xmit_offload(struct qeth_card *card, struct sk_buff *skb,
 	elements += hdr_elements;
 
 	if (skb->protocol == htons(ETH_P_AF_IUCV))
-		qeth_l3_fill_af_iucv_hdr(hdr, skb, iucv_hdr, frame_len);
+		qeth_l3_fill_af_iucv_hdr(hdr, skb, frame_len);
 	else
 		qeth_l3_fill_header(card, hdr, skb, ipv, cast_type, frame_len);
 
