@@ -43,12 +43,12 @@ struct cmm_page_array {
 	unsigned long pages[CMM_NR_PAGES];
 };
 
-static long cmm_pages;
-static long cmm_timed_pages;
-static volatile long cmm_pages_target;
-static volatile long cmm_timed_pages_target;
-static long cmm_timeout_pages;
-static long cmm_timeout_seconds;
+static unsigned long cmm_pages;
+static unsigned long cmm_timed_pages;
+static volatile unsigned long cmm_pages_target;
+static volatile unsigned long cmm_timed_pages_target;
+static unsigned long cmm_timeout_pages;
+static unsigned long cmm_timeout_seconds;
 static int cmm_suspended;
 
 static struct cmm_page_array *cmm_page_list;
@@ -62,8 +62,8 @@ static void cmm_timer_fn(struct timer_list *);
 static void cmm_set_timer(void);
 static DEFINE_TIMER(cmm_timer, cmm_timer_fn);
 
-static long cmm_alloc_pages(long nr, long *counter,
-			    struct cmm_page_array **list)
+static unsigned long cmm_alloc_pages(unsigned long nr, unsigned long *counter,
+				     struct cmm_page_array **list)
 {
 	struct cmm_page_array *pa, *npa;
 	unsigned long addr;
@@ -102,7 +102,8 @@ static long cmm_alloc_pages(long nr, long *counter,
 	return nr;
 }
 
-static long cmm_free_pages(long nr, long *counter, struct cmm_page_array **list)
+static unsigned long cmm_free_pages(unsigned long nr, unsigned long *counter,
+				    struct cmm_page_array **list)
 {
 	struct cmm_page_array *pa;
 	unsigned long addr;
@@ -130,7 +131,7 @@ static int cmm_oom_notify(struct notifier_block *self,
 			  unsigned long dummy, void *parm)
 {
 	unsigned long *freed = parm;
-	long nr = 256;
+	unsigned long nr = 256;
 
 	nr = cmm_free_pages(nr, &cmm_timed_pages, &cmm_timed_page_list);
 	if (nr > 0)
@@ -201,7 +202,7 @@ static void cmm_set_timer(void)
 
 static void cmm_timer_fn(struct timer_list *unused)
 {
-	long nr;
+	unsigned long nr;
 
 	nr = cmm_timed_pages_target - cmm_timeout_pages;
 	if (nr < 0)
@@ -212,29 +213,29 @@ static void cmm_timer_fn(struct timer_list *unused)
 	cmm_set_timer();
 }
 
-static void cmm_set_pages(long nr)
+static void cmm_set_pages(unsigned long nr)
 {
 	cmm_pages_target = nr;
 	cmm_kick_thread();
 }
 
-static long cmm_get_pages(void)
+static unsigned long cmm_get_pages(void)
 {
 	return cmm_pages;
 }
 
-static void cmm_add_timed_pages(long nr)
+static void cmm_add_timed_pages(unsigned long nr)
 {
 	cmm_timed_pages_target += nr;
 	cmm_kick_thread();
 }
 
-static long cmm_get_timed_pages(void)
+static unsigned long cmm_get_timed_pages(void)
 {
 	return cmm_timed_pages;
 }
 
-static void cmm_set_timeout(long nr, long seconds)
+static void cmm_set_timeout(unsigned long nr, unsigned long seconds)
 {
 	cmm_timeout_pages = nr;
 	cmm_timeout_seconds = seconds;
@@ -254,11 +255,11 @@ static int cmm_skip_blanks(char *cp, char **endp)
 static int cmm_pages_handler(struct ctl_table *ctl, int write,
 			     void __user *buffer, size_t *lenp, loff_t *ppos)
 {
-	long nr = cmm_get_pages();
+	unsigned long nr = cmm_get_pages();
 	struct ctl_table ctl_entry = {
 		.procname	= ctl->procname,
 		.data		= &nr,
-		.maxlen		= sizeof(long),
+		.maxlen		= sizeof(unsigned long),
 	};
 	int rc;
 
@@ -274,11 +275,11 @@ static int cmm_timed_pages_handler(struct ctl_table *ctl, int write,
 				   void __user *buffer, size_t *lenp,
 				   loff_t *ppos)
 {
-	long nr = cmm_get_timed_pages();
+	unsigned long nr = cmm_get_timed_pages();
 	struct ctl_table ctl_entry = {
 		.procname	= ctl->procname,
 		.data		= &nr,
-		.maxlen		= sizeof(long),
+		.maxlen		= sizeof(unsigned long),
 	};
 	int rc;
 
@@ -294,7 +295,7 @@ static int cmm_timeout_handler(struct ctl_table *ctl, int write,
 			       void __user *buffer, size_t *lenp, loff_t *ppos)
 {
 	char buf[64], *p;
-	long nr, seconds;
+	unsigned long nr, seconds;
 	unsigned int len;
 
 	if (!*lenp || (*ppos && !write)) {
@@ -359,7 +360,7 @@ static struct ctl_table cmm_dir_table[] = {
 #define SMSG_PREFIX "CMM"
 static void cmm_smsg_target(const char *from, char *msg)
 {
-	long nr, seconds;
+	unsigned long nr, seconds;
 
 	if (strlen(sender) > 0 && strcmp(from, sender) != 0)
 		return;
