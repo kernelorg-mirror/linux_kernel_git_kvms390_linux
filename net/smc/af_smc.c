@@ -370,8 +370,7 @@ static int smc_clnt_conf_first_link(struct smc_sock *smc)
 	/* send add link reject message, only one link supported for now */
 	rc = smc_llc_send_add_link(link,
 				   link->smcibdev->mac[link->ibport - 1],
-				   &link->smcibdev->gid[link->ibport - 1],
-				   SMC_LLC_RESP);
+				   link->gid, SMC_LLC_RESP);
 	if (rc < 0)
 		return SMC_CLC_DECL_TCL;
 
@@ -523,12 +522,12 @@ static int smc_connect_ism_vlan_cleanup(struct smc_sock *smc, bool is_smcd,
 static int smc_connect_clc(struct smc_sock *smc, int smc_type,
 			   struct smc_clc_msg_accept_confirm *aclc,
 			   struct smc_ib_device *ibdev, u8 ibport,
-			   struct smcd_dev *ismdev)
+			   u8 gid[], struct smcd_dev *ismdev)
 {
 	int rc = 0;
 
 	/* do inband token exchange */
-	rc = smc_clc_send_proposal(smc, smc_type, ibdev, ibport, ismdev);
+	rc = smc_clc_send_proposal(smc, smc_type, ibdev, ibport, gid, ismdev);
 	if (rc)
 		return rc;
 	/* receive SMC Accept CLC message */
@@ -650,6 +649,7 @@ static int __smc_connect(struct smc_sock *smc)
 	struct smc_clc_msg_accept_confirm aclc;
 	struct smc_ib_device *ibdev;
 	struct smcd_dev *ismdev;
+	u8 gid[SMC_GID_SIZE];
 	unsigned short vlan;
 	int smc_type;
 	int rc = 0;
@@ -695,7 +695,7 @@ static int __smc_connect(struct smc_sock *smc)
 		return smc_connect_decline_fallback(smc, SMC_CLC_DECL_CNFERR);
 
 	/* perform CLC handshake */
-	rc = smc_connect_clc(smc, smc_type, &aclc, ibdev, ibport, ismdev);
+	rc = smc_connect_clc(smc, smc_type, &aclc, ibdev, ibport, gid, ismdev);
 	if (rc) {
 		smc_connect_ism_vlan_cleanup(smc, ism_supported, ismdev, vlan);
 		return smc_connect_decline_fallback(smc, rc);
@@ -970,8 +970,7 @@ static int smc_serv_conf_first_link(struct smc_sock *smc)
 	/* send ADD LINK request to client over the RoCE fabric */
 	rc = smc_llc_send_add_link(link,
 				   link->smcibdev->mac[link->ibport - 1],
-				   &link->smcibdev->gid[link->ibport - 1],
-				   SMC_LLC_REQ);
+				   link->gid, SMC_LLC_REQ);
 	if (rc < 0)
 		return SMC_CLC_DECL_TCL;
 
