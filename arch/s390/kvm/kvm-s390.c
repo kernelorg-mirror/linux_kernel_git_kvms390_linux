@@ -3525,7 +3525,7 @@ static void sync_regs(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run)
 		}
 		preempt_enable();
 	}
-	/* execution tokens handled by SIE */
+	/* etoken handled by SIE */
 
 	kvm_run->kvm_dirty_regs = 0;
 }
@@ -3565,7 +3565,7 @@ static void store_regs(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run)
 			__ctl_clear_bit(2, 4);
 		vcpu->arch.host_gscb = NULL;
 	}
-	/* execution tokens handled by SIE */
+	/* etoken handled by SIE */
 }
 
 int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run)

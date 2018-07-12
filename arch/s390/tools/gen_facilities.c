@@ -106,7 +106,7 @@ static struct facility_def facility_defs[] = {
 
 		.name = "FACILITIES_KVM_CPUMODEL",
 		.bits = (int[]){
-			156, /* Execution Token facility */
+			156, /* etoken facility */
 			-1  /* END */
 		}
 	},

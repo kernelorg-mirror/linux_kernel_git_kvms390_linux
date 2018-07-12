@@ -378,7 +378,7 @@ static int shadow_scb(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 	if (test_kvm_facility(vcpu->kvm, 139))
 		scb_s->ecd |= scb_o->ecd & ECD_MEF;
 
-	/* Execution Token */
+	/* etoken */
 	if (test_kvm_facility(vcpu->kvm, 156))
 		scb_s->ecd |= scb_o->ecd & ECD_ETOKENF;
 
