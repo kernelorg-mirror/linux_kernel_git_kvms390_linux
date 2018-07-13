@@ -1703,6 +1703,7 @@ static int smc_ioctl(struct socket *sock, unsigned int cmd,
 			return -EBADF;
 		return smc->clcsock->ops->ioctl(smc->clcsock, cmd, arg);
 	}
+	lock_sock(&smc->sk);
 	switch (cmd) {
 	case SIOCINQ: /* same as FIONREAD */
 		if (smc->sk.sk_state == SMC_LISTEN)
@@ -1748,8 +1749,10 @@ static int smc_ioctl(struct socket *sock, unsigned int cmd,
 		}
 		break;
 	default:
+		release_sock(&smc->sk);
 		return -ENOIOCTLCMD;
 	}
+	release_sock(&smc->sk);
 
 	return put_user(answ, (int __user *)arg);
 }
