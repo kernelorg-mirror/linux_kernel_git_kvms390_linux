@@ -207,18 +207,19 @@ void vtime_task_switch(struct task_struct *prev)
  */
 void vtime_flush(struct task_struct *tsk)
 {
-	u64 steal;
+	u64 steal, avg_steal;
 
 	if (do_account_vtime(tsk))
 		virt_timer_expire();
 
 	steal = S390_lowcore.steal_timer;
+	avg_steal = S390_lowcore.avg_steal_timer / 2;
 	if ((s64) steal > 0) {
-		S390_lowcore.avg_steal_timer =
-			(S390_lowcore.avg_steal_timer / 2) + steal;
 		S390_lowcore.steal_timer = 0;
 		account_steal_time(steal);
+		avg_steal += steal;
 	}
+	S390_lowcore.avg_steal_timer = avg_steal;
 }
 
 /*
