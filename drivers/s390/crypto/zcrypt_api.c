@@ -131,7 +131,7 @@ struct zcdn_device {
 
 #define to_zcdn_dev(x) container_of((x), struct zcdn_device, device)
 
-static DEFINE_SPINLOCK(zcdn_lock);
+DEFINE_SPINLOCK(zcdn_lock);
 
 /* helper function, matches the name for find_zcdndev_by_name() */
 static int __match_zcdn_name(struct device *dev, const void *data)
