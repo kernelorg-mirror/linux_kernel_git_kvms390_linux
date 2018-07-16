@@ -2,27 +2,24 @@
 /*
  *  include/asm-s390/zcrypt.h
  *
- *  zcrypt 2.2.0 (user-visible header)
+ *  zcrypt 2.1.0 (user-visible header)
  *
- *  Copyright IBM Corp. 2001, 2018
+ *  Copyright IBM Corp. 2001, 2006
  *  Author(s): Robert Burroughs
- *	       Eric Rossman
+ *	       Eric Rossman (edrossma@us.ibm.com)
  *
- *  Hotplug & misc device support: Jochen Roehrig
+ *  Hotplug & misc device support: Jochen Roehrig (roehrig@de.ibm.com)
  */
 
 #ifndef __ASM_S390_ZCRYPT_H
 #define __ASM_S390_ZCRYPT_H
 
 #define ZCRYPT_VERSION 2
-#define ZCRYPT_RELEASE 2
-#define ZCRYPT_VARIANT 0
+#define ZCRYPT_RELEASE 1
+#define ZCRYPT_VARIANT 1
 
 #include <linux/ioctl.h>
 #include <linux/compiler.h>
-
-/* Name of the zcrypt device driver. */
-#define ZCRYPT_NAME "zcrypt"
 
 /**
  * struct ica_rsa_modexpo
@@ -311,29 +308,6 @@ struct zcrypt_device_matrix_ext {
 #define ZCRYPT_STATUS_MASK   _IOR(ZCRYPT_IOCTL_MAGIC, 0x58, char[MAX_ZDEV_CARDIDS_EXT])
 #define ZCRYPT_QDEPTH_MASK   _IOR(ZCRYPT_IOCTL_MAGIC, 0x59, char[MAX_ZDEV_CARDIDS_EXT])
 #define ZCRYPT_PERDEV_REQCNT _IOR(ZCRYPT_IOCTL_MAGIC, 0x5a, int[MAX_ZDEV_CARDIDS_EXT])
-
-/*
- * Support for multiple zcrypt device nodes.
- */
-
-/* Nr of minor device node numbers to allocate. */
-#define ZCRYPT_MAX_MINOR_NODES 256
-
-struct zcdn_id {
-	/* Use major and minor as indivitual values, don't use dev_t. */
-	int major;
-	int minor;
-};
-
-struct zcdn_create {
-	char name[32];		   /* in: node name or zeros, out: node name */
-	struct zcdn_id devt;	   /* out: major/minor dev node numbers */
-};
-
-#define ZCDEVNODE_CREATE  _IOC(_IOC_READ|_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x30, 0)
-#define ZCDEVNODE_DESTROY _IOC(_IOC_WRITE, ZCRYPT_IOCTL_MAGIC, 0x31, 0)
-
-#define MAX_ZDEV_IOCTLS (1 << _IOC_NRBITS)
 
 /*
  * Only deprecated defines, structs and ioctls below this line.
