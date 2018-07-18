@@ -3525,7 +3525,7 @@ static void sync_regs(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run)
 		}
 		preempt_enable();
 	}
-	/* etoken handled by SIE */
+	/* SIE will load etoken directly from SDNX and therefore kvm_run */
 
 	kvm_run->kvm_dirty_regs = 0;
 }
@@ -3565,7 +3565,7 @@ static void store_regs(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run)
 			__ctl_clear_bit(2, 4);
 		vcpu->arch.host_gscb = NULL;
 	}
-	/* etoken handled by SIE */
+	/* SIE will save etoken directly into SDNX and therefore kvm_run */
 }
 
 int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run)
