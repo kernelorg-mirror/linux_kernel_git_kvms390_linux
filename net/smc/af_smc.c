@@ -468,7 +468,7 @@ static int smc_connect_abort(struct smc_sock *smc, int reason_code,
 /* check if there is a rdma device available for this connection. */
 /* called for connect and listen */
 static int smc_check_rdma(struct smc_sock *smc, struct smc_ib_device **ibdev,
-			  u8 *ibport, unsigned short vlan_id)
+			  u8 *ibport, unsigned short vlan_id, u8 gid[])
 {
 	int reason_code = 0;
 
@@ -476,7 +476,8 @@ static int smc_check_rdma(struct smc_sock *smc, struct smc_ib_device **ibdev,
 	 * within same PNETID that also contains the ethernet device
 	 * used for the internal TCP socket
 	 */
-	smc_pnet_find_roce_resource(smc->clcsock->sk, ibdev, ibport, vlan_id);
+	smc_pnet_find_roce_resource(smc->clcsock->sk, ibdev, ibport, vlan_id,
+				    gid);
 	if (!(*ibdev))
 		reason_code = SMC_CLC_DECL_CNFERR; /* configuration error */
 
@@ -681,7 +682,7 @@ static int __smc_connect(struct smc_sock *smc)
 	}
 
 	/* check if there is a rdma device available */
-	if (!smc_check_rdma(smc, &ibdev, &ibport, vlan)) {
+	if (!smc_check_rdma(smc, &ibdev, &ibport, vlan, gid)) {
 		/* RDMA is supported for this connection */
 		rdma_supported = true;
 		if (ism_supported)
@@ -1242,7 +1243,7 @@ static void smc_listen_work(struct work_struct *work)
 	if (!ism_supported &&
 	    ((pclc->hdr.path != SMC_TYPE_R && pclc->hdr.path != SMC_TYPE_B) ||
 	     smc_vlan_by_tcpsk(new_smc->clcsock, &vlan) ||
-	     smc_check_rdma(new_smc, &ibdev, &ibport, vlan) ||
+	     smc_check_rdma(new_smc, &ibdev, &ibport, vlan, NULL) ||
 	     smc_listen_rdma_check(new_smc, pclc) ||
 	     smc_listen_rdma_init(new_smc, pclc, ibdev, ibport,
 				  &local_contact) ||
