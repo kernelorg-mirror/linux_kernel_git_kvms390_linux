@@ -1017,6 +1017,7 @@ void smc_core_exit(void)
 		list_del_init(&lgr->list);
 		if (!lgr->is_smcd) {
 			struct smc_link *lnk = &lgr->lnk[SMC_SINGLE_LINK];
+
 			if (lnk->state == SMC_LNK_ACTIVE)
 				smc_llc_send_delete_link(lnk, SMC_LLC_REQ,
 							 false);
