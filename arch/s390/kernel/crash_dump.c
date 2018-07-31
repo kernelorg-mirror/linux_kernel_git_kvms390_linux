@@ -406,7 +406,7 @@ static size_t get_cpu_elf_notes_size(void)
 	struct save_area *sa = NULL;
 	size_t size;
 
-	size =  nt_size(NT_PRSTATUS, sizeof(struct elf_prstatus));
+	size =	nt_size(NT_PRSTATUS, sizeof(struct elf_prstatus));
 	size +=  nt_size(NT_PRFPREG, sizeof(elf_fpregset_t));
 	size +=  nt_size(NT_S390_TIMER, sizeof(sa->timer));
 	size +=  nt_size(NT_S390_TODCMP, sizeof(sa->todcmp));
