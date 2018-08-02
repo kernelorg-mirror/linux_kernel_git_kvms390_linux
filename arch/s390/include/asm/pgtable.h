@@ -1519,6 +1519,7 @@ static __always_inline void __pudp_idte(unsigned long addr, pud_t *pudp,
 	}
 }
 
+pmd_t *pmd_alloc_map(struct mm_struct *mm, unsigned long addr);
 pmd_t pmdp_xchg_direct(struct mm_struct *, unsigned long, pmd_t *, pmd_t);
 pmd_t pmdp_xchg_lazy(struct mm_struct *, unsigned long, pmd_t *, pmd_t);
 pud_t pudp_xchg_direct(struct mm_struct *, unsigned long, pud_t *, pud_t);

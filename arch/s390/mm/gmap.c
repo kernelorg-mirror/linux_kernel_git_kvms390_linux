@@ -899,47 +899,62 @@ static void gmap_pte_op_end(spinlock_t *ptl)
 }
 
 /**
- * gmap_pmd_op_walk - walk the gmap tables, get the guest table lock
- *		      and return the pmd pointer
+ * gmap_pmd_op_walk - walk the gmap tables, get the pmd_lock if needed
+ *		      and return the pmd pointer or NULL
  * @gmap: pointer to guest mapping meta data structure
  * @gaddr: virtual address in the guest address space
  *
  * Returns a pointer to the pmd for a guest address, or NULL
  */
-static inline pmd_t *gmap_pmd_op_walk(struct gmap *gmap, unsigned long gaddr)
+static inline pmd_t *gmap_pmd_op_walk(struct gmap *gmap, unsigned long gaddr,
+				      spinlock_t **ptl)
 {
-	pmd_t *pmdp;
+	pmd_t *pmdp, *hpmdp;
+	unsigned long vmaddr;
+
 
 	BUG_ON(gmap_is_shadow(gmap));
-	pmdp = (pmd_t *) gmap_table_walk(gmap, gaddr, 1);
-	if (!pmdp)
-		return NULL;
 
-	/* without huge pages, there is no need to take the table lock */
-	if (!gmap->mm->context.allow_gmap_hpage_1m)
-		return pmd_none(*pmdp) ? NULL : pmdp;
-
-	spin_lock(&gmap->guest_table_lock);
-	if (pmd_none(*pmdp)) {
-		spin_unlock(&gmap->guest_table_lock);
-		return NULL;
+	*ptl = NULL;
+	if (gmap->mm->context.allow_gmap_hpage_1m) {
+		vmaddr = __gmap_translate(gmap, gaddr);
+		if (IS_ERR_VALUE(vmaddr))
+			return NULL;
+		hpmdp = pmd_alloc_map(gmap->mm, vmaddr);
+		if (!hpmdp)
+			return NULL;
+		*ptl = pmd_lock(gmap->mm, hpmdp);
+		if (pmd_none(*hpmdp)) {
+			spin_unlock(*ptl);
+			*ptl = NULL;
+			return NULL;
+		}
+		if (!pmd_large(*hpmdp)) {
+			spin_unlock(*ptl);
+			*ptl = NULL;
+		}
 	}
 
-	/* 4k page table entries are locked via the pte (pte_alloc_map_lock). */
-	if (!pmd_large(*pmdp))
-		spin_unlock(&gmap->guest_table_lock);
+	pmdp = (pmd_t *) gmap_table_walk(gmap, gaddr, 1);
+	if (!pmdp || pmd_none(*pmdp)) {
+		if (*ptl)
+			spin_unlock(*ptl);
+		pmdp = NULL;
+		*ptl = NULL;
+	}
+
 	return pmdp;
 }
 
 /**
- * gmap_pmd_op_end - release the guest_table_lock if needed
+ * gmap_pmd_op_end - release the pmd lock if needed
  * @gmap: pointer to the guest mapping meta data structure
  * @pmdp: pointer to the pmd
  */
-static inline void gmap_pmd_op_end(struct gmap *gmap, pmd_t *pmdp)
+static inline void gmap_pmd_op_end(spinlock_t *ptl)
 {
-	if (pmd_large(*pmdp))
-		spin_unlock(&gmap->guest_table_lock);
+	if (ptl)
+		spin_unlock(ptl);
 }
 
 /*
@@ -1041,13 +1056,14 @@ static int gmap_protect_range(struct gmap *gmap, unsigned long gaddr,
 			      unsigned long len, int prot, unsigned long bits)
 {
 	unsigned long vmaddr, dist;
+	spinlock_t *ptl = NULL;
 	pmd_t *pmdp;
 	int rc;
 
 	BUG_ON(gmap_is_shadow(gmap));
 	while (len) {
 		rc = -EAGAIN;
-		pmdp = gmap_pmd_op_walk(gmap, gaddr);
+		pmdp = gmap_pmd_op_walk(gmap, gaddr, &ptl);
 		if (pmdp) {
 			if (!pmd_large(*pmdp)) {
 				rc = gmap_protect_pte(gmap, gaddr, pmdp, prot,
@@ -1065,7 +1081,7 @@ static int gmap_protect_range(struct gmap *gmap, unsigned long gaddr,
 					gaddr = (gaddr & HPAGE_MASK) + HPAGE_SIZE;
 				}
 			}
-			gmap_pmd_op_end(gmap, pmdp);
+			gmap_pmd_op_end(ptl);
 		}
 		if (rc) {
 			if (rc == -EINVAL)
@@ -2462,9 +2478,9 @@ void gmap_sync_dirty_log_pmd(struct gmap *gmap, unsigned long bitmap[4],
 	int i;
 	pmd_t *pmdp;
 	pte_t *ptep;
-	spinlock_t *ptl;
+	spinlock_t *ptl = NULL;
 
-	pmdp = gmap_pmd_op_walk(gmap, gaddr);
+	pmdp = gmap_pmd_op_walk(gmap, gaddr, &ptl);
 	if (!pmdp)
 		return;
 
@@ -2481,7 +2497,7 @@ void gmap_sync_dirty_log_pmd(struct gmap *gmap, unsigned long bitmap[4],
 			spin_unlock(ptl);
 		}
 	}
-	gmap_pmd_op_end(gmap, pmdp);
+	gmap_pmd_op_end(ptl);
 }
 EXPORT_SYMBOL_GPL(gmap_sync_dirty_log_pmd);
 
