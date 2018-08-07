@@ -175,11 +175,6 @@ static int nested;
 module_param(nested, int, S_IRUGO);
 MODULE_PARM_DESC(nested, "Nested virtualization support");
 
-/* allow 1m huge page guest backing, if !nested */
-static int hpage;
-module_param(hpage, int, 0444);
-MODULE_PARM_DESC(hpage, "1m huge page backing support");
-
 /* maximum percentage of steal time for polling.  >100 is treated like 100 */
 static u8 halt_poll_max_steal = 10;
 module_param(halt_poll_max_steal, byte, 0644);
@@ -551,7 +546,7 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
 		break;
 	case KVM_CAP_S390_HPAGE_1M:
 		r = 0;
-		if (hpage && !kvm_is_ucontrol(kvm))
+		if (!kvm_is_ucontrol(kvm))
 			r = 1;
 		break;
 	case KVM_CAP_S390_MEM_OP:
@@ -761,7 +756,7 @@ int kvm_vm_ioctl_enable_cap(struct kvm *kvm, struct kvm_enable_cap *cap)
 		mutex_lock(&kvm->lock);
 		if (kvm->created_vcpus)
 			r = -EBUSY;
-		else if (!hpage || kvm->arch.use_cmma || kvm_is_ucontrol(kvm))
+		else if (kvm->arch.use_cmma || kvm_is_ucontrol(kvm))
 			r = -EINVAL;
 		else {
 			r = 0;
@@ -5040,11 +5035,6 @@ static int __init kvm_s390_init(void)
 	if (!sclp.has_sief2) {
 		pr_info("SIE is not available\n");
 		return -ENODEV;
-	}
-
-	if (nested && hpage) {
-		pr_info("A KVM host that supports nesting cannot back its KVM guests with huge pages\n");
-		return -EINVAL;
 	}
 
 	for (i = 0; i < 16; i++)

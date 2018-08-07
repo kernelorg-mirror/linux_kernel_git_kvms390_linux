@@ -1844,7 +1844,6 @@ struct gmap *gmap_shadow(struct gmap *parent, unsigned long asce,
 	unsigned long limit;
 	int rc;
 
-	BUG_ON(parent->mm->context.allow_gmap_hpage_1m);
 	BUG_ON(gmap_is_shadow(parent));
 	spin_lock(&parent->shadow_lock);
 	sg = gmap_find_shadow(parent, asce, edat_level);
