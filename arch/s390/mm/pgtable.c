@@ -743,7 +743,7 @@ void ptep_zap_key(struct mm_struct *mm, unsigned long addr, pte_t *ptep)
  * Test and reset if a guest page is dirty
  */
 bool ptep_test_and_clear_uc(struct mm_struct *mm, unsigned long addr,
-		       pte_t *ptep)
+			    pte_t *ptep)
 {
 	pgste_t pgste;
 	pte_t pte;

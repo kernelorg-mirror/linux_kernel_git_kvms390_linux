@@ -5,7 +5,7 @@
  *    Copyright IBM Corp. 2007, 2020
  *    Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
  *		 David Hildenbrand <david@redhat.com>
- *		 Janosch Frank <frankja@linux.vnet.ibm.com>
+ *		 Janosch Frank <frankja@linux.ibm.com>
  */
 
 #include <linux/kernel.h>
@@ -2290,10 +2290,10 @@ static void gmap_pmdp_xchg(struct gmap *gmap, pmd_t *pmdp, pmd_t new,
 	pmdp_notify_gmap(gmap, pmdp, gaddr);
 	pmd_val(new) &= ~_SEGMENT_ENTRY_GMAP_IN;
 	if (MACHINE_HAS_TLB_GUEST)
-		__pmdp_idte(gaddr, (pmd_t *)pmdp, IDTE_GUEST_ASCE, gmap->asce,
+		__pmdp_idte(gaddr, pmdp, IDTE_GUEST_ASCE, gmap->asce,
 			    IDTE_GLOBAL);
 	else if (MACHINE_HAS_IDTE)
-		__pmdp_idte(gaddr, (pmd_t *)pmdp, 0, 0, IDTE_GLOBAL);
+		__pmdp_idte(gaddr, pmdp, 0, 0, IDTE_GLOBAL);
 	else
 		__pmdp_csp(pmdp);
 	*pmdp = new;
@@ -2523,7 +2523,7 @@ static inline void thp_split_mm(struct mm_struct *mm)
  * - This must be called after THP was enabled
  */
 static int __zap_zero_pages(pmd_t *pmd, unsigned long start,
-			   unsigned long end, struct mm_walk *walk)
+			    unsigned long end, struct mm_walk *walk)
 {
 	unsigned long addr;
 
