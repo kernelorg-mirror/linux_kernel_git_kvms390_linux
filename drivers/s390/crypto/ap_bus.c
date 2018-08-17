@@ -682,7 +682,7 @@ static struct bus_type ap_bus_type = {
 	.pm = &ap_bus_pm_ops,
 };
 
-static int __ap_revice_reserved(struct device *dev, void *dummy)
+static int __ap_revise_reserved(struct device *dev, void *dummy)
 {
 	int rc, card, queue, devres, drvres;
 
@@ -707,7 +707,7 @@ static int __ap_revice_reserved(struct device *dev, void *dummy)
 
 static void ap_bus_revise_bindings(void)
 {
-	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_revice_reserved);
+	bus_for_each_dev(&ap_bus_type, NULL, NULL, __ap_revise_reserved);
 }
 
 int ap_owned_by_def_drv(int card, int queue)
@@ -758,9 +758,10 @@ static int ap_device_probe(struct device *dev)
 
 	if (is_queue_dev(dev)) {
 		/*
-		 * For apqns marked as reserved/used by ap bus and
-		 * default drivers only drivers with a default flag
-		 * will be called for probe this device.
+		 * If the apqn is marked as reserved/used by ap bus and
+		 * default drivers, only probe with drivers with the default
+		 * flag set. If it is not marked, only probe with drivers
+		 * with the default flag not set.
 		 */
 		card = AP_QID_CARD(to_ap_queue(dev)->qid);
 		queue = AP_QID_QUEUE(to_ap_queue(dev)->qid);
