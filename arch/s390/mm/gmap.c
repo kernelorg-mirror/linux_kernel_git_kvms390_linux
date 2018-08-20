@@ -532,6 +532,9 @@ void gmap_unlink(struct mm_struct *mm, unsigned long *table,
 static void gmap_pmdp_xchg(struct gmap *gmap, pmd_t *old, pmd_t new,
 			   unsigned long gaddr);
 
+static void gmap_pmd_split(struct gmap *gmap, unsigned long gaddr,
+			   pmd_t *pmdp, struct page *page);
+
 /**
  * gmap_link - set up shadow page tables to connect a host to a guest address
  * @gmap: pointer to guest mapping meta data structure
@@ -547,12 +550,12 @@ int __gmap_link(struct gmap *gmap, unsigned long gaddr, unsigned long vmaddr)
 {
 	struct mm_struct *mm;
 	unsigned long *table;
+	struct page *page = NULL;
 	spinlock_t *ptl;
 	pgd_t *pgd;
 	p4d_t *p4d;
 	pud_t *pud;
 	pmd_t *pmd;
-	u64 unprot;
 	pte_t *ptep;
 	int rc;
 
@@ -600,6 +603,7 @@ int __gmap_link(struct gmap *gmap, unsigned long gaddr, unsigned long vmaddr)
 	/* Are we allowed to use huge pages? */
 	if (pmd_large(*pmd) && !gmap->mm->context.allow_gmap_hpage_1m)
 		return -EFAULT;
+retry_split:
 	/* Link gmap segment table entry location to page table. */
 	rc = radix_tree_preload(GFP_KERNEL_ACCOUNT);
 	if (rc)
@@ -627,10 +631,25 @@ int __gmap_link(struct gmap *gmap, unsigned long gaddr, unsigned long vmaddr)
 		spin_unlock(&gmap->guest_table_lock);
 	} else if (*table & _SEGMENT_ENTRY_PROTECT &&
 		   !(pmd_val(*pmd) & _SEGMENT_ENTRY_PROTECT)) {
-		unprot = (u64)*table;
-		unprot &= ~_SEGMENT_ENTRY_PROTECT;
-		unprot |= _SEGMENT_ENTRY_GMAP_UC;
-		gmap_pmdp_xchg(gmap, (pmd_t *)table, __pmd(unprot), gaddr);
+		if (page) {
+			gmap_pmd_split(gmap, gaddr, (pmd_t *)table, page);
+			page = NULL;
+		} else {
+			spin_unlock(ptl);
+			ptl = NULL;
+			radix_tree_preload_end();
+			page = page_table_alloc_pgste(mm);
+			if (!page)
+				rc = -ENOMEM;
+			else
+				goto retry_split;
+		}
+		/*
+		 * The split moves over the protection, so we still
+		 * need to unprotect.
+		 */
+		ptep = pte_offset_map((pmd_t *)table, vmaddr);
+		ptep_remove_protection_split(mm, ptep, vmaddr);
 	} else if (gmap_pmd_is_split((pmd_t *)table)) {
 		/*
 		 * Split pmds are somewhere in-between a normal and a
@@ -642,7 +661,10 @@ int __gmap_link(struct gmap *gmap, unsigned long gaddr, unsigned long vmaddr)
 		if (pte_val(*ptep) & _PAGE_PROTECT)
 			ptep_remove_protection_split(mm, ptep, vmaddr);
 	}
-	spin_unlock(ptl);
+	if (page)
+		page_table_free_pgste(page);
+	if (ptl)
+		spin_unlock(ptl);
 	radix_tree_preload_end();
 	return rc;
 }
