@@ -95,7 +95,7 @@ static int zcrypt_pcixcc_rng_supported(struct ap_queue *aq)
 		struct type86_hdr hdr;
 		struct type86_fmt2_ext fmt2;
 		struct CPRBX cprbx;
-	} __packed * reply;
+	} __attribute__((packed)) *reply;
 	struct {
 		struct type6_hdr hdr;
 		struct CPRBX cprbx;
