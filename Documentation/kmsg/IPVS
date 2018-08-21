@@ -82,3 +82,5 @@
 /*? Text: "%s: SME is active, device will require DMA bounce buffers\n" */
 /*? Text: "%s(): request for already hashed, called from %pS\n" */
 /*? Text: "%s(): request for unhash flagged, called from %pS\n" */
+/*? Text: "set_ctl: invalid protocol: %d %pI4:%d\n" */
+/*? Text: "%s: loaded support on port[%d] = %u\n" */
