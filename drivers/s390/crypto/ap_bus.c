@@ -895,14 +895,14 @@ static int hex2bitmap(const char *str, unsigned long *bitmap, int bits)
 
 /*
  * str2clrsetmasks() - parse bitmask argument and set the clear and
- * the set bitmap mask. A concatenation (done with ',' or space) of
- * these terms is recognized:
+ * the set bitmap mask. A concatenation (done with ',') of these terms
+ * is recognized:
  *   +<bitnr>[-<bitnr>] or -<bitnr>[-<bitnr>]
  * <bitnr> may be any valid number (hex, decimal or octal) in the range
- * 0...bits-1. Here are some examples:
+ * 0...bits-1; the leading + or - is required. Here are some examples:
  *   +0-15,+32,-128,-0xFF
- *   -0-255,1-16,+0x128
- *   +1,2,3,4 -5 -7-10
+ *   -0-255,+1-16,+0x128
+ *   +1,+2,+3,+4,-5,-7-10
  * Returns a clear and a set bitmask. Every positive value in the string
  * results in a bit set in the set mask and every negative value in the
  * string results in a bit SET in the clear mask. As a bit may be touched
@@ -925,7 +925,9 @@ static int str2clrsetmasks(const char *str,
 	memset(setmap, 0, bits / 8);
 
 	while (*str) {
-		sign = (*str == '+' || *str == '-') ? *str++ : '+';
+		sign = *str++;
+		if (sign != '+' && sign != '-')
+			return -EINVAL;
 		a = z = simple_strtoul(str, &np, 0);
 		if (str == np || a >= bits)
 			return -EINVAL;
@@ -944,7 +946,7 @@ static int str2clrsetmasks(const char *str,
 				clear_bit_inv(i, setmap);
 				set_bit_inv(i, clrmap);
 			}
-		while (isspace(*str) || *str == ',')
+		while (*str == ',')
 			str++;
 	}
 
@@ -957,8 +959,11 @@ static int str2clrsetmasks(const char *str,
  * absolute value, a hex string like 0x1F2E3D4C5B6A" simple over-
  * writing the current content of the bitmap. Or as relative string
  * like "+1-16,-32,-0x40,+128" where only single bits or ranges of
- * bits are cleared or set. If parsing fails a negative errno value
- * is returned. All arguments and bitmaps are big endian order.
+ * bits are cleared or set. Distinction is done based on the very
+ * first character which may be '+' or '-' for the relative string
+ * and othewise assume to be an absolute value string. If parsing fails
+ * a negative errno value is returned. All arguments and bitmaps are
+ * big endian order.
  */
 static int process_mask_arg(const char *str,
 			    unsigned long *bitmap, int bits,
