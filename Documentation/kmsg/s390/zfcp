@@ -709,3 +709,14 @@
 /*? Text: "%s: %d output lines suppressed due to ratelimiting\n" */
 /*? Text: "%s: SME is active, device will require DMA bounce buffers\n" */
 /*? Text: "Invalid address limit on user-mode return" */
+
+/*?
+ * Text: "DIX is enabled. It is experimental and might cause problems\n"
+ * Severity: Warning
+ * Description:
+ * DIX (data integrity extensions) is enabled and can cause
+ * I/O stalls, endless loops, kernel panics, or I/O errors.
+ * User action:
+ * If you encounter I/O problems, try disabling DIX by setting the
+ * zfcp.dix kernel parameter or dix module parameter to 0.
+ */
