@@ -1009,6 +1009,18 @@ static pte_t *gmap_pte_from_pmd(struct gmap *gmap, pmd_t *pmdp,
 	return pte_offset_map(pmdp, addr);
 }
 
+static inline void gmap_idte_global(unsigned long asce, pmd_t *pmdp,
+				    unsigned long gaddr)
+{
+	if (MACHINE_HAS_TLB_GUEST)
+		__pmdp_idte(gaddr, pmdp, IDTE_GUEST_ASCE, asce,
+			    IDTE_GLOBAL);
+	else if (MACHINE_HAS_IDTE)
+		__pmdp_idte(gaddr, pmdp, 0, 0, IDTE_GLOBAL);
+	else
+		__pmdp_csp(pmdp);
+}
+
 /**
  * gmap_pmd_split_free - Free a split pmd's page table
  * @pmdp The split pmd that we free of its page table
@@ -2468,13 +2480,7 @@ static void gmap_pmdp_xchg(struct gmap *gmap, pmd_t *pmdp, pmd_t new,
 	pmdp_notify_gmap(gmap, pmdp, gaddr, vmaddr);
 	if (pmd_large(new))
 		pmd_val(new) &= ~GMAP_SEGMENT_NOTIFY_BITS;
-	if (MACHINE_HAS_TLB_GUEST)
-		__pmdp_idte(gaddr, pmdp, IDTE_GUEST_ASCE, gmap->asce,
-			    IDTE_GLOBAL);
-	else if (MACHINE_HAS_IDTE)
-		__pmdp_idte(gaddr, pmdp, 0, 0, IDTE_GLOBAL);
-	else
-		__pmdp_csp(pmdp);
+	gmap_idte_global(gmap->asce, pmdp, gaddr);
 	*pmdp = new;
 }
 
@@ -2587,13 +2593,7 @@ void gmap_pmdp_idte_global(struct mm_struct *mm, unsigned long vmaddr)
 			pmdp_notify_gmap(gmap, pmdp, gaddr, vmaddr);
 			if (pmd_large(*pmdp))
 				WARN_ON(*entry & GMAP_SEGMENT_NOTIFY_BITS);
-			if (MACHINE_HAS_TLB_GUEST)
-				__pmdp_idte(gaddr, pmdp, IDTE_GUEST_ASCE,
-					    gmap->asce, IDTE_GLOBAL);
-			else if (MACHINE_HAS_IDTE)
-				__pmdp_idte(gaddr, pmdp, 0, 0, IDTE_GLOBAL);
-			else
-				__pmdp_csp(pmdp);
+			gmap_idte_global(gmap->asce, pmdp, gaddr);
 			gmap_pmd_split_free(gmap, pmdp);
 			*entry = _SEGMENT_ENTRY_EMPTY;
 		}
