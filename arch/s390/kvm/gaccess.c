@@ -981,7 +981,7 @@ int kvm_s390_check_low_addr_prot_real(struct kvm_vcpu *vcpu, unsigned long gra)
  */
 static int kvm_s390_shadow_tables(struct gmap *sg, unsigned long saddr,
 				  unsigned long *pgt, int *dat_protection,
-				  int *fake)
+				  int *fake, int *lvl)
 {
 	struct gmap *parent;
 	union asce asce;
@@ -1133,14 +1133,25 @@ shadow_sgt:
 		if (ste.cs && asce.p)
 			return PGM_TRANSLATION_SPEC;
 		*dat_protection |= ste.fc0.p;
+
+		/* Guest is huge page mapped */
 		if (ste.fc && sg->edat_level >= 1) {
-			*fake = 1;
-			ptr = ste.fc1.sfaa * _SEGMENT_SIZE;
-			ste.val = ptr;
-			goto shadow_pgt;
+			/* 4k to 1m, we absolutely need fake shadow tables. */
+			if (!parent->mm->context.allow_gmap_hpage_1m) {
+				*fake = 1;
+				ptr = ste.fc1.sfaa * _SEGMENT_SIZE;
+				ste.val = ptr;
+				goto shadow_pgt;
+			} else {
+				*lvl = 1;
+				*pgt = ptr;
+				return 0;
+
+			}
 		}
 		ptr = ste.fc0.pto * (PAGE_SIZE / 2);
 shadow_pgt:
+		*lvl = 0;
 		ste.fc0.p |= *dat_protection;
 		rc = gmap_shadow_pgt(sg, saddr, ste.val, *fake);
 		if (rc)
@@ -1169,8 +1180,9 @@ int kvm_s390_shadow_fault(struct kvm_vcpu *vcpu, struct gmap *sg,
 {
 	union vaddress vaddr;
 	union page_table_entry pte;
+	union segment_table_entry ste;
 	unsigned long pgt;
-	int dat_protection, fake;
+	int dat_protection, fake, lvl = 0;
 	int rc;
 
 	mmap_read_lock(sg->mm);
@@ -1181,12 +1193,35 @@ int kvm_s390_shadow_fault(struct kvm_vcpu *vcpu, struct gmap *sg,
 	 */
 	ipte_lock(vcpu);
 
-	rc = gmap_shadow_pgt_lookup(sg, saddr, &pgt, &dat_protection, &fake);
+	rc = gmap_shadow_sgt_lookup(sg, saddr, &pgt, &dat_protection, &fake, &lvl);
 	if (rc)
 		rc = kvm_s390_shadow_tables(sg, saddr, &pgt, &dat_protection,
-					    &fake);
+					    &fake, &lvl);
 
 	vaddr.addr = saddr;
+
+	/* Shadow stopped at segment level, we map pmd to pmd */
+	if (!rc && lvl) {
+		rc = gmap_read_table(sg->parent, pgt + vaddr.sx * 8, &ste.val);
+		if (!rc && ste.i)
+			rc = PGM_PAGE_TRANSLATION;
+		ste.fc1.p |= dat_protection;
+		if (!rc)
+			rc = gmap_shadow_segment(sg, saddr, __pmd(ste.val));
+		if (rc == -EISDIR) {
+			/* Hit a split pmd, we need to setup a fake page table */
+			fake = 1;
+			pgt = ste.fc1.sfaa * _SEGMENT_SIZE;
+			ste.val = pgt;
+			rc = gmap_shadow_pgt(sg, saddr, ste.val, fake);
+			if (rc)
+				goto out;
+		} else {
+			/* We're done */
+			goto out;
+		}
+	}
+
 	if (fake) {
 		pte.val = pgt + vaddr.px * PAGE_SIZE;
 		goto shadow_page;
@@ -1201,6 +1236,7 @@ shadow_page:
 	pte.p |= dat_protection;
 	if (!rc)
 		rc = gmap_shadow_page(sg, saddr, __pte(pte.val));
+out:
 	ipte_unlock(vcpu);
 	mmap_read_unlock(sg->mm);
 	return rc;
