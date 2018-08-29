@@ -102,23 +102,6 @@
  */
 
 /*?
- * Text: "%s: The adapter hardware is of an unknown type\n"
- * Severity: Error
- * Parameter:
- *   @1: bus ID of the qeth device
- * Description:
- * The qeth device driver does not recognize the adapter hardware. The cause
- * of this problem could be a hardware error or a Linux level that does not
- * support your adapter hardware.
- * User action:
- * i) Investigate if your adapter hardware is supported by your Linux level.
- * Consider using hardware that is supported by your Linux level or upgrading
- * to a Linux level that supports your hardware. ii) Install the latest
- * firmware on your adapter hardware. iii) If the problem persists and is not
- * caused by a version mismatch, contact IBM support.
- */
-
-/*?
  * Text: "%s: The adapter is used exclusively by another host\n"
  * Severity: Error
  * Parameter:
