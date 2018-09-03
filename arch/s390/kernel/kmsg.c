@@ -106,10 +106,10 @@ int func(const struct device *dev, const char *fmt, ...)	\
 }								\
 EXPORT_SYMBOL(func);
 
-define_dev_printk_hash_level(dev_emerg_hash, KERN_EMERG);
-define_dev_printk_hash_level(dev_alert_hash, KERN_ALERT);
-define_dev_printk_hash_level(dev_crit_hash, KERN_CRIT);
-define_dev_printk_hash_level(dev_err_hash, KERN_ERR);
-define_dev_printk_hash_level(dev_warn_hash, KERN_WARNING);
-define_dev_printk_hash_level(dev_notice_hash, KERN_NOTICE);
+define_dev_printk_hash_level(_dev_emerg_hash, KERN_EMERG);
+define_dev_printk_hash_level(_dev_alert_hash, KERN_ALERT);
+define_dev_printk_hash_level(_dev_crit_hash, KERN_CRIT);
+define_dev_printk_hash_level(_dev_err_hash, KERN_ERR);
+define_dev_printk_hash_level(_dev_warn_hash, KERN_WARNING);
+define_dev_printk_hash_level(_dev_notice_hash, KERN_NOTICE);
 define_dev_printk_hash_level(_dev_info_hash, KERN_INFO);
