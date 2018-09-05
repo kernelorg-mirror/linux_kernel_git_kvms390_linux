@@ -872,8 +872,6 @@ static int hex2bitmap(const char *str, unsigned long *bitmap, int bits)
 	if (bits & 0x07)
 		return -EINVAL;
 
-	memset(bitmap, 0, bits / 8);
-
 	if (str[0] == '0' && str[1] == 'x')
 		str++;
 	if (*str == 'x')
@@ -911,8 +909,7 @@ static int hex2bitmap(const char *str, unsigned long *bitmap, int bits)
  * 128 set in the set mask, only bit 128 set in the clear mask.
  */
 static int str2clrsetmasks(const char *str,
-			   unsigned long *clrmap,
-			   unsigned long *setmap,
+			   unsigned long *bitmap,
 			   int bits)
 {
 	int a, i, z;
@@ -921,9 +918,6 @@ static int str2clrsetmasks(const char *str,
 	/* bits needs to be a multiple of 8 */
 	if (bits & 0x07)
 		return -EINVAL;
-
-	memset(clrmap, 0, bits / 8);
-	memset(setmap, 0, bits / 8);
 
 	while (*str) {
 		sign = *str++;
@@ -940,13 +934,10 @@ static int str2clrsetmasks(const char *str,
 			str = np;
 		}
 		for (i = a; i <= z; i++)
-			if (sign == '+') {
-				set_bit_inv(i, setmap);
-				clear_bit_inv(i, clrmap);
-			} else {
-				clear_bit_inv(i, setmap);
-				set_bit_inv(i, clrmap);
-			}
+			if (sign == '+')
+				set_bit_inv(i, bitmap);
+			else
+				clear_bit_inv(i, bitmap);
 		while (*str == ',' || *str == '\n')
 			str++;
 	}
@@ -970,44 +961,34 @@ static int process_mask_arg(const char *str,
 			    unsigned long *bitmap, int bits,
 			    struct mutex *lock)
 {
-	int i;
+	unsigned long *newmap, size;
+	int rc;
 
 	/* bits needs to be a multiple of 8 */
 	if (bits & 0x07)
 		return -EINVAL;
 
-	if (*str == '+' || *str == '-') {
-		DECLARE_BITMAP(clrm, bits);
-		DECLARE_BITMAP(setm, bits);
-
-		i = str2clrsetmasks(str, clrm, setm, bits);
-		if (i)
-			return i;
-		if (mutex_lock_interruptible(lock))
-			return -ERESTARTSYS;
-		for (i = 0; i < bits; i++) {
-			if (test_bit_inv(i, clrm))
-				clear_bit_inv(i, bitmap);
-			if (test_bit_inv(i, setm))
-				set_bit_inv(i, bitmap);
-		}
-	} else {
-		DECLARE_BITMAP(setm, bits);
-
-		i = hex2bitmap(str, setm, bits);
-		if (i)
-			return i;
-		if (mutex_lock_interruptible(lock))
-			return -ERESTARTSYS;
-		for (i = 0; i < bits; i++)
-			if (test_bit_inv(i, setm))
-				set_bit_inv(i, bitmap);
-			else
-				clear_bit_inv(i, bitmap);
+	size = BITS_TO_LONGS(bits)*sizeof(unsigned long);
+	newmap = kmalloc(size, GFP_KERNEL);
+	if (!newmap)
+		return -ENOMEM;
+	if (mutex_lock_interruptible(lock)) {
+		kfree(newmap);
+		return -ERESTARTSYS;
 	}
-	mutex_unlock(lock);
 
-	return 0;
+	if (*str == '+' || *str == '-') {
+		memcpy(newmap, bitmap, size);
+		rc = str2clrsetmasks(str, newmap, bits);
+	} else {
+		memset(newmap, 0, size);
+		rc = hex2bitmap(str, newmap, bits);
+	}
+	if (rc == 0)
+		memcpy(bitmap, newmap, size);
+	mutex_unlock(lock);
+	kfree(newmap);
+	return rc;
 }
 
 /*
