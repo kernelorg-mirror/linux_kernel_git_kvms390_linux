@@ -27,7 +27,7 @@
 #define SMC_TYPE_D		1		/* SMC-D only		      */
 #define SMC_TYPE_B		3		/* SMC-R and SMC-D	      */
 #define CLC_WAIT_TIME		(6 * HZ)	/* max. wait time on clcsock  */
-#define CLC_WAIT_TIME_SHORT     HZ		/* short wait time on clcsock */
+#define CLC_WAIT_TIME_SHORT	HZ		/* short wait time on clcsock */
 #define SMC_CLC_DECL_MEM	0x01010000  /* insufficient memory resources  */
 #define SMC_CLC_DECL_TIMEOUT_CL	0x02010000  /* timeout w4 QP confirm link     */
 #define SMC_CLC_DECL_TIMEOUT_AL	0x02020000  /* timeout w4 QP add link	      */
