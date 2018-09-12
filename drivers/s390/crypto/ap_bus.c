@@ -893,24 +893,23 @@ static int hex2bitmap(const char *str, unsigned long *bitmap, int bits)
 }
 
 /*
- * str2clrsetmasks() - parse bitmask argument and set the clear and
- * the set bitmap mask. A concatenation (done with ',') of these terms
- * is recognized:
+ * modify_bitmap() - parse bitmask argument and modify an existing
+ * bit mask accordingly. A concatenation (done with ',') of these
+ * terms is recognized:
  *   +<bitnr>[-<bitnr>] or -<bitnr>[-<bitnr>]
  * <bitnr> may be any valid number (hex, decimal or octal) in the range
  * 0...bits-1; the leading + or - is required. Here are some examples:
  *   +0-15,+32,-128,-0xFF
  *   -0-255,+1-16,+0x128
  *   +1,+2,+3,+4,-5,-7-10
- * Returns a clear and a set bitmask. Every positive value in the string
- * results in a bit set in the set mask and every negative value in the
- * string results in a bit SET in the clear mask. As a bit may be touched
- * more than once, the last 'operation' wins: +0-255,-128 = all but bit
- * 128 set in the set mask, only bit 128 set in the clear mask.
+ * Returns the new bitmap after all changes have been applied. Every
+ * positive value in the string will set a bit and every negative value
+ * in the string will clear a bit. As a bit may be touched more than once,
+ * the last 'operation' wins:
+ * +0-255,-128 = first bits 0-255 will be set, then bit 128 will be
+ * cleared again. All other bits are unmodified.
  */
-static int str2clrsetmasks(const char *str,
-			   unsigned long *bitmap,
-			   int bits)
+static int modify_bitmap(const char *str, unsigned long *bitmap, int bits)
 {
 	int a, i, z;
 	char *np, sign;
@@ -979,7 +978,7 @@ static int process_mask_arg(const char *str,
 
 	if (*str == '+' || *str == '-') {
 		memcpy(newmap, bitmap, size);
-		rc = str2clrsetmasks(str, newmap, bits);
+		rc = modify_bitmap(str, newmap, bits);
 	} else {
 		memset(newmap, 0, size);
 		rc = hex2bitmap(str, newmap, bits);
