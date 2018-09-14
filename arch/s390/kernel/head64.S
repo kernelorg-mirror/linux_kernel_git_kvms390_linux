@@ -14,6 +14,7 @@
 #include <asm/asm-offsets.h>
 #include <asm/thread_info.h>
 #include <asm/page.h>
+#include <asm/ptrace.h>
 
 __HEAD
 ENTRY(startup_continue)
@@ -35,8 +36,7 @@ ENTRY(startup_continue)
 #
 	larl	%r14,init_task
 	stg	%r14,__LC_CURRENT
-	larl	%r15,init_thread_union
-	aghi	%r15,(1<<(PAGE_SHIFT+THREAD_SIZE_ORDER))-160
+	larl	%r15,init_thread_union+THREAD_SIZE-STACK_FRAME_OVERHEAD
 #
 # Early setup functions that may not rely on an initialized bss section,
 # like moving the initrd. Returns with an initialized bss section.
