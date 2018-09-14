@@ -1145,6 +1145,7 @@ void ptep_zap_unused(struct mm_struct *mm, unsigned long addr,
 void ptep_zap_key(struct mm_struct *mm, unsigned long addr, pte_t *ptep);
 int ptep_shadow_pte(struct mm_struct *mm, unsigned long saddr,
 		    pte_t *sptep, pte_t *tptep, pte_t pte);
+void ptep_shadow_set(pte_t spte, pte_t *tptep, pte_t pte);
 void ptep_unshadow_pte(struct mm_struct *mm, unsigned long saddr, pte_t *ptep);
 
 unsigned long ptep_get_and_clear_notification_bits(pte_t *ptep);

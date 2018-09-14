@@ -645,11 +645,24 @@ int ptep_force_prot(struct mm_struct *mm, unsigned long addr,
 	return 0;
 }
 
+void ptep_shadow_set(pte_t spte, pte_t *tptep, pte_t pte)
+{
+	pte_t tpte;
+	pgste_t tpgste;
+
+	tpgste = pgste_get_lock(tptep);
+	pte_val(tpte) = (pte_val(spte) & PAGE_MASK) |
+		(pte_val(pte) & _PAGE_PROTECT);
+	/* don't touch the storage key - it belongs to parent pgste */
+	tpgste = pgste_set_pte(tptep, tpgste, tpte);
+	pgste_set_unlock(tptep, tpgste);
+}
+
 int ptep_shadow_pte(struct mm_struct *mm, unsigned long saddr,
 		    pte_t *sptep, pte_t *tptep, pte_t pte)
 {
-	pgste_t spgste, tpgste;
-	pte_t spte, tpte;
+	pgste_t spgste;
+	pte_t spte;
 	int rc = -EAGAIN;
 
 	if (!(pte_val(*tptep) & _PAGE_INVALID))
@@ -660,12 +673,7 @@ int ptep_shadow_pte(struct mm_struct *mm, unsigned long saddr,
 	    !((pte_val(spte) & _PAGE_PROTECT) &&
 	      !(pte_val(pte) & _PAGE_PROTECT))) {
 		pgste_val(spgste) |= PGSTE_VSIE_BIT;
-		tpgste = pgste_get_lock(tptep);
-		pte_val(tpte) = (pte_val(spte) & PAGE_MASK) |
-				(pte_val(pte) & _PAGE_PROTECT);
-		/* don't touch the storage key - it belongs to parent pgste */
-		tpgste = pgste_set_pte(tptep, tpgste, tpte);
-		pgste_set_unlock(tptep, tpgste);
+		ptep_shadow_set(spte, tptep, pte);
 		rc = 1;
 	}
 	pgste_set_unlock(sptep, spgste);
