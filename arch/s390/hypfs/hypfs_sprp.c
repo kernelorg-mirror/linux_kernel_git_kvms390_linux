@@ -77,7 +77,7 @@ static int __hypfs_sprp_ioctl(void __user *user_area)
 	rc = -ENOMEM;
 	data = (void *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
 	diag304 = kzalloc(sizeof(*diag304), GFP_KERNEL);
-	if (!data | !diag304)
+	if (!data || !diag304)
 		goto out;
 
 	rc = -EFAULT;
