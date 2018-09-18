@@ -370,23 +370,6 @@
  */
 
 /*?
- * Text: "%s: Starting outbound TCP segmentation offload for %s failed\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the qeth device
- *   @2: network interface name
- * Description:
- * The network adapter supports TCP segmentation offload, but the qeth device
- * driver could not start this support on the adapter.
- * User action:
- * None if you do not require TCP segmentation offload. If you want to
- * enable TCP segmentation offload, ungroup and regroup the subchannel triplet
- * of the device. If this does not resolve the problem, reboot Linux. If the
- * problem persists, gather Linux debug data and report the problem to your
- * support organization.
- */
-
-/*?
  * Text: "%s: The network adapter failed to generate a unique ID\n"
  * Severity: Warning
  * Parameter:
@@ -599,7 +582,6 @@
 /*? Text: "%s: ARP processing not supported on %s!\n" */
 /*? Text: "%s: VLAN enabled\n" */
 /*? Text: "register layer 3 discipline\n" */
-/*? Text: "%s: Outbound TSO enabled\n" */
 /*? Text: "%s: Broadcast not supported on %s\n" */
 /*? Text: "%s: Inbound HW Checksumming not supported on %s,\ncontinuing using Inbound SW Checksumming\n" */
 /*? Text: "%s: Using no checksumming on %s.\n" */
