@@ -1017,25 +1017,15 @@ static int gmap_protect_pmd(struct gmap *gmap, unsigned long gaddr,
  * Expected to be called with sg->mm->mmap_lock in read
  */
 static int gmap_protect_pte(struct gmap *gmap, unsigned long gaddr,
-			    pmd_t *pmdp, int prot, unsigned long bits)
+			    pte_t *ptep, int prot, unsigned long bits)
 {
 	int rc;
-	pte_t *ptep;
-	spinlock_t *ptl = NULL;
 	unsigned long pbits = 0;
-
-	if (pmd_val(*pmdp) & _SEGMENT_ENTRY_INVALID)
-		return -EAGAIN;
-
-	ptep = pte_alloc_map_lock(gmap->mm, pmdp, gaddr, &ptl);
-	if (!ptep)
-		return -ENOMEM;
 
 	pbits |= (bits & GMAP_NOTIFY_MPROT) ? PGSTE_IN_BIT : 0;
 	pbits |= (bits & GMAP_NOTIFY_SHADOW) ? PGSTE_VSIE_BIT : 0;
 	/* Protect and unlock. */
 	rc = ptep_force_prot(gmap->mm, gaddr, ptep, prot, pbits);
-	gmap_pte_op_end(ptl);
 	return rc;
 }
 
@@ -1056,18 +1046,26 @@ static int gmap_protect_range(struct gmap *gmap, unsigned long gaddr,
 			      unsigned long len, int prot, unsigned long bits)
 {
 	unsigned long vmaddr, dist;
-	spinlock_t *ptl = NULL;
+	spinlock_t *ptl_pmd = NULL, *ptl_pte = NULL;
 	pmd_t *pmdp;
+	pte_t *ptep;
 	int rc;
 
 	BUG_ON(gmap_is_shadow(gmap));
 	while (len) {
 		rc = -EAGAIN;
-		pmdp = gmap_pmd_op_walk(gmap, gaddr, &ptl);
+		pmdp = gmap_pmd_op_walk(gmap, gaddr, &ptl_pmd);
 		if (pmdp) {
 			if (!pmd_large(*pmdp)) {
-				rc = gmap_protect_pte(gmap, gaddr, pmdp, prot,
-						      bits);
+				ptl_pte = NULL;
+				ptep = pte_alloc_map_lock(gmap->mm, pmdp, gaddr,
+							  &ptl_pte);
+				if (ptep)
+					rc = gmap_protect_pte(gmap, gaddr,
+							      ptep, prot, bits);
+				else
+					rc = -ENOMEM;
+				gmap_pte_op_end(ptl_pte);
 				if (!rc) {
 					len -= PAGE_SIZE;
 					gaddr += PAGE_SIZE;
@@ -1081,7 +1079,7 @@ static int gmap_protect_range(struct gmap *gmap, unsigned long gaddr,
 					gaddr = (gaddr & HPAGE_MASK) + HPAGE_SIZE;
 				}
 			}
-			gmap_pmd_op_end(ptl);
+			gmap_pmd_op_end(ptl_pmd);
 		}
 		if (rc) {
 			if (rc == -EINVAL)
