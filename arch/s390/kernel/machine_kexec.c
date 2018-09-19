@@ -160,7 +160,6 @@ static unsigned long do_start_kdump(unsigned long addr)
 static bool kdump_csum_valid(struct kimage *image)
 {
 #ifdef CONFIG_CRASH_DUMP
-	int (*start_kdump)(int) = (void *)image->start;
 	int rc;
 
 	rc = CALL_ON_STACK(do_start_kdump, S390_lowcore.nodat_stack, 1, image);
