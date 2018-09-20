@@ -309,6 +309,11 @@ static void pcpu_start_fn(struct pcpu *pcpu, void (*func)(void *), void *data)
 /*
  * Call function via PSW restart on pcpu and stop the current cpu.
  */
+static void __pcpu_delegate(void (*func)(void*), void *data)
+{
+	func(data);	/* should not return */
+}
+
 static void pcpu_delegate(struct pcpu *pcpu, void (*func)(void *),
 			  void *data, unsigned long stack)
 {
@@ -317,7 +322,7 @@ static void pcpu_delegate(struct pcpu *pcpu, void (*func)(void *),
 
 	__load_psw_mask(PSW_KERNEL_BITS | PSW_MASK_DAT);
 	if (pcpu->address == source_cpu)
-		func(data);	/* should not return */
+		CALL_ON_STACK(__pcpu_delegate, stack, 2, func, data);
 	/* Stop target cpu (if func returns this stops the current cpu). */
 	pcpu_sigp_retry(pcpu, SIGP_STOP, 0);
 	/* Restart func on the target cpu and stop the current cpu. */

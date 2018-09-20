@@ -113,8 +113,16 @@ static unsigned long _memcpy_real(unsigned long dest, unsigned long src,
  */
 int memcpy_real(void *dest, void *src, size_t count)
 {
-	return CALL_ON_STACK(_memcpy_real, S390_lowcore.nodat_stack,
-			     3, dest, src, count);
+	if (S390_lowcore.nodat_stack != 0)
+		return CALL_ON_STACK(_memcpy_real, S390_lowcore.nodat_stack,
+				     3, dest, src, count);
+	/*
+	 * This is a really early memcpy_real call, the stacks are
+	 * not set up yet. Just call _memcpy_real on the early boot
+	 * stack
+	 */
+	return _memcpy_real((unsigned long) dest,(unsigned long) src,
+			    (unsigned long) count);
 }
 
 /*
