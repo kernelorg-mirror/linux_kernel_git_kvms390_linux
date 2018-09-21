@@ -364,6 +364,7 @@ void __init arch_call_rest_init(void)
 #ifdef CONFIG_VMAP_STACK
 	current->stack_vm_area = (void *) stack;
 #endif
+	set_task_stack_end_magic(current);
 	stack += STACK_INIT_OFFSET;
 	S390_lowcore.kernel_stack = stack;
 	frame = (struct stack_frame *) stack;
