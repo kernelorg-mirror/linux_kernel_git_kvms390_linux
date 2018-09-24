@@ -565,6 +565,21 @@
  * network configuration.
  */
 
+/*?
+ * Text: "%s: TSOv%s enabled (MSS: %s)\n"
+ * Severity: Informational
+ * Parameter:
+ *   @1: bus ID of the qeth device
+ *   @2: Protocol Version that TSO has been enabled for
+ *   @3: Maximum Segment Size that is supported for TSO packets
+ * Description:
+ * TCP Segmentation Offload is now enabled on the indicated network device.
+ * The network stack may send large-size packets to the device, which are then
+ * segmented in hardware.
+ * User action:
+ * None.
+ */
+
 /*? Text: "core functions removed\n" */
 /*? Text: "%s: Device is a%s card%s%s%s\nwith link type %s.\n" */
 /*? Text: "%s: issue_next_read failed: no iob available!\n" */
