@@ -1743,7 +1743,7 @@ void zcrypt_debug_exit(void)
 
 #ifdef CONFIG_ZCRYPT_MULTIDEVNODES
 
-int __init zcdn_init(void)
+static int __init zcdn_init(void)
 {
 	int rc;
 
@@ -1790,7 +1790,7 @@ out_class_create_failed:
 	return rc;
 }
 
-void zcdn_exit(void)
+static void zcdn_exit(void)
 {
 	class_remove_file(zcrypt_class, &class_attr_zcdn_create);
 	class_remove_file(zcrypt_class, &class_attr_zcdn_destroy);
