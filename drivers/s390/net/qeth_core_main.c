@@ -4505,9 +4505,7 @@ static int qeth_send_ipa_snmp_cmd(struct qeth_card *card,
 
 	QETH_CARD_TEXT(card, 4, "sendsnmp");
 
-	memcpy(iob->data, IPA_PDU_HEADER, IPA_PDU_HEADER_SIZE);
-	memcpy(QETH_IPA_CMD_DEST_ADDR(iob->data),
-	       &card->token.ulp_connection_r, QETH_MPC_TOKEN_LENGTH);
+	qeth_prepare_ipa_cmd(card, iob);
 	/* adjust PDU length fields in IPA_PDU_HEADER */
 	s1 = (u32) IPA_PDU_HEADER_SIZE + len;
 	s2 = (u32) len;

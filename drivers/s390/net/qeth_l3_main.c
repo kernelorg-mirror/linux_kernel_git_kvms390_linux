@@ -1703,9 +1703,7 @@ static int qeth_l3_send_ipa_arp_cmd(struct qeth_card *card,
 {
 	QETH_CARD_TEXT(card, 4, "sendarp");
 
-	memcpy(iob->data, IPA_PDU_HEADER, IPA_PDU_HEADER_SIZE);
-	memcpy(QETH_IPA_CMD_DEST_ADDR(iob->data),
-	       &card->token.ulp_connection_r, QETH_MPC_TOKEN_LENGTH);
+	qeth_prepare_ipa_cmd(card, iob);
 	return qeth_send_control_data(card, IPA_PDU_HEADER_SIZE + len, iob,
 				      reply_cb, reply_param);
 }
