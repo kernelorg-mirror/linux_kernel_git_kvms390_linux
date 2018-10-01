@@ -296,7 +296,8 @@ out:
 	return rc;
 }
 
-static void smc_buf_unuse(struct smc_connection *conn)
+static void smc_buf_unuse(struct smc_connection *conn,
+			  struct smc_link_group *lgr)
 {
 	if (conn->sndbuf_desc)
 		conn->sndbuf_desc->used = 0;
@@ -306,8 +307,6 @@ static void smc_buf_unuse(struct smc_connection *conn)
 			conn->rmb_desc->used = 0;
 		} else {
 			/* buf registration failed, reuse not possible */
-			struct smc_link_group *lgr = conn->lgr;
-
 			write_lock_bh(&lgr->rmbs_lock);
 			list_del(&conn->rmb_desc->list);
 			write_unlock_bh(&lgr->rmbs_lock);
@@ -320,6 +319,8 @@ static void smc_buf_unuse(struct smc_connection *conn)
 /* remove a finished connection from its link group */
 void smc_conn_free(struct smc_connection *conn)
 {
+	struct smc_link_group *lgr;
+
 	if (!conn->lgr)
 		return;
 	if (conn->lgr->is_smcd) {
@@ -328,8 +329,9 @@ void smc_conn_free(struct smc_connection *conn)
 	} else {
 		smc_cdc_tx_dismiss_slots(conn);
 	}
+	lgr = conn->lgr; /* smc_lgr_unregister_conn() unsets lgr */
 	smc_lgr_unregister_conn(conn);
-	smc_buf_unuse(conn);
+	smc_buf_unuse(conn, lgr);
 }
 
 static void smc_link_clear(struct smc_link *lnk)
