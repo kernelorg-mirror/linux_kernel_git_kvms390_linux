@@ -11,7 +11,7 @@ unsigned long __bootdata(max_physmem_end);
 struct mem_detect_info __bootdata(mem_detect);
 
 /* up to 256 storage elements, 1020 subincrements each */
-#define ENTRIES_EXTENDED_MAX                                                   \
+#define ENTRIES_EXTENDED_MAX						       \
 	(256 * (1020 / 2) * sizeof(struct mem_detect_block))
 
 /*

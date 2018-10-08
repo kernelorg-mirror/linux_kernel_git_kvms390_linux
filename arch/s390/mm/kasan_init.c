@@ -318,17 +318,17 @@ void __init kasan_early_init(void)
 	init_mm.pgd = early_pg_dir;
 	/*
 	 * Current memory layout:
-	 * +- 0 -------------+   +- shadow start -+
-	 * | 1:1 ram mapping |  /| 1/8 ram	  |
+	 * +- 0 -------------+	 +- shadow start -+
+	 * | 1:1 ram mapping |	/| 1/8 ram	  |
 	 * +- end of ram ----+ / +----------------+
 	 * | ... gap ...     |/  |	kasan	  |
-	 * +- shadow start --+   |	zero	  |
-	 * | 1/8 addr space  |   |	page	  |
-	 * +- shadow end    -+   |	mapping	  |
+	 * +- shadow start --+	 |	zero	  |
+	 * | 1/8 addr space  |	 |	page	  |
+	 * +- shadow end    -+	 |	mapping	  |
 	 * | ... gap ...     |\  |    (untracked) |
 	 * +- modules vaddr -+ \ +----------------+
-	 * | 2Gb	     |  \|	unmapped  | allocated per module
-	 * +-----------------+   +- shadow end ---+
+	 * | 2Gb	     |	\|	unmapped  | allocated per module
+	 * +-----------------+	 +- shadow end ---+
 	 */
 	/* populate kasan shadow (for identity mapping and zero page mapping) */
 	kasan_early_vmemmap_populate(__sha(0), __sha(memsize), POPULATE_MAP);
