@@ -1522,11 +1522,11 @@ static ssize_t protkey_aes_256_xts_read(struct file *filp,
 					  off, count);
 }
 
-BIN_ATTR_RO(protkey_aes_128, sizeof(struct protaeskeytoken));
-BIN_ATTR_RO(protkey_aes_192, sizeof(struct protaeskeytoken));
-BIN_ATTR_RO(protkey_aes_256, sizeof(struct protaeskeytoken));
-BIN_ATTR_RO(protkey_aes_128_xts, 2 * sizeof(struct protaeskeytoken));
-BIN_ATTR_RO(protkey_aes_256_xts, 2 * sizeof(struct protaeskeytoken));
+static BIN_ATTR_RO(protkey_aes_128, sizeof(struct protaeskeytoken));
+static BIN_ATTR_RO(protkey_aes_192, sizeof(struct protaeskeytoken));
+static BIN_ATTR_RO(protkey_aes_256, sizeof(struct protaeskeytoken));
+static BIN_ATTR_RO(protkey_aes_128_xts, 2 * sizeof(struct protaeskeytoken));
+static BIN_ATTR_RO(protkey_aes_256_xts, 2 * sizeof(struct protaeskeytoken));
 
 static struct bin_attribute *protkey_attrs[] = {
 	&bin_attr_protkey_aes_128,
