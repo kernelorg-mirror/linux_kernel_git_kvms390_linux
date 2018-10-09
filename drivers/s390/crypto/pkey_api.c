@@ -1625,11 +1625,11 @@ static ssize_t ccadata_aes_256_xts_read(struct file *filp,
 					  off, count);
 }
 
-BIN_ATTR_RO(ccadata_aes_128, sizeof(struct secaeskeytoken));
-BIN_ATTR_RO(ccadata_aes_192, sizeof(struct secaeskeytoken));
-BIN_ATTR_RO(ccadata_aes_256, sizeof(struct secaeskeytoken));
-BIN_ATTR_RO(ccadata_aes_128_xts, 2 * sizeof(struct secaeskeytoken));
-BIN_ATTR_RO(ccadata_aes_256_xts, 2 * sizeof(struct secaeskeytoken));
+static BIN_ATTR_RO(ccadata_aes_128, sizeof(struct secaeskeytoken));
+static BIN_ATTR_RO(ccadata_aes_192, sizeof(struct secaeskeytoken));
+static BIN_ATTR_RO(ccadata_aes_256, sizeof(struct secaeskeytoken));
+static BIN_ATTR_RO(ccadata_aes_128_xts, 2 * sizeof(struct secaeskeytoken));
+static BIN_ATTR_RO(ccadata_aes_256_xts, 2 * sizeof(struct secaeskeytoken));
 
 static struct bin_attribute *ccadata_attrs[] = {
 	&bin_attr_ccadata_aes_128,
