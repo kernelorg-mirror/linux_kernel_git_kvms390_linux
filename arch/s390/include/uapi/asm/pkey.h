@@ -156,7 +156,7 @@ struct pkey_verifyprotk {
  * Transform an key blob (of any type) into a protected key
  */
 struct pkey_kblob2pkey {
-	__u8 *key;			/* in: the key blob	   */
+	__u8 __user *key;		/* in: the key blob	   */
 	__u32 keylen;			/* in: the key blob length */
 	struct pkey_protkey protkey;	/* out: the protected key  */
 };
