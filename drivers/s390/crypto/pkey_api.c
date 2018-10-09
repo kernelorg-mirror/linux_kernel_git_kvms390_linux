@@ -1538,7 +1538,7 @@ static struct bin_attribute *protkey_attrs[] = {
 };
 
 static struct attribute_group protkey_attr_group = {
-	.name      = "protkey",
+	.name	   = "protkey",
 	.bin_attrs = protkey_attrs,
 };
 
@@ -1641,7 +1641,7 @@ static struct bin_attribute *ccadata_attrs[] = {
 };
 
 static struct attribute_group ccadata_attr_group = {
-	.name      = "ccadata",
+	.name	   = "ccadata",
 	.bin_attrs = ccadata_attrs,
 };
 
