@@ -566,7 +566,7 @@
  */
 
 /*?
- * Text: "%s: TSOv%s enabled (MSS: %s)\n"
+ * Text: "%s: TSOv%u enabled (MSS: %u)\n"
  * Severity: Informational
  * Parameter:
  *   @1: bus ID of the qeth device
