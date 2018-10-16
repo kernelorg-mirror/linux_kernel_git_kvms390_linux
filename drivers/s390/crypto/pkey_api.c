@@ -658,7 +658,6 @@ int pkey_clr2protkey(u32 keytype,
 	long fc;
 	int keysize;
 	u8 paramblock[64];
-	cpacf_mask_t pckmo_functions;
 
 	switch (keytype) {
 	case PKEY_KEYTYPE_AES_128:
@@ -677,13 +676,6 @@ int pkey_clr2protkey(u32 keytype,
 		DEBUG_ERR("%s unknown/unsupported keytype %d\n",
 			  __func__, keytype);
 		return -EINVAL;
-	}
-
-	/* check for pckmo instructions available */
-	if (!cpacf_query(CPACF_PCKMO, &pckmo_functions) ||
-	    !cpacf_test_func(&pckmo_functions, fc)) {
-		DEBUG_ERR("%s pckmo functions not available\n", __func__);
-		return -EOPNOTSUPP;
 	}
 
 	/* prepare param block */
@@ -1679,7 +1671,15 @@ static struct miscdevice pkey_dev = {
  */
 static int __init pkey_init(void)
 {
-	cpacf_mask_t kmc_functions;
+	cpacf_mask_t pckmo_functions, kmc_functions;
+
+	/* check for pckmo instructions available */
+	if (!cpacf_query(CPACF_PCKMO, &pckmo_functions))
+		return -EOPNOTSUPP;
+	if (!cpacf_test_func(&pckmo_functions, CPACF_PCKMO_ENC_AES_128_KEY) ||
+	    !cpacf_test_func(&pckmo_functions, CPACF_PCKMO_ENC_AES_192_KEY) ||
+	    !cpacf_test_func(&pckmo_functions, CPACF_PCKMO_ENC_AES_256_KEY))
+		return -EOPNOTSUPP;
 
 	/* check for kmc instructions available */
 	if (!cpacf_query(CPACF_KMC, &kmc_functions))
