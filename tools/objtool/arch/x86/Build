@@ -1,4 +1,4 @@
-objtool-y += decode.o
+objtool-y += check.o decode.o orc_dump.o orc_gen.o special.o
 
 inat_tables_script = arch/x86/tools/gen-insn-attr-x86.awk
 inat_tables_maps = arch/x86/lib/x86-opcode-map.txt

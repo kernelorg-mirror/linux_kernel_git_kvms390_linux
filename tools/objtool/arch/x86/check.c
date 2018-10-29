@@ -17,13 +17,13 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <asm/check.h>
+#include <asm/arch.h>
 
-#include "builtin.h"
-#include "check.h"
-#include "elf.h"
+#include "../../builtin.h"
+#include "../../elf.h"
+#include "../../warn.h"
 #include "special.h"
-#include "arch.h"
-#include "warn.h"
 
 #include <linux/hashtable.h>
 #include <linux/kernel.h>
