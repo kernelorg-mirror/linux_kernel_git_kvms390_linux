@@ -20,8 +20,7 @@
 
 #include <stdbool.h>
 #include <linux/list.h>
-#include "elf.h"
-#include "cfi.h"
+#include <asm/cfi.h>
 
 #define INSN_JUMP_CONDITIONAL	1
 #define INSN_JUMP_UNCONDITIONAL	2

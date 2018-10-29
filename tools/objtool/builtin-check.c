@@ -26,8 +26,8 @@
  */
 
 #include <subcmd/parse-options.h>
+#include <asm/check.h>
 #include "builtin.h"
-#include "check.h"
 
 bool no_fp, no_unreachable, retpoline, module;
 

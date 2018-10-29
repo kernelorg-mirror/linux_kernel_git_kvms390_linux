@@ -25,8 +25,8 @@
  */
 
 #include <string.h>
+#include <asm/check.h>
 #include "builtin.h"
-#include "check.h"
 
 
 static const char *orc_usage[] = {
