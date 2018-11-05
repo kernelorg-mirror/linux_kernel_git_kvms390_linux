@@ -177,23 +177,24 @@ void smc_cdc_tx_dismiss_slots(struct smc_connection *conn)
 int smcd_cdc_msg_send(struct smc_connection *conn)
 {
 	struct smc_sock *smc = container_of(conn, struct smc_sock, conn);
+	union smc_host_cursor curs;
 	struct smcd_cdc_msg cdc;
 	int rc, diff;
 
 	memset(&cdc, 0, sizeof(cdc));
 	cdc.common.type = SMC_CDC_MSG_TYPE;
-	cdc.prod_wrap = conn->local_tx_ctrl.prod.wrap;
-	cdc.prod_count = conn->local_tx_ctrl.prod.count;
-
-	cdc.cons_wrap = conn->local_tx_ctrl.cons.wrap;
-	cdc.cons_count = conn->local_tx_ctrl.cons.count;
+	curs.acurs.counter = atomic64_read(&conn->local_tx_ctrl.prod.acurs);
+	cdc.prod_wrap = curs.wrap;
+	cdc.prod_count = curs.count;
+	curs.acurs.counter = atomic64_read(&conn->local_tx_ctrl.cons.acurs);
+	cdc.cons_wrap = curs.wrap;
+	cdc.cons_count = curs.count;
 	cdc.prod_flags = conn->local_tx_ctrl.prod_flags;
 	cdc.conn_state_flags = conn->local_tx_ctrl.conn_state_flags;
 	rc = smcd_tx_ism_write(conn, &cdc, sizeof(cdc), 0, 1);
 	if (rc)
 		return rc;
-	smc_curs_copy(&conn->rx_curs_confirmed, &conn->local_tx_ctrl.cons,
-		      conn);
+	smc_curs_copy(&conn->rx_curs_confirmed, &curs, conn);
 	/* Calculate transmitted data and increment free send buffer space */
 	diff = smc_curs_diff(conn->sndbuf_desc->len, &conn->tx_curs_fin,
 			     &conn->tx_curs_sent);
@@ -331,13 +332,18 @@ static void smc_cdc_msg_recv(struct smc_sock *smc, struct smc_cdc_msg *cdc)
 static void smcd_cdc_rx_tsklet(unsigned long data)
 {
 	struct smc_connection *conn = (struct smc_connection *)data;
+	struct smcd_cdc_msg *data_cdc;
 	struct smcd_cdc_msg cdc;
 	struct smc_sock *smc;
 
 	if (!conn)
 		return;
 
-	memcpy(&cdc, conn->rmb_desc->cpu_addr, sizeof(cdc));
+	data_cdc = (struct smcd_cdc_msg *)conn->rmb_desc->cpu_addr;
+	atomic64_set((atomic64_t *)&cdc.prod_wrap,
+		     atomic64_read((atomic64_t *)&data_cdc->prod_wrap));
+	atomic64_set((atomic64_t *)&cdc.cons_wrap,
+		     atomic64_read((atomic64_t *)&data_cdc->cons_wrap));
 	smc = container_of(conn, struct smc_sock, conn);
 	smc_cdc_msg_recv(smc, (struct smc_cdc_msg *)&cdc);
 }

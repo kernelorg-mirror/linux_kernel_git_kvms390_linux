@@ -222,10 +222,15 @@ static inline void smcr_cdc_msg_to_host(struct smc_host_cdc_msg *local,
 static inline void smcd_cdc_msg_to_host(struct smc_host_cdc_msg *local,
 					struct smcd_cdc_msg *peer)
 {
-	local->prod.wrap = peer->prod_wrap;
-	local->prod.count = peer->prod_count;
-	local->cons.wrap = peer->cons_wrap;
-	local->cons.count = peer->cons_count;
+	union smc_host_cursor temp;
+
+	temp.wrap = peer->prod_wrap;
+	temp.count = peer->prod_count;
+	atomic64_set(&local->prod.acurs, atomic64_read(&temp.acurs));
+
+	temp.wrap = peer->cons_wrap;
+	temp.count = peer->cons_count;
+	atomic64_set(&local->cons.acurs, atomic64_read(&temp.acurs));
 	local->prod_flags = peer->prod_flags;
 	local->conn_state_flags = peer->conn_state_flags;
 }
