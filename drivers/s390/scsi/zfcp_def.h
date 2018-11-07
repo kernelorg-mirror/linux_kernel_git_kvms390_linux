@@ -101,10 +101,10 @@
  * zfcp_dbf_rec_run_lvl(), zfcp_dbf_rec_run(), &zfcp_dbf_rec_running.rec_action.
  */
 enum zfcp_erp_act_type {
-	ZFCP_ERP_ACTION_REOPEN_LUN         = 1,
+	ZFCP_ERP_ACTION_REOPEN_LUN	   = 1,
 	ZFCP_ERP_ACTION_REOPEN_PORT	   = 2,
 	ZFCP_ERP_ACTION_REOPEN_PORT_FORCED = 3,
-	ZFCP_ERP_ACTION_REOPEN_ADAPTER     = 4,
+	ZFCP_ERP_ACTION_REOPEN_ADAPTER	   = 4,
 };
 
 /*
