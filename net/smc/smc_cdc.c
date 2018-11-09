@@ -184,13 +184,13 @@ int smcd_cdc_msg_send(struct smc_connection *conn)
 	memset(&cdc, 0, sizeof(cdc));
 	cdc.common.type = SMC_CDC_MSG_TYPE;
 	curs.acurs.counter = atomic64_read(&conn->local_tx_ctrl.prod.acurs);
-	cdc.prod_wrap = curs.wrap;
-	cdc.prod_count = curs.count;
+	cdc.prod.wrap = curs.wrap;
+	cdc.prod.count = curs.count;
 	curs.acurs.counter = atomic64_read(&conn->local_tx_ctrl.cons.acurs);
-	cdc.cons_wrap = curs.wrap;
-	cdc.cons_count = curs.count;
-	cdc.prod_flags = conn->local_tx_ctrl.prod_flags;
-	cdc.conn_state_flags = conn->local_tx_ctrl.conn_state_flags;
+	cdc.cons.wrap = curs.wrap;
+	cdc.cons.count = curs.count;
+	cdc.cons.prod_flags = conn->local_tx_ctrl.prod_flags;
+	cdc.cons.conn_state_flags = conn->local_tx_ctrl.conn_state_flags;
 	rc = smcd_tx_ism_write(conn, &cdc, sizeof(cdc), 0, 1);
 	if (rc)
 		return rc;
@@ -340,10 +340,8 @@ static void smcd_cdc_rx_tsklet(unsigned long data)
 		return;
 
 	data_cdc = (struct smcd_cdc_msg *)conn->rmb_desc->cpu_addr;
-	atomic64_set((atomic64_t *)&cdc.prod_wrap,
-		     atomic64_read((atomic64_t *)&data_cdc->prod_wrap));
-	atomic64_set((atomic64_t *)&cdc.cons_wrap,
-		     atomic64_read((atomic64_t *)&data_cdc->cons_wrap));
+	smcd_curs_copy(&cdc.prod, &data_cdc->prod, conn);
+	smcd_curs_copy(&cdc.cons, &data_cdc->cons, conn);
 	smc = container_of(conn, struct smc_sock, conn);
 	smc_cdc_msg_recv(smc, (struct smc_cdc_msg *)&cdc);
 }
