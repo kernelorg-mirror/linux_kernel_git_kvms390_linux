@@ -146,7 +146,8 @@ static int smc_release(struct socket *sock)
 		sock_set_flag(sk, SOCK_DEAD);
 		sk->sk_shutdown |= SHUTDOWN_MASK;
 	}
-	if (smc->clcsock) {
+	if (smc->clcsock &&
+	    sk->sk_state == SMC_CLOSED) {
 		sock_release(smc->clcsock);
 		smc->clcsock = NULL;
 	}
@@ -154,6 +155,8 @@ static int smc_release(struct socket *sock)
 		if (sk->sk_state != SMC_LISTEN && sk->sk_state != SMC_INIT)
 			sock_put(sk); /* passive closing */
 		sk->sk_state = SMC_CLOSED;
+		sock_release(smc->clcsock);
+		smc->clcsock = NULL;
 		sk->sk_state_change(sk);
 	}
 
