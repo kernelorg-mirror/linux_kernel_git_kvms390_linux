@@ -37,7 +37,6 @@ union smc_cdc_cursor {		/* SMC cursor */
 #endif
 } __aligned(8);
 
-
 /* in network byte order */
 struct smc_cdc_msg {
 	struct smc_wr_rx_hdr		common; /* .type = 0xFE */
