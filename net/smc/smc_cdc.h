@@ -37,6 +37,7 @@ union smc_cdc_cursor {		/* SMC cursor */
 #endif
 } __aligned(8);
 
+
 /* in network byte order */
 struct smc_cdc_msg {
 	struct smc_wr_rx_hdr		common; /* .type = 0xFE */
@@ -48,7 +49,7 @@ struct smc_cdc_msg {
 	struct smc_cdc_producer_flags	prod_flags;
 	struct smc_cdc_conn_state_flags	conn_state_flags;
 	u8				reserved[18];
-} __packed;					/* format defined in RFC7609 */
+};
 
 /* SMC-D cursor format */
 union smcd_cdc_cursor {
@@ -72,7 +73,7 @@ struct smcd_cdc_msg {
 	union smcd_cdc_cursor	prod;
 	union smcd_cdc_cursor	cons;
 	u8 res3[8];
-} __packed;
+};
 
 static inline bool smc_cdc_rxed_any_close(struct smc_connection *conn)
 {
