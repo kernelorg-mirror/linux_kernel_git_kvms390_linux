@@ -586,7 +586,7 @@
 /*? Text: "%s: Priority Queueing not supported\n" */
 /*? Text: "%s: sense data available. cstat 0x%X dstat 0x%X\n" */
 /*? Text: "loading core functions\n" */
-/*? Text: "%s: MAC address %pM successfully registered on device %s\n" */
+/*? Text: "%s: MAC address %pM successfully registered\n" */
 /*? Text: "%s: Device successfully recovered!\n" */
 /*? Text: "register layer 2 discipline\n" */
 /*? Text: "unregister layer 2 discipline\n" */
