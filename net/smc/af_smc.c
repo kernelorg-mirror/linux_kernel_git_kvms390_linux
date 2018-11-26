@@ -145,26 +145,24 @@ static int smc_release(struct socket *sock)
 		rc = smc_close_active(smc);
 		sock_set_flag(sk, SOCK_DEAD);
 		sk->sk_shutdown |= SHUTDOWN_MASK;
-	}
-	if (smc->clcsock &&
-	    sk->sk_state == SMC_CLOSED) {
-		sock_release(smc->clcsock);
-		smc->clcsock = NULL;
-	}
-	if (smc->use_fallback) {
+	} else {
 		if (sk->sk_state != SMC_LISTEN && sk->sk_state != SMC_INIT)
 			sock_put(sk); /* passive closing */
 		sk->sk_state = SMC_CLOSED;
-		sock_release(smc->clcsock);
-		smc->clcsock = NULL;
 		sk->sk_state_change(sk);
+	}
+	if (sk->sk_state == SMC_CLOSED) {
+		if (smc->clcsock) {
+			sock_release(smc->clcsock);
+			smc->clcsock = NULL;
+		}
+		if (!smc->use_fallback)
+			smc_conn_free(&smc->conn);
 	}
 
 	/* detach socket */
 	sock_orphan(sk);
 	sock->sk = NULL;
-	if (!smc->use_fallback && sk->sk_state == SMC_CLOSED)
-		smc_conn_free(&smc->conn);
 	release_sock(sk);
 
 	sk->sk_prot->unhash(sk);

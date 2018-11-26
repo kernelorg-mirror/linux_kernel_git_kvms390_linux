@@ -407,8 +407,10 @@ wakeup:
 		if ((sk->sk_state == SMC_CLOSED) &&
 		    (sock_flag(sk, SOCK_DEAD) || !sk->sk_socket)) {
 			smc_conn_free(conn);
-			sock_release(smc->clcsock);
-			smc->clcsock = NULL;
+			if (smc->clcsock) {
+				sock_release(smc->clcsock);
+				smc->clcsock = NULL;
+			}
 		}
 	}
 	release_sock(sk);
