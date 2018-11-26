@@ -308,26 +308,6 @@
  */
 
 /*?
- * Text: "%s: Starting HW IPv%d checksumming for %s failed, using SW checksumming\n"
- * Severity: Warning
- * Parameter:
- *   @1: bus ID of the qeth device
- *   @2: IP version
- *   @3: network interface name
- * Description:
- * The network adapter supports hardware checksumming for IP packages
- * but the qeth device driver could not start hardware checksumming on the
- * adapter. The qeth device driver continues to use software checksumming for
- * IP packages.
- * User action:
- * None if you do not require hardware checksumming for network
- * traffic. If you want to enable hardware checksumming, ungroup and regroup
- * the subchannel triplet of the device. If this does not resolve the problem,
- * reboot Linux. If the problem persists, gather Linux debug data and report
- * the problem to your support organization.
- */
-
-/*?
  * Text: "%s: Hardware checksumming is performed only if %s and its peer use different OSA Express 3 ports\n"
  * Severity: Warning
  * Parameter:
