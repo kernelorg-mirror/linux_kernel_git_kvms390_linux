@@ -598,29 +598,31 @@ int elf_rebuild_rela_section(struct section *sec)
 {
 	struct rela *rela;
 	int nr, idx = 0, size;
-	GElf_Rela *relas;
+	void *buf;
 
 	nr = 0;
 	list_for_each_entry(rela, &sec->rela_list, list)
 		nr++;
 
-	size = nr * sizeof(*relas);
-	relas = malloc(size);
-	if (!relas) {
+	size = nr * sizeof(GElf_Rela);
+	buf = malloc(size);
+	if (!buf) {
 		perror("malloc");
 		return -1;
 	}
 
-	sec->data->d_buf = relas;
+	sec->data->d_buf = buf;
 	sec->data->d_size = size;
+	sec->data->d_type = ELF_T_RELA;
 
 	sec->sh.sh_size = size;
 
 	idx = 0;
 	list_for_each_entry(rela, &sec->rela_list, list) {
-		relas[idx].r_offset = rela->offset;
-		relas[idx].r_addend = rela->addend;
-		relas[idx].r_info = GELF_R_INFO(rela->sym->idx, rela->type);
+		rela->rela.r_offset = rela->offset;
+		rela->rela.r_addend = rela->addend;
+		rela->rela.r_info = GELF_R_INFO(rela->sym->idx, rela->type);
+		gelf_update_rela(sec->data, idx, &rela->rela);
 		idx++;
 	}
 

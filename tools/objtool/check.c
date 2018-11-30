@@ -1160,7 +1160,7 @@ static int read_unwind_hints(struct objtool_file *file)
 			return -1;
 		}
 
-		cfa->offset = hint->sp_offset;
+		cfa->offset = le16toh(hint->sp_offset);
 		insn->state.type = hint->type;
 		insn->state.end = hint->end;
 	}
