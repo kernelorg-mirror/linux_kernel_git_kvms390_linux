@@ -6462,6 +6462,11 @@ void qeth_enable_hw_features(struct net_device *dev)
 	 * netdev_update_features() will restart them.
 	 */
 	dev->features &= ~dev->hw_features;
+	/* toggle VLAN filter, so that VIDs are re-programmed: */
+	if (IS_LAYER2(card) && IS_VM_NIC(card)) {
+		dev->features &= ~NETIF_F_HW_VLAN_CTAG_FILTER;
+		dev->wanted_features |= NETIF_F_HW_VLAN_CTAG_FILTER;
+	}
 	netdev_update_features(dev);
 	if (features != dev->features)
 		dev_warn(&card->gdev->dev,

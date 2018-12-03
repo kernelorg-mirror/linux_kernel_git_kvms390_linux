@@ -749,7 +749,8 @@ static int qeth_l2_setup_netdev(struct qeth_card *card, bool carrier_ok)
 	if (IS_OSM(card)) {
 		card->dev->features |= NETIF_F_VLAN_CHALLENGED;
 	} else {
-		card->dev->hw_features |= NETIF_F_HW_VLAN_CTAG_FILTER;
+		if (!IS_VM_NIC(card))
+			card->dev->hw_features |= NETIF_F_HW_VLAN_CTAG_FILTER;
 		card->dev->features |= NETIF_F_HW_VLAN_CTAG_FILTER;
 	}
 
