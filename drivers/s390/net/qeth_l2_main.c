@@ -279,6 +279,8 @@ static int qeth_l2_vlan_rx_kill_vid(struct net_device *dev,
 	struct qeth_card *card = dev->ml_priv;
 
 	QETH_CARD_TEXT_(card, 4, "kid:%d", vid);
+	if (!vid)
+		return 0;
 
 	return qeth_l2_send_setdelvlan(card, vid, IPA_CMD_DELVLAN);
 }
