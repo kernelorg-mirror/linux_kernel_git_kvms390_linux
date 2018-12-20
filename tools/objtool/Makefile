@@ -31,6 +31,7 @@ LIBELF_LIBS  := $(shell pkg-config libelf --libs 2>/dev/null || echo -lelf)
 all: $(OBJTOOL)
 
 INCLUDES := -I$(srctree)/tools/include \
+	    -I$(srctree)/tools/objtool \
 	    -I$(srctree)/tools/arch/$(HOSTARCH)/include/uapi \
 	    -I$(srctree)/tools/objtool/arch/$(ARCH)/include
 WARNINGS := $(EXTRA_WARNINGS) -Wno-switch-default -Wno-switch-enum -Wno-packed
