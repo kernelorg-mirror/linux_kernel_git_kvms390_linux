@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "elf.h"
+#include <elfdefs.h>
 
 extern const char *objname;
 

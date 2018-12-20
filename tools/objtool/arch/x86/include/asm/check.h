@@ -19,9 +19,9 @@
 #define _CHECK_H
 
 #include <stdbool.h>
-#include "../../../elf.h"
+#include <elfdefs.h>
 #include <asm/arch.h>
-#include "../../../orc.h"
+#include <orc.h>
 #include <linux/hashtable.h>
 
 struct insn_state {
