@@ -56,7 +56,7 @@ static vm_fault_t vdso_fault(const struct vm_special_mapping *sm,
 	vdso_pagelist = vdso64_pagelist;
 	vdso_pages = vdso64_pages;
 #ifdef CONFIG_COMPAT
-	if (test_tsk_thread_flag(vma->vm_mm->owner, TIF_31BIT)) {
+	if (is_compat_task()) {
 		vdso_pagelist = vdso32_pagelist;
 		vdso_pages = vdso32_pages;
 	}
@@ -77,7 +77,7 @@ static int vdso_mremap(const struct vm_special_mapping *sm,
 
 	vdso_pages = vdso64_pages;
 #ifdef CONFIG_COMPAT
-	if (test_tsk_thread_flag(vma->vm_mm->owner, TIF_31BIT))
+	if (is_compat_task())
 		vdso_pages = vdso32_pages;
 #endif
 
