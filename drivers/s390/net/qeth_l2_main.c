@@ -876,7 +876,7 @@ static int __qeth_l2_set_online(struct ccwgroup_device *gdev, int recovery_mode)
 					qeth_l2_set_rx_mode(dev);
 				}
 			} else {
-				dev_open(dev);
+				dev_open(dev, NULL);
 			}
 		}
 		rtnl_unlock();
