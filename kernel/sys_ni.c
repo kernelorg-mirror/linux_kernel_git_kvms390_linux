@@ -367,6 +367,7 @@ COND_SYSCALL(kexec_file_load);
 COND_SYSCALL(s390_pci_mmio_read);
 COND_SYSCALL(s390_pci_mmio_write);
 COND_SYSCALL(s390_ipc);
+COND_SYSCALL_COMPAT(s390_ipc);
 
 /* powerpc */
 COND_SYSCALL(rtas);
