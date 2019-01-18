@@ -89,7 +89,7 @@
  * COND_SYSCALL_COMPAT in kernel/sys_ni.c and COMPAT_SYS_NI in
  * kernel/time/posix-stubs.c to cover this case as well.
  */
-#define COND_SYSCALL_COMPAT(name) 					\
+#define COND_SYSCALL_COMPAT(name)					\
 	cond_syscall(__s390_compat_sys_##name)
 
 #define COMPAT_SYS_NI(name)						\
