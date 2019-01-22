@@ -98,8 +98,12 @@ static inline bool arch_trace_is_compat_syscall(struct pt_regs *regs)
 static inline bool arch_syscall_match_sym_name(const char *sym,
 					       const char *name)
 {
-	/* skip __s390x_ prefix */
-	return !strcmp(sym + 8, name);
+	/*
+	 * Skip __s390_ and __s390x_ prefix - due to compat wrappers
+	 * and aliasing some symbols of 64 bit system call functions
+	 * may get the __s390_ prefix instead of the __s390x_ prefix.
+	 */
+	return !strcmp(sym + 7, name) || !strcmp(sym + 8, name);
 }
 
 #endif /* __ASSEMBLY__ */
