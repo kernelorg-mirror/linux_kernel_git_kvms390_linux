@@ -4,7 +4,7 @@
  *
  *  Copyright IBM Corp. 2019
  *  Author(s): Hendrik Brueckner <brueckner@linux.ibm.com>
- *             Thomas Richer <tmricht@linux.ibm.com>
+ *	       Thomas Richer <tmricht@linux.ibm.com>
  */
 #define KMSG_COMPONENT	"cpum_cf_diag"
 #define pr_fmt(fmt)	KMSG_COMPONENT ": " fmt
@@ -465,7 +465,7 @@ static int cf_diag_diffctr(struct cf_diag_csd *csd, unsigned long auth)
 	return 1;
 }
 
-/* Create perf event sample with the counter sets as raw data.  The sample
+/* Create perf event sample with the counter sets as raw data.	The sample
  * is then pushed to the event subsystem and the function checks for
  * possible event overflows. If an event overflow occurs, the PMU is
  * stopped.
