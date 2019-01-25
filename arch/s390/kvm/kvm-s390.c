@@ -4298,7 +4298,7 @@ static int __init kvm_s390_init(void)
 	}
 
 	if (nested && hpage) {
-		pr_info("Nested KVM hosts cannot provide huge pages\n");
+		pr_info("A KVM host that supports nesting cannot back its KVM guests with huge pages\n");
 		return -EINVAL;
 	}
 
