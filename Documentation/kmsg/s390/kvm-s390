@@ -34,6 +34,28 @@
  * data and contact your support organization.
  */
 
+/*?
+ * Text: "Associating the GIB with the AIV facility failed\n"
+ * Severity: Error
+ * Description:
+ * The registration of the Guest Information Block (GIB) with the Adapter
+ * Interruption Virtualization (AIV) facility was not successful.
+ * User action:
+ * Reload the kvm kernel module. If the problem persists, gather
+ * Linux debug data and contact your support organization.
+ */
+
+/*?
+ * Text: "Registering the GIB alert interruption handler failed\n"
+ * Severity: Error
+ * Description:
+ * The registration of the Guest Information Block (GIB) alert
+ * interruption handler with the kernel was not successful.
+ * User action:
+ * Reload the kvm kernel module. If the problem persists, gather
+ * Linux debug data and contact your support organization.
+ */
+
 /*? Text: "failed to commit memory region\n" */
 /*? Text: "%s: %d output lines suppressed due to ratelimiting\n" */
 /*? Text: "%s: SME is active, device will require DMA bounce buffers\n" */
