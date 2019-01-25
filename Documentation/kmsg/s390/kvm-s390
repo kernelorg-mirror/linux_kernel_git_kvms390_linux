@@ -11,14 +11,12 @@
  */
 
 /*?
- * Text: "Nested KVM hosts cannot provide huge pages\n"
+ * Text: "A KVM host that supports nesting cannot back its KVM guests with huge pages\n"
  * Severity: Informational
  * Description:
- * The kvm.nested=1 kernel parameter is required for KVM guests that are
- * to act as KVM hosts. Such nested KVM hosts cannot provide huge memory
- * pages for their guests.
- * Therefore, the kvm.hpage=1 kernel parameter cannot be used for nested
- * KVM hosts.
+ * The kvm.nested=1 kernel parameter is required for KVM hosts that run KVM
+ * hosts as their guests. Such KVM guests cannot be backed with huge memory
+ * pages kvm.hpage=1 by the host.
  * User action:
  * Do not combine the kernel parameters kvm.nested=1 and kvm.hpage=1.
  */
