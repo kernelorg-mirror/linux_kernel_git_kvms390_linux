@@ -339,8 +339,8 @@ typedef void qdio_handler_t(struct ccw_device *, unsigned int, int,
  * @output_handler: handler to be called for output queues
  * @queue_start_poll_array: polling handlers (one per input queue or NULL)
  * @int_parm: interruption parameter
- * @input_sbal_addr_array:  address of no_input_qs * 128 pointers
- * @output_sbal_addr_array: address of no_output_qs * 128 pointers
+ * @input_sbal_addr_array:  per-queue array, each element points to 128 SBALs
+ * @output_sbal_addr_array: per-queue array, each element points to 128 SBALs
  * @output_sbal_state_array: no_output_qs * 128 state info (for CQ or NULL)
  */
 struct qdio_initialize {
@@ -361,8 +361,8 @@ struct qdio_initialize {
 					  unsigned long);
 	int scan_threshold;
 	unsigned long int_parm;
-	struct qdio_buffer **input_sbal_addr_array;
-	struct qdio_buffer **output_sbal_addr_array;
+	struct qdio_buffer ***input_sbal_addr_array;
+	struct qdio_buffer ***output_sbal_addr_array;
 	struct qdio_outbuf_state *output_sbal_state_array;
 };
 

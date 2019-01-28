@@ -1358,7 +1358,7 @@ static void qeth_init_qdio_info(struct qeth_card *card)
 	atomic_set(&card->qdio.state, QETH_QDIO_UNINITIALIZED);
 	card->qdio.do_prio_queueing = QETH_PRIOQ_DEFAULT;
 	card->qdio.default_out_queue = QETH_DEFAULT_QUEUE;
-	card->qdio.no_out_queues = QETH_MAX_QUEUES;
+	card->qdio.no_out_queues = QETH_MAX_OUT_QUEUES;
 
 	/* inbound */
 	card->qdio.no_in_queues = 1;
@@ -4827,35 +4827,15 @@ out:
 	return;
 }
 
-static void qeth_qdio_establish_cq(struct qeth_card *card,
-				   struct qdio_buffer **in_sbal_ptrs,
-				   void (**queue_start_poll)
-					(struct ccw_device *, int,
-					 unsigned long))
-{
-	int i;
-
-	if (card->options.cq == QETH_CQ_ENABLED) {
-		int offset = QDIO_MAX_BUFFERS_PER_Q *
-			     (card->qdio.no_in_queues - 1);
-		for (i = 0; i < QDIO_MAX_BUFFERS_PER_Q; ++i) {
-			in_sbal_ptrs[offset + i] = (struct qdio_buffer *)
-				virt_to_phys(card->qdio.c_q->bufs[i].buffer);
-		}
-
-		queue_start_poll[card->qdio.no_in_queues - 1] = NULL;
-	}
-}
-
 static int qeth_qdio_establish(struct qeth_card *card)
 {
+	struct qdio_buffer **out_sbal_ptrs[QETH_MAX_OUT_QUEUES];
+	struct qdio_buffer **in_sbal_ptrs[QETH_MAX_IN_QUEUES];
 	struct qdio_initialize init_data;
 	char *qib_param_field;
-	struct qdio_buffer **in_sbal_ptrs;
 	void (**queue_start_poll) (struct ccw_device *, int, unsigned long);
-	struct qdio_buffer **out_sbal_ptrs;
-	int i, j, k;
 	int rc = 0;
+	int i;
 
 	QETH_DBF_TEXT(SETUP, 2, "qdioest");
 
@@ -4869,42 +4849,21 @@ static int qeth_qdio_establish(struct qeth_card *card)
 	qeth_create_qib_param_field(card, qib_param_field);
 	qeth_create_qib_param_field_blkt(card, qib_param_field);
 
-	in_sbal_ptrs = kcalloc(card->qdio.no_in_queues * QDIO_MAX_BUFFERS_PER_Q,
-			       sizeof(void *),
-			       GFP_KERNEL);
-	if (!in_sbal_ptrs) {
-		rc = -ENOMEM;
-		goto out_free_qib_param;
-	}
-	for (i = 0; i < QDIO_MAX_BUFFERS_PER_Q; ++i) {
-		in_sbal_ptrs[i] = (struct qdio_buffer *)
-			virt_to_phys(card->qdio.in_q->bufs[i].buffer);
-	}
-
 	queue_start_poll = kcalloc(card->qdio.no_in_queues, sizeof(void *),
 				   GFP_KERNEL);
 	if (!queue_start_poll) {
 		rc = -ENOMEM;
-		goto out_free_in_sbals;
+		goto out_free_qib_param;
 	}
-	for (i = 0; i < card->qdio.no_in_queues; ++i)
-		queue_start_poll[i] = qeth_qdio_start_poll;
 
-	qeth_qdio_establish_cq(card, in_sbal_ptrs, queue_start_poll);
+	queue_start_poll[0] = qeth_qdio_start_poll;
 
-	out_sbal_ptrs =
-		kcalloc(card->qdio.no_out_queues * QDIO_MAX_BUFFERS_PER_Q,
-			sizeof(void *),
-			GFP_KERNEL);
-	if (!out_sbal_ptrs) {
-		rc = -ENOMEM;
-		goto out_free_queue_start_poll;
-	}
-	for (i = 0, k = 0; i < card->qdio.no_out_queues; ++i)
-		for (j = 0; j < QDIO_MAX_BUFFERS_PER_Q; ++j, ++k) {
-			out_sbal_ptrs[k] = (struct qdio_buffer *)virt_to_phys(
-				card->qdio.out_qs[i]->bufs[j]->buffer);
-		}
+	in_sbal_ptrs[0] = card->qdio.in_q->qdio_bufs;
+	if (card->options.cq == QETH_CQ_ENABLED)
+		in_sbal_ptrs[1] = card->qdio.c_q->qdio_bufs;
+
+	for (i = 0; i < card->qdio.no_out_queues; i++)
+		out_sbal_ptrs[i] = card->qdio.out_qs[i]->qdio_bufs;
 
 	memset(&init_data, 0, sizeof(struct qdio_initialize));
 	init_data.cdev                   = CARD_DDEV(card);
@@ -4948,11 +4907,7 @@ static int qeth_qdio_establish(struct qeth_card *card)
 		break;
 	}
 out:
-	kfree(out_sbal_ptrs);
-out_free_queue_start_poll:
 	kfree(queue_start_poll);
-out_free_in_sbals:
-	kfree(in_sbal_ptrs);
 out_free_qib_param:
 	kfree(qib_param_field);
 out_free_nothing:
