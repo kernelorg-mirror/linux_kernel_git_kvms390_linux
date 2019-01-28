@@ -21,95 +21,20 @@
 #include <asm/debug.h>
 #include <asm/dis.h>
 #include <asm/ipl.h>
-
-/*
- * For dump_trace we have tree different stack to consider:
- *   - the panic stack which is used if the kernel stack has overflown
- *   - the asynchronous interrupt stack (cpu related)
- *   - the synchronous kernel stack (process related)
- * The stack trace can start at any of the three stacks and can potentially
- * touch all of them. The order is: panic stack, async stack, sync stack.
- */
-static unsigned long __no_sanitize_address
-__dump_trace(dump_trace_func_t func, void *data, unsigned long sp,
-	     unsigned long low, unsigned long high)
-{
-	struct stack_frame *sf;
-	struct pt_regs *regs;
-
-	while (1) {
-		if (sp < low || sp > high - sizeof(*sf))
-			return sp;
-		sf = (struct stack_frame *) sp;
-		if (func(data, sf->gprs[8], 0))
-			return sp;
-		/* Follow the backchain. */
-		while (1) {
-			low = sp;
-			sp = sf->back_chain;
-			if (!sp)
-				break;
-			if (sp <= low || sp > high - sizeof(*sf))
-				return sp;
-			sf = (struct stack_frame *) sp;
-			if (func(data, sf->gprs[8], 1))
-				return sp;
-		}
-		/* Zero backchain detected, check for interrupt frame. */
-		sp = (unsigned long) (sf + 1);
-		if (sp <= low || sp > high - sizeof(*regs))
-			return sp;
-		regs = (struct pt_regs *) sp;
-		if (!user_mode(regs)) {
-			if (func(data, regs->psw.addr, 1))
-				return sp;
-		}
-		low = sp;
-		sp = regs->gprs[15];
-	}
-}
-
-void dump_trace(dump_trace_func_t func, void *data, struct task_struct *task,
-		unsigned long sp)
-{
-	unsigned long frame_size;
-
-	frame_size = STACK_FRAME_OVERHEAD + sizeof(struct pt_regs);
-#ifdef CONFIG_CHECK_STACK
-	sp = __dump_trace(func, data, sp,
-			  S390_lowcore.nodat_stack + frame_size - THREAD_SIZE,
-			  S390_lowcore.nodat_stack + frame_size);
-#endif
-	sp = __dump_trace(func, data, sp,
-			  S390_lowcore.async_stack + frame_size - THREAD_SIZE,
-			  S390_lowcore.async_stack + frame_size);
-	task = task ?: current;
-	__dump_trace(func, data, sp,
-		     (unsigned long)task_stack_page(task),
-		     (unsigned long)task_stack_page(task) + THREAD_SIZE);
-}
-EXPORT_SYMBOL_GPL(dump_trace);
-
-static int show_address(void *data, unsigned long address, int reliable)
-{
-	if (reliable)
-		printk(" [<%016lx>] %pSR \n", address, (void *)address);
-	else
-		printk("([<%016lx>] %pSR)\n", address, (void *)address);
-	return 0;
-}
+#include <asm/unwind.h>
 
 void show_stack(struct task_struct *task, unsigned long *stack)
 {
-	unsigned long sp = (unsigned long) stack;
+	struct unwind_state state;
 
-	if (!sp)
-		sp = task ? task->thread.ksp : current_stack_pointer();
 	printk("Call Trace:\n");
-	dump_trace(show_address, NULL, task, sp);
 	if (!task)
 		task = current;
-	debug_show_held_locks(task);
+	unwind_for_each_frame(&state, task, NULL, (unsigned long) stack)
+		printk(state.reliable ? " [<%016lx>] %pSR \n" :
+					"([<%016lx>] %pSR)\n",
+		       state.ip, (void *) state.ip);
+	debug_show_held_locks(task ? : current);
 }
 
 static void show_last_breaking_event(struct pt_regs *regs)
