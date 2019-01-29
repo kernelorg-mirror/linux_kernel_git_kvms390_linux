@@ -30,6 +30,12 @@ struct mod_arch_specific
 	int nsyms;
 	/* Additional symbol information (got and plt offsets). */
 	struct mod_arch_syminfo *syminfo;
+#ifdef CONFIG_UNWINDER_ORC
+	/* ORC unwind information */
+	unsigned int num_orcs;
+	int *orc_unwind_ip;
+	struct orc_entry *orc_unwind;
+#endif
 };
 
 #endif /* _ASM_S390_MODULE_H */
