@@ -56,6 +56,9 @@ obj-y	+= nospec-branch.o ipl_vmparm.o machine_kexec_reloc.o unwind_bc.o
 
 extra-y				+= head64.o vmlinux.lds
 
+OBJECT_FILES_NON_STANDARD_head64.o := y
+OBJECT_FILES_NON_STANDARD_relocate_kernel.o := y
+
 obj-$(CONFIG_SYSFS)		+= nospec-sysfs.o
 CFLAGS_REMOVE_nospec-branch.o	+= $(CC_FLAGS_EXPOLINE)
 

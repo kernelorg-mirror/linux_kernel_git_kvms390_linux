@@ -27,6 +27,7 @@ CFLAGS_sclp_early_core.o	+= -march=z900
 endif
 
 CFLAGS_sclp_early_core.o += -I$(srctree)/drivers/s390/char
+OBJECT_FILES_NON_STANDARD_head.o := y
 
 obj-y	:= head.o als.o startup.o mem_detect.o ipl_parm.o ipl_report.o
 obj-y	+= string.o ebcdic.o sclp_early_core.o mem.o ipl_vmparm.o cmdline.o
