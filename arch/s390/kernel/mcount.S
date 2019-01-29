@@ -12,6 +12,7 @@
 #include <asm/nospec-insn.h>
 #include <asm/ptrace.h>
 #include <asm/export.h>
+#include <asm/unwind_hints.h>
 
 	GEN_BR_THUNK %r1
 	GEN_BR_THUNK %r14
@@ -27,7 +28,9 @@ ENDPROC(ftrace_stub)
 #define STACK_PTREGS_GPRS (STACK_PTREGS + __PT_GPRS)
 #define STACK_PTREGS_PSW  (STACK_PTREGS + __PT_PSW)
 
-ENTRY(_mcount)
+_STACK_FRAME_SIZE = STACK_FRAME_SIZE
+
+	ENTRY(_mcount)
 	BR_EX	%r14
 ENDPROC(_mcount)
 EXPORT_SYMBOL(_mcount)
@@ -35,7 +38,9 @@ EXPORT_SYMBOL(_mcount)
 ENTRY(ftrace_caller)
 	.globl	ftrace_regs_caller
 	.set	ftrace_regs_caller,ftrace_caller
+	UNWIND_HINT sp_reg=15 ra_reg=0
 	lgr	%r1,%r15
+	UNWIND_HINT sp_reg=15 ra_reg=0
 #if !(defined(CC_USING_HOTPATCH) || defined(CC_USING_NOP_MCOUNT))
 	aghi	%r0,MCOUNT_RETURN_FIXUP
 #endif
@@ -43,7 +48,9 @@ ENTRY(ftrace_caller)
 	stg	%r1,__SF_BACKCHAIN(%r15)
 	stg	%r1,(STACK_PTREGS_GPRS+15*8)(%r15)
 	stg	%r0,(STACK_PTREGS_PSW+8)(%r15)
+	UNWIND_HINT sp_offset=-_STACK_FRAME_SIZE sp_reg=15 ra_reg=0
 	stmg	%r2,%r14,(STACK_PTREGS_GPRS+2*8)(%r15)
+	UNWIND_HINT sp_offset=-160 sp_reg=15 sp_ptregs=1
 #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
 	aghik	%r2,%r0,-MCOUNT_INSN_SIZE
 	lgrl	%r4,function_trace_op
@@ -60,11 +67,11 @@ ENTRY(ftrace_caller)
 	la	%r5,STACK_PTREGS(%r15)
 	BASR_EX	%r14,%r1
 #ifdef CONFIG_FUNCTION_GRAPH_TRACER
-# The j instruction gets runtime patched to a nop instruction.
+# The brc instruction gets runtime patched to a nop instruction.
 # See ftrace_enable_ftrace_graph_caller.
 	.globl ftrace_graph_caller
 ftrace_graph_caller:
-	j	ftrace_graph_caller_end
+	brc	0,ftrace_graph_caller_end
 	lmg	%r2,%r3,(STACK_PTREGS_GPRS+14*8)(%r15)
 	lg	%r4,(STACK_PTREGS_PSW+8)(%r15)
 	brasl	%r14,prepare_ftrace_return
@@ -74,6 +81,7 @@ ftrace_graph_caller_end:
 #endif
 	lg	%r1,(STACK_PTREGS_PSW+8)(%r15)
 	lmg	%r2,%r15,(STACK_PTREGS_GPRS+2*8)(%r15)
+	UNWIND_HINT sp_reg=15 ra_reg=1
 	BR_EX	%r1
 ENDPROC(ftrace_caller)
 
@@ -85,6 +93,7 @@ ENTRY(return_to_handler)
 	aghi	%r15,-STACK_FRAME_OVERHEAD
 	stg	%r1,__SF_BACKCHAIN(%r15)
 	brasl	%r14,ftrace_return_to_handler
+	UNWIND_HINT clear=0 ra_reg=2
 	aghi	%r15,STACK_FRAME_OVERHEAD
 	lgr	%r14,%r2
 	lmg	%r2,%r5,32(%r15)

@@ -15,6 +15,7 @@
 #include <asm/asm-offsets.h>
 #include <asm/nospec-insn.h>
 #include <asm/sigp.h>
+#include <asm/unwind_hints.h>
 
 /*
  * Save register context in absolute 0 lowcore and call swsusp_save() to
@@ -27,6 +28,9 @@
  */
 	GEN_BR_THUNK %r14
 
+	.section .discard.func_stack_frame_non_standard
+	.quad	swsusp_arch_suspend
+	.previous
 	.section .text
 ENTRY(swsusp_arch_suspend)
 	lg	%r1,__LC_NODAT_STACK
@@ -115,6 +119,9 @@ ENDPROC(swsusp_arch_suspend)
  * Then we return to the function that called swsusp_arch_suspend().
  * swsusp_arch_resume() runs with disabled interrupts.
  */
+	.section .discard.func_stack_frame_non_standard
+	.quad	swsusp_arch_resume
+	.previous
 ENTRY(swsusp_arch_resume)
 	stmg	%r6,%r15,__SF_GPRS(%r15)
 	lgr	%r1,%r15
