@@ -162,6 +162,9 @@ static int smc_release(struct socket *sock)
 		sk->sk_state = SMC_CLOSED;
 		sk->sk_state_change(sk);
 	}
+
+	sk->sk_prot->unhash(sk);
+
 	if (sk->sk_state == SMC_CLOSED) {
 		if (smc->clcsock) {
 			mutex_lock(&smc->clcsock_release_lock);
@@ -178,7 +181,6 @@ static int smc_release(struct socket *sock)
 	sock->sk = NULL;
 	release_sock(sk);
 
-	sk->sk_prot->unhash(sk);
 	sock_put(sk); /* final sock_put */
 out:
 	return rc;
