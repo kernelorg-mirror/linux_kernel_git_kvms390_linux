@@ -705,6 +705,40 @@ config MAX_PHYSMEM_BITS
 	  Increasing the number of bits also increases the kernel image size.
 	  By default 46 bits (64TB) are supported.
 
+choice
+	prompt "Choose kernel unwinder"
+	default UNWINDER_ORC
+	---help---
+	  This determines which method will be used for unwinding kernel stack
+	  traces for panics, oopses, bugs, warnings, perf, /proc/<pid>/stack,
+	  livepatch, lockdep, and more.
+
+config UNWINDER_ORC
+	bool "ORC unwinder"
+	select STACK_VALIDATION
+	---help---
+	  This option enables the ORC (Oops Rewind Capability) unwinder for
+	  unwinding kernel stack traces.  It uses a custom data format which is
+	  a simplified version of the DWARF Call Frame Information standard.
+
+	  This unwinder is more accurate across interrupt entry frames than the
+	  frame pointer unwinder.  It also enables a 5-10% performance
+	  improvement across the entire kernel compared to frame pointers.
+
+	  Enabling this option will increase the kernel's runtime memory usage
+	  by roughly 2-4MB, depending on your kernel config.
+
+config UNWINDER_BC
+	bool "Backchain unwinder"
+	---help---
+	  This option enables the backchain unwinder for unwinding kernel
+	  stack traces.
+
+	  The unwinder itself is fast and it uses less RAM than the ORC
+	  unwinder, but the kernel text size will grow by ~3% and the kernel's
+	  overall performance will degrade by roughly 5-10%.
+endchoice
+
 config PACK_STACK
 	def_bool y
 	prompt "Pack kernel stack"

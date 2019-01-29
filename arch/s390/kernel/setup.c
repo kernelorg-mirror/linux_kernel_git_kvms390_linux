@@ -73,6 +73,7 @@
 #include <asm/alternative.h>
 #include <asm/nospec-branch.h>
 #include <asm/mem_detect.h>
+#include <asm/unwind.h>
 #include <asm/uv.h>
 #include "entry.h"
 
@@ -1213,4 +1214,6 @@ void __init setup_arch(char **cmdline_p)
 
 	/* Add system specific data to the random pool */
 	setup_randomness();
+
+	unwind_init();
 }

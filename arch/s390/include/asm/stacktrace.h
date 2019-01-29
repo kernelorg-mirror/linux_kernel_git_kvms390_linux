@@ -93,6 +93,12 @@ struct stack_frame {
 #define CALL_CLOBBER_1 CALL_CLOBBER_2, "3"
 #define CALL_CLOBBER_0 CALL_CLOBBER_1
 
+#ifdef CONFIG_UNWINDER_BC
+#define CALL_ON_STACK_BC "stg	%[_prev],%[_bc](15)\n"
+#else
+#define CALL_ON_STACK_BC
+#endif
+
 #define CALL_ON_STACK(fn, stack, nr, args...)				\
 ({									\
 	CALL_ARGS_##nr(args);						\
@@ -101,7 +107,7 @@ struct stack_frame {
 	asm volatile(							\
 		"	la	%[_prev],0(15)\n"			\
 		"	la	15,0(%[_stack])\n"			\
-		"	stg	%[_prev],%[_bc](15)\n"			\
+		CALL_ON_STACK_BC					\
 		"	brasl	14,%[_fn]\n"				\
 		"	la	15,0(%[_prev])\n"			\
 		: [_prev] "=&a" (prev), CALL_FMT_##nr			\

@@ -4,6 +4,7 @@
  */
 
 #include <asm/thread_info.h>
+#include <asm/orc_lookup.h>
 #include <asm/page.h>
 
 /*
@@ -75,6 +76,29 @@ SECTIONS
 	BOOT_DATA_PRESERVED
 
 	_edata = .;		/* End of data section */
+
+#ifdef CONFIG_UNWINDER_ORC
+	. = ALIGN(4);
+	.orc_unwind_ip : AT(ADDR(.orc_unwind_ip) - LOAD_OFFSET) {
+		__start_orc_unwind_ip = .;
+		*(.orc_unwind_ip*)
+		__stop_orc_unwind_ip = .;
+	}
+	.orc_unwind : AT(ADDR(.orc_unwind) - LOAD_OFFSET) {
+		__start_orc_unwind = .;
+		*(.orc_unwind*)
+		__stop_orc_unwind = .;
+	}
+	.orc_lookup : AT(ADDR(.orc_lookup) - LOAD_OFFSET) {
+		orc_lookup = .;
+		. += (((SIZEOF(.text) + LOOKUP_BLOCK_SIZE - 1) /
+			LOOKUP_BLOCK_SIZE) + 1) * 4;
+		orc_lookup_end = .;
+	}
+	.rela.orc_unwind : {
+		*(.rela.orc_unwind*)
+	}
+#endif
 
 	/* will be freed after init */
 	. = ALIGN(PAGE_SIZE);	/* Init code and data */

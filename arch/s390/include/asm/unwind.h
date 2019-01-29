@@ -34,6 +34,9 @@ struct unwind_state {
 	unsigned long stack_mask;
 	struct task_struct *task;
 	struct pt_regs *regs;
+#ifdef CONFIG_UNWINDER_ORC
+	unsigned long gprs[NUM_GPRS];
+#endif
 	unsigned long sp, ip;
 	int graph_idx;
 	bool reliable;
@@ -74,10 +77,16 @@ static inline struct pt_regs *unwind_get_entry_regs(struct unwind_state *state)
 	     !unwind_done(state);				\
 	     unwind_next_frame(state))
 
+#ifdef CONFIG_UNWINDER_ORC
+void unwind_init(void);
+void unwind_module_init(struct module *mod, void *orc_ip, size_t orc_ip_size,
+			void *orc, size_t orc_size);
+#else
 static inline void unwind_init(void) {}
 static inline void unwind_module_init(struct module *mod, void *orc_ip,
 				      size_t orc_ip_size, void *orc,
 				      size_t orc_size) {}
+#endif
 
 #ifdef CONFIG_KASAN
 /*
