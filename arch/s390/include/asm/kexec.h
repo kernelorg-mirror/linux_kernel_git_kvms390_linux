@@ -65,6 +65,8 @@ int kexec_file_add_initrd(struct kimage *image,
 			  char *initrd, unsigned long initrd_len);
 int *kexec_file_update_kernel(struct kimage *iamge,
 			      struct s390_load_data *data);
+int arch_kexec_do_relocs(int r_type, void *loc, unsigned long val,
+			 unsigned long addr);
 
 extern const struct kexec_file_ops s390_kexec_image_ops;
 extern const struct kexec_file_ops s390_kexec_elf_ops;
