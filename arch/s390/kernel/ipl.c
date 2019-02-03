@@ -1688,5 +1688,5 @@ void s390_reset_system(void)
 
 	/* Disable lowcore protection */
 	__ctl_clear_bit(0, 28);
-	diag308_reset();
+	diag_dma_ops.diag308_reset();
 }

@@ -29,7 +29,7 @@ endif
 CFLAGS_sclp_early_core.o += -I$(srctree)/drivers/s390/char
 
 obj-y	:= head.o als.o startup.o mem_detect.o ipl_parm.o string.o ebcdic.o
-obj-y	+= sclp_early_core.o mem.o ipl_vmparm.o cmdline.o ctype.o
+obj-y	+= sclp_early_core.o mem.o ipl_vmparm.o cmdline.o ctype.o text_dma.o
 obj-$(CONFIG_PROTECTED_VIRTUALIZATION_GUEST)	+= uv.o
 obj-$(CONFIG_RELOCATABLE)	+= machine_kexec_reloc.o
 targets	:= bzImage startup.a section_cmp.boot.data section_cmp.boot.preserved.data $(obj-y)
