@@ -216,8 +216,7 @@ static inline int qeth_is_ipa_enabled(struct qeth_ipa_info *ipa,
 /*****************************************************************************/
 /* QDIO queue and buffer handling                                            */
 /*****************************************************************************/
-#define QETH_MAX_OUT_QUEUES 4
-#define QETH_MAX_IN_QUEUES 2		/* 1 RX, 1 CQ */
+#define QETH_MAX_QUEUES 4
 #define QETH_IN_BUF_SIZE_DEFAULT 65536
 #define QETH_IN_BUF_COUNT_DEFAULT 64
 #define QETH_IN_BUF_COUNT_HSDEFAULT 128

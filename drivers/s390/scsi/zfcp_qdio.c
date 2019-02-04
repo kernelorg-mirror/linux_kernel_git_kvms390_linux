@@ -281,9 +281,6 @@ int zfcp_qdio_send(struct zfcp_qdio *qdio, struct zfcp_qdio_req *q_req)
 static void zfcp_qdio_setup_init_data(struct qdio_initialize *id,
 				      struct zfcp_qdio *qdio)
 {
-	struct qdio_buffer **input_sbals[1] = {qdio->res_q};
-	struct qdio_buffer **output_sbals[1] = {qdio->req_q};
-
 	memset(id, 0, sizeof(*id));
 	id->cdev = qdio->adapter->ccw_device;
 	id->q_format = QDIO_ZFCP_QFMT;
@@ -297,8 +294,8 @@ static void zfcp_qdio_setup_init_data(struct qdio_initialize *id,
 	id->input_handler = zfcp_qdio_int_resp;
 	id->output_handler = zfcp_qdio_int_req;
 	id->int_parm = (unsigned long) qdio;
-	id->input_sbal_addr_array = input_sbals;
-	id->output_sbal_addr_array = output_sbals;
+	id->input_sbal_addr_array = qdio->res_q;
+	id->output_sbal_addr_array = qdio->req_q;
 	id->scan_threshold =
 		QDIO_MAX_BUFFERS_PER_Q - ZFCP_QDIO_MAX_SBALS_PER_REQ * 2;
 }
