@@ -483,7 +483,6 @@ struct qeth_out_q_stats {
 	u64 tx_bytes;
 	u64 tx_errors;
 	u64 tx_dropped;
-	u64 tx_carrier_errors;
 };
 
 struct qeth_qdio_out_q {
