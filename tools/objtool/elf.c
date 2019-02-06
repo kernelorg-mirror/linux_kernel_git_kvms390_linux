@@ -56,6 +56,57 @@ static struct section *find_section_by_index(struct elf *elf,
 	return NULL;
 }
 
+struct section *find_section_group(struct elf *elf, struct section *sec)
+{
+	struct section *group;
+	GElf_Word *words;
+	unsigned long nr, i;
+
+	if (!(sec->sh.sh_flags & SHF_GROUP))
+		return NULL;
+
+	list_for_each_entry(group, &elf->sections, list) {
+		if (group->sh.sh_type != SHT_GROUP)
+			continue;
+		if ((group->data->d_size % sizeof(GElf_Word)) ||
+		    group->data->d_size < 2*sizeof(GElf_Word))
+			continue;
+		nr = group->data->d_size / sizeof(GElf_Word);
+		words = group->data->d_buf;
+		/* first word of a group section is a flags field */
+		if (!(words[0] & GRP_COMDAT))
+			continue;
+		for (i = 1; i < nr; i++) {
+			if (sec->idx == words[i])
+				/* found the group section for 'sec' */
+				return group;
+		}
+	}
+	return NULL;
+}
+
+int add_to_section_group(struct elf *elf, struct section *group,
+			 struct section *sec)
+{
+	GElf_Word *secidx;
+	size_t d_size;
+	void *d_buf;
+
+	d_buf = group->data->d_buf;
+	d_size = group->data->d_size;
+	d_buf = realloc(d_buf, d_size + sizeof(GElf_Word));
+	if (!d_buf) {
+		perror("malloc");
+		return -1;
+	}
+	sec->sh.sh_flags |= SHF_GROUP;
+	secidx = d_buf + d_size;
+	*secidx = sec->idx;
+	group->data->d_buf = d_buf;
+	group->data->d_size = d_size + sizeof(GElf_Word);
+	return 0;
+}
+
 static struct symbol *find_symbol_by_index(struct elf *elf, unsigned int idx)
 {
 	struct section *sec;
