@@ -107,7 +107,7 @@ int add_to_section_group(struct elf *elf, struct section *group,
 	return 0;
 }
 
-static struct symbol *find_symbol_by_index(struct elf *elf, unsigned int idx)
+struct symbol *find_symbol_by_index(struct elf *elf, unsigned int idx)
 {
 	struct section *sec;
 	struct symbol *sym;
