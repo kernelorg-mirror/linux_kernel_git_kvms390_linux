@@ -354,6 +354,8 @@ static ssize_t qeth_dev_performance_stats_store(struct device *dev,
 		memset(&card->stats, 0, sizeof(card->stats));
 		for (i = 0; i < card->qdio.no_out_queues; i++) {
 			queue = card->qdio.out_qs[i];
+			if (!queue)
+				break;
 			memset(&queue->stats, 0, sizeof(queue->stats));
 		}
 	}
