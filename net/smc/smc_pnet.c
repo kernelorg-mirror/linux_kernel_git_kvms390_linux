@@ -311,7 +311,7 @@ static struct smcd_dev *smc_pnet_find_smcd(char *smcd_name)
 	spin_lock(&smcd_dev_list.lock);
 	list_for_each_entry(smcd_dev, &smcd_dev_list.list, list) {
 		if (!strncmp(dev_name(&smcd_dev->dev), smcd_name,
-			     sizeof(dev_name(&smcd_dev->dev))))
+			     IB_DEVICE_NAME_MAX - 1))
 			goto out;
 	}
 	smcd_dev = NULL;
