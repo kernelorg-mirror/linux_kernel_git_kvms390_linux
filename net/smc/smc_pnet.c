@@ -201,10 +201,10 @@ static int smc_pnet_enter(struct smc_pnettable *pnettable,
 		int ib_port = new_pnetelem->ib_port;
 
 		spin_lock(&smc_ib_devices.lock);
-		if (smc_pnet_match(ib_dev->pnetid[ib_port], pnet_null)) {
-			memcpy(ib_dev->pnetid[ib_port], new_pnetelem->pnet_name,
-			       SMC_MAX_PNETID_LEN);
-			ib_dev->pnetid_by_user[ib_port] = true;
+		if (smc_pnet_match(ib_dev->pnetid[ib_port - 1], pnet_null)) {
+			memcpy(ib_dev->pnetid[ib_port - 1],
+			       new_pnetelem->pnet_name, SMC_MAX_PNETID_LEN);
+			ib_dev->pnetid_by_user[ib_port - 1] = true;
 			new_ibdev = true;
 		}
 		spin_unlock(&smc_ib_devices.lock);
