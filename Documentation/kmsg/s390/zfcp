@@ -746,8 +746,9 @@
  * Text: "DIX is enabled. It is experimental and might cause problems\n"
  * Severity: Warning
  * Description:
- * DIX (data integrity extensions) is enabled and can cause
- * I/O stalls, endless loops, kernel panics, or I/O errors.
+ * Data integrity extensions (DIX) is enabled.
+ * DIX is experimental and can cause I/O stalls, endless loops,
+ * kernel panics, or I/O errors.
  * User action:
  * If you encounter I/O problems, try disabling DIX by setting the
  * zfcp.dix kernel parameter or dix module parameter to 0.
