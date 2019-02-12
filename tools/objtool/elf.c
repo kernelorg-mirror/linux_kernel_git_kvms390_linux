@@ -132,6 +132,19 @@ struct symbol *find_symbol_by_offset(struct section *sec, unsigned long offset)
 	return NULL;
 }
 
+struct symbol *find_symbol_by_offset_and_type(struct section *sec,
+					      unsigned long offset,
+					      unsigned char type)
+{
+	struct symbol *sym;
+
+	list_for_each_entry(sym, &sec->symbol_list, list)
+		if (sym->type == type && sym->offset == offset)
+			return sym;
+
+	return NULL;
+}
+
 struct symbol *find_symbol_by_name(struct elf *elf, const char *name)
 {
 	struct section *sec;
