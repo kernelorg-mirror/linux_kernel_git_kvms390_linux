@@ -400,7 +400,7 @@ static int smc_pnet_set_nla(struct sk_buff *msg,
 	} else if (pnetelem->smcd_dev) {
 		if (nla_put_string(msg, SMC_PNETID_IBNAME,
 				   dev_name(&pnetelem->smcd_dev->dev)) ||
-		    nla_put_u8(msg, SMC_PNETID_IBPORT, 0))
+		    nla_put_u8(msg, SMC_PNETID_IBPORT, 1))
 			return -1;
 	} else {
 		if (nla_put_string(msg, SMC_PNETID_IBNAME, "n/a") ||
