@@ -520,7 +520,7 @@ static int _smc_pnet_dump(struct net *net, struct sk_buff *skb, u32 portid,
 				       ibdev->pnetid[ibport],
 				       SMC_MAX_PNETID_LEN);
 				tmp_entry.smcibdev = ibdev;
-				tmp_entry.ib_port = ibport;
+				tmp_entry.ib_port = ibport + 1;
 				if (smc_pnet_dumpinfo(skb, portid, seq,
 						      NLM_F_MULTI,
 						      &tmp_entry)) {
