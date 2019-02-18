@@ -861,8 +861,8 @@ e63c	vupkz	VSI_URDV
 e63d	vstrl	VSI_URDV
 e63f	vstrlr	VRS_RRDV
 e649	vlip	VRI_V0UU2
-e650	vcvb	VRR_RV0U
-e652	vcvbg	VRR_RV0U
+e650	vcvb	VRR_RV0UU
+e652	vcvbg	VRR_RV0UU
 e658	vcvd	VRI_VR0UU
 e659	vsrp	VRI_VVUUU2
 e65a	vcvdg	VRI_VR0UU
