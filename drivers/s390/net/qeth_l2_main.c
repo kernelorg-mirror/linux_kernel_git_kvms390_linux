@@ -293,10 +293,8 @@ static void qeth_l2_stop_card(struct qeth_card *card)
 	qeth_set_allowed_threads(card, 0, 1);
 	if (card->read.state == CH_STATE_UP &&
 	    card->write.state == CH_STATE_UP &&
-	    (card->state == CARD_STATE_UP)) {
-		card->info.mac_bits &= ~QETH_LAYER2_MAC_REGISTERED;
+	    card->state == CARD_STATE_UP)
 		card->state = CARD_STATE_SOFTSETUP;
-	}
 	if (card->state == CARD_STATE_SOFTSETUP) {
 		qeth_l2_del_all_macs(card);
 		qeth_clear_ipacmd_list(card);
@@ -314,6 +312,7 @@ static void qeth_l2_stop_card(struct qeth_card *card)
 	}
 
 	flush_workqueue(card->event_wq);
+	card->info.mac_bits &= ~QETH_LAYER2_MAC_REGISTERED;
 }
 
 static int qeth_l2_process_inbound_buffer(struct qeth_card *card,
