@@ -72,7 +72,7 @@ struct smcd_cdc_msg {
 	union smcd_cdc_cursor	prod;
 	union smcd_cdc_cursor	cons;
 	u8 res3[8];
-};
+} __aligned(8);
 
 static inline bool smc_cdc_rxed_any_close(struct smc_connection *conn)
 {
