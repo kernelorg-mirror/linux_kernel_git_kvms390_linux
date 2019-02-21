@@ -2076,6 +2076,11 @@ static netdev_tx_t qeth_l3_hard_start_xmit(struct sk_buff *skb,
 			goto tx_drop;
 	}
 
+	if (card->state != CARD_STATE_UP) {
+		QETH_TXQ_STAT_INC(queue, tx_carrier_errors);
+		goto tx_drop;
+	}
+
 	if (cast_type == RTN_BROADCAST && !card->info.broadcast_capable)
 		goto tx_drop;
 

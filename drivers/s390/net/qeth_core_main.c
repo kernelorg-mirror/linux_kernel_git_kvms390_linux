@@ -6206,6 +6206,7 @@ void qeth_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
 		stats->tx_bytes += queue->stats.tx_bytes;
 		stats->tx_errors += queue->stats.tx_errors;
 		stats->tx_dropped += queue->stats.tx_dropped;
+		stats->tx_carrier_errors += queue->stats.tx_carrier_errors;
 	}
 }
 EXPORT_SYMBOL_GPL(qeth_get_stats64);
@@ -6215,6 +6216,10 @@ int qeth_open(struct net_device *dev)
 	struct qeth_card *card = dev->ml_priv;
 
 	QETH_CARD_TEXT(card, 4, "qethopen");
+	if (card->state == CARD_STATE_UP)
+		return 0;
+	if (card->state != CARD_STATE_SOFTSETUP)
+		return -ENODEV;
 
 	if (qdio_stop_irq(CARD_DDEV(card), 0) < 0)
 		return -EIO;
@@ -6238,8 +6243,10 @@ int qeth_stop(struct net_device *dev)
 
 	QETH_CARD_TEXT(card, 4, "qethstop");
 	netif_tx_disable(dev);
-	card->state = CARD_STATE_SOFTSETUP;
-	napi_disable(&card->napi);
+	if (card->state == CARD_STATE_UP) {
+		card->state = CARD_STATE_SOFTSETUP;
+		napi_disable(&card->napi);
+	}
 	return 0;
 }
 EXPORT_SYMBOL_GPL(qeth_stop);
