@@ -87,17 +87,17 @@ static unsigned long get_random(unsigned long limit)
 	return random % limit;
 }
 
-unsigned long get_random_base(void)
+unsigned long get_random_base(unsigned long safe_addr)
 {
-	unsigned long base, start, end, min, kernel_size;
+	unsigned long base, start, end, kernel_size;
 	unsigned long block_sum, offset;
 	int i;
 
-	if (IS_ENABLED(CONFIG_BLK_DEV_INITRD) && INITRD_START && INITRD_SIZE)
-		min = INITRD_START + INITRD_SIZE;
-	else
-		min = mem_safe_offset();
-	min = ALIGN(min, THREAD_SIZE);
+	if (IS_ENABLED(CONFIG_BLK_DEV_INITRD) && INITRD_START && INITRD_SIZE) {
+		if (safe_addr < INITRD_START + INITRD_SIZE)
+			safe_addr = INITRD_START + INITRD_SIZE;
+	}
+	safe_addr = ALIGN(safe_addr, THREAD_SIZE);
 
 	kernel_size = vmlinux.image_size + vmlinux.bss_size;
 	block_sum = 0;
@@ -120,8 +120,8 @@ unsigned long get_random_base(void)
 	base = get_random(block_sum);
 	if (base == 0)
 		return 0;
-	if (base < min)
-		base = min;
+	if (base < safe_addr)
+		base = safe_addr;
 	block_sum = offset = 0;
 	for_each_mem_detect_block(i, &start, &end) {
 		if (memory_end_set) {
