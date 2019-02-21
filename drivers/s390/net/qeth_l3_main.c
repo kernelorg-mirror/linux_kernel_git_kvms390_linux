@@ -2270,7 +2270,6 @@ static int qeth_l3_probe_device(struct ccwgroup_device *gdev)
 	hash_init(card->ip_htable);
 	hash_init(card->ip_mc_htable);
 	INIT_WORK(&card->rx_mode_work, qeth_l3_rx_mode_work);
-	card->info.hwtrap = 0;
 	return 0;
 }
 

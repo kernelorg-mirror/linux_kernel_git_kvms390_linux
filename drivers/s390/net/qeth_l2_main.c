@@ -645,6 +645,8 @@ static int qeth_l2_probe_device(struct ccwgroup_device *gdev)
 	struct qeth_card *card = dev_get_drvdata(&gdev->dev);
 	int rc;
 
+	qeth_l2_vnicc_set_defaults(card);
+
 	if (gdev->dev.type == &qeth_generic_devtype) {
 		rc = qeth_l2_create_device_attributes(&gdev->dev);
 		if (rc)
@@ -653,8 +655,6 @@ static int qeth_l2_probe_device(struct ccwgroup_device *gdev)
 
 	hash_init(card->mac_htable);
 	INIT_WORK(&card->rx_mode_work, qeth_l2_rx_mode_work);
-	card->info.hwtrap = 0;
-	qeth_l2_vnicc_set_defaults(card);
 	return 0;
 }
 
