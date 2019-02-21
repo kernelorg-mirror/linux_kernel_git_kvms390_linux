@@ -27,7 +27,7 @@
  */
 
 /*?
- * Text: "DCSS %s of range %p to %p and type %s loaded as exclusive-writable\n"
+ * Text: "DCSS %s of range %px to %px and type %s loaded as exclusive-writable\n"
  * Severity: Informational
  * Parameter:
  *   @1: DCSS name
@@ -41,7 +41,7 @@
  */
 
 /*?
- * Text: "DCSS %s of range %p to %p and type %s loaded in shared access mode\n"
+ * Text: "DCSS %s of range %px to %px and type %s loaded in shared access mode\n"
  * Severity: Informational
  * Parameter:
  *   @1: DCSS name
