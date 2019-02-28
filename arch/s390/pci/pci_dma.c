@@ -257,23 +257,54 @@ void dma_cleanup_tables(unsigned long *table)
 	dma_free_cpu_table(table);
 }
 
+static unsigned long __iommu_area_alloc(unsigned long *map, unsigned long size,
+					unsigned long start, unsigned int nr,
+					unsigned long shift, unsigned long boundary_size,
+					unsigned long align_mask)
+{
+	unsigned long index;
+
+	/* We don't want the last of the limit */
+	size -= 1;
+again:
+	index = bitmap_find_next_zero_area(map, size, start, nr, align_mask);
+	if (index < size) {
+		if (iommu_is_span_boundary(index, nr, shift, boundary_size)) {
+			// align to 2G
+			start = ALIGN(shift + index, 0x80000) - shift;
+			goto again;
+		}
+		if ((index & 0xFF) >= 128) {
+			// align to 2G
+			start = ALIGN(shift + index, 0x80000) - shift;
+			goto again;
+		}
+		bitmap_set(map, index, nr);
+		return index;
+	}
+	return -1;
+}
+
 static unsigned long __dma_alloc_iommu(struct device *dev,
 				       unsigned long start, int size)
 {
 	struct zpci_dev *zdev = to_zpci(to_pci_dev(dev));
-	unsigned long boundary_size;
+	unsigned long boundary_size = 128;
 
-	boundary_size = ALIGN(dma_get_seg_boundary(dev) + 1,
-			      PAGE_SIZE) >> PAGE_SHIFT;
-	return iommu_area_alloc(zdev->iommu_bitmap, zdev->iommu_pages,
-				start, size, zdev->start_dma >> PAGE_SHIFT,
-				boundary_size, 0);
+	return __iommu_area_alloc(zdev->iommu_bitmap, zdev->iommu_pages,
+				  start, size, zdev->start_dma >> PAGE_SHIFT,
+				  boundary_size, 0);
 }
 
 static dma_addr_t dma_alloc_address(struct device *dev, int size)
 {
 	struct zpci_dev *zdev = to_zpci(to_pci_dev(dev));
 	unsigned long offset, flags;
+
+	if (size > 128) {
+		pr_err("size %d not possible on DD1\n", size);
+		return DMA_MAPPING_ERROR;
+	}
 
 	spin_lock_irqsave(&zdev->iommu_bitmap_lock, flags);
 	offset = __dma_alloc_iommu(dev, zdev->next_bit, size);
@@ -574,9 +605,7 @@ int zpci_dma_init_device(struct zpci_dev *zdev)
 	 * range, instead of the theoretical maximum as reported by hardware.
 	 */
 	zdev->start_dma = PAGE_ALIGN(zdev->start_dma);
-	zdev->iommu_size = min3((u64) high_memory,
-				ZPCI_TABLE_SIZE_RT - zdev->start_dma,
-				zdev->end_dma - zdev->start_dma + 1);
+	zdev->iommu_size = 0x10000000000UL;
 	zdev->end_dma = zdev->start_dma + zdev->iommu_size - 1;
 	zdev->iommu_pages = zdev->iommu_size >> PAGE_SHIFT;
 	zdev->iommu_bitmap = vzalloc(zdev->iommu_pages / 8);

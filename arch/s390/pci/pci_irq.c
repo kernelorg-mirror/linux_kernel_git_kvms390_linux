@@ -76,8 +76,14 @@ static int zpci_set_directed_irq(struct zpci_dev *zdev)
 	u8 status;
 
 	fib.fmt = 1;
+	/* DD1 bug */
+	fib.fmt1.noi = zdev->msi_first_bit + zdev->msi_nr_irqs;
+	fib.fmt1.dibvo = 0;
+
+	/* will be fixed with DD2..
 	fib.fmt1.noi = zdev->msi_nr_irqs;
 	fib.fmt1.dibvo = zdev->msi_first_bit;
+	*/
 
 	return zpci_mod_fc(req, &fib, &status) ? -EIO : 0;
 }
