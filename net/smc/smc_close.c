@@ -29,9 +29,11 @@ void smc_clcsock_release(struct smc_sock *smc)
 	if (smc->listen_smc && current_work() != &smc->smc_listen_work)
 		cancel_work_sync(&smc->smc_listen_work);
 	mutex_lock(&smc->clcsock_release_lock);
-	tcp = smc->clcsock;
-	smc->clcsock = NULL;
-	sock_release(tcp);
+	if (smc->clcsock) {
+		tcp = smc->clcsock;
+		smc->clcsock = NULL;
+		sock_release(tcp);
+	}
 	mutex_unlock(&smc->clcsock_release_lock);
 }
 
