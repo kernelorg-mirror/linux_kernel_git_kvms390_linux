@@ -1424,8 +1424,9 @@ void device_link_remove(void *consumer, struct device *supplier);
 
 #elif defined(CONFIG_KMSG_IDS) && defined(KMSG_COMPONENT)
 
-int _dev_printk_hash(const char *level, const struct device *dev,
-		     const char *fmt, ...);
+__printf(3,4) __cold
+int dev_printk_hash(const char *level, const struct device *dev,
+		    const char *fmt, ...);
 __printf(2,3) __cold
 void _dev_emerg_hash(const struct device *dev, const char *fmt, ...);
 __printf(2,3) __cold
@@ -1442,7 +1443,7 @@ __printf(2,3) __cold
 void _dev_info_hash(const struct device *dev, const char *fmt, ...);
 
 #define dev_printk(level, dev, format, arg...) \
-	_dev_printk_hash(level, dev, "%s: " format, dev_name(dev), ## arg)
+	dev_printk_hash(level, dev, "%s: " format, dev_name(dev), ## arg)
 #define _dev_emerg(dev, format, arg...) \
 	_dev_emerg_hash(dev, "%s: " format, dev_name(dev), ## arg)
 #define _dev_alert(dev, format, arg...) \
