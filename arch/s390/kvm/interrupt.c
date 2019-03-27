@@ -234,7 +234,7 @@ static inline u8 int_word_to_isc(u32 int_word)
  * fields are located in the first long word of the GISA.
  *
  * Returns: 0 on success
- *	    -EBUSY in case the gisa is part of the alert list
+ *          -EBUSY in case the gisa is part of the alert list
  */
 static inline int gisa_set_iam(struct kvm_s390_gisa *gisa, u8 iam)
 {
@@ -3124,9 +3124,9 @@ void kvm_s390_gisa_destroy(struct kvm *kvm)
  * by gisa_get_ipm_or_restore_iam().
  *
  * Returns: the nonspecific ISC (NISC) the gib alert mechanism
- *	    has registered with the channel subsystem.
- *	    -ENODEV in case the vm uses no GISA
- *	    -ERANGE in case the guest ISC is invalid
+ *          has registered with the channel subsystem.
+ *          -ENODEV in case the vm uses no GISA
+ *          -ERANGE in case the guest ISC is invalid
  */
 int kvm_s390_gisc_register(struct kvm *kvm, u32 gisc)
 {
@@ -3162,10 +3162,10 @@ EXPORT_SYMBOL_GPL(kvm_s390_gisc_register);
  * by gisa_get_ipm_or_restore_iam().
  *
  * Returns: the nonspecific ISC (NISC) the gib alert mechanism
- *	    has registered with the channel subsystem.
- *	    -ENODEV in case the vm uses no GISA
- *	    -ERANGE in case the guest ISC is invalid
- *	    -EINVAL in case the guest ISC is not registered
+ *          has registered with the channel subsystem.
+ *          -ENODEV in case the vm uses no GISA
+ *          -ERANGE in case the guest ISC is invalid
+ *          -EINVAL in case the guest ISC is not registered
  */
 int kvm_s390_gisc_unregister(struct kvm *kvm, u32 gisc)
 {
