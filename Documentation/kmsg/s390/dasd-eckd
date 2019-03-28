@@ -2206,3 +2206,18 @@
  * system is securely in place.
  * If the problem persists, report it to your support organization.
  */
+
+/*?
+ * Text: "%s: DASD with %u KB/block, %lu KB total size, %u KB/track, %s\n"
+ * Severity: Informational
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: block size
+ *   @3: DASD size
+ *   @4: track size
+ *   @5: disc layout
+ * Description:
+ * A DASD with the shown characteristics has been set online.
+ * User action:
+ * None.
+ */
