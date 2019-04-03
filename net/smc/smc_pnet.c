@@ -781,7 +781,7 @@ static void smc_pnet_find_rdma_dev(struct net_device *netdev,
 			if (netdev == ndev &&
 			    smc_ib_port_active(ibdev, i) &&
 			    !smc_ib_determine_gid(ibdev, i, ini->vlan_id,
-					          ini->ib_gid, NULL)) {
+						  ini->ib_gid, NULL)) {
 				ini->ib_dev = ibdev;
 				ini->ib_port = i;
 				break;
