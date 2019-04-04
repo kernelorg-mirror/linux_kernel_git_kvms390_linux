@@ -334,7 +334,7 @@ static inline void __insn32_query(unsigned int opcode, u8 query[32])
 		"	.insn	rrf,%[opc] << 16,2,4,6,0\n"
 		: "=m" (*query)
 		: "d" (r0), "a" (r1), [opc] "i" (opcode)
-	        : "cc");
+		: "cc");
 }
 
 #define INSN_SORTL 0xb938
