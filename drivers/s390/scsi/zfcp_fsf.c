@@ -338,8 +338,12 @@ static void zfcp_fsf_protstatus_eval(struct zfcp_fsf_req *req)
 			psq->word[0], psq->word[1]);
 		zfcp_erp_adapter_shutdown(adapter, 0, "fspse_1");
 		break;
-	case FSF_PROT_ERROR_STATE:
 	case FSF_PROT_SEQ_NUMB_ERROR:
+		zfcp_qdio_siosl(adapter);
+		panic("seq no err on %s reqid %lx, please collect dump\n",
+		      dev_name(&adapter->ccw_device->dev), req->req_id);
+		/* fall through */
+	case FSF_PROT_ERROR_STATE:
 		zfcp_erp_adapter_reopen(adapter, 0, "fspse_2");
 		req->status |= ZFCP_STATUS_FSFREQ_ERROR;
 		break;
