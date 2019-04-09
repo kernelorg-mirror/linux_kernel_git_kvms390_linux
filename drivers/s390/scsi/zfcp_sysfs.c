@@ -664,8 +664,8 @@ out:
 	zfcp_ccw_adapter_put(adapter);
 	return rc;
 }
-ZFCP_DEV_ATTR(adapter_diag, b2b_credit, 0400,
-	      zfcp_sysfs_adapter_diag_b2b_credit_show, NULL);
+static ZFCP_DEV_ATTR(adapter_diag, b2b_credit, 0400,
+		     zfcp_sysfs_adapter_diag_b2b_credit_show, NULL);
 
 #define ZFCP_DEFINE_DIAG_SFP_ATTR(_name, _qtcb_member, _prtsize, _prtfmt)      \
 	static ssize_t zfcp_sysfs_adapter_diag_sfp_##_name##_show(             \
