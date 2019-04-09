@@ -20,7 +20,7 @@
 #include "zfcp_def.h"
 
 /* Max age of data in a diagnostics buffer before it needs a refresh (in ms). */
-unsigned int zfcp_diag_max_age = (5 * 1000);
+static unsigned int zfcp_diag_max_age = (5 * 1000);
 module_param_named(diag_max_age, zfcp_diag_max_age, uint, 0600);
 MODULE_PARM_DESC(diag_max_age,
 	"How much time (in ms) can pass before a diagnostics buffer needs a refresh (default 5s)");
