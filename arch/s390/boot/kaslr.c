@@ -7,9 +7,9 @@
 #include <asm/timex.h>
 #include "compressed/decompressor.h"
 
-#define PRNG_MODE_TDES   1
+#define PRNG_MODE_TDES	 1
 #define PRNG_MODE_SHA512 2
-#define PRNG_MODE_TRNG   3
+#define PRNG_MODE_TRNG	 3
 
 struct prno_parm {
 	u32 res;
