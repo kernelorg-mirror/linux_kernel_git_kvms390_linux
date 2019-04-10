@@ -1308,7 +1308,8 @@ out:
 /**
  * zfcp_fsf_exchange_config_data_sync() - Request information about FCP channel.
  * @qdio: pointer to the QDIO-Queue to use for sending the command.
- * @data: pointer to the QTCB-Bottom for storing the result of the command.
+ * @data: pointer to the QTCB-Bottom for storing the result of the command,
+ *        might be %NULL.
  *
  * Returns:
  * * 0		- Exchange Config Data was successful, @data is complete
@@ -1342,7 +1343,8 @@ int zfcp_fsf_exchange_config_data_sync(struct zfcp_qdio *qdio,
 			FSF_FEATURE_UPDATE_ALERT |
 			FSF_FEATURE_REQUEST_SFP_DATA;
 
-	req->data = data;
+	if (data)
+		req->data = data;
 
 	zfcp_fsf_start_timer(req, ZFCP_FSF_REQUEST_TIMEOUT);
 	retval = zfcp_fsf_req_send(req);
@@ -1416,7 +1418,8 @@ out:
 /**
  * zfcp_fsf_exchange_port_data_sync() - Request information about local port.
  * @qdio: pointer to the QDIO-Queue to use for sending the command.
- * @data: pointer to the QTCB-Bottom for storing the result of the command.
+ * @data: pointer to the QTCB-Bottom for storing the result of the command,
+ *        might be %NULL.
  *
  * Returns:
  * * 0		- Exchange Port Data was successful, @data is complete
@@ -1446,11 +1449,12 @@ int zfcp_fsf_exchange_port_data_sync(struct zfcp_qdio *qdio,
 		goto out_unlock;
 	}
 
+	if (data)
+		req->data = data;
+
 	zfcp_qdio_set_sbale_last(qdio, &req->qdio_req);
+
 	req->handler = zfcp_fsf_exchange_port_data_handler;
-
-	req->data = data;
-
 	zfcp_fsf_start_timer(req, ZFCP_FSF_REQUEST_TIMEOUT);
 	retval = zfcp_fsf_req_send(req);
 	spin_unlock_irq(&qdio->req_q_lock);
