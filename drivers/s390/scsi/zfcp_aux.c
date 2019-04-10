@@ -25,7 +25,7 @@
  *            Martin Petermann
  *            Sven Schuetz
  *            Steffen Maier
- *            Benjamin Block
+ *	      Benjamin Block
  */
 
 #define KMSG_COMPONENT "zfcp"

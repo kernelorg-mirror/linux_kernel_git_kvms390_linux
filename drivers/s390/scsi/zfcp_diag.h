@@ -39,9 +39,9 @@ struct zfcp_diag_header {
 
 /**
  * struct zfcp_diag_adapter - central storage for all diagnostics concerning an
- *                            adapter.
+ *			      adapter.
  * @sysfs_established: flag showing that the associated sysfs-group was created
- *                     during run of zfcp_adapter_enqueue().
+ *		       during run of zfcp_adapter_enqueue().
  * @port_data: data retrieved using exchange port data.
  * @port_data.header: header with metadata for the cache in @port_data.data.
  * @port_data.data: cached QTCB Bottom of command exchange port data.
@@ -85,7 +85,7 @@ int zfcp_diag_update_buffer_limited(struct zfcp_adapter *const adapter,
 
 /**
  * zfcp_diag_support_sfp() - Return %true if the @adapter supports reporting
- *                           SFP Data.
+ *			     SFP Data.
  * @adapter: adapter to test the availability of SFP Data reporting for.
  */
 static inline bool

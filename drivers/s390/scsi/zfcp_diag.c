@@ -35,9 +35,9 @@ static DECLARE_WAIT_QUEUE_HEAD(__zfcp_diag_publish_wait);
  * overwrites whatever was stored before at &zfcp_adapter->diagnostics!
  *
  * Return:
- * * 0       - Everyting is OK
+ * * 0	     - Everyting is OK
  * * -ENOMEM - Could not allocate all/parts of the data-structures;
- *             &zfcp_adapter->diagnostics remains unchanged
+ *	       &zfcp_adapter->diagnostics remains unchanged
  */
 int zfcp_diag_adapter_setup(struct zfcp_adapter *const adapter)
 {
@@ -151,8 +151,8 @@ out:
 
 /**
  * zfcp_diag_update_port_data_buffer() - Implementation of
- *                                       &typedef zfcp_diag_update_buffer_func
- *                                       to collect and update Port Data.
+ *					 &typedef zfcp_diag_update_buffer_func
+ *					 to collect and update Port Data.
  * @adapter: Adapter to collect Port Data from.
  *
  * This call is SYNCHRONOUS ! It blocks till the respective command has
@@ -160,11 +160,11 @@ out:
  *
  * Return:
  * * 0		- Successfully retrieved new Diagnostics and Updated the buffer;
- *                this also includes cases where data was retrieved, but
- *                incomplete; you'll have to check the flag ``incomplete``
- *                of &struct zfcp_diag_header.
+ *		  this also includes cases where data was retrieved, but
+ *		  incomplete; you'll have to check the flag ``incomplete``
+ *		  of &struct zfcp_diag_header.
  * * -ENOMEM	- In case it is not possible to allocate memory for the qtcb
- *                bottom.
+ *		  bottom.
  * * see zfcp_fsf_exchange_port_data_sync() for possible error-codes (
  *   excluding -EAGAIN)
  */
@@ -188,8 +188,8 @@ int zfcp_diag_update_port_data_buffer(struct zfcp_adapter *const adapter)
 
 /**
  * zfcp_diag_update_config_data_buffer() - Implementation of
- *                                         &typedef zfcp_diag_update_buffer_func
- *                                         to collect and update Config Data.
+ *					   &typedef zfcp_diag_update_buffer_func
+ *					   to collect and update Config Data.
  * @adapter: Adapter to collect Config Data from.
  *
  * This call is SYNCHRONOUS ! It blocks till the respective command has
@@ -197,11 +197,11 @@ int zfcp_diag_update_port_data_buffer(struct zfcp_adapter *const adapter)
  *
  * Return:
  * * 0		- Successfully retrieved new Diagnostics and Updated the buffer;
- *                this also includes cases where data was retrieved, but
- *                incomplete; you'll have to check the flag ``incomplete``
- *                of &struct zfcp_diag_header.
+ *		  this also includes cases where data was retrieved, but
+ *		  incomplete; you'll have to check the flag ``incomplete``
+ *		  of &struct zfcp_diag_header.
  * * -ENOMEM	- In case it is not possible to allocate memory for the qtcb
- *                bottom.
+ *		  bottom.
  * * see zfcp_fsf_exchange_config_data_sync() for possible error-codes (
  *   excluding -EAGAIN)
  */
@@ -277,7 +277,7 @@ __zfcp_diag_test_buffer_age_isfresh(const struct zfcp_diag_header *const hdr)
 
 /**
  * zfcp_diag_update_buffer_limited() - Collect diagnostics and update a
- *                                     diagnostics buffer rate limited.
+ *				       diagnostics buffer rate limited.
  * @adapter: Adapter to collect the diagnostics from.
  * @hdr: buffer-header for which to update with the collected diagnostics.
  * @buffer_update: Specific implementation for collecting and updating.
@@ -294,9 +294,9 @@ __zfcp_diag_test_buffer_age_isfresh(const struct zfcp_diag_header *const hdr)
  * update is the one that made the update (to prevent endless loops).
  *
  * Return:
- * * 0          - If the update was successfully published and/or the buffer is
- *                fresh enough
- * * -EINTR     - If the thread went into the wait-state and was interrupted
+ * * 0		- If the update was successfully published and/or the buffer is
+ *		  fresh enough
+ * * -EINTR	- If the thread went into the wait-state and was interrupted
  * * whatever @buffer_update returns
  */
 int zfcp_diag_update_buffer_limited(struct zfcp_adapter *const adapter,

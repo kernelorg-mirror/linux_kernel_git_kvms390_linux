@@ -668,48 +668,48 @@ static ZFCP_DEV_ATTR(adapter_diag, b2b_credit, 0400,
 		     zfcp_sysfs_adapter_diag_b2b_credit_show, NULL);
 
 #define ZFCP_DEFINE_DIAG_SFP_ATTR(_name, _qtcb_member, _prtsize, _prtfmt)      \
-	static ssize_t zfcp_sysfs_adapter_diag_sfp_##_name##_show(             \
+	static ssize_t zfcp_sysfs_adapter_diag_sfp_##_name##_show(	       \
 		struct device *dev, struct device_attribute *attr, char *buf)  \
-	{                                                                      \
-		struct zfcp_adapter *const adapter =                           \
-			zfcp_ccw_adapter_by_cdev(to_ccwdev(dev));              \
-		struct zfcp_diag_header *diag_hdr;                             \
-		ssize_t rc = -ENOLINK;                                         \
-		unsigned long flags;                                           \
-		unsigned int status;                                           \
+	{								       \
+		struct zfcp_adapter *const adapter =			       \
+			zfcp_ccw_adapter_by_cdev(to_ccwdev(dev));	       \
+		struct zfcp_diag_header *diag_hdr;			       \
+		ssize_t rc = -ENOLINK;					       \
+		unsigned long flags;					       \
+		unsigned int status;					       \
 									       \
-		if (!adapter)                                                  \
-			return -ENODEV;                                        \
+		if (!adapter)						       \
+			return -ENODEV;					       \
 									       \
-		status = atomic_read(&adapter->status);                        \
-		if (0 == (status & ZFCP_STATUS_COMMON_OPEN) ||                 \
-		    0 == (status & ZFCP_STATUS_COMMON_UNBLOCKED) ||            \
-		    0 != (status & ZFCP_STATUS_COMMON_ERP_FAILED))             \
-			goto out;                                              \
+		status = atomic_read(&adapter->status);			       \
+		if (0 == (status & ZFCP_STATUS_COMMON_OPEN) ||		       \
+		    0 == (status & ZFCP_STATUS_COMMON_UNBLOCKED) ||	       \
+		    0 != (status & ZFCP_STATUS_COMMON_ERP_FAILED))	       \
+			goto out;					       \
 									       \
-		if (!zfcp_diag_support_sfp(adapter)) {                         \
-			rc = -EOPNOTSUPP;                                      \
-			goto out;                                              \
-		}                                                              \
+		if (!zfcp_diag_support_sfp(adapter)) {			       \
+			rc = -EOPNOTSUPP;				       \
+			goto out;					       \
+		}							       \
 									       \
-		diag_hdr = &adapter->diagnostics->port_data.header;            \
+		diag_hdr = &adapter->diagnostics->port_data.header;	       \
 									       \
-		rc = zfcp_diag_update_buffer_limited(                          \
+		rc = zfcp_diag_update_buffer_limited(			       \
 			adapter, diag_hdr, zfcp_diag_update_port_data_buffer); \
-		if (rc != 0)                                                   \
-			goto out;                                              \
+		if (rc != 0)						       \
+			goto out;					       \
 									       \
-		spin_lock_irqsave(&diag_hdr->access_lock, flags);              \
-		rc = scnprintf(                                                \
-			buf, (_prtsize) + 2, _prtfmt "\n",                     \
+		spin_lock_irqsave(&diag_hdr->access_lock, flags);	       \
+		rc = scnprintf(						       \
+			buf, (_prtsize) + 2, _prtfmt "\n",		       \
 			adapter->diagnostics->port_data.data._qtcb_member);    \
-		spin_unlock_irqrestore(&diag_hdr->access_lock, flags);         \
+		spin_unlock_irqrestore(&diag_hdr->access_lock, flags);	       \
 									       \
-	out:                                                                   \
-		zfcp_ccw_adapter_put(adapter);                                 \
-		return rc;                                                     \
-	}                                                                      \
-	static ZFCP_DEV_ATTR(adapter_diag_sfp, _name, 0400,                    \
+	out:								       \
+		zfcp_ccw_adapter_put(adapter);				       \
+		return rc;						       \
+	}								       \
+	static ZFCP_DEV_ATTR(adapter_diag_sfp, _name, 0400,		       \
 			     zfcp_sysfs_adapter_diag_sfp_##_name##_show, NULL)
 
 ZFCP_DEFINE_DIAG_SFP_ATTR(temperature, temperature, 5, "%hu");
