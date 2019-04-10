@@ -30,7 +30,7 @@
 #include <asm/switch_to.h>
 #include <asm/nmi.h>
 
-typedef void (*relocate_kernel_t)(kimage_entry_t *, unsigned long);
+typedef void (*relocate_kernel_t)(kimage_entry_t *, unsigned long, unsigned long);
 
 extern const unsigned char relocate_kernel[];
 extern const unsigned long long relocate_kernel_len;
@@ -280,7 +280,8 @@ static void __do_machine_kexec(void *data)
 
 	__arch_local_irq_stnsm(0xfb); /* disable DAT - avoid no-execute */
 	/* Call the moving routine */
-	(*data_mover)(&image->head, image->start);
+	(*data_mover)(&image->head, image->start,
+		      image->preserve_context ? DIAG308_MOD_CLR_RST : DIAG308_LD_NRM_RST);
 
 	/* Die if kexec returns */
 	disabled_wait((unsigned long) __builtin_return_address(0));

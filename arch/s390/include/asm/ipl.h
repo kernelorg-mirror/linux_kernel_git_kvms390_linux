@@ -114,6 +114,8 @@ int ipl_report_add_certificate(struct ipl_report *report, void *key,
  * DIAG 308 support
  */
 enum diag308_subcode  {
+	DIAG308_MOD_CLR_RST = 0,
+	DIAG308_LD_NRM_RST = 1,
 	DIAG308_REL_HSA = 2,
 	DIAG308_LOAD_CLEAR = 3,
 	DIAG308_LOAD_NORMAL_DUMP = 4,
