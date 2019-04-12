@@ -5,6 +5,7 @@
 #include <asm/mem_detect.h>
 #include <asm/cpacf.h>
 #include <asm/timex.h>
+#include <asm/sclp.h>
 #include "compressed/decompressor.h"
 
 #define PRNG_MODE_TDES	 1
