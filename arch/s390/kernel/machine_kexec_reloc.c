@@ -5,6 +5,8 @@ int arch_kexec_do_relocs(int r_type, void *loc, unsigned long val,
 			 unsigned long addr)
 {
 	switch (r_type) {
+	case R_390_NONE:
+		break;
 	case R_390_8:		/* Direct 8 bit.   */
 		*(u8 *)loc = val;
 		break;
