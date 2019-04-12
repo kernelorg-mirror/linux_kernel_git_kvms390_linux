@@ -424,7 +424,8 @@ static int read_relas(struct elf *elf)
 	unsigned int symndx;
 
 	list_for_each_entry(sec, &elf->sections, list) {
-		if (sec->sh.sh_type != SHT_RELA)
+		if (sec->sh.sh_type != SHT_RELA ||
+		    strcmp(sec->name, ".rela.dyn") == 0)
 			continue;
 
 		sec->base = find_section_by_name(elf, sec->name + 5);
