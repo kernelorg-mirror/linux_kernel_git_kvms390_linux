@@ -148,6 +148,20 @@ void __init mem_init(void)
 
 void free_initmem(void)
 {
+	/*
+	 * Temporary workaround until a real fix is available: initmem
+	 * is within the kernel image; freeing it, allows the buddy
+	 * allocator to allocate memory from it. This breaks
+	 * e.g. "static_obj()" in kernel/lockdep.c which assumes that
+	 * all memory within [_stext, _end] belongs to static objects,
+	 * which isn't true here.
+	 * Note: this is an s390 specific problem due to virt == phys.
+	 *	 other architectures like m68k-nommu have the same
+	 *	 problem, and also don't free initmem.
+	 *	 Hopefully we find a better solution here.
+	 */
+	return;
+
 	__set_memory((unsigned long)_sinittext,
 		     (unsigned long)(_einittext - _sinittext) >> PAGE_SHIFT,
 		     SET_MEMORY_RW | SET_MEMORY_NX);
