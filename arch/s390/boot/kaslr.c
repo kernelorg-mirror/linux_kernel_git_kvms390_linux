@@ -93,7 +93,7 @@ unsigned long get_random_base(void)
 	unsigned long block_sum, offset;
 	int i;
 
-	if (IS_ENABLED(BLK_DEV_INITRD) && INITRD_START && INITRD_SIZE)
+	if (IS_ENABLED(CONFIG_BLK_DEV_INITRD) && INITRD_START && INITRD_SIZE)
 		min = INITRD_START + INITRD_SIZE;
 	else
 		min = mem_safe_offset();
