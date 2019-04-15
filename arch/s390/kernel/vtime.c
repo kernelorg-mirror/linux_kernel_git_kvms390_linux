@@ -37,7 +37,7 @@ static inline u64 get_vtimer(void)
 {
 	u64 timer;
 
-	asm volatile("stpt %0" : "=m" (timer));
+	asm volatile("stpt %0" : "=Q" (timer));
 	return timer;
 }
 
