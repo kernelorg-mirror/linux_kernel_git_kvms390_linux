@@ -4876,7 +4876,7 @@ static int qeth_qdio_establish(struct qeth_card *card)
 
 	memset(&init_data, 0, sizeof(struct qdio_initialize));
 	init_data.cdev                   = CARD_DDEV(card);
-	init_data.q_format               = IS_IQD(card) ? QDIO_IQDIO_QFMT :
+	init_data.q_format		 = IS_IQD(card) ? QDIO_IQDIO_QFMT :
 							  QDIO_QETH_QFMT;
 	init_data.qib_param_field_format = 0;
 	init_data.qib_param_field        = qib_param_field;
