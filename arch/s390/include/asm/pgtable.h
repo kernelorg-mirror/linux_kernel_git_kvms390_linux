@@ -1220,7 +1220,7 @@ static inline pte_t mk_pte(struct page *page, pgprot_t pgprot)
  * The subsequent p4d_offset, pud_offset and pmd_offset functions
  * only add an index if they dereferenced the pointer.
  */
-static inline pgd_t *__pgd_offset(pgd_t *pgd, unsigned long address)
+static inline pgd_t *pgd_offset_raw(pgd_t *pgd, unsigned long address)
 {
 	unsigned long rste;
 	unsigned int shift;
@@ -1232,7 +1232,7 @@ static inline pgd_t *__pgd_offset(pgd_t *pgd, unsigned long address)
 	return pgd + ((address >> shift) & (PTRS_PER_PGD - 1));
 }
 
-#define pgd_offset(mm, address) __pgd_offset(READ_ONCE((mm)->pgd), address)
+#define pgd_offset(mm, address) pgd_offset_raw(READ_ONCE((mm)->pgd), address)
 #define pgd_offset_k(address) pgd_offset(&init_mm, address)
 
 static inline p4d_t *p4d_offset(pgd_t *pgd, unsigned long address)
