@@ -1723,6 +1723,8 @@ void s390_reset_system(void)
 	diag_dma_ops.diag308_reset();
 }
 
+#ifdef CONFIG_KEXEC_FILE
+
 int ipl_report_add_component(struct ipl_report *report, struct kexec_buf *kbuf,
 			     unsigned char flags, unsigned short cert)
 {
@@ -1852,3 +1854,5 @@ int ipl_report_free(struct ipl_report *report)
 
 	return 0;
 }
+
+#endif
