@@ -1,1 +1,0 @@
-objtool-y += check.o decode.o insn.o orc_dump.o orc_gen.o special.o

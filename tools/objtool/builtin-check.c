@@ -29,7 +29,7 @@
 #include <asm/check.h>
 #include "builtin.h"
 
-bool no_fp, no_unreachable, retpoline, module, dump_insn;
+bool no_fp, no_unreachable, retpoline, module;
 
 static const char * const check_usage[] = {
 	"objtool check [<options>] file.o",
@@ -41,7 +41,6 @@ const struct option check_options[] = {
 	OPT_BOOLEAN('u', "no-unreachable", &no_unreachable, "Skip 'unreachable instruction' warnings"),
 	OPT_BOOLEAN('r', "retpoline", &retpoline, "Validate retpoline assumptions"),
 	OPT_BOOLEAN('m', "module", &module, "Indicates the object will be part of a kernel module"),
-	OPT_BOOLEAN('d', "dump-insn", &dump_insn, "Print a list of instruction with the analysis result"),
 	OPT_END(),
 };
 
