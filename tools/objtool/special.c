@@ -24,7 +24,7 @@
 #include <string.h>
 
 #include "special.h"
-#include "../../warn.h"
+#include "warn.h"
 
 #define EX_ENTRY_SIZE		12
 #define EX_ORIG_OFFSET		0
