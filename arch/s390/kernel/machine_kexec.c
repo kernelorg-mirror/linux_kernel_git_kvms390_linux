@@ -27,7 +27,6 @@
 #include <asm/cacheflush.h>
 #include <asm/os_info.h>
 #include <asm/set_memory.h>
-#include <asm/stacktrace.h>
 #include <asm/switch_to.h>
 #include <asm/nmi.h>
 
