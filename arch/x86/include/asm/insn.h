@@ -21,16 +21,7 @@
  */
 
 /* insn_attr_t is defined in inat.h */
-#ifdef __KERNEL__
-#include <linux/swab.h>
-#include <asm/byteorder.h>
-#else
-#include <endian.h>
-#endif
 #include <asm/inat.h>
-
-#if defined(__BYTE_ORDER) ? \
-	__BYTE_ORDER == __LITTLE_ENDIAN : defined(__LITTLE_ENDIAN)
 
 struct insn_field {
 	union {
@@ -41,40 +32,6 @@ struct insn_field {
 	unsigned char got;
 	unsigned char nbytes;
 };
-
-static inline void insn_field_set(struct insn_field *p, insn_value_t v,
-				  unsigned char n)
-{
-	p->value = v;
-	p->nbytes = n;
-}
-
-#else
-
-struct insn_field {
-	insn_value_t value;
-	union {
-		insn_value_t little;
-		insn_byte_t bytes[4];
-	};
-	/* !0 if we've run insn_get_xxx() for this field */
-	unsigned char got;
-	unsigned char nbytes;
-};
-
-static inline void insn_field_set(struct insn_field *p, insn_value_t v,
-				  unsigned char n)
-{
-	p->value = v;
-#ifdef __KERNEL__
-	p->little = __swap32(v);
-#else
-	p->little = __bswap_32(v);
-#endif
-	p->nbytes = n;
-}
-
-#endif
 
 struct insn {
 	struct insn_field prefixes;	/*
