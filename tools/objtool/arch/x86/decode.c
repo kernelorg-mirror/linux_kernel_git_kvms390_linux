@@ -23,9 +23,9 @@
 #include "lib/inat.c"
 #include "lib/insn.c"
 
-#include <elfdefs.h>
+#include "../../elf.h"
 #include <asm/arch.h>
-#include <warn.h>
+#include "../../warn.h"
 
 static unsigned char op_to_cfi_reg[][2] = {
 	{CFI_AX, CFI_R8},

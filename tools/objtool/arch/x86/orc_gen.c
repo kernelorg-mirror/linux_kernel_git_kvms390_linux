@@ -19,8 +19,8 @@
 #include <string.h>
 #include <asm/check.h>
 
-#include <orc.h>
-#include <warn.h>
+#include "../../orc.h"
+#include "../../warn.h"
 
 int create_orc(struct objtool_file *file)
 {
