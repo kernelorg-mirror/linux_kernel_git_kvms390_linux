@@ -165,9 +165,7 @@ _LPP_OFFSET	= __LC_LPP
 	.endm
 
 	.macro	CLEAR_BACKCHAIN reg
-#ifdef CONFIG_UNWINDER_BC
 	xc	__SF_BACKCHAIN(8,\reg),__SF_BACKCHAIN(\reg)
-#endif
 	.endm
 
 	/*

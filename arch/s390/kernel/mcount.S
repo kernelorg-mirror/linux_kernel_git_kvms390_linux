@@ -45,9 +45,7 @@ ENTRY(ftrace_caller)
 	aghi	%r0,MCOUNT_RETURN_FIXUP
 #endif
 	aghi	%r15,-STACK_FRAME_SIZE
-#ifdef CONFIG_UNWINDER_BC
 	stg	%r1,__SF_BACKCHAIN(%r15)
-#endif
 	stg	%r1,(STACK_PTREGS_GPRS+15*8)(%r15)
 	stg	%r0,(STACK_PTREGS_PSW+8)(%r15)
 	UNWIND_HINT sp_offset=-_STACK_FRAME_SIZE sp_reg=15 ra_reg=0
@@ -91,13 +89,9 @@ ENDPROC(ftrace_caller)
 
 ENTRY(return_to_handler)
 	stmg	%r2,%r5,32(%r15)
-#ifdef CONFIG_UNWINDER_BC
 	lgr	%r1,%r15
 	aghi	%r15,-STACK_FRAME_OVERHEAD
 	stg	%r1,__SF_BACKCHAIN(%r15)
-#else
-	aghi	%r15,-STACK_FRAME_OVERHEAD
-#endif
 	brasl	%r14,ftrace_return_to_handler
 	UNWIND_HINT clear=0 ra_reg=2
 	aghi	%r15,STACK_FRAME_OVERHEAD
