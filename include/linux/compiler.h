@@ -99,16 +99,16 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
  * unique, to convince GCC not to merge duplicate inline asm statements.
  */
 #define annotate_reachable() ({						\
-	asm volatile("1:\n\t"						\
+	asm volatile("%c0:\n\t"						\
 		     ".pushsection .discard.reachable\n\t"		\
-		     ".long 1b - .\n\t"					\
-		     ".popsection\n\t");				\
+		     ".long %c0b - .\n\t"				\
+		     ".popsection\n\t" : : "i" (__COUNTER__));		\
 })
 #define annotate_unreachable() ({					\
-	asm volatile("1:\n\t"						\
+	asm volatile("%c0:\n\t"						\
 		     ".pushsection .discard.unreachable\n\t"		\
-		     ".long 1b - .\n\t"					\
-		     ".popsection\n\t");				\
+		     ".long %c0b - .\n\t"				\
+		     ".popsection\n\t" : : "i" (__COUNTER__));		\
 })
 #define ASM_UNREACHABLE							\
 	"999:\n\t"							\
