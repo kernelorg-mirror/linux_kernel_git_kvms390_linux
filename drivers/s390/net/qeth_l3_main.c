@@ -1893,8 +1893,9 @@ static int qeth_l3_get_cast_type(struct sk_buff *skb)
 
 	rcu_read_lock();
 	dst = skb_dst(skb);
-	if (dst)
+	if (dst && dst->obsolete <= 0)
 		n = dst_neigh_lookup_skb(dst, skb);
+
 	if (n) {
 		int cast_type = n->type;
 
@@ -1922,6 +1923,33 @@ static int qeth_l3_get_cast_type(struct sk_buff *skb)
 		/* ... and MAC address */
 		return qeth_get_ether_cast_type(skb);
 	}
+}
+
+static void qeth_l3_get_next_hop_v4(struct sk_buff *skb, __be32 *next_hop)
+{
+	struct rtable *rt;
+
+	rcu_read_lock();
+	rt = skb_rtable(skb);
+	if (rt && rt->dst.obsolete <= 0)
+		*next_hop = rt_nexthop(rt, ip_hdr(skb)->daddr);
+	else
+		*next_hop = ip_hdr(skb)->daddr;
+	rcu_read_unlock();
+}
+
+static void qeth_l3_get_next_hop_v6(struct sk_buff *skb,
+				    struct in6_addr *next_hop)
+{
+	const struct rt6_info *rt;
+
+	rcu_read_lock();
+	rt = skb_rt6_info(skb);
+	if (rt && rt->dst.obsolete <= 0 && !ipv6_addr_any(&rt->rt6i_gateway))
+		*next_hop = rt->rt6i_gateway;
+	else
+		*next_hop = ipv6_hdr(skb)->daddr;
+	rcu_read_unlock();
 }
 
 static u8 qeth_l3_cast_type_to_flag(int cast_type)
@@ -1980,33 +2008,18 @@ static void qeth_l3_fill_header(struct qeth_qdio_out_q *queue,
 
 	l3_hdr->flags = qeth_l3_cast_type_to_flag(cast_type);
 
-	/* OSA only: */
-	if (!ipv) {
-		l3_hdr->flags |= QETH_HDR_PASSTHRU;
-		return;
-	}
-
-	rcu_read_lock();
 	if (ipv == 4) {
-		struct rtable *rt = skb_rtable(skb);
-
-		*((__be32 *) &hdr->hdr.l3.next_hop.ipv4.addr) = (rt) ?
-				rt_nexthop(rt, ip_hdr(skb)->daddr) :
-				ip_hdr(skb)->daddr;
-	} else {
-		/* IPv6 */
-		const struct rt6_info *rt = skb_rt6_info(skb);
-
-		if (rt && !ipv6_addr_any(&rt->rt6i_gateway))
-			l3_hdr->next_hop.ipv6_addr = rt->rt6i_gateway;
-		else
-			l3_hdr->next_hop.ipv6_addr = ipv6_hdr(skb)->daddr;
+		qeth_l3_get_next_hop_v4(skb, &l3_hdr->next_hop.ipv4.addr);
+	} else if (ipv == 6) {
+		qeth_l3_get_next_hop_v6(skb, &l3_hdr->next_hop.ipv6_addr);
 
 		hdr->hdr.l3.flags |= QETH_HDR_IPV6;
 		if (!IS_IQD(card))
 			hdr->hdr.l3.flags |= QETH_HDR_PASSTHRU;
+	} else {
+		/* OSA only */
+		l3_hdr->flags |= QETH_HDR_PASSTHRU;
 	}
-	rcu_read_unlock();
 }
 
 static void qeth_l3_fixup_headers(struct sk_buff *skb)

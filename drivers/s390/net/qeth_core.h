@@ -275,7 +275,7 @@ struct qeth_hdr_layer3 {
 		struct in6_addr ipv6_addr;
 		struct ipv4 {
 			u8 res[12];
-			u32 addr;
+			__be32 addr;
 		} ipv4;
 		/* RX: */
 		struct rx {
