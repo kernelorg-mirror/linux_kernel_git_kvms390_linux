@@ -28,7 +28,6 @@ ENTRY(s390_base_mcck_handler)
 1:	la	%r1,4095
 	lmg	%r0,%r15,__LC_GPREGS_SAVE_AREA-4095(%r1)
 	lpswe	__LC_MCK_OLD_PSW
-ENDPROC(s390_base_mcck_handler)
 
 	.section .bss
 	.align 8
@@ -49,7 +48,6 @@ ENTRY(s390_base_ext_handler)
 1:	lmg	%r0,%r15,__LC_SAVE_AREA_ASYNC
 	ni	__LC_EXT_OLD_PSW+1,0xfd	# clear wait state bit
 	lpswe	__LC_EXT_OLD_PSW
-ENDPROC(s390_base_ext_handler)
 
 	.section .bss
 	.align 8
@@ -70,7 +68,6 @@ ENTRY(s390_base_pgm_handler)
 	lmg	%r0,%r15,__LC_SAVE_AREA_SYNC
 	lpswe	__LC_PGM_OLD_PSW
 1:	lpswe	disabled_wait_psw-0b(%r13)
-ENDPROC(s390_base_pgm_handler)
 
 	.align	8
 disabled_wait_psw:

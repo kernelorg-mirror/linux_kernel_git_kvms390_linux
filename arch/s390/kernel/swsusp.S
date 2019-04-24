@@ -108,7 +108,6 @@ ENTRY(swsusp_arch_suspend)
 	lmg	%r6,%r15,STACK_FRAME_OVERHEAD + __SF_GPRS(%r15)
 	lghi	%r2,0
 	BR_EX	%r14
-ENDPROC(swsusp_arch_suspend)
 
 /*
  * Restore saved memory image to correct place and restore register context.
@@ -261,7 +260,6 @@ restore_registers:
 	lmg	%r6,%r15,STACK_FRAME_OVERHEAD + __SF_GPRS(%r15)
 	lghi	%r2,0
 	BR_EX	%r14
-ENDPROC(swsusp_arch_resume)
 
 	.section .data..nosave,"aw",@progbits
 	.align	8
