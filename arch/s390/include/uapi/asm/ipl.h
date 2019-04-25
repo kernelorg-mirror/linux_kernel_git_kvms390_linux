@@ -52,7 +52,7 @@ struct ipl_pb0_fcp {
 	__u8  reserved3[3];
 	__u8  cssid;
 	__u8  reserved4[1];
-	__u8  devno;
+	__u16 devno;
 	__u8  reserved5[4];
 	__u64 wwpn;
 	__u64 lun;
