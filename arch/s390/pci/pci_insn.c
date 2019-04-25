@@ -32,13 +32,15 @@ static inline void zpci_err_insn(u8 cc, u8 status, u64 req, u64 offset)
 /* Modify PCI Function Controls */
 static inline u8 __mpcifc(u64 req, struct zpci_fib *fib, u8 *status)
 {
-	u8 cc;
+	u8 cc = -ENXIO;
 
 	asm volatile (
 		"	.insn	rxy,0xe300000000d0,%[req],%[fib]\n"
-		"	ipm	%[cc]\n"
+		"0:	ipm	%[cc]\n"
 		"	srl	%[cc],28\n"
-		: [cc] "=d" (cc), [req] "+d" (req), [fib] "+Q" (*fib)
+		"1:\n"
+		EX_TABLE(0b, 1b)
+		: [cc] "+d" (cc), [req] "+d" (req), [fib] "+Q" (*fib)
 		: : "cc");
 	*status = req >> 24 & 0xff;
 	return cc;
