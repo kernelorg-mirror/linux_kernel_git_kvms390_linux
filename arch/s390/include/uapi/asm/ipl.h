@@ -2,7 +2,7 @@
 #ifndef _ASM_S390_UAPI_IPL_H
 #define _ASM_S390_UAPI_IPL_H
 
-#include <asm/types.h>
+#include <linux/types.h>
 
 /* IPL Parameter List header */
 struct ipl_pl_hdr {
