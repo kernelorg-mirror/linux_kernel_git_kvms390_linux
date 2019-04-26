@@ -242,6 +242,7 @@ static const unsigned char formats[][6] = {
 	[INSTR_RRF_U0FF]     = { F_24, U4_16, F_28, 0, 0, 0 },
 	[INSTR_RRF_U0RF]     = { R_24, U4_16, F_28, 0, 0, 0 },
 	[INSTR_RRF_U0RR]     = { R_24, R_28, U4_16, 0, 0, 0 },
+	[INSTR_RRF_URR]	     = { R_24, R_28, U8_16, 0, 0, 0 },
 	[INSTR_RRF_UUFF]     = { F_24, U4_16, F_28, U4_20, 0, 0 },
 	[INSTR_RRF_UUFR]     = { F_24, U4_16, R_28, U4_20, 0, 0 },
 	[INSTR_RRF_UURF]     = { R_24, U4_16, F_28, U4_20, 0, 0 },

@@ -575,6 +575,7 @@ b99e	pti	RRE_RR
 b99f	ssair	RRE_R0
 b9a1	tpei	RRE_RR
 b9a2	ptf	RRE_R0
+b9a4	uvc	RRF_URR
 b9aa	lptea	RRF_RURR2
 b9ac	irbm	RRE_RR
 b9ae	rrbm	RRE_RR
@@ -596,6 +597,9 @@ b9cf	clhhr	RRE_RR
 b9d0	pcistg	RRE_RR
 b9d2	pcilg	RRE_RR
 b9d3	rpcit	RRE_RR
+b9d4	pcistgi	RRE_RR
+b9d5	pciwb	RRE_00
+b9d6	pcilgi	RRE_RR
 b9d8	ahhlr	RRF_R0RR2
 b9d9	shhlr	RRF_R0RR2
 b9da	alhhlr	RRF_R0RR2
@@ -1081,6 +1085,7 @@ eb9b	stamy	RSY_AARD
 ebc0	tp	RSL_R0RD
 ebd0	pcistb	RSY_RRRD
 ebd1	sic	RSY_RRRD
+ebd4	pcistbi	RSY_RRRD
 ebdc	srak	RSY_RRRD
 ebdd	slak	RSY_RRRD
 ebde	srlk	RSY_RRRD
