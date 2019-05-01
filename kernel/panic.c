@@ -318,7 +318,12 @@ void panic(const char *fmt, ...)
 	}
 #endif
 #if defined(CONFIG_S390)
-	disabled_wait();
+	{
+		unsigned long caller;
+
+		caller = (unsigned long)__builtin_return_address(0);
+		disabled_wait(caller);
+	}
 #endif
 	pr_emerg("---[ end Kernel panic - not syncing: %s ]---\n", buf);
 	local_irq_enable();

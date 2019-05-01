@@ -96,7 +96,7 @@ static void __do_machine_kdump(void *image)
 	start_kdump(1);
 
 	/* Die if start_kdump returns */
-	disabled_wait();
+	disabled_wait((unsigned long) __builtin_return_address(0));
 }
 
 /*
@@ -285,7 +285,7 @@ static void __do_machine_kexec(void *data)
 		      image->preserve_context ? DIAG308_MOD_CLR_RST : DIAG308_LD_NRM_RST);
 
 	/* Die if kexec returns */
-	disabled_wait();
+	disabled_wait((unsigned long) __builtin_return_address(0));
 }
 
 /*
