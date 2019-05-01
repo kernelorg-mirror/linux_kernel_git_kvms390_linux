@@ -12,8 +12,6 @@
 
 LD_BFD		:= elf64-s390
 KBUILD_LDFLAGS	:= -m elf64_s390
-KBUILD_LDFLAGS_MODULE += -T $(srctree)/arch/s390/kernel/module.lds
-KBUILD_LDFLAGS_MODULE += $(call ld-option, --force-group-allocation)
 KBUILD_AFLAGS_MODULE += -fPIC
 KBUILD_CFLAGS_MODULE += -fPIC
 KBUILD_AFLAGS	+= -m64
@@ -118,10 +116,7 @@ endif
 # Test CFI features of binutils
 cfi := $(call as-instr,.cfi_startproc\n.cfi_val_offset 15$(comma)-160\n.cfi_endproc,-DCONFIG_AS_CFI_VAL_OFFSET=1)
 
-ifndef CONFIG_UNWINDER_ORC
-KBUILD_CFLAGS	+= -mbackchain
-endif
-KBUILD_CFLAGS	+= -msoft-float $(cflags-y)
+KBUILD_CFLAGS	+= -mbackchain -msoft-float $(cflags-y)
 KBUILD_CFLAGS	+= -pipe -Wno-sign-compare
 KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables $(cfi)
 KBUILD_AFLAGS	+= $(aflags-y) $(cfi)

@@ -15,7 +15,7 @@
 
 #ifndef __ASSEMBLY__
 
-#if defined(CONFIG_CC_IS_CLANG) || defined(CONFIG_UNWINDER_ORC)
+#ifdef CONFIG_CC_IS_CLANG
 /* https://bugs.llvm.org/show_bug.cgi?id=41424 */
 #define ftrace_return_address(n) 0UL
 #else

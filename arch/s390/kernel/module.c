@@ -22,7 +22,6 @@
 #include <asm/alternative.h>
 #include <asm/nospec-branch.h>
 #include <asm/facility.h>
-#include <asm/unwind.h>
 
 #if 0
 #define DEBUGP printk
@@ -442,8 +441,8 @@ int module_finalize(const Elf_Ehdr *hdr,
 		    const Elf_Shdr *sechdrs,
 		    struct module *me)
 {
+	const Elf_Shdr *s;
 	char *secstrings, *secname;
-	const Elf_Shdr *s, *orc, *orc_ip;
 	void *aseg;
 
 	if (IS_ENABLED(CONFIG_EXPOLINE) &&
@@ -463,7 +462,6 @@ int module_finalize(const Elf_Ehdr *hdr,
 		}
 	}
 
-	orc = orc_ip = NULL;
 	secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
 	for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
 		aseg = (void *) s->sh_addr;
@@ -480,20 +478,8 @@ int module_finalize(const Elf_Ehdr *hdr,
 		if (IS_ENABLED(CONFIG_EXPOLINE) &&
 		    (!strncmp(".s390_return", secname, 12)))
 			nospec_revert(aseg, aseg + s->sh_size);
-
-		if (!strcmp(".orc_unwind", secname))
-			orc = s;
-
-		if (!strcmp(".orc_unwind_ip", secname))
-			orc_ip = s;
 	}
 
 	jump_label_apply_nops(me);
-
-	if (orc && orc_ip)
-		unwind_module_init(me,
-				   (void *) orc_ip->sh_addr, orc_ip->sh_size,
-				   (void *) orc->sh_addr, orc->sh_size);
-
 	return 0;
 }
