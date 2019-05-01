@@ -20,9 +20,9 @@
 #include <asm/check.h>
 #include <asm/arch.h>
 
-#include <builtin.h>
-#include <elfdefs.h>
-#include <warn.h>
+#include "../../builtin.h"
+#include "../../elf.h"
+#include "../../warn.h"
 #include "special.h"
 
 #include <linux/hashtable.h>

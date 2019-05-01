@@ -28,8 +28,8 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include <elfdefs.h>
-#include <warn.h>
+#include "elf.h"
+#include "warn.h"
 
 #define MAX_NAME_LEN 128
 
