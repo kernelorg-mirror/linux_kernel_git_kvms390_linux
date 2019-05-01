@@ -67,7 +67,6 @@ ENTRY(relocate_kernel)
 		mvc	0(8,%r0),0(%r10) # copy psw to absolute address 0
 	.diag:
 		diag	%r0,%r4,0x308
-ENDPROC(relocate_kernel)
 
 		.align	8
 	load_psw:
