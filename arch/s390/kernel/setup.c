@@ -49,7 +49,6 @@
 #include <linux/memory.h>
 #include <linux/compat.h>
 #include <linux/start_kernel.h>
-#include <linux/frame.h>
 
 #include <asm/boot_data.h>
 #include <asm/ipl.h>
@@ -385,7 +384,6 @@ void __init arch_call_rest_init(void)
 		"	jg	rest_init\n"
 		: : [_frame] "a" (frame));
 }
-STACK_FRAME_NON_STANDARD(arch_call_rest_init);
 
 static void __init setup_lowcore_dat_off(void)
 {
