@@ -669,7 +669,7 @@ config RANDOMIZE_BASE
 choice
 	prompt "Choose kernel unwinder"
 	default UNWINDER_ORC
-	help
+	---help---
 	  This determines which method will be used for unwinding kernel stack
 	  traces for panics, oopses, bugs, warnings, perf, /proc/<pid>/stack,
 	  livepatch, lockdep, and more.
@@ -677,7 +677,7 @@ choice
 config UNWINDER_ORC
 	bool "ORC unwinder"
 	depends on STACK_VALIDATION
-	help
+	---help---
 	  This option enables the ORC (Oops Rewind Capability) unwinder for
 	  unwinding kernel stack traces.  It uses a custom data format which is
 	  a simplified version of the DWARF Call Frame Information standard.
@@ -691,7 +691,7 @@ config UNWINDER_ORC
 
 config UNWINDER_BC
 	bool "Backchain unwinder"
-	help
+	---help---
 	  This option enables the backchain unwinder for unwinding kernel
 	  stack traces.
 

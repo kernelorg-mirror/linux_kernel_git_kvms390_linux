@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright IBM Coprt. 2019
  * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>

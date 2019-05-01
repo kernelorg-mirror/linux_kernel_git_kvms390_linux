@@ -997,7 +997,7 @@ int arch_decode_instruction(struct elf *elf, struct section *sec,
 		case 0x0e:	    /* vst */
 		case 0x12 ... 0x13: /* vgeg, vgef */
 		case 0x1a ... 0x1b: /* vsceg, vscef */
-		case 0x21 ... 0x22: /* vlgv, vlvg */
+		case 0x21 ... 0x22 : /* vlgv, vlvg */
 		case 0x30:	    /* vesl */
 		case 0x33:	    /* verll */
 		case 0x36 ... 0x38: /* vlm, vll, vesrl */

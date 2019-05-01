@@ -353,7 +353,7 @@ static int find_expoline_register(struct instruction *insn, struct symbol *sym)
 		return -1;
 	if (sscanf(str, "%iuse_r%i", &use, &reg) == 2)
 		return reg;
-	if (sscanf(str, "%i", &reg) == 1)
+	if (sscanf(str,"%i", &reg) == 1)
 		return reg;
 	return -1;
 }
@@ -1447,7 +1447,7 @@ static int find_switch_branches(struct objtool_file *file,
 			location -= (unsigned long) rela->offset;
 			if (load->type == INSN_MEM_ADD)
 				location += table->offset;
-		} else if (rela->type != R_390_64) {
+		} else if (rela->type!= R_390_64) {
 			break;
 		}
 

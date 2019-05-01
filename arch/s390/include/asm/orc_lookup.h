@@ -30,8 +30,8 @@
 extern unsigned int orc_lookup[];
 extern unsigned int orc_lookup_end[];
 
-#define LOOKUP_START_IP		((unsigned long) _stext)
-#define LOOKUP_STOP_IP		((unsigned long) _etext)
+#define LOOKUP_START_IP		(unsigned long)_stext
+#define LOOKUP_STOP_IP		(unsigned long)_etext
 
 #endif /* LINKER_SCRIPT */
 

@@ -211,7 +211,7 @@ static char *strdupcat(const char *str1, const char *str2)
 	cstr = malloc(len1 + len2 + 1);
 	if (cstr) {
 		memcpy(cstr, str1, len1);
-		memcpy(cstr + len1, str2, len2);
+		memcpy(cstr + len1 , str2, len2);
 		cstr[len1 + len2] = 0;
 	}
 	return cstr;
