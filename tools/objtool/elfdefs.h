@@ -61,7 +61,6 @@ struct symbol {
 	unsigned char bind, type;
 	unsigned long offset;
 	unsigned int len;
-	unsigned long arch_flags;
 	struct symbol *pfunc, *cfunc;
 };
 
