@@ -328,8 +328,6 @@ again:
 		regs = NULL;
 		ip = state->gprs[orc->reg1];
 		sp = state->gprs[orc->reg0] + orc->offset;
-		if (state->ip == ip && state->sp == sp)
-			goto out_stop;
 		break;
 	case ORC_TYPE_RESTORE:
 		/* Function with a stack frame, restore saved registers */
