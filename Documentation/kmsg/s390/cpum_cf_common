@@ -28,8 +28,12 @@
  * Parameter:
  *   @1: Return code of failed interrupt handler registration
  * Description:
- * Please insert description here
+ * The device driver could not register to receive CPU-measurement alerts.
+ * Alerts make you aware of measurement errors.
+ * A possible cause of this problem is memory constraints.
  * User action:
+ * If the error code is -12 (ENOMEM), consider assigning more memory
+ * to your Linux instance.
  * Reboot. If the problem persists, gather Linux debug data and report
  * the problem to your support organization.
  */
