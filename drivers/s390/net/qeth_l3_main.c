@@ -2142,16 +2142,14 @@ static netdev_features_t qeth_l3_osa_features_check(struct sk_buff *skb,
 }
 
 static u16 qeth_l3_iqd_select_queue(struct net_device *dev, struct sk_buff *skb,
-				    struct net_device *sb_dev,
-				    select_queue_fallback_t fallback)
+				    struct net_device *sb_dev)
 {
 	return qeth_iqd_select_queue(dev, skb, qeth_l3_get_cast_type(skb),
-				     sb_dev, fallback);
+				     sb_dev);
 }
 
 static u16 qeth_l3_osa_select_queue(struct net_device *dev, struct sk_buff *skb,
-				    struct net_device *sb_dev,
-				    select_queue_fallback_t fallback)
+				    struct net_device *sb_dev)
 {
 	struct qeth_card *card = dev->ml_priv;
 

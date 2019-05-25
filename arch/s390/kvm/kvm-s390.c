@@ -548,9 +548,6 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
 		else if (sclp.has_esca && sclp.has_64bscao)
 			r = KVM_S390_ESCA_CPU_SLOTS;
 		break;
-	case KVM_CAP_NR_MEMSLOTS:
-		r = KVM_USER_MEM_SLOTS;
-		break;
 	case KVM_CAP_S390_COW:
 		r = MACHINE_HAS_ESOP;
 		break;
@@ -2909,10 +2906,7 @@ static bool kvm_has_pckmo_subfunc(struct kvm *kvm, unsigned long nr)
 
 static bool kvm_has_pckmo_ecc(struct kvm *kvm)
 {
-	/*
-	 * Any of the ecc pckmo functions as well as the AES wrapping
-	 * value need to be present to enable ECC wrapping
-	 */
+	/* At least one ECC subfunction must be present */
 	return kvm_has_pckmo_subfunc(kvm, 32) ||
 	       kvm_has_pckmo_subfunc(kvm, 33) ||
 	       kvm_has_pckmo_subfunc(kvm, 34) ||

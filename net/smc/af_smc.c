@@ -772,9 +772,9 @@ static void smc_connect_work(struct work_struct *work)
 	if (!timeo)
 		timeo = MAX_SCHEDULE_TIMEOUT;
 	lock_sock(smc->clcsock->sk);
-	if (smc->clcsock->sk->sk_err)
+	if (smc->clcsock->sk->sk_err) {
 		smc->sk.sk_err = smc->clcsock->sk->sk_err;
-	else if ((1 << smc->clcsock->sk->sk_state) &
+	} else if ((1 << smc->clcsock->sk->sk_state) &
 					(TCPF_SYN_SENT | TCP_SYN_RECV)) {
 		rc = sk_stream_wait_connect(smc->clcsock->sk, &timeo);
 		if ((rc == -EPIPE) &&

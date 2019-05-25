@@ -6211,8 +6211,7 @@ void qeth_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
 EXPORT_SYMBOL_GPL(qeth_get_stats64);
 
 u16 qeth_iqd_select_queue(struct net_device *dev, struct sk_buff *skb,
-			  u8 cast_type, struct net_device *sb_dev,
-			  select_queue_fallback_t fallback)
+			  u8 cast_type, struct net_device *sb_dev)
 {
 	if (cast_type != RTN_UNICAST)
 		return QETH_IQD_MCAST_TXQ;

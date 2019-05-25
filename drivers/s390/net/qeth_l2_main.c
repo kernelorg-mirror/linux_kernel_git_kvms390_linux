@@ -613,15 +613,14 @@ static netdev_tx_t qeth_l2_hard_start_xmit(struct sk_buff *skb,
 }
 
 static u16 qeth_l2_select_queue(struct net_device *dev, struct sk_buff *skb,
-				struct net_device *sb_dev,
-				select_queue_fallback_t fallback)
+				struct net_device *sb_dev)
 {
 	struct qeth_card *card = dev->ml_priv;
 
 	if (IS_IQD(card))
 		return qeth_iqd_select_queue(dev, skb,
 					     qeth_get_ether_cast_type(skb),
-					     sb_dev, fallback);
+					     sb_dev);
 	return qeth_get_priority_queue(card, skb);
 }
 
