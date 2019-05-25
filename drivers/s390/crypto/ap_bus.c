@@ -276,7 +276,7 @@ EXPORT_SYMBOL(ap_test_config_usage_domain);
  * @domain AP control domain ID
  *
  * Returns 1 if the control domain is configured
- *         0 in all other cases
+ *	   0 in all other cases
  */
 int ap_test_config_ctrl_domain(unsigned int domain)
 {
