@@ -696,10 +696,9 @@ static int ctr_aes_crypt(struct blkcipher_desc *desc, unsigned long modifier,
 	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(desc->tfm);
 	u8 buf[AES_BLOCK_SIZE], *ctrptr;
 	unsigned int n, nbytes;
-	int ret, locked = 0;
+	int ret, locked;
 
-	if (!(desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP))
-		locked = spin_trylock(&ctrblk_lock);
+	locked = spin_trylock(&ctrblk_lock);
 
 	ret = blkcipher_walk_virt_block(desc, walk, AES_BLOCK_SIZE);
 	while ((nbytes = walk->nbytes) >= AES_BLOCK_SIZE) {
