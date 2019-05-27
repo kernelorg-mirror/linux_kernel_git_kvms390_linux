@@ -372,9 +372,10 @@ static int ctr_desall_crypt(struct blkcipher_desc *desc, unsigned long fc,
 	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
 	u8 buf[DES_BLOCK_SIZE], *ctrptr;
 	unsigned int n, nbytes;
-	int ret, locked;
+	int ret, locked = 0;
 
-	locked = spin_trylock(&ctrblk_lock);
+	if (!(desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP))
+		locked = spin_trylock(&ctrblk_lock);
 
 	ret = blkcipher_walk_virt_block(desc, walk, DES_BLOCK_SIZE);
 	while ((nbytes = walk->nbytes) >= DES_BLOCK_SIZE) {
