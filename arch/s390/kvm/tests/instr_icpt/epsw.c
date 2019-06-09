@@ -13,7 +13,7 @@ int test_epsw(void)
 	r7 = MAGIC1;
 	r8 = MAGIC2;
 
-	asm volatile("epsw %r0,%1\n" : "=r"(r7), "=r"(r8) : "r"(r7), "r"(r8));
+	asm volatile("epsw %0,%1\n" : "=r"(r7), "=r"(r8) : "r"(r7), "r"(r8));
 	if (r7 == MAGIC1 || r8 == MAGIC2) {
 		ztst_set_err_str("register value did not change");
 		return 1;
@@ -25,7 +25,7 @@ int test_epsw(void)
 	}
 
 	r0 = MAGIC2;
-	asm volatile("epsw %r0,%1\n" : "=r"(r7), "=r"(r0) : "r"(r7), "r"(r0));
+	asm volatile("epsw %0,%1\n" : "=r"(r7), "=r"(r0) : "r"(r7), "r"(r0));
 	if (r0 != MAGIC2) {
 		ztst_set_err_str("register r0 changed");
 		return 3;
