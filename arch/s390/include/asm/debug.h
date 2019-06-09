@@ -205,7 +205,7 @@ static inline debug_entry_t *debug_event(debug_info_t *id, int level,
 
 /**
  * debug_int_event() - writes debug entry to active debug area
- * 		       (if level <= actual debug level)
+ *		       (if level <= actual debug level)
  *
  * @id:		handle for debug log
  * @level:	debug level
@@ -227,7 +227,7 @@ static inline debug_entry_t *debug_int_event(debug_info_t *id, int level,
 
 /**
  * debug_long_event() - writes debug entry to active debug area
- * 		       (if level <= actual debug level)
+ *		       (if level <= actual debug level)
  *
  * @id:		handle for debug log
  * @level:	debug level
@@ -407,7 +407,7 @@ __debug_sprintf_exception(debug_info_t *id, int level, char *string, ...)
 /**
  * debug_sprintf_exception() - writes debug entry with format string and
  *			       varargs (longs) to active debug area
- * 			       (if level $<=$ actual debug level)
+ *			       (if level $<=$ actual debug level)
  *			       and switches to next debug area.
  *
  * @_id:	handle for debug log
