@@ -1635,10 +1635,10 @@ struct ccw_device * __init ccw_device_create_console(struct ccw_driver *drv)
 	set_io_private(sch, io_priv);
 	cdev = io_subchannel_create_ccwdev(sch);
 	if (IS_ERR(cdev)) {
-		put_device(&sch->dev);
 		dma_free_coherent(&sch->dev, sizeof(*io_priv->dma_area),
 				  io_priv->dma_area, io_priv->dma_area_dma);
 		set_io_private(sch, NULL);
+		put_device(&sch->dev);
 		kfree(io_priv);
 		return cdev;
 	}
