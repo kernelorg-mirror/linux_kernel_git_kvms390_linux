@@ -1098,7 +1098,7 @@ void *cio_gp_dma_zalloc(struct gen_pool *gp_dma, struct device *dma_dev,
 	unsigned long addr;
 	size_t chunk_size;
 
-	if (!cio_dma_pool)
+	if (!gp_dma)
 		return NULL;
 	addr = gen_pool_alloc(gp_dma, size);
 	while (!addr) {
