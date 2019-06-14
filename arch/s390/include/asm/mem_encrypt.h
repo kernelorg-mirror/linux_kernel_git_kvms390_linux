@@ -15,4 +15,3 @@ int set_memory_decrypted(unsigned long addr, int numpages);
 #endif	/* __ASSEMBLY__ */
 
 #endif	/* S390_MEM_ENCRYPT_H__ */
-
