@@ -81,16 +81,19 @@ static inline void unwind_module_init(struct module *mod, void *orc_ip,
 
 #ifdef CONFIG_KASAN
 /*
- * This disables KASAN checking for 2 reason:
- * - when reading a value from another task's stack, since the other task
- *   could be running on another CPU and could have poisoned the stack in
- *   the meantime.
- * - when current task is interrupted in-between stack frame allocation and
- *   backchain write instructions the backchain is invalid. In particular if
- *   backchain is 0 the unwinder tries to read pt_regs from the stack and hit
- *   kasan poisoned bytes.
+ * This disables KASAN checking when reading a value from another task's stack,
+ * since the other task could be running on another CPU and could have poisoned
+ * the stack in the meantime.
  */
-#define READ_ONCE_TASK_STACK(task, x) READ_ONCE_NOCHECK(x)
+#define READ_ONCE_TASK_STACK(task, x)			\
+({							\
+	unsigned long val;				\
+	if (task == current)				\
+		val = READ_ONCE(x);			\
+	else						\
+		val = READ_ONCE_NOCHECK(x);		\
+	val;						\
+})
 #else
 #define READ_ONCE_TASK_STACK(task, x) READ_ONCE(x)
 #endif
