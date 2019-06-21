@@ -16,6 +16,12 @@
 
 #include "vfio_ccw_cp.h"
 
+/*
+ * Max length for ccw chain.
+ * XXX: Limit to 256, need to check more?
+ */
+#define CCWCHAIN_LEN_MAX	256
+
 struct pfn_array {
 	/* Starting guest physical I/O address. */
 	unsigned long		pa_iova;
@@ -380,7 +386,7 @@ static void ccwchain_cda_free(struct ccwchain *chain, int idx)
  */
 static int ccwchain_calc_length(u64 iova, struct channel_program *cp)
 {
-	struct ccw1 *ccw = cp->guest_cp;
+	struct ccw1 *ccw, *p;
 	int cnt;
 
 	/*
@@ -388,9 +394,15 @@ static int ccwchain_calc_length(u64 iova, struct channel_program *cp)
 	 * Currently the chain length is limited to CCWCHAIN_LEN_MAX (256).
 	 * So copying 2K is enough (safe).
 	 */
+	p = ccw = kcalloc(CCWCHAIN_LEN_MAX, sizeof(*ccw), GFP_KERNEL);
+	if (!ccw)
+		return -ENOMEM;
+
 	cnt = copy_ccw_from_iova(cp, ccw, iova, CCWCHAIN_LEN_MAX);
-	if (cnt)
+	if (cnt) {
+		kfree(ccw);
 		return cnt;
+	}
 
 	cnt = 0;
 	do {
@@ -401,8 +413,10 @@ static int ccwchain_calc_length(u64 iova, struct channel_program *cp)
 		 * orb specified one of the unsupported formats, we defer
 		 * checking for IDAWs in unsupported formats to here.
 		 */
-		if ((!cp->orb.cmd.c64 || cp->orb.cmd.i2k) && ccw_is_idal(ccw))
+		if ((!cp->orb.cmd.c64 || cp->orb.cmd.i2k) && ccw_is_idal(ccw)) {
+			kfree(p);
 			return -EOPNOTSUPP;
+		}
 
 		/*
 		 * We want to keep counting if the current CCW has the
@@ -421,6 +435,7 @@ static int ccwchain_calc_length(u64 iova, struct channel_program *cp)
 	if (cnt == CCWCHAIN_LEN_MAX + 1)
 		cnt = -EINVAL;
 
+	kfree(p);
 	return cnt;
 }
 
@@ -446,7 +461,7 @@ static int ccwchain_handle_ccw(u32 cda, struct channel_program *cp)
 	struct ccwchain *chain;
 	int len, ret;
 
-	/* Copy the chain from cda to cp, and count the CCWs in it */
+	/* Get chain length. */
 	len = ccwchain_calc_length(cda, cp);
 	if (len < 0)
 		return len;
