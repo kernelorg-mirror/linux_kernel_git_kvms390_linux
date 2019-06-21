@@ -228,6 +228,17 @@ static long copy_from_iova(struct device *mdev,
 	return l;
 }
 
+static long copy_ccw_from_iova(struct channel_program *cp,
+			       struct ccw1 *to, u64 iova,
+			       unsigned long len)
+{
+	int ret;
+
+	ret = copy_from_iova(cp->mdev, to, iova, len * sizeof(struct ccw1));
+
+	return ret;
+}
+
 /*
  * Helpers to operate ccwchain.
  */
@@ -424,8 +435,7 @@ static int ccwchain_handle_ccw(u32 cda, struct channel_program *cp)
 	int len;
 
 	/* Copy 2K (the most we support today) of possible CCWs */
-	len = copy_from_iova(cp->mdev, cp->guest_cp, cda,
-			     CCWCHAIN_LEN_MAX * sizeof(struct ccw1));
+	len = copy_ccw_from_iova(cp, cp->guest_cp, cda, CCWCHAIN_LEN_MAX);
 	if (len)
 		return len;
 
