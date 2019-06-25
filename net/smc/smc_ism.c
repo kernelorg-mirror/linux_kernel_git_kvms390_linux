@@ -348,7 +348,7 @@ void smcd_handle_event(struct smcd_dev *smcd, struct smcd_event *event)
 		return;
 	INIT_WORK(&wrk->work, smc_ism_event_work);
 	wrk->smcd = smcd;
-	memcpy(&wrk->event, event, sizeof(*event));
+	wrk->event = *event;
 	queue_work(smcd->event_wq, &wrk->work);
 }
 EXPORT_SYMBOL_GPL(smcd_handle_event);
