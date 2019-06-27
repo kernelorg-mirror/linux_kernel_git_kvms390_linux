@@ -44,7 +44,8 @@ static int match_apqn(struct device *dev, void *data)
  *
  * Returns the pointer to the associated vfio_ap_queue
  */
-struct vfio_ap_queue *vfio_ap_get_queue(struct ap_matrix_mdev *matrix_mdev,
+static struct vfio_ap_queue *vfio_ap_get_queue(
+					struct ap_matrix_mdev *matrix_mdev,
 					int apqn)
 {
 	struct vfio_ap_queue *q;
