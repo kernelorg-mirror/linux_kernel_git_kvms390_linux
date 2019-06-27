@@ -180,6 +180,11 @@ int zpci_register_ioat(struct zpci_dev *, u8, u64, u64, u64);
 int zpci_unregister_ioat(struct zpci_dev *, u8);
 void zpci_remove_reserved_devices(void);
 
+static inline bool zpci_use_mio(struct zpci_dev *zdev)
+{
+	return static_branch_likely(&have_mio) && zdev->mio_capable;
+}
+
 /* CLP */
 int clp_scan_pci_devices(void);
 int clp_rescan_pci_devices(void);
