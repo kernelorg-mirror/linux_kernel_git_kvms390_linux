@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 config ARCH_HAS_MEM_ENCRYPT
-        def_bool y
+	def_bool y
 
 config MMU
 	def_bool y
