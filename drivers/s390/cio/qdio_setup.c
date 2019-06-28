@@ -179,6 +179,7 @@ static void setup_queues_misc(struct qdio_q *q, struct qdio_irq *irq_ptr,
 	q->mask = 1 << (31 - i);
 	q->nr = i;
 	q->handler = handler;
+	INIT_LIST_HEAD(&q->entry);
 }
 
 static void setup_storage_lists(struct qdio_q *q, struct qdio_irq *irq_ptr,
