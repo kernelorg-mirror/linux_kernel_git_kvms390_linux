@@ -201,6 +201,8 @@ int smc_rx_wait(struct smc_sock *smc, long *timeo,
 {
 	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 	struct smc_connection *conn = &smc->conn;
+	struct smc_cdc_conn_state_flags *cflags =
+					&conn->local_tx_ctrl.conn_state_flags;
 	struct sock *sk = &smc->sk;
 	int rc;
 
@@ -210,7 +212,9 @@ int smc_rx_wait(struct smc_sock *smc, long *timeo,
 	add_wait_queue(sk_sleep(sk), &wait);
 	rc = sk_wait_event(sk, timeo,
 			   sk->sk_err ||
+			   cflags->peer_conn_abort ||
 			   sk->sk_shutdown & RCV_SHUTDOWN ||
+			   conn->killed ||
 			   fcrit(conn) ||
 			   smc_cdc_rxed_any_close_or_senddone(conn),
 			   &wait);
@@ -303,6 +307,9 @@ int smc_rx_recvmsg(struct smc_sock *smc, struct msghdr *msg,
 		if (read_done >= target || (pipe && read_done))
 			break;
 
+		if (conn->killed)
+			break;
+
 		if (atomic_read(&conn->bytes_to_rcv))
 			goto copy;
 		else if (conn->urg_state == SMC_URG_VALID)
@@ -310,8 +317,7 @@ int smc_rx_recvmsg(struct smc_sock *smc, struct msghdr *msg,
 			smc_rx_update_cons(smc, 0);
 
 		if (sk->sk_shutdown & RCV_SHUTDOWN ||
-		    smc_cdc_rxed_any_close_or_senddone(conn) ||
-		    conn->local_tx_ctrl.conn_state_flags.peer_conn_abort)
+		    smc_cdc_rxed_any_close_or_senddone(conn))
 			break;
 
 		if (read_done) {
