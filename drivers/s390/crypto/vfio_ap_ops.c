@@ -186,7 +186,7 @@ end_free:
  * vfio_ap_setirq: Enable Interruption for a APQN
  *
  * @dev: the device associated with the ap_queue
- * @q:   the vfio_ap_queue holding AQIC parameters
+ * @q:	 the vfio_ap_queue holding AQIC parameters
  *
  * Pin the NIB saved in *q
  * Register the guest ISC to GIB interface and retrieve the

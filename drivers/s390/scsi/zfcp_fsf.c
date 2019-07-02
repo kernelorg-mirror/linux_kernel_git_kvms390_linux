@@ -786,7 +786,7 @@ static int zfcp_fsf_req_send(struct zfcp_fsf_req *req)
 
 	/*
 	 * NOTE: DO NOT TOUCH ASYNC req PAST THIS POINT.
-	 *       ONLY TOUCH SYNC req AGAIN ON req->completion.
+	 *	 ONLY TOUCH SYNC req AGAIN ON req->completion.
 	 *
 	 * The request might complete and be freed concurrently at any point
 	 * now. This is not protected by the QDIO-lock (req_q_lock). So any
