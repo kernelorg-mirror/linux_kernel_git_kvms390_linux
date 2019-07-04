@@ -346,7 +346,7 @@
  */
 
 /*?
- * Text: "%*s is not a supported device option\n"
+ * Text: "%.*s is not a supported device option\n"
  * Severity: Warning
  * Parameter:
  *   @1: length of option code
