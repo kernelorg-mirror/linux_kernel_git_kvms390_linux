@@ -49,6 +49,20 @@
  */
 
 /*?
+ * Text: "%s: The specified DASD is a partition and tracks cannot be released\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ * Description:
+ * You cannot release space on an individual partition.
+ * You can release space only on a complete DASD.
+ * User action:
+ * Specify the complete DASD to release space.
+ * ATTENTION: Releasing space irreversibly destroys data on all specified tracks
+ * of the DASD.
+ */
+
+/*?
  * Text: "%s: The specified DASD is a partition and cannot be checked\n"
  * Severity: Warning
  * Parameter:
@@ -248,6 +262,18 @@
  * is not available.
  * User action:
  * Ensure that all DASD modules are loaded correctly.
+ */
+
+/*?
+ * Text: "%s: Extent pool space is available\n"
+ * Severity: Informational
+ * Parameter:
+ *   @1: bus ID of the DASD
+ * Description:
+ * A previous space constraint has been relieved and Extent Space Efficient
+ * volumes will return to regular operation.
+ * User action:
+ * None.
  */
 
 ---------------------------

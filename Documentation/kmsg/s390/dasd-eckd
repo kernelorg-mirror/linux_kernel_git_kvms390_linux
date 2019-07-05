@@ -2221,3 +2221,123 @@
  * User action:
  * None.
  */
+
+/*?
+ * Text: "%s: Reading the volume storage information failed with rc=%d\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: return code
+ * Description:
+ * Detailed volume information could not be read. Extent Space Efficient volumes
+ * are operated like standard DASD volumes.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "%s: Reading the logical configuration failed with rc=%d\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: return code
+ * Description:
+ * Detailed Extent Pool information for an Extent Space Efficient volume could
+ * not be read. Extent Space Efficient volumes are operated like normal DASD
+ * volumes.
+ * User action:
+ * None.
+ */
+
+/*?
+ * Text: "%s: Start track number %u used in the space release command is too big\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: track number
+ * Description:
+ * The DASD space release I/O control was used incorrectly by a space release tool.
+ * User action:
+ * Contact your support organization.
+ */
+
+/*?
+ * Text: "%s: Stop track number %u used in the space release command is too big\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: track number
+ * Description:
+ * The DASD space release I/O control was used incorrectly by a space release tool.
+ * User action:
+ * Contact your support organization.
+ */
+
+/*?
+ * Text: "%s: Start track %u used in the space release command exceeds the end track\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ *   @2: track number
+ * Description:
+ * The DASD space release I/O control was used incorrectly by a space release tool.
+ * User action:
+ * Contact your support organization.
+ */
+
+/*?
+ * Text: "%s: No space left in the extent pool\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ * Description:
+ * All configured space is used and there is no space left in the extent pool
+ * or repository that applies to an Extent Space Efficient DASD. All currently
+ * running I/O is stopped.
+ * User action:
+ * Release space on Extent Space Efficient DASDs in the respective pool or
+ * repository, or inform the storage server administrator to configure more
+ * space for this pool or repository.
+ */
+
+/*?
+ * Text: "%s: Extent pool usage has reached a critical value\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ * Description:
+ * A configured threshold of space allocated by Extent Space Efficient DASDs in
+ * the respective extent pool or repository was reached. Configured space for
+ * that extent pool or repository is likely to run out soon.
+ * User action:
+ * Release space on Extent Space Efficient DASDs in the respective pool or
+ * repository, or inform the storage server administrator to configure more
+ * space for this pool or repository.
+ */
+
+/*?
+ * Text: "%s: Extent pool is exhausted\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the DASD
+ * Description:
+ * All configured space was used and there is no space left in the extent pool
+ * or repository that applies to an Extent Space Efficient DASD. All currently
+ * running I/O is stopped.
+ * User action:
+ * Release space on Extent Space Efficient DASDs in the respective pool or
+ * repository, or inform the storage server administrator to configure more
+ * space for this pool or repository.
+ */
+
+/*?
+ * Text: "%s: Extent pool physical space constraint has been relieved\n"
+ * Severity: Informational
+ * Parameter:
+ *   @1: bus ID of the DASD
+ * Description:
+ * A previous space constraint has been relieved and Extent Space Efficient
+ * volumes will return to regular operation.
+ * User action:
+ * None.
+ */
