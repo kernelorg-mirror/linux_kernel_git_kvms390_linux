@@ -27,6 +27,10 @@
 /* timeout for: exchange config/port data outside ERP, or open/close WKA port */
 #define ZFCP_FSF_REQUEST_TIMEOUT (60*HZ)
 
+static bool panic_on_bad_open_port;
+module_param(panic_on_bad_open_port, bool, 0600);
+MODULE_PARM_DESC(panic_on_bad_open_port, "panic on unexpectedly failed target port open (default off)");
+
 struct kmem_cache *zfcp_fsf_qtcb_cache;
 
 static void zfcp_fsf_request_timeout_handler(struct timer_list *t)
@@ -1493,6 +1497,14 @@ static void zfcp_fsf_open_port_handler(struct zfcp_fsf_req *req)
 		case FSF_SQ_ULP_DEPENDENT_ERP_REQUIRED:
 		case FSF_SQ_NO_RETRY_POSSIBLE:
 			req->status |= ZFCP_STATUS_FSFREQ_ERROR;
+			if (unlikely(header->fsf_status_qual.word[0] == FSF_SQ_NO_RETRY_POSSIBLE &&
+				     header->fsf_status_qual.word[1] == 0xbaddef &&
+				     header->fsf_status_qual.word[2] == 0x1
+				    )) {
+				zfcp_qdio_siosl(req->adapter);
+				if (panic_on_bad_open_port)
+					panic("unexpectedly failed target port open, collect dump\n");
+			}
 			break;
 		}
 		break;
