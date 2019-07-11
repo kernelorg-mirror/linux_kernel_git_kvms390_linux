@@ -408,7 +408,7 @@ extern struct dasd_discipline *dasd_diag_discipline_pointer;
 #define DASD_EER_NOPATH      2
 #define DASD_EER_STATECHANGE 3
 #define DASD_EER_PPRCSUSPEND 4
-#define DASD_EER_NOSPC       5
+#define DASD_EER_NOSPC	     5
 
 /* DASD path handling */
 

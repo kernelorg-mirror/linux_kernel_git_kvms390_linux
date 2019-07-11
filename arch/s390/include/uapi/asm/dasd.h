@@ -27,9 +27,9 @@
  *  including foramt and featueres.
  */
 typedef struct dasd_information2_t {
-	unsigned int devno;         /* S/390 devno */
+	unsigned int devno;	    /* S/390 devno */
 	unsigned int real_devno;    /* for aliases */
-	unsigned int schid;         /* S/390 subchannel identifier */
+	unsigned int schid;	    /* S/390 subchannel identifier */
 	unsigned int cu_type  : 16; /* from SenseID */
 	unsigned int cu_model :  8; /* from SenseID */
 	unsigned int dev_type : 16; /* from SenseID */
@@ -37,24 +37,24 @@ typedef struct dasd_information2_t {
 	unsigned int open_count;
 	unsigned int req_queue_len;
 	unsigned int chanq_len;     /* length of chanq */
-	char type[4];               /* from discipline.name, 'none' for unknown */
-	unsigned int status;        /* current device level */
+	char type[4];		    /* from discipline.name, 'none' for unknown */
+	unsigned int status;	    /* current device level */
 	unsigned int label_block;   /* where to find the VOLSER */
 	unsigned int FBA_layout;    /* fixed block size (like AIXVOL) */
 	unsigned int characteristics_size;
 	unsigned int confdata_size;
 	char characteristics[64];   /* from read_device_characteristics */
 	char configuration_data[256]; /* from read_configuration_data */
-	unsigned int format;          /* format info like formatted/cdl/ldl/... */
-	unsigned int features;        /* dasd features like 'ro',...            */
-	unsigned int reserved0;       /* reserved for further use ,...          */
-	unsigned int reserved1;       /* reserved for further use ,...          */
-	unsigned int reserved2;       /* reserved for further use ,...          */
-	unsigned int reserved3;       /* reserved for further use ,...          */
-	unsigned int reserved4;       /* reserved for further use ,...          */
-	unsigned int reserved5;       /* reserved for further use ,...          */
-	unsigned int reserved6;       /* reserved for further use ,...          */
-	unsigned int reserved7;       /* reserved for further use ,...          */
+	unsigned int format;	      /* format info like formatted/cdl/ldl/... */
+	unsigned int features;	      /* dasd features like 'ro',...		*/
+	unsigned int reserved0;       /* reserved for further use ,...		*/
+	unsigned int reserved1;       /* reserved for further use ,...		*/
+	unsigned int reserved2;       /* reserved for further use ,...		*/
+	unsigned int reserved3;       /* reserved for further use ,...		*/
+	unsigned int reserved4;       /* reserved for further use ,...		*/
+	unsigned int reserved5;       /* reserved for further use ,...		*/
+	unsigned int reserved6;       /* reserved for further use ,...		*/
+	unsigned int reserved7;       /* reserved for further use ,...		*/
 } dasd_information2_t;
 
 /*
@@ -97,9 +97,9 @@ typedef struct dasd_information2_t {
  * represents any data about the data, which is visible to userspace
  */
 typedef struct dasd_information_t {
-	unsigned int devno;         /* S/390 devno */
+	unsigned int devno;	    /* S/390 devno */
 	unsigned int real_devno;    /* for aliases */
-	unsigned int schid;         /* S/390 subchannel identifier */
+	unsigned int schid;	    /* S/390 subchannel identifier */
 	unsigned int cu_type  : 16; /* from SenseID */
 	unsigned int cu_model :  8; /* from SenseID */
 	unsigned int dev_type : 16; /* from SenseID */
@@ -107,8 +107,8 @@ typedef struct dasd_information_t {
 	unsigned int open_count;
 	unsigned int req_queue_len;
 	unsigned int chanq_len;     /* length of chanq */
-	char type[4];               /* from discipline.name, 'none' for unknown */
-	unsigned int status;        /* current device level */
+	char type[4];		    /* from discipline.name, 'none' for unknown */
+	unsigned int status;	    /* current device level */
 	unsigned int label_block;   /* where to find the VOLSER */
 	unsigned int FBA_layout;    /* fixed block size (like AIXVOL) */
 	unsigned int characteristics_size;
@@ -283,7 +283,7 @@ struct dasd_snid_ioctl_data {
  * Here ist how the ioctl-nr should be used:
  *    0 -   31   DASD driver itself
  *   32 -  239   still open
- *  240 -  255   reserved for EMC
+ *  240 -  255	 reserved for EMC
  *******************************************************************************/
 
 /* Disable the volume (for Linux) */
