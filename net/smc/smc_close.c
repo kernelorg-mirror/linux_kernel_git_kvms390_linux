@@ -329,7 +329,7 @@ static void smc_close_passive_work(struct work_struct *work)
 	lock_sock(sk);
 	old_state = sk->sk_state;
 
-	if (!conn->killed) {
+	if (conn->killed) {
 		/* abnormal termination */
 		smc_close_active_abort(smc);
 		goto wakeup;
