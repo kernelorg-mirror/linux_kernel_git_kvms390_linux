@@ -5,7 +5,6 @@
 #include <asm/sclp.h>
 #include <asm/sections.h>
 #include <asm/boot_data.h>
-#include "compressed/decompressor.h"
 #include <uapi/asm/ipl.h>
 #include "boot.h"
 
@@ -99,36 +98,32 @@ static void copy_certificates_bootdata(struct ipl_rb_certificates *certs)
 
 unsigned long read_ipl_report(unsigned long safe_addr)
 {
-	struct ipl_parameter_block *ipl_block_lc;
 	struct ipl_rb_certificates *certs;
 	struct ipl_rb_components *comps;
+	struct ipl_pl_hdr *pl_hdr;
 	struct ipl_rl_hdr *rl_hdr;
 	struct ipl_rb_hdr *rb_hdr;
+	unsigned long tmp;
 	void *rl_end;
 
 	/*
-	 * The IPL report is only attached to the IPL block from lowcore.
-	 * But there are cases where no valid IPL block pointer is stored in
-	 * lowcore, e.g. IPL from z/VM reader. None of these cases support
-	 * secure ipl. Thus check if the system was booted securely by
-	 * looking at the copy of the IPL block received from diag308 store
-	 * and assume that a valid IPL block pointer was written to lowcore
-	 * if it is.
+	 * Check if there is a IPL report by looking at the copy
+	 * of the IPL parameter information block.
 	 */
 	if (!ipl_block_valid ||
-	    !(ipl_block.hdr.flags & IPL_PL_FLAG_SIPL))
+	    !(ipl_block.hdr.flags & IPL_PL_FLAG_IPLSR))
 		return safe_addr;
-
-	ipl_block_lc = (void *) (unsigned long) S390_lowcore.ipl_parmblock_ptr;
-	if (!(ipl_block_lc->hdr.flags & IPL_PL_FLAG_SIPL) ||
-	    !(ipl_block_lc->hdr.flags & IPL_PL_FLAG_IPLSR))
-		error("Invalid IPL block detected");
-
-	ipl_secure_flag = !!(ipl_block_lc->hdr.flags & IPL_PL_FLAG_SIPL);
-
-	rl_hdr = (void *) ipl_block_lc + ipl_block_lc->hdr.len;
-	rl_hdr = PTR_ALIGN(rl_hdr, 8);
-
+	ipl_secure_flag = !!(ipl_block.hdr.flags & IPL_PL_FLAG_SIPL);
+	/*
+	 * There is an IPL report, to find it load the pointer to the
+	 * IPL parameter information block from lowcore and skip past
+	 * the IPL parameter list, then align the address to a double
+	 * word boundary.
+	 */
+	tmp = (unsigned long) S390_lowcore.ipl_parmblock_ptr;
+	pl_hdr = (struct ipl_pl_hdr *) tmp;
+	tmp = (tmp + pl_hdr->len + 7) & -8UL;
+	rl_hdr = (struct ipl_rl_hdr *) tmp;
 	/* Walk through the IPL report blocks in the IPL Report list */
 	certs = NULL;
 	comps = NULL;
