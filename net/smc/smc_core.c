@@ -196,23 +196,22 @@ static void smc_lgr_free_work(struct work_struct *work)
 		return;
 	}
 	list_del_init(&lgr->list); /* remove from smc_lgr_list */
-	spin_unlock_bh(lgr_lock);
 
+	lnk = &lgr->lnk[SMC_SINGLE_LINK];
 	if (!lgr->is_smcd && !lgr->terminating)	{
-		struct smc_link *lnk = &lgr->lnk[SMC_SINGLE_LINK];
-
 		/* try to send del link msg, on error free lgr immediately */
 		if (lnk->state == SMC_LNK_ACTIVE &&
 		    !smc_link_send_delete(lnk)) {
 			/* reschedule in case we never receive a response */
 			smc_lgr_schedule_free_work(lgr);
+			spin_unlock_bh(lgr_lock);
 			return;
 		}
 	}
 	lgr->freeing = 1; /* this instance does the freeing, no new schedule */
+	spin_unlock_bh(lgr_lock);
 	cancel_delayed_work(&lgr->free_work);
 
-	lnk = &lgr->lnk[SMC_SINGLE_LINK];
 	if (!lgr->is_smcd && lnk->state != SMC_LNK_INACTIVE)
 		smc_llc_link_inactive(lnk);
 	if (lgr->is_smcd)
