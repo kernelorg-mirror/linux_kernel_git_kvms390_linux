@@ -95,9 +95,9 @@ struct cca_info {
 	char new_mk_state;  /* '1' empty, '2' partially full, '3' full */
 	char cur_mk_state;  /* '1' invalid, '2' valid */
 	char old_mk_state;  /* '1' invalid, '2' valid */
-	u64  new_mkvp;      /* truncated sha256 hash of new master key */
-	u64  cur_mkvp;      /* truncated sha256 hash of current master key */
-	u64  old_mkvp;      /* truncated sha256 hash of old master key */
+	u64  new_mkvp;	    /* truncated sha256 hash of new master key */
+	u64  cur_mkvp;	    /* truncated sha256 hash of current master key */
+	u64  old_mkvp;	    /* truncated sha256 hash of old master key */
 	char serial[9];     /* serial number string (8 ascii numbers + 0x00) */
 };
 
