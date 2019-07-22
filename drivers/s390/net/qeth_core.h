@@ -508,6 +508,8 @@ struct qeth_qdio_out_q {
 	atomic_t set_pci_flags_count;
 	struct napi_struct napi;
 	struct timer_list timer;
+	struct qeth_hdr *prev_hdr;
+	u8 bulk_start;
 };
 
 #define qeth_for_each_output_queue(card, q, i)		\
