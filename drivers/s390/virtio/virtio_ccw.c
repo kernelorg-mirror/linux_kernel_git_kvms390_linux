@@ -145,7 +145,7 @@ struct airq_info {
 	struct airq_iv *aiv;
 };
 static struct airq_info *airq_areas[MAX_AIRQ_AREAS];
-DEFINE_MUTEX(airq_areas_lock);
+static DEFINE_MUTEX(airq_areas_lock);
 
 static u8 *summary_indicators;
 
