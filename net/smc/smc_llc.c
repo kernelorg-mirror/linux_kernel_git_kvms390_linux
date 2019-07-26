@@ -1112,7 +1112,8 @@ static void smc_llc_add_link_work(struct work_struct *work)
 
 	if (lgr->role == SMC_CLNT)
 		smc_llc_process_cli_add_link(lgr);
-	/* tbd: call smc_llc_process_srv_add_link(lgr); */
+	else
+		smc_llc_process_srv_add_link(lgr);
 out:
 	smc_llc_flow_stop(lgr, &lgr->llc_flow_lcl);
 }
