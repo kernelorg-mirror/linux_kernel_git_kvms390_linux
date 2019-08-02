@@ -7,6 +7,7 @@
 #include <asm/sections.h>
 #include <asm/boot_data.h>
 #include <asm/facility.h>
+#include <asm/uv.h>
 #include "boot.h"
 
 char __bootdata(early_command_line)[COMMAND_LINE_SIZE];
