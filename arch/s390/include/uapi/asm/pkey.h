@@ -216,7 +216,7 @@ struct pkey_kblob2pkey {
  * key is only exportable for CPACF (PKEY_KEYGEN_XPRT_CPAC).
  */
 struct pkey_genseck2 {
-	struct pkey_apqn *apqns;    /* in: ptr to list of apqn targets	  */
+	struct pkey_apqn __user *apqns; /* in: ptr to list of apqn targets*/
 	__u32 apqn_entries;	    /* in: # of apqn target list entries  */
 	enum pkey_key_type type;    /* in: key type to generate		  */
 	enum pkey_key_size size;    /* in: key size to generate		  */
@@ -246,15 +246,15 @@ struct pkey_genseck2 {
  * key is only exportable for CPACF (PKEY_KEYGEN_XPRT_CPAC).
  */
 struct pkey_clr2seck2 {
-	struct pkey_apqn *apqns;    /* in: ptr to list of apqn targets	  */
-	__u32 apqn_entries;	    /* in: # of apqn target list entries  */
-	enum pkey_key_type type;    /* in: key type to generate		  */
-	enum pkey_key_size size;    /* in: key size to generate		  */
-	__u32 keygenflags;	    /* in: key generation flags		  */
-	struct pkey_clrkey clrkey;  /* in: the clear key value		  */
-	__u8 __user *key;	    /* in: pointer to key blob buffer	  */
-	__u32 keylen;		    /* in: available key blob buffer size */
-				    /* out: actual key blob size	  */
+	struct pkey_apqn __user *apqns; /* in: ptr to list of apqn targets */
+	__u32 apqn_entries;	    /* in: # of apqn target list entries   */
+	enum pkey_key_type type;    /* in: key type to generate		   */
+	enum pkey_key_size size;    /* in: key size to generate		   */
+	__u32 keygenflags;	    /* in: key generation flags		   */
+	struct pkey_clrkey clrkey;  /* in: the clear key value		   */
+	__u8 __user *key;	    /* in: pointer to key blob buffer	   */
+	__u32 keylen;		    /* in: available key blob buffer size  */
+				    /* out: actual key blob size	   */
 };
 #define PKEY_CLR2SECK2 _IOWR(PKEY_IOCTL_MAGIC, 0x12, struct pkey_clr2seck2)
 
@@ -302,11 +302,11 @@ struct pkey_verifykey2 {
  * generate a list of apqns based on the key.
  */
 struct pkey_kblob2pkey2 {
-	__u8 __user *key;	     /* in: pointer to key blob		  */
-	__u32 keylen;		     /* in: key blob size		  */
-	struct pkey_apqn *apqns;     /* in: ptr to list of apqn targets	  */
-	__u32 apqn_entries;	     /* in: # of apqn target list entries */
-	struct pkey_protkey protkey; /* out: the protected key		  */
+	__u8 __user *key;	     /* in: pointer to key blob		   */
+	__u32 keylen;		     /* in: key blob size		   */
+	struct pkey_apqn __user *apqns; /* in: ptr to list of apqn targets */
+	__u32 apqn_entries;	     /* in: # of apqn target list entries  */
+	struct pkey_protkey protkey; /* out: the protected key		   */
 };
 #define PKEY_KBLOB2PROTK2 _IOWR(PKEY_IOCTL_MAGIC, 0x1A, struct pkey_kblob2pkey2)
 
@@ -333,12 +333,12 @@ struct pkey_kblob2pkey2 {
  * APQN is found, the ioctl returns with 0 but the apqn_entries value is 0.
  */
 struct pkey_apqns4key {
-	__u8 __user *key;	   /* in: pointer to key blob		    */
-	__u32 keylen;		   /* in: key blob size			    */
-	__u32 flags;		   /* in: match controlling flags	    */
-	struct pkey_apqn *apqns;   /* in/out: ptr to list of apqn targets   */
-	__u32 apqn_entries;	   /* in: max # of apqn entries in the list */
-				   /* out: # apqns stored into the list	    */
+	__u8 __user *key;	   /* in: pointer to key blob		      */
+	__u32 keylen;		   /* in: key blob size			      */
+	__u32 flags;		   /* in: match controlling flags	      */
+	struct pkey_apqn __user *apqns; /* in/out: ptr to list of apqn targets*/
+	__u32 apqn_entries;	   /* in: max # of apqn entries in the list   */
+				   /* out: # apqns stored into the list	      */
 };
 #define PKEY_APQNS4K _IOWR(PKEY_IOCTL_MAGIC, 0x1B, struct pkey_apqns4key)
 
@@ -366,13 +366,13 @@ struct pkey_apqns4key {
  * APQN is found, the ioctl returns with 0 but the apqn_entries value is 0.
  */
 struct pkey_apqns4keytype {
-	enum pkey_key_type type;   /* in: key type			    */
-	__u8  cur_mkvp[32];	   /* in: current mkvp			    */
-	__u8  alt_mkvp[32];	   /* in: alternate mkvp		    */
-	__u32 flags;		   /* in: match controlling flags	    */
-	struct pkey_apqn *apqns;   /* in/out: ptr to list of apqn targets   */
-	__u32 apqn_entries;	   /* in: max # of apqn entries in the list */
-				   /* out: # apqns stored into the list	    */
+	enum pkey_key_type type;   /* in: key type			      */
+	__u8  cur_mkvp[32];	   /* in: current mkvp			      */
+	__u8  alt_mkvp[32];	   /* in: alternate mkvp		      */
+	__u32 flags;		   /* in: match controlling flags	      */
+	struct pkey_apqn __user *apqns; /* in/out: ptr to list of apqn targets*/
+	__u32 apqn_entries;	   /* in: max # of apqn entries in the list   */
+				   /* out: # apqns stored into the list	      */
 };
 #define PKEY_APQNS4KT _IOWR(PKEY_IOCTL_MAGIC, 0x1C, struct pkey_apqns4keytype)
 
