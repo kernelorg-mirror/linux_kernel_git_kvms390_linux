@@ -3680,7 +3680,7 @@ check_layout:
 
 static bool qeth_iqd_may_bulk(struct qeth_qdio_out_q *queue,
 			      struct qeth_qdio_out_buffer *buffer,
-			      struct sk_buff *curr_skb, unsigned int elements,
+			      struct sk_buff *curr_skb,
 			      struct qeth_hdr *curr_hdr)
 {
 	struct qeth_hdr *prev_hdr = queue->prev_hdr;
@@ -3697,7 +3697,9 @@ static bool qeth_iqd_may_bulk(struct qeth_qdio_out_q *queue,
 		       prev_hdr->hdr.l2.vlan_id == curr_hdr->hdr.l2.vlan_id;
 	}
 
-	return ipv6_addr_equal(&prev_hdr->hdr.l3.next_hop.ipv6_addr,
+	return !(QETH_HDR_IPV6 &
+		 (prev_hdr->hdr.l3.flags ^ curr_hdr->hdr.l3.flags)) &&
+	       ipv6_addr_equal(&prev_hdr->hdr.l3.next_hop.ipv6_addr,
 			       &curr_hdr->hdr.l3.next_hop.ipv6_addr) &&
 	       prev_hdr->hdr.l3.vlan_id == curr_hdr->hdr.l3.vlan_id;
 }
@@ -3819,7 +3821,7 @@ static int __qeth_xmit(struct qeth_card *card, struct qeth_qdio_out_q *queue,
 		return -EBUSY;
 
 	if ((buffer->next_element_to_fill + elements > queue->max_elements) ||
-	    !qeth_iqd_may_bulk(queue, buffer, skb, elements, hdr)) {
+	    !qeth_iqd_may_bulk(queue, buffer, skb, hdr)) {
 		atomic_set(&buffer->state, QETH_QDIO_BUF_PRIMED);
 		qeth_flush_queue(queue);
 		buffer = queue->bufs[queue->bulk_start];
