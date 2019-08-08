@@ -75,10 +75,10 @@ struct cipherkeytoken {
 	u8  uadlen;   /* optional user definable associated data length */
 	u8  res4[1];
 	u16 wpllen;   /* wrapped payload length in bits: */
-		      /*   plfver  0x00 0x01             */
-		      /*   AES-128  512  640             */
-		      /*   AES-192  576  640             */
-		      /*   AES-256  640  640             */
+		      /*   plfver  0x00 0x01		 */
+		      /*   AES-128  512  640		 */
+		      /*   AES-192  576  640		 */
+		      /*   AES-256  640  640		 */
 	u8  res5[1];
 	u8  algtype;  /* 0x02 for AES cipher */
 	u16 keytype;  /* 0x0001 for 'cipher' */

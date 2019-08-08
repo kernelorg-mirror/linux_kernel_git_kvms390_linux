@@ -927,12 +927,12 @@ static int _ip_cprb_helper(u16 cardnr, u16 domain,
 		u16 len;
 		struct {
 			u16 len;
-			u16 flag;            /* 0x0064 */
+			u16 flag;	     /* 0x0064 */
 			u16 clr_key_bit_len;
 		} tlv1;
 		struct {
 			u16 len;
-			u16 flag;       /* 0x0063 */
+			u16 flag;	/* 0x0063 */
 			u8  clr_key[0]; /* clear key value bytes */
 		} tlv2;
 	} __packed * preq_vud_block;
@@ -940,7 +940,7 @@ static int _ip_cprb_helper(u16 cardnr, u16 domain,
 		u16 len;
 		struct {
 			u16 len;
-			u16 flag;         /* 0x0030 */
+			u16 flag;	  /* 0x0030 */
 			u8  key_token[0]; /* key skeleton */
 		} tlv1;
 	} __packed * preq_key_block;
@@ -954,7 +954,7 @@ static int _ip_cprb_helper(u16 cardnr, u16 domain,
 			u16 len;
 			struct {
 				u16 len;
-				u16 flag;         /* 0x0030 */
+				u16 flag;	  /* 0x0030 */
 				u8  key_token[0]; /* key token */
 			} tlv1;
 		} kb;

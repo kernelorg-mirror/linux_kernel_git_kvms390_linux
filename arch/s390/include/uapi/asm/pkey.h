@@ -20,10 +20,10 @@
 
 #define PKEY_IOCTL_MAGIC 'p'
 
-#define SECKEYBLOBSIZE	64         /* secure key blob size is always 64 bytes */
-#define PROTKEYBLOBSIZE 80      /* protected key blob size is always 80 bytes */
-#define MAXPROTKEYSIZE	64      /* a protected key blob may be up to 64 bytes */
-#define MAXCLRKEYSIZE	32         /* a clear key value may be up to 32 bytes */
+#define SECKEYBLOBSIZE	64	   /* secure key blob size is always 64 bytes */
+#define PROTKEYBLOBSIZE 80	/* protected key blob size is always 80 bytes */
+#define MAXPROTKEYSIZE	64	/* a protected key blob may be up to 64 bytes */
+#define MAXCLRKEYSIZE	32	   /* a clear key value may be up to 32 bytes */
 #define MAXAESCIPHERKEYSIZE 136  /* our aes cipher keys have always 136 bytes */
 
 /* Minimum and maximum size of a key blob */
