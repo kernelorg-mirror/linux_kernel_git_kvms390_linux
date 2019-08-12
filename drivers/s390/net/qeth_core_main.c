@@ -5265,7 +5265,9 @@ static int qeth_tx_poll(struct napi_struct *napi, int budget)
 		/* Give the CPU a breather: */
 		if (work_done >= QDIO_MAX_BUFFERS_PER_Q) {
 			QETH_TXQ_STAT_INC(queue, completion_yield);
-			return budget;
+			if (napi_complete_done(napi, 0))
+				napi_schedule(napi);
+			return 0;
 		}
 
 		completed = qdio_inspect_queue(CARD_DDEV(card), queue_no, false,
