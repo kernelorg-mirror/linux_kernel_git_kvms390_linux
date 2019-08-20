@@ -3694,14 +3694,11 @@ static bool qeth_iqd_may_bulk(struct qeth_qdio_out_q *queue,
 
 		return ether_addr_equal(eth_hdr(prev_skb)->h_dest,
 					eth_hdr(curr_skb)->h_dest) &&
-		       prev_hdr->hdr.l2.vlan_id == curr_hdr->hdr.l2.vlan_id;
+		       qeth_l2_same_vlan(&prev_hdr->hdr.l2, &curr_hdr->hdr.l2);
 	}
 
-	return !(QETH_HDR_IPV6 &
-		 (prev_hdr->hdr.l3.flags ^ curr_hdr->hdr.l3.flags)) &&
-	       ipv6_addr_equal(&prev_hdr->hdr.l3.next_hop.ipv6_addr,
-			       &curr_hdr->hdr.l3.next_hop.ipv6_addr) &&
-	       prev_hdr->hdr.l3.vlan_id == curr_hdr->hdr.l3.vlan_id;
+	return qeth_l3_same_next_hop(&prev_hdr->hdr.l3, &curr_hdr->hdr.l3) &&
+	       qeth_l3_iqd_same_vlan(&prev_hdr->hdr.l3, &curr_hdr->hdr.l3);
 }
 
 static unsigned int __qeth_fill_buffer(struct sk_buff *skb,
