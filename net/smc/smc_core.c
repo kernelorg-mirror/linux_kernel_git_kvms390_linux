@@ -409,21 +409,25 @@ static void smc_link_clear(struct smc_link *lnk)
 	smc_wr_free_link_mem(lnk);
 }
 
-static void smcr_buf_free(struct smc_link_group *lgr, bool is_rmb,
-			  struct smc_buf_desc *buf_desc)
+static void smcr_buf_unmap(struct smc_link *lnk, bool is_rmb,
+			   struct smc_buf_desc *buf_desc)
 {
-	struct smc_link *lnk = &lgr->lnk[SMC_SINGLE_LINK];
-
 	if (is_rmb) {
-		if (buf_desc->mr_rx[SMC_SINGLE_LINK])
-			smc_ib_put_memory_region(
-					buf_desc->mr_rx[SMC_SINGLE_LINK]);
+		smc_ib_put_memory_region(buf_desc);
 		smc_ib_buf_unmap_sg(lnk->smcibdev, buf_desc,
 				    DMA_FROM_DEVICE);
 	} else {
 		smc_ib_buf_unmap_sg(lnk->smcibdev, buf_desc,
 				    DMA_TO_DEVICE);
 	}
+}
+
+static void smcr_buf_free(struct smc_link_group *lgr, bool is_rmb,
+			  struct smc_buf_desc *buf_desc)
+{
+	struct smc_link *lnk = &lgr->lnk[SMC_SINGLE_LINK];
+
+	smcr_buf_unmap(lnk, is_rmb, buf_desc);
 	sg_free_table(&buf_desc->sgt[SMC_SINGLE_LINK]);
 	if (buf_desc->pages)
 		__free_pages(buf_desc->pages, buf_desc->order);

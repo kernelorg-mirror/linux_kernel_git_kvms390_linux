@@ -365,9 +365,13 @@ int smc_ib_create_queue_pair(struct smc_link *lnk)
 	return rc;
 }
 
-void smc_ib_put_memory_region(struct ib_mr *mr)
+void smc_ib_put_memory_region(struct smc_buf_desc *buf_slot)
 {
-	ib_dereg_mr(mr);
+	if (!buf_slot->mr_rx[SMC_SINGLE_LINK])
+		return; /* already done */
+
+	ib_dereg_mr(buf_slot->mr_rx[SMC_SINGLE_LINK]);
+	buf_slot->mr_rx[SMC_SINGLE_LINK] = NULL;
 }
 
 static int smc_ib_map_mr_sg(struct smc_buf_desc *buf_slot)
