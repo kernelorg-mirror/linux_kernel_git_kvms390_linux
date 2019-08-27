@@ -650,7 +650,7 @@ static void __smc_lgr_terminate(struct smc_link_group *lgr, bool soft)
 
 /* unlink and terminate link group
  * @soft: true if link group shutdown can take its time
- *        false if immediate link group shutdown is required
+ *	  false if immediate link group shutdown is required
  */
 void smc_lgr_terminate(struct smc_link_group *lgr, bool soft)
 {
