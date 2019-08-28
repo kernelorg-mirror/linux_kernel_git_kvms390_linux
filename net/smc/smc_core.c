@@ -42,7 +42,7 @@ static struct smc_lgr_list smc_lgr_list = {	/* established link groups */
 };
 
 static atomic_t lgr_cnt;		/* number of existing link groups */
-DECLARE_WAIT_QUEUE_HEAD(lgrs_deleted);
+static DECLARE_WAIT_QUEUE_HEAD(lgrs_deleted);
 
 static void smc_buf_free(struct smc_link_group *lgr, bool is_rmb,
 			 struct smc_buf_desc *buf_desc);
