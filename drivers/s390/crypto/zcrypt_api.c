@@ -36,6 +36,7 @@
 #include "zcrypt_msgtype6.h"
 #include "zcrypt_msgtype50.h"
 #include "zcrypt_ccamisc.h"
+#include "zcrypt_ep11misc.h"
 
 /*
  * Module description.
