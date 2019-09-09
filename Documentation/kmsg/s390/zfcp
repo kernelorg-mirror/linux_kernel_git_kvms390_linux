@@ -369,6 +369,30 @@
  */
 
 /*?
+ * Text: "%s: All paths over this FCP device are disused because of excessive bit errors\n"
+ * Severity: Warning
+ * Parameter:
+ *   @1: bus ID of the zfcp device
+ * Description:
+ * The FCP channel reported that its bit error threshold has been exceeded.
+ * These errors might result from a problem with the physical components
+ * of the local fibre link into the FCP channel.
+ * The problem might be damage or malfunction of the cable or
+ * cable connection between the FCP channel and
+ * the adjacent fabric switch port or the point-to-point peer.
+ * Find details about the errors in the HBA trace for the FCP device.
+ * The zfcp device driver closed down the FCP device
+ * to limit the performance impact from possible I/O command timeouts.
+ * User action:
+ * Check for problems on the local fibre link, ensure that fibre optics are
+ * clean and functional, and all cables are properly plugged.
+ * After the repair action, you can manually recover the FCP device by
+ * writing "0" into its "failed" sysfs attribute.
+ * If recovery through sysfs is not possible, set the CHPID of the device
+ * offline and back online on the service element.
+ */
+
+/*?
  * Text: "%s: The local link has been restored\n"
  * Severity: Informational
  * Parameter:
