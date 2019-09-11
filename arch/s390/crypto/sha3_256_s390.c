@@ -68,7 +68,7 @@ static int sha3_224_import(struct shash_desc *desc, const void *in)
 }
 
 static struct shash_alg sha3_256_alg = {
-	.digestsize	=	SHA3_256_DIGEST_SIZE,      /* = 32 */
+	.digestsize	=	SHA3_256_DIGEST_SIZE,	   /* = 32 */
 	.init		=	sha3_256_init,
 	.update		=	s390_sha_update,
 	.final		=	s390_sha_final,
