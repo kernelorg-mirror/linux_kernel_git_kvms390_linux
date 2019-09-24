@@ -804,7 +804,7 @@ static int __hw_perf_event_init(struct perf_event *event)
 	}
 
 	if (si.ribm & CPU_MF_SF_RIBM_NOTAV) {
-		pr_warn("CPU Measurement Facility sampling is temporarily not avaiable\n");
+		pr_warn("CPU Measurement Facility sampling is temporarily not available\n");
 		err = -EBUSY;
 		goto out;
 	}
