@@ -183,12 +183,11 @@ static void smc_lgr_free_work(struct work_struct *work)
 	struct smc_link_group *lgr = container_of(to_delayed_work(work),
 						  struct smc_link_group,
 						  free_work);
-	struct list_head *lgr_list;
 	spinlock_t *lgr_lock;
 	struct smc_link *lnk;
 	bool conns;
 
-	lgr_list = smc_lgr_list_head(lgr, &lgr_lock);
+	smc_lgr_list_head(lgr, &lgr_lock);
 	spin_lock_bh(lgr_lock);
 	if (lgr->freeing) {
 		spin_unlock_bh(lgr_lock);
@@ -654,10 +653,9 @@ static void __smc_lgr_terminate(struct smc_link_group *lgr, bool soft)
  */
 void smc_lgr_terminate(struct smc_link_group *lgr, bool soft)
 {
-	struct list_head *lgr_list;
 	spinlock_t *lgr_lock;
 
-	lgr_list = smc_lgr_list_head(lgr, &lgr_lock);
+	smc_lgr_list_head(lgr, &lgr_lock);
 	spin_lock_bh(lgr_lock);
 	if (lgr->terminating) {
 		spin_unlock_bh(lgr_lock);
