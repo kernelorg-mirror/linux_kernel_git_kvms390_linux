@@ -148,6 +148,9 @@ int smc_ism_unregister_dmb(struct smcd_dev *smcd, struct smc_buf_desc *dmb_desc)
 	struct smcd_dmb dmb;
 	int rc = 0;
 
+	if (!dmb_desc->dma_addr)
+		return rc;
+
 	memset(&dmb, 0, sizeof(dmb));
 	dmb.dmb_tok = dmb_desc->token;
 	dmb.sba_idx = dmb_desc->sba_idx;
