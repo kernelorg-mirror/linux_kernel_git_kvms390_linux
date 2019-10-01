@@ -505,17 +505,6 @@ For printing netdev_features_t.
 
 Passed by reference.
 
-Kernel messages
----------------
-
-::
-
-       %pj	123456
-
-For generating the jhash of a string truncated to six digits.
-
-Passed by reference.
-
 Thanks
 ======
 

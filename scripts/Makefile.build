@@ -263,7 +263,6 @@ endif
 # Built-in and composite module parts
 $(obj)/%.o: $(src)/%.c $(recordmcount_source) $(objtool_dep) FORCE
 	$(call cmd,force_checksrc)
-	$(call cmd,force_check_kmsg)
 	$(call if_changed_rule,cc_o_c)
 
 cmd_mod = { \
@@ -327,24 +326,6 @@ cmd_cc_symtypes_S =                                                         \
 $(obj)/%.symtypes : $(src)/%.S FORCE
 	$(call cmd,cc_symtypes_S)
 
-# kmsg check tool
-ifneq ($(KBUILD_KMSG_CHECK),0)
-  ifeq ($(KBUILD_KMSG_CHECK),3)
-    kmsg_cmd := dita
-    quiet_cmd_force_check_kmsg = KMSG_DITA $<
-    $(shell [ -d $(objtree)/dita ] || mkdir -p $(objtree)/dita)
-  else
-    ifeq ($(KBUILD_KMSG_CHECK),2)
-      kmsg_cmd := print
-      quiet_cmd_force_check_kmsg = KMSG_PRINT $<
-      $(shell [ -d $(objtree)/man ] || mkdir -p $(objtree)/man)
-    else
-      kmsg_cmd := check
-      quiet_cmd_force_check_kmsg = KMSG_CHECK $<
-    endif
-  endif
-  cmd_force_check_kmsg = $(KMSG_CHECK) $(kmsg_cmd) $(CC) $(c_flags) $< ;
-endif
 
 quiet_cmd_cpp_s_S = CPP $(quiet_modtag) $@
 cmd_cpp_s_S       = $(CPP) $(a_flags) -o $@ $<
