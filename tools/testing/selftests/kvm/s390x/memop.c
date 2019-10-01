@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 	/* Bad access register: */
 	run->psw_mask &= ~(3UL << (63 - 17));
 	run->psw_mask |= 1UL << (63 - 17);  /* Enable AR mode */
-	vcpu_run(vm, VCPU_ID);		    /* To sync new state to SIE block */
+	vcpu_run(vm, VCPU_ID);              /* To sync new state to SIE block */
 	ksmo.gaddr = (uintptr_t)mem1;
 	ksmo.flags = 0;
 	ksmo.size = maxsize;
@@ -157,8 +157,8 @@ int main(int argc, char *argv[])
 	ksmo.ar = 17;
 	rv = _vcpu_ioctl(vm, VCPU_ID, KVM_S390_MEM_OP, &ksmo);
 	TEST_ASSERT(rv == -1 && errno == EINVAL, "ioctl allows ARs > 15");
-	run->psw_mask &= ~(3UL << (63 - 17));	/* Disable AR mode */
-	vcpu_run(vm, VCPU_ID);			/* Run to sync new state */
+	run->psw_mask &= ~(3UL << (63 - 17));   /* Disable AR mode */
+	vcpu_run(vm, VCPU_ID);                  /* Run to sync new state */
 
 	kvm_vm_free(vm);
 
