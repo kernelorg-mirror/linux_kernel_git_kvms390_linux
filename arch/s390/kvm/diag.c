@@ -154,7 +154,7 @@ static int __diag_time_slice_end(struct kvm_vcpu *vcpu)
 static int __diag_time_slice_end_directed(struct kvm_vcpu *vcpu)
 {
 	struct kvm_vcpu *tcpu;
-	int tid, tcpu_nr;
+	int tid;
 
 	tid = vcpu->run->s.regs.gprs[(vcpu->arch.sie_block->ipa & 0xf0) >> 4];
 	vcpu->stat.diagnose_9c++;
@@ -169,14 +169,8 @@ static int __diag_time_slice_end_directed(struct kvm_vcpu *vcpu)
 		goto no_yield;
 
 	/* target already running */
-	tcpu_nr = READ_ONCE(tcpu->cpu);
-	if (tcpu_nr >= 0) {
-		/* Maybe our parent hypervisor has scheduled this away? */
-		if (arch_vcpu_is_preempted(tcpu_nr))
-			goto cascade;
-		else
-			goto no_yield;
-	}
+	if (tcpu->cpu >= 0)
+		goto no_yield;
 
 	if (kvm_vcpu_yield_to(tcpu) <= 0)
 		goto no_yield;
@@ -184,13 +178,6 @@ static int __diag_time_slice_end_directed(struct kvm_vcpu *vcpu)
 	VCPU_EVENT(vcpu, 5, "diag time slice end directed to %d: done", tid);
 	vcpu->stat.diagnose_9c_success++;
 	return 0;
-
-cascade:
-	smp_yield_cpu(tcpu_nr);
-	VCPU_EVENT(vcpu, 5, "diag time slice end directed to %d: done", tid);
-	vcpu->stat.diagnose_9c_cascaded++;
-	return 0;
-
 no_yield:
 	VCPU_EVENT(vcpu, 5, "diag time slice end directed to %d: ignored", tid);
 	vcpu->stat.diagnose_9c_ignored++;

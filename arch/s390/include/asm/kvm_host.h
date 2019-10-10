@@ -394,7 +394,6 @@ struct kvm_vcpu_stat {
 	u64 diagnose_9c;
 	u64 diagnose_9c_success;
 	u64 diagnose_9c_ignored;
-	u64 diagnose_9c_cascaded;
 	u64 diagnose_258;
 	u64 diagnose_308;
 	u64 diagnose_500;

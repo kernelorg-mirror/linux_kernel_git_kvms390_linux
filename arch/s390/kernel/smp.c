@@ -419,7 +419,6 @@ void smp_yield_cpu(int cpu)
 		asm volatile("diag 0,0,0x44");
 	}
 }
-EXPORT_SYMBOL(smp_yield_cpu);
 
 /*
  * Send cpus emergency shutdown signal. This gives the cpus the
