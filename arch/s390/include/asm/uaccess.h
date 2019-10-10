@@ -86,7 +86,7 @@ raw_copy_to_user(void __user *to, const void *from, unsigned long n);
 static inline int __put_user_fn(void *x, void __user *ptr, unsigned long size)
 {
 	unsigned long spec = 0x010000UL;
-	int rc = 0;
+	int rc;
 
 	switch (size) {
 	case 1:
@@ -116,7 +116,7 @@ static inline int __put_user_fn(void *x, void __user *ptr, unsigned long size)
 static inline int __get_user_fn(void *x, const void __user *ptr, unsigned long size)
 {
 	unsigned long spec = 0x01UL;
-	int rc = 0;
+	int rc;
 
 	switch (size) {
 	case 1:
