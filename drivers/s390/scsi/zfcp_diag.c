@@ -20,10 +20,7 @@
 #include "zfcp_def.h"
 
 /* Max age of data in a diagnostics buffer before it needs a refresh (in ms). */
-static unsigned int zfcp_diag_max_age = (5 * 1000);
-module_param_named(diag_max_age, zfcp_diag_max_age, uint, 0600);
-MODULE_PARM_DESC(diag_max_age,
-	"How much time (in ms) can pass before a diagnostics buffer needs a refresh (default 5s)");
+#define ZFCP_DIAG_MAX_AGE (5 * 1000)
 
 static DECLARE_WAIT_QUEUE_HEAD(__zfcp_diag_publish_wait);
 
@@ -43,7 +40,7 @@ int zfcp_diag_adapter_setup(struct zfcp_adapter *const adapter)
 {
 	/* set the timestamp so that the first test on age will always fail */
 	const unsigned long initial_timestamp =
-		jiffies - msecs_to_jiffies(zfcp_diag_max_age);
+		jiffies - msecs_to_jiffies(ZFCP_DIAG_MAX_AGE);
 	struct zfcp_diag_adapter *diag;
 	struct zfcp_diag_header *hdr;
 
@@ -255,7 +252,7 @@ __zfcp_diag_test_buffer_age_isfresh(const struct zfcp_diag_header *const hdr)
 	if (!time_after_eq(now, hdr->timestamp))
 		return false;
 
-	if (jiffies_to_msecs(now - hdr->timestamp) >= zfcp_diag_max_age)
+	if (jiffies_to_msecs(now - hdr->timestamp) >= ZFCP_DIAG_MAX_AGE)
 		return false;
 
 	return true;
