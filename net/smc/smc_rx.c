@@ -326,7 +326,7 @@ int smc_rx_recvmsg(struct smc_sock *smc, struct msghdr *msg,
 
 		if (sk->sk_shutdown & RCV_SHUTDOWN) {
 			/* smc_cdc_msg_recv_action() could have run after
-			 * above smc_rx_data_available()
+			 * above smc_rx_recvmsg_data_available()
 			 */
 			if (smc_rx_recvmsg_data_available(smc))
 				goto copy;
