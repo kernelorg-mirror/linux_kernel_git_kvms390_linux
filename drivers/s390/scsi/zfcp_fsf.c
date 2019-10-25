@@ -1309,7 +1309,7 @@ out:
  * zfcp_fsf_exchange_config_data_sync() - Request information about FCP channel.
  * @qdio: pointer to the QDIO-Queue to use for sending the command.
  * @data: pointer to the QTCB-Bottom for storing the result of the command,
- *        might be %NULL.
+ *	  might be %NULL.
  *
  * Returns:
  * * 0		- Exchange Config Data was successful, @data is complete
@@ -1419,7 +1419,7 @@ out:
  * zfcp_fsf_exchange_port_data_sync() - Request information about local port.
  * @qdio: pointer to the QDIO-Queue to use for sending the command.
  * @data: pointer to the QTCB-Bottom for storing the result of the command,
- *        might be %NULL.
+ *	  might be %NULL.
  *
  * Returns:
  * * 0		- Exchange Port Data was successful, @data is complete
