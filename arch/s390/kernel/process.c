@@ -188,7 +188,7 @@ unsigned long get_wchan(struct task_struct *p)
 	if (!try_get_task_stack(p))
 		return 0;
 
-	unwind_for_each_frame(&state, p, 0, 0) {
+	unwind_for_each_frame(&state, p, NULL, 0) {
 		if (state.stack_info.type != STACK_TYPE_TASK) {
 			ip = 0;
 			break;
