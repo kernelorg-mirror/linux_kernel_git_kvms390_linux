@@ -75,7 +75,7 @@ int smc_ib_modify_qp_reset(struct smc_link *lnk);
 long smc_ib_setup_per_ibdev(struct smc_ib_device *smcibdev);
 int smc_ib_get_memory_region(struct ib_pd *pd, int access_flags,
 			     struct smc_buf_desc *buf_slot);
-void smc_ib_put_memory_region(struct smc_buf_desc *buf_slot);
+void smc_ib_put_memory_region(struct ib_mr *mr);
 void smc_ib_sync_sg_for_cpu(struct smc_ib_device *smcibdev,
 			    struct smc_buf_desc *buf_slot,
 			    enum dma_data_direction data_direction);

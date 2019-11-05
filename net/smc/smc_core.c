@@ -417,25 +417,21 @@ static void smc_link_clear(struct smc_link *lnk)
 		wake_up(&lnk->smcibdev->lnks_deleted);
 }
 
-static void smcr_buf_unmap(struct smc_link *lnk, bool is_rmb,
-			   struct smc_buf_desc *buf_desc)
+static void smcr_buf_free(struct smc_link_group *lgr, bool is_rmb,
+			  struct smc_buf_desc *buf_desc)
 {
+	struct smc_link *lnk = &lgr->lnk[SMC_SINGLE_LINK];
+
 	if (is_rmb) {
-		smc_ib_put_memory_region(buf_desc);
+		if (buf_desc->mr_rx[SMC_SINGLE_LINK])
+			smc_ib_put_memory_region(
+					buf_desc->mr_rx[SMC_SINGLE_LINK]);
 		smc_ib_buf_unmap_sg(lnk->smcibdev, buf_desc,
 				    DMA_FROM_DEVICE);
 	} else {
 		smc_ib_buf_unmap_sg(lnk->smcibdev, buf_desc,
 				    DMA_TO_DEVICE);
 	}
-}
-
-static void smcr_buf_free(struct smc_link_group *lgr, bool is_rmb,
-			  struct smc_buf_desc *buf_desc)
-{
-	struct smc_link *lnk = &lgr->lnk[SMC_SINGLE_LINK];
-
-	smcr_buf_unmap(lnk, is_rmb, buf_desc);
 	sg_free_table(&buf_desc->sgt[SMC_SINGLE_LINK]);
 	if (buf_desc->pages)
 		__free_pages(buf_desc->pages, buf_desc->order);
@@ -588,25 +584,6 @@ static void smc_lgr_cleanup(struct smc_link_group *lgr)
 	}
 }
 
-/* unmap all RMBs belonging to the given link group */
-static void smcr_unmap_all_bufs(struct smc_link_group *lgr)
-{
-	struct smc_link *lnk = &lgr->lnk[SMC_SINGLE_LINK];
-	int i;
-
-	if (lgr->is_smcd)
-		return;
-
-	for (i = 0; i < SMC_RMBE_SIZES; i++) {
-		struct smc_buf_desc *buf_desc;
-
-		list_for_each_entry(buf_desc, &lgr->rmbs[i], list)
-			smcr_buf_unmap(lnk, true, buf_desc);
-		list_for_each_entry(buf_desc, &lgr->sndbufs[i], list)
-			smcr_buf_unmap(lnk, false, buf_desc);
-	}
-}
-
 /* terminate link group */
 static void __smc_lgr_terminate(struct smc_link_group *lgr, bool soft)
 {
@@ -639,12 +616,10 @@ static void __smc_lgr_terminate(struct smc_link_group *lgr, bool soft)
 	}
 	read_unlock_bh(&lgr->conns_lock);
 	smc_lgr_cleanup(lgr);
-	if (soft) {
+	if (soft)
 		smc_lgr_schedule_free_work_fast(lgr);
-	} else {
-		smcr_unmap_all_bufs(lgr);
+	else
 		smc_lgr_free(lgr);
-	}
 }
 
 /* unlink and terminate link group
