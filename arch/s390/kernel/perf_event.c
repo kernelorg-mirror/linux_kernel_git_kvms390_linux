@@ -228,8 +228,13 @@ void perf_callchain_kernel(struct perf_callchain_entry_ctx *entry,
 
 	unwind_for_each_frame(&state, current, regs, 0) {
 		addr = unwind_get_return_address(&state);
-		if (!addr || perf_callchain_store(entry, addr))
-			return;
+		if (!addr) {
+			if (state.reliable)
+				break; /* known bad address - stop */
+			continue; /* random bad address - skip */
+		}
+		if (perf_callchain_store(entry, addr))
+			break; /* array full - stop */
 	}
 }
 
