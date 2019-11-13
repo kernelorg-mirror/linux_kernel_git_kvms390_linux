@@ -158,7 +158,7 @@ int smc_ism_unregister_dmb(struct smcd_dev *smcd, struct smc_buf_desc *dmb_desc)
 	dmb.dma_addr = dmb_desc->dma_addr;
 	dmb.dmb_len = dmb_desc->len;
 	rc = smcd->ops->unregister_dmb(smcd, &dmb);
-	if (!rc) {
+	if (!rc || rc == ISM_ERROR) {
 		dmb_desc->cpu_addr = NULL;
 		dmb_desc->dma_addr = 0;
 	}
@@ -386,7 +386,7 @@ void smcd_handle_irq(struct smcd_dev *smcd, unsigned int dmbno)
 
 	spin_lock_irqsave(&smcd->lock, flags);
 	conn = smcd->conn[dmbno];
-	if (conn)
+	if (conn && !conn->killed)
 		tasklet_schedule(&conn->rx_tsklet);
 	spin_unlock_irqrestore(&smcd->lock, flags);
 }
