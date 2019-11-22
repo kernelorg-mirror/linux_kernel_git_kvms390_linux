@@ -93,6 +93,10 @@ struct stack_frame {
 #define CALL_CLOBBER_1 CALL_CLOBBER_2, "3"
 #define CALL_CLOBBER_0 CALL_CLOBBER_1
 
+#define CURRENT_FRAME							\
+	((unsigned long)__builtin_frame_address(0) -			\
+	 offsetof(struct stack_frame, back_chain))
+
 #define CALL_ON_STACK(fn, stack, nr, args...)				\
 ({									\
 	CALL_ARGS_##nr(args);						\
@@ -101,12 +105,13 @@ struct stack_frame {
 	asm volatile(							\
 		"	la	%[_prev],0(15)\n"			\
 		"	la	15,0(%[_stack])\n"			\
-		"	stg	%[_prev],%[_bc](15)\n"			\
+		"	stg	%[_frame],%[_bc](15)\n"			\
 		"	brasl	14,%[_fn]\n"				\
 		"	la	15,0(%[_prev])\n"			\
 		: [_prev] "=&a" (prev), CALL_FMT_##nr			\
 		  [_stack] "a" (stack),					\
 		  [_bc] "i" (offsetof(struct stack_frame, back_chain)),	\
+		  [_frame] "d" (CURRENT_FRAME),				\
 		  [_fn] "X" (fn) : CALL_CLOBBER_##nr);			\
 	r2;								\
 })
