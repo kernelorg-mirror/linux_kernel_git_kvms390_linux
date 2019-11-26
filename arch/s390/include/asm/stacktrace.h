@@ -62,6 +62,19 @@ struct stack_frame {
 };
 #endif
 
+/*
+ * Unlike current_stack_pointer() which simply returns current value of %r15
+ * current_frame_address() returns function stack frame address, which matches
+ * %r15 upon function invocation. It may differ from %r15 later if function
+ * allocates stack for local variables or new stack frame to call other
+ * functions.
+ */
+static __always_inline unsigned long current_frame_address(void)
+{
+	return (unsigned long)__builtin_frame_address(0) -
+	       offsetof(struct stack_frame, back_chain);
+}
+
 #define CALL_ARGS_0()							\
 	register unsigned long r2 asm("2")
 #define CALL_ARGS_1(arg1)						\
@@ -93,12 +106,9 @@ struct stack_frame {
 #define CALL_CLOBBER_1 CALL_CLOBBER_2, "3"
 #define CALL_CLOBBER_0 CALL_CLOBBER_1
 
-#define CURRENT_FRAME							\
-	((unsigned long)__builtin_frame_address(0) -			\
-	 offsetof(struct stack_frame, back_chain))
-
 #define CALL_ON_STACK(fn, stack, nr, args...)				\
 ({									\
+	unsigned long frame = current_frame_address();			\
 	CALL_ARGS_##nr(args);						\
 	unsigned long prev;						\
 									\
@@ -111,7 +121,7 @@ struct stack_frame {
 		: [_prev] "=&a" (prev), CALL_FMT_##nr			\
 		  [_stack] "a" (stack),					\
 		  [_bc] "i" (offsetof(struct stack_frame, back_chain)),	\
-		  [_frame] "d" (CURRENT_FRAME),				\
+		  [_frame] "d" (frame),					\
 		  [_fn] "X" (fn) : CALL_CLOBBER_##nr);			\
 	r2;								\
 })
