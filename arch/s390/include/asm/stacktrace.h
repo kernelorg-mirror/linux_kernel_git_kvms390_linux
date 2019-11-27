@@ -69,11 +69,9 @@ struct stack_frame {
  * allocates stack for local variables or new stack frame to call other
  * functions.
  */
-static __always_inline unsigned long current_frame_address(void)
-{
-	return (unsigned long)__builtin_frame_address(0) -
-	       offsetof(struct stack_frame, back_chain);
-}
+#define current_frame_address()						\
+	((unsigned long)__builtin_frame_address(0) -			\
+	 offsetof(struct stack_frame, back_chain))
 
 #define CALL_ARGS_0()							\
 	register unsigned long r2 asm("2")
