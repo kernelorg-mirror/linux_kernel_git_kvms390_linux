@@ -192,6 +192,9 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
 	if (!vdso_enabled)
 		return 0;
 
+	if (is_compat_task())
+		return 0;
+
 	vdso_pages = vdso64_pages;
 	/*
 	 * vDSO has a problem and was disabled, just don't "enable" it for
