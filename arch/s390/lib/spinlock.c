@@ -243,8 +243,7 @@ static inline void arch_spin_lock_classic(arch_spinlock_t *lp)
 void arch_spin_lock_wait(arch_spinlock_t *lp)
 {
 	/* Use classic spinlocks + niai if the steal time is >= 10% */
-	if (test_cpu_flag(CIF_DEDICATED_CPU) ||
-	    S390_lowcore.avg_steal_timer < (TICK_USEC << 12) / 10)
+	if (test_cpu_flag(CIF_DEDICATED_CPU))
 		arch_spin_lock_queued(lp);
 	else
 		arch_spin_lock_classic(lp);
