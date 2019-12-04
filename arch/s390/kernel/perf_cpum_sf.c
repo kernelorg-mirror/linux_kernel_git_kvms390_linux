@@ -1286,7 +1286,6 @@ static void hw_perf_event_update(struct perf_event *event, int flush_all)
 		do {
 			te_flags = te->flags & ~SDB_TE_BUFFER_FULL_MASK;
 			te_flags |= SDB_TE_ALERT_REQ_MASK;
-			barrier();
 		} while (!cmpxchg_double(&te->flags, &te->overflow,
 					 te->flags, te->overflow,
 					 te_flags, 0ULL));
