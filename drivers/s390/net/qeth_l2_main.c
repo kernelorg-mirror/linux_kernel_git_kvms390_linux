@@ -295,6 +295,7 @@ static void qeth_l2_stop_card(struct qeth_card *card)
 	qeth_clear_working_pool_list(card);
 	flush_workqueue(card->event_wq);
 	card->info.mac_bits &= ~QETH_LAYER2_MAC_REGISTERED;
+	card->info.promisc_mode = 0;
 }
 
 static int qeth_l2_process_inbound_buffer(struct qeth_card *card,
@@ -768,7 +769,8 @@ static void qeth_l2_trace_features(struct qeth_card *card)
 
 static void qeth_l2_setup_bridgeport_attrs(struct qeth_card *card)
 {
-	if (card->options.sbp.role != QETH_SBP_ROLE_NONE) {
+	if (!card->options.sbp.reflect_promisc &&
+	    (card->options.sbp.role != QETH_SBP_ROLE_NONE)) {
 		/* Conditional to avoid spurious error messages */
 		qeth_bridgeport_setrole(card, card->options.sbp.role);
 		/* Let the callback function refresh the stored role value. */
