@@ -115,26 +115,29 @@ _LPP_OFFSET	= __LC_LPP
 
 	.macro	SWITCH_ASYNC savearea,timer
 	tmhh	%r8,0x0001		# interrupting from user ?
-	jnz	1f
+	jnz	2f
 	lgr	%r14,%r9
+	cghi	%r14,__LC_RETURN_LPSWE
+	je	0f
 	slg	%r14,BASED(.Lcritical_start)
 	clg	%r14,BASED(.Lcritical_length)
-	jhe	0f
+	jhe	1f
+0:
 	lghi	%r11,\savearea		# inside critical section, do cleanup
 	brasl	%r14,cleanup_critical
 	tmhh	%r8,0x0001		# retest problem state after cleanup
-	jnz	1f
-0:	lg	%r14,__LC_ASYNC_STACK	# are we already on the target stack?
+	jnz	2f
+1:	lg	%r14,__LC_ASYNC_STACK	# are we already on the target stack?
 	slgr	%r14,%r15
 	srag	%r14,%r14,STACK_SHIFT
-	jnz	2f
+	jnz	3f
 	CHECK_STACK \savearea
 	aghi	%r15,-(STACK_FRAME_OVERHEAD + __PT_SIZE)
-	j	3f
-1:	UPDATE_VTIME %r14,%r15,\timer
+	j	4f
+2:	UPDATE_VTIME %r14,%r15,\timer
 	BPENTER __TI_flags(%r12),_TIF_ISOLATE_BP
-2:	lg	%r15,__LC_ASYNC_STACK	# load async stack
-3:	la	%r11,STACK_FRAME_OVERHEAD(%r15)
+3:	lg	%r15,__LC_ASYNC_STACK	# load async stack
+4:	la	%r11,STACK_FRAME_OVERHEAD(%r15)
 	.endm
 
 	.macro UPDATE_VTIME w1,w2,enter_timer
@@ -401,7 +404,7 @@ ENTRY(system_call)
 	stpt	__LC_EXIT_TIMER
 	mvc	__VDSO_ECTG_BASE(16,%r14),__LC_EXIT_TIMER
 	lmg	%r11,%r15,__PT_R11(%r11)
-	lpswe	__LC_RETURN_PSW
+	b	__LC_RETURN_LPSWE(%r0)
 .Lsysc_done:
 
 #
@@ -775,7 +778,7 @@ ENTRY(io_int_handler)
 	mvc	__VDSO_ECTG_BASE(16,%r14),__LC_EXIT_TIMER
 .Lio_exit_kernel:
 	lmg	%r11,%r15,__PT_R11(%r11)
-	lpswe	__LC_RETURN_PSW
+	b	__LC_RETURN_LPSWE(%r0)
 .Lio_done:
 
 #
@@ -1214,7 +1217,7 @@ ENTRY(mcck_int_handler)
 	stpt	__LC_EXIT_TIMER
 	mvc	__VDSO_ECTG_BASE(16,%r14),__LC_EXIT_TIMER
 0:	lmg	%r11,%r15,__PT_R11(%r11)
-	lpswe	__LC_RETURN_MCCK_PSW
+	b	__LC_RETURN_MCCK_LPSWE
 
 .Lmcck_panic:
 	lg	%r15,__LC_NODAT_STACK
@@ -1271,6 +1274,8 @@ ENDPROC(stack_overflow)
 #endif
 
 ENTRY(cleanup_critical)
+	cghi	%r9,__LC_RETURN_LPSWE
+	je	.Lcleanup_lpswe
 #if IS_ENABLED(CONFIG_KVM)
 	clg	%r9,BASED(.Lcleanup_table_sie)	# .Lsie_gmap
 	jl	0f
@@ -1424,6 +1429,7 @@ ENDPROC(cleanup_critical)
 	mvc	__LC_RETURN_PSW(16),__PT_PSW(%r9)
 	mvc	0(64,%r11),__PT_R8(%r9)
 	lmg	%r0,%r7,__PT_R0(%r9)
+.Lcleanup_lpswe:
 1:	lmg	%r8,%r9,__LC_RETURN_PSW
 	BR_EX	%r14,%r11
 .Lcleanup_sysc_restore_insn:
