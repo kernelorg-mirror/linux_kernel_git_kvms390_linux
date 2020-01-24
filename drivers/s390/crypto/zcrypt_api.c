@@ -1894,7 +1894,6 @@ void __exit zcrypt_api_exit(void)
 	zcrypt_msgtype6_exit();
 	zcrypt_msgtype50_exit();
 	zcrypt_ccamisc_exit();
-	zcrypt_ep11misc_exit();
 	zcrypt_debug_exit();
 }
 
