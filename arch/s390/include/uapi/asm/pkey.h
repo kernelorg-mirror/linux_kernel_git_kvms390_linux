@@ -40,7 +40,7 @@
 enum pkey_key_type {
 	PKEY_TYPE_CCA_DATA   = (__u32) 1,
 	PKEY_TYPE_CCA_CIPHER = (__u32) 2,
-	PKEY_TYPE_EP11       = (__u32) 3,
+	PKEY_TYPE_EP11	     = (__u32) 3,
 };
 
 /* the newer ioctls use a pkey_key_size enum for key size information */

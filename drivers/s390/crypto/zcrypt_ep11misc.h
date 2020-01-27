@@ -57,7 +57,7 @@ struct ep11_card_info {
 	u32  API_ord_nr;    /* API ordinal number */
 	u16  FW_version;    /* Firmware major and minor version */
 	char serial[16];    /* serial number string (16 ascii, no 0x00 !) */
-	u64  op_mode;       /* card operational mode(s) */
+	u64  op_mode;	    /* card operational mode(s) */
 };
 
 /* EP11 domain info struct */
@@ -66,7 +66,7 @@ struct ep11_domain_info {
 	char new_wk_state;  /* '0' empty, '1' uncommitted, '2' committed */
 	u8   cur_wkvp[32];  /* current wrapping key verification pattern */
 	u8   new_wkvp[32];  /* new wrapping key verification pattern */
-	u64  op_mode;       /* domain operational mode(s) */
+	u64  op_mode;	    /* domain operational mode(s) */
 };
 
 /*

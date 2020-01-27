@@ -223,7 +223,7 @@ static struct device_attribute dev_attr_ep11_serialnr =
 	__ATTR(serialnr, 0444, ep11_serialnr_show, NULL);
 
 static const struct {
-	int         mode_bit;
+	int	    mode_bit;
 	const char *mode_txt;
 } ep11_op_modes[] = {
 	{ 0, "FIPS2009" },
