@@ -153,8 +153,7 @@ static void show_cpu_summary(struct seq_file *m, void *v)
 
 static void show_cpu_topo(struct seq_file *m, unsigned long n)
 {
-	seq_printf(m, "physical id     : %d\n",
-		   topology_physical_package_id(n));
+	seq_printf(m, "physical id     : %d\n", topology_physical_package_id(n));
 	seq_printf(m, "core id         : %d\n", topology_core_id(n));
 	seq_printf(m, "book id         : %d\n", topology_book_id(n));
 	seq_printf(m, "drawer id       : %d\n", topology_drawer_id(n));
