@@ -727,7 +727,7 @@ static void qeth_l2_trace_features(struct qeth_card *card)
 static void qeth_l2_setup_bridgeport_attrs(struct qeth_card *card)
 {
 	if (!card->options.sbp.reflect_promisc &&
-	    (card->options.sbp.role != QETH_SBP_ROLE_NONE)) {
+	    card->options.sbp.role != QETH_SBP_ROLE_NONE) {
 		/* Conditional to avoid spurious error messages */
 		qeth_bridgeport_setrole(card, card->options.sbp.role);
 		/* Let the callback function refresh the stored role value. */
