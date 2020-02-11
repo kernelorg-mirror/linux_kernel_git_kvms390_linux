@@ -378,10 +378,10 @@ static int allocate_buffers(struct cpu_hw_sf *cpuhw, struct hw_perf_event *hwc)
 	/* Calculate sampling buffers using 4K pages
 	 *
 	 *    1. The sampling size is 32 bytes for basic sampling. This size
-	 *       is the same for all machine types. Diagnostic
-	 *       sampling uses auxlilary data buffer setup which provides the
-	 *       memory for SDBs using linux common code auxiliary trace
-	 *       setup.
+	 *	 is the same for all machine types. Diagnostic
+	 *	 sampling uses auxlilary data buffer setup which provides the
+	 *	 memory for SDBs using linux common code auxiliary trace
+	 *	 setup.
 	 *
 	 *    2. Function alloc_sampling_buffer() sets the Alert Request
 	 *	 Control indicator to trigger a measurement-alert to harvest
@@ -394,7 +394,7 @@ static int allocate_buffers(struct cpu_hw_sf *cpuhw, struct hw_perf_event *hwc)
 	 *	 a very high number of samples to be processed at one IRQ.
 	 *
 	 *    3. Use the sampling frequency as input.
-	 *       Compute the number of SDBs and ensure a minimum
+	 *	 Compute the number of SDBs and ensure a minimum
 	 *	 of CPUM_SF_MIN_SDB.  Depending on frequency add some more
 	 *	 SDBs to handle a higher sampling rate.
 	 *	 Use a minimum of CPUM_SF_MIN_SDB and allow for 100 samples
