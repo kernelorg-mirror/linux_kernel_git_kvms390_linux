@@ -1210,36 +1210,44 @@ EXPORT_SYMBOL(ep11_key2protkey);
 int ep11_findcard2(u32 **apqns, u32 *nr_apqns, u16 cardnr, u16 domain,
 		   int minhwtype, int minapi, const u8 *wkvp)
 {
-	struct zcrypt_device_status_ext *device_status;
+	struct zcrypt_device_status_ext *dev_states, state;
 	u32 *_apqns = NULL, _nr_apqns = 0;
 	int i, card, dom, rc = -ENOMEM;
 	struct ep11_domain_info edi;
 	struct ep11_card_info eci;
 
 	/* fetch status of all crypto cards */
-	device_status = kmalloc_array(MAX_ZDEV_ENTRIES_EXT,
-				      sizeof(struct zcrypt_device_status_ext),
-				      GFP_KERNEL);
-	if (!device_status)
-		return -ENOMEM;
-	zcrypt_device_status_mask_ext(device_status);
+	dev_states = kmalloc_array(MAX_ZDEV_ENTRIES_EXT,
+				   sizeof(struct zcrypt_device_status_ext),
+				   GFP_KERNEL);
+	/* the 256k malloc may fail, the following code can handle this */
+	if (dev_states)
+		zcrypt_device_status_mask_ext(dev_states);
 
 	/* allocate 1k space for up to 256 apqns */
 	_apqns = kmalloc_array(256, sizeof(u32), GFP_KERNEL);
 	if (!_apqns) {
-		kfree(device_status);
+		kfree(dev_states);
 		return -ENOMEM;
 	}
 
 	/* walk through all the crypto apqnss */
 	for (i = 0; i < MAX_ZDEV_ENTRIES_EXT; i++) {
-		card = AP_QID_CARD(device_status[i].qid);
-		dom = AP_QID_QUEUE(device_status[i].qid);
+		if (dev_states) {
+			state = dev_states[i];
+			card = AP_QID_CARD(state.qid);
+			dom = AP_QID_QUEUE(state.qid);
+		} else {
+			card = i / MAX_ZDEV_DOMAINS_EXT;
+			dom = i % MAX_ZDEV_DOMAINS_EXT;
+			if (zcrypt_device_status_ext(card, dom, &state))
+				continue;
+		}
 		/* check online state */
-		if (!device_status[i].online)
+		if (!state.online)
 			continue;
 		/* check for ep11 functions */
-		if (!(device_status[i].functions & 0x01))
+		if (!(state.functions & 0x01))
 			continue;
 		/* check cardnr */
 		if (cardnr != 0xFFFF && card != cardnr)
@@ -1248,7 +1256,7 @@ int ep11_findcard2(u32 **apqns, u32 *nr_apqns, u16 cardnr, u16 domain,
 		if (domain != 0xFFFF && dom != domain)
 			continue;
 		/* check min hardware type */
-		if (minhwtype && device_status[i].hwtype < minhwtype)
+		if (minhwtype && state.hwtype < minhwtype)
 			continue;
 		/* check min api version if given */
 		if (minapi > 0) {
@@ -1282,7 +1290,7 @@ int ep11_findcard2(u32 **apqns, u32 *nr_apqns, u16 cardnr, u16 domain,
 		rc = 0;
 	}
 
-	kfree(device_status);
+	kfree(dev_states);
 	return rc;
 }
 EXPORT_SYMBOL(ep11_findcard2);
