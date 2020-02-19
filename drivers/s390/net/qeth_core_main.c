@@ -5926,22 +5926,8 @@ static struct net_device *qeth_alloc_netdev(struct qeth_card *card)
 	SET_NETDEV_DEV(dev, &card->gdev->dev);
 	netif_carrier_off(dev);
 
-	if (IS_OSN(card)) {
-		dev->ethtool_ops = &qeth_osn_ethtool_ops;
-	} else {
-		dev->ethtool_ops = &qeth_ethtool_ops;
-		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
-		dev->hw_features |= NETIF_F_SG;
-		dev->vlan_features |= NETIF_F_SG;
-		if (IS_IQD(card)) {
-			dev->features |= NETIF_F_SG;
-			if (netif_set_real_num_tx_queues(dev,
-							 QETH_IQD_MIN_TXQ)) {
-				free_netdev(dev);
-				return NULL;
-			}
-		}
-	}
+	dev->ethtool_ops = IS_OSN(card) ? &qeth_osn_ethtool_ops :
+					  &qeth_ethtool_ops;
 
 	return dev;
 }
@@ -5956,6 +5942,28 @@ struct net_device *qeth_clone_netdev(struct net_device *orig)
 	clone->dev_port = orig->dev_port;
 	return clone;
 }
+
+int qeth_setup_netdev(struct qeth_card *card)
+{
+	struct net_device *dev = card->dev;
+	unsigned int num_tx_queues;
+
+	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+	dev->hw_features |= NETIF_F_SG;
+	dev->vlan_features |= NETIF_F_SG;
+
+	if (IS_IQD(card)) {
+		dev->features |= NETIF_F_SG;
+		num_tx_queues = QETH_IQD_MIN_TXQ;
+	} else if (IS_VM_NIC(card)) {
+		num_tx_queues = 1;
+	} else {
+		num_tx_queues = dev->real_num_tx_queues;
+	}
+
+	return netif_set_real_num_tx_queues(dev, num_tx_queues);
+}
+EXPORT_SYMBOL_GPL(qeth_setup_netdev);
 
 static int qeth_core_probe_device(struct ccwgroup_device *gdev)
 {
