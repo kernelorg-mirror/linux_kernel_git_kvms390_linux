@@ -513,7 +513,7 @@ static int smc_connect_abort(struct smc_sock *smc, int reason_code,
 			     int local_contact)
 {
 	if (local_contact == SMC_FIRST_CONTACT)
-		smc_lgr_forget(smc->conn.lgr);
+		smc_lgr_cleanup_early(&smc->conn);
 	if (smc->conn.lgr->is_smcd)
 		/* there is only one lgr role for SMC-D; use server lock */
 		mutex_unlock(&smc_server_lgr_pending);
@@ -1102,7 +1102,7 @@ static void smc_listen_decline(struct smc_sock *new_smc, int reason_code,
 {
 	/* RDMA setup failed, switch back to TCP */
 	if (local_contact == SMC_FIRST_CONTACT)
-		smc_lgr_forget(new_smc->conn.lgr);
+		smc_lgr_cleanup_early(&new_smc->conn);
 	if (reason_code < 0) { /* error, no fallback possible */
 		smc_listen_out_err(new_smc);
 		return;
@@ -1170,7 +1170,7 @@ static int smc_listen_ism_init(struct smc_sock *new_smc,
 			    new_smc->conn.lgr->vlan_id,
 			    new_smc->conn.lgr->smcd)) {
 		if (ini->cln_first_contact == SMC_FIRST_CONTACT)
-			smc_lgr_forget(new_smc->conn.lgr);
+			smc_lgr_cleanup_early(&new_smc->conn);
 		smc_conn_free(&new_smc->conn);
 		return SMC_CLC_DECL_SMCDNOTALK;
 	}
@@ -1178,7 +1178,7 @@ static int smc_listen_ism_init(struct smc_sock *new_smc,
 	/* Create send and receive buffers */
 	if (smc_buf_create(new_smc, true)) {
 		if (ini->cln_first_contact == SMC_FIRST_CONTACT)
-			smc_lgr_forget(new_smc->conn.lgr);
+			smc_lgr_cleanup_early(&new_smc->conn);
 		smc_conn_free(&new_smc->conn);
 		return SMC_CLC_DECL_MEM;
 	}
