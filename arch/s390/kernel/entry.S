@@ -614,7 +614,7 @@ ENTRY(pgm_check_handler)
 	cghi	%r10,4096
 	jhe	0f
 	/* if __LC_LAST_BREAK is < 4096, it contains one of
-	 * # the lpswe addresses in lowcore. Set it to 1 (initial state)
+	 * the lpswe addresses in lowcore. Set it to 1 (initial state)
 	 * to prevent leaking that address to userspace.
 	 */
 	lghi	%r10,1
