@@ -611,43 +611,50 @@ ENTRY(pgm_check_handler)
 	BPOFF
 	stmg	%r8,%r15,__LC_SAVE_AREA_SYNC
 	lg	%r10,__LC_LAST_BREAK
-	lg	%r12,__LC_CURRENT
+	cghi	%r10,4096
+	jhe	0f
+	/* if __LC_LAST_BREAK is < 4096, it contains one of
+	 * # the lpswe addresses in lowcore. Set it to 1 (initial state)
+	 * to prevent leaking that address to userspace.
+	 */
+	lghi	%r10,1
+0:	lg	%r12,__LC_CURRENT
 	lghi	%r11,0
 	larl	%r13,cleanup_critical
 	lmg	%r8,%r9,__LC_PGM_OLD_PSW
 	tmhh	%r8,0x0001		# test problem state bit
-	jnz	2f			# -> fault in user space
+	jnz	3f			# -> fault in user space
 #if IS_ENABLED(CONFIG_KVM)
 	# cleanup critical section for program checks in sie64a
 	lgr	%r14,%r9
 	slg	%r14,BASED(.Lsie_critical_start)
 	clg	%r14,BASED(.Lsie_critical_length)
-	jhe	0f
+	jhe	1f
 	lg	%r14,__SF_SIE_CONTROL(%r15)	# get control block pointer
 	ni	__SIE_PROG0C+3(%r14),0xfe	# no longer in SIE
 	lctlg	%c1,%c1,__LC_USER_ASCE		# load primary asce
 	larl	%r9,sie_exit			# skip forward to sie_exit
 	lghi	%r11,_PIF_GUEST_FAULT
 #endif
-0:	tmhh	%r8,0x4000		# PER bit set in old PSW ?
-	jnz	1f			# -> enabled, can't be a double fault
+1:	tmhh	%r8,0x4000		# PER bit set in old PSW ?
+	jnz	2f			# -> enabled, can't be a double fault
 	tm	__LC_PGM_ILC+3,0x80	# check for per exception
 	jnz	.Lpgm_svcper		# -> single stepped svc
-1:	CHECK_STACK __LC_SAVE_AREA_SYNC
+2:	CHECK_STACK __LC_SAVE_AREA_SYNC
 	aghi	%r15,-(STACK_FRAME_OVERHEAD + __PT_SIZE)
-	# CHECK_VMAP_STACK branches to stack_overflow or 4f
-	CHECK_VMAP_STACK __LC_SAVE_AREA_SYNC,4f
-2:	UPDATE_VTIME %r14,%r15,__LC_SYNC_ENTER_TIMER
+	# CHECK_VMAP_STACK branches to stack_overflow or 5f
+	CHECK_VMAP_STACK __LC_SAVE_AREA_SYNC,5f
+3:	UPDATE_VTIME %r14,%r15,__LC_SYNC_ENTER_TIMER
 	BPENTER __TI_flags(%r12),_TIF_ISOLATE_BP
 	lg	%r15,__LC_KERNEL_STACK
 	lgr	%r14,%r12
 	aghi	%r14,__TASK_thread	# pointer to thread_struct
 	lghi	%r13,__LC_PGM_TDB
 	tm	__LC_PGM_ILC+2,0x02	# check for transaction abort
-	jz	3f
+	jz	4f
 	mvc	__THREAD_trap_tdb(256,%r14),0(%r13)
-3:	stg	%r10,__THREAD_last_break(%r14)
-4:	lgr	%r13,%r11
+4:	stg	%r10,__THREAD_last_break(%r14)
+5:	lgr	%r13,%r11
 	la	%r11,STACK_FRAME_OVERHEAD(%r15)
 	stmg	%r0,%r7,__PT_R0(%r11)
 	# clear user controlled registers to prevent speculative use
@@ -666,14 +673,14 @@ ENTRY(pgm_check_handler)
 	stg	%r13,__PT_FLAGS(%r11)
 	stg	%r10,__PT_ARGS(%r11)
 	tm	__LC_PGM_ILC+3,0x80	# check for per exception
-	jz	5f
+	jz	6f
 	tmhh	%r8,0x0001		# kernel per event ?
 	jz	.Lpgm_kprobe
 	oi	__PT_FLAGS+7(%r11),_PIF_PER_TRAP
 	mvc	__THREAD_per_address(8,%r14),__LC_PER_ADDRESS
 	mvc	__THREAD_per_cause(2,%r14),__LC_PER_CODE
 	mvc	__THREAD_per_paid(1,%r14),__LC_PER_ACCESS_ID
-5:	REENABLE_IRQS
+6:	REENABLE_IRQS
 	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
 	larl	%r1,pgm_check_table
 	llgh	%r10,__PT_INT_CODE+2(%r11)
