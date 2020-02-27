@@ -37,8 +37,9 @@ void uv_query_info(void)
 		uv_info.max_guest_cpus = uvcb.max_guest_cpus;
 	}
 
-	if (IS_ENABLED(CONFIG_PROTECTED_VIRTUALIZATION_GUEST) &&
-	    test_bit_inv(BIT_UVC_CMD_SET_SHARED_ACCESS, (unsigned long *)uvcb.inst_calls_list) &&
+#ifdef CONFIG_PROTECTED_VIRTUALIZATION_GUEST
+	if (test_bit_inv(BIT_UVC_CMD_SET_SHARED_ACCESS, (unsigned long *)uvcb.inst_calls_list) &&
 	    test_bit_inv(BIT_UVC_CMD_REMOVE_SHARED_ACCESS, (unsigned long *)uvcb.inst_calls_list))
 		prot_virt_guest = 1;
+#endif
 }
