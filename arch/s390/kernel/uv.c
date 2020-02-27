@@ -382,7 +382,7 @@ static struct attribute_group uv_query_attr_group = {
 };
 
 static struct kset *uv_query_kset;
-struct kobject *uv_kobj;
+static struct kobject *uv_kobj;
 
 static int __init uv_info_init(void)
 {
