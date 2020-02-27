@@ -360,8 +360,7 @@ static inline int uv_convert_from_secure(unsigned long paddr)
 }
 #endif
 
-#if defined(CONFIG_PROTECTED_VIRTUALIZATION_GUEST) ||                          \
-	IS_ENABLED(CONFIG_KVM)
+#if defined(CONFIG_PROTECTED_VIRTUALIZATION_GUEST) || IS_ENABLED(CONFIG_KVM)
 void uv_query_info(void);
 #else
 static inline void uv_query_info(void) {}
