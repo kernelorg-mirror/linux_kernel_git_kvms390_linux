@@ -12,7 +12,6 @@
 #include <asm/pgalloc.h>
 #include <asm/gmap.h>
 #include <asm/uv.h>
-#include <asm/gmap.h>
 #include <asm/mman.h>
 #include "kvm-s390.h"
 
