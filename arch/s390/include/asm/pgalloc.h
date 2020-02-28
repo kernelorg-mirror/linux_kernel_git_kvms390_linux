@@ -46,7 +46,6 @@ static inline unsigned long pgd_entry_type(struct mm_struct *mm)
 }
 
 int crst_table_upgrade(struct mm_struct *mm, unsigned long limit);
-void crst_table_downgrade(struct mm_struct *);
 
 static inline p4d_t *p4d_alloc_one(struct mm_struct *mm, unsigned long address)
 {
