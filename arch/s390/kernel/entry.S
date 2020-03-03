@@ -611,8 +611,8 @@ ENTRY(pgm_check_handler)
 	BPOFF
 	stmg	%r8,%r15,__LC_SAVE_AREA_SYNC
 	lg	%r10,__LC_LAST_BREAK
-	cghi	%r10,4096
-	jhe	0f
+	srag	%r11,%r10,12
+	jnz	0f
 	/* if __LC_LAST_BREAK is < 4096, it contains one of
 	 * the lpswe addresses in lowcore. Set it to 1 (initial state)
 	 * to prevent leaking that address to userspace.
