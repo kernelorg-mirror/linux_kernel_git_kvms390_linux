@@ -240,6 +240,9 @@ static void smc_ib_port_event_work(struct work_struct *work)
 		work, struct smc_ib_device, port_event_work);
 	u8 port_idx;
 
+	if (list_empty(&smcibdev->list))
+		return;
+
 	for_each_set_bit(port_idx, &smcibdev->port_event_mask, SMC_MAX_PORTS) {
 		smc_ib_remember_port_attr(smcibdev, port_idx + 1);
 		clear_bit(port_idx, &smcibdev->port_event_mask);
@@ -596,6 +599,7 @@ static void smc_ib_remove_dev(struct ib_device *ibdev, void *client_data)
 	smc_smcr_terminate_all(smcibdev);
 	smc_ib_cleanup_per_ibdev(smcibdev);
 	ib_unregister_event_handler(&smcibdev->event_handler);
+	cancel_work_sync(&smcibdev->port_event_work);
 	kfree(smcibdev);
 }
 
