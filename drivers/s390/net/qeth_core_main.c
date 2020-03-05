@@ -1244,8 +1244,11 @@ EXPORT_SYMBOL_GPL(qeth_drain_output_queues);
 
 static int qeth_osa_set_output_queues(struct qeth_card *card, bool single)
 {
-	unsigned int count = single ? 1 : card->dev->num_tx_queues;
+	unsigned int max = single ? 1 : card->dev->num_tx_queues;
+	unsigned int count;
 	int rc;
+
+	count = IS_VM_NIC(card) ? min(max, card->dev->real_num_tx_queues) : max;
 
 	rtnl_lock();
 	rc = netif_set_real_num_tx_queues(card->dev, count);
@@ -1254,16 +1257,16 @@ static int qeth_osa_set_output_queues(struct qeth_card *card, bool single)
 	if (rc)
 		return rc;
 
-	if (card->qdio.no_out_queues == count)
+	if (card->qdio.no_out_queues == max)
 		return 0;
 
 	if (atomic_read(&card->qdio.state) != QETH_QDIO_UNINITIALIZED)
 		qeth_free_qdio_queues(card);
 
-	if (count == 1)
+	if (max == 1 && card->qdio.do_prio_queueing != QETH_PRIOQ_DEFAULT)
 		dev_info(&card->gdev->dev, "Priority Queueing not supported\n");
 
-	card->qdio.no_out_queues = count;
+	card->qdio.no_out_queues = max;
 	return 0;
 }
 
@@ -6078,12 +6081,13 @@ static int qeth_core_probe_device(struct ccwgroup_device *gdev)
 		goto err_card;
 	}
 
+	qeth_determine_capabilities(card);
+	qeth_set_blkt_defaults(card);
+
 	card->qdio.no_out_queues = card->dev->num_tx_queues;
 	rc = qeth_update_from_chp_desc(card);
 	if (rc)
 		goto err_chp_desc;
-	qeth_determine_capabilities(card);
-	qeth_set_blkt_defaults(card);
 
 	enforced_disc = qeth_enforce_discipline(card);
 	switch (enforced_disc) {
