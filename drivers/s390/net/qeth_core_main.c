@@ -6018,7 +6018,6 @@ int qeth_setup_netdev(struct qeth_card *card)
 {
 	struct net_device *dev = card->dev;
 	unsigned int num_tx_queues;
-	int rc;
 
 	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
 	dev->hw_features |= NETIF_F_SG;
@@ -6033,13 +6032,7 @@ int qeth_setup_netdev(struct qeth_card *card)
 		num_tx_queues = dev->real_num_tx_queues;
 	}
 
-	rc = netif_set_real_num_tx_queues(dev, num_tx_queues);
-	if (rc)
-		return rc;
-
-	if (IS_IQD(card))
-		qeth_iqd_set_prio_tc_map(dev, num_tx_queues - 1);
-	return 0;
+	return qeth_set_real_num_tx_queues(card, num_tx_queues);
 }
 EXPORT_SYMBOL_GPL(qeth_setup_netdev);
 
@@ -6653,7 +6646,8 @@ void qeth_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
 EXPORT_SYMBOL_GPL(qeth_get_stats64);
 
 #define TC_IQD_UCAST   0
-void qeth_iqd_set_prio_tc_map(struct net_device *dev, unsigned int ucast_txqs)
+static void qeth_iqd_set_prio_tc_map(struct net_device *dev,
+				     unsigned int ucast_txqs)
 {
 	unsigned int prio;
 
@@ -6673,6 +6667,23 @@ void qeth_iqd_set_prio_tc_map(struct net_device *dev, unsigned int ucast_txqs)
 	/* Map all priorities to this traffic class: */
 	for (prio = 0; prio <= TC_BITMASK; prio++)
 		netdev_set_prio_tc_map(dev, prio, TC_IQD_UCAST);
+}
+
+int qeth_set_real_num_tx_queues(struct qeth_card *card, unsigned int count)
+{
+	struct net_device *dev = card->dev;
+	int rc;
+
+	/* Per netif_setup_tc(), adjust the mapping first: */
+	if (IS_IQD(card))
+		qeth_iqd_set_prio_tc_map(dev, count - 1);
+
+	rc = netif_set_real_num_tx_queues(dev, count);
+
+	if (rc && IS_IQD(card))
+		qeth_iqd_set_prio_tc_map(dev, dev->real_num_tx_queues - 1);
+
+	return rc;
 }
 
 u16 qeth_iqd_select_queue(struct net_device *dev, struct sk_buff *skb,

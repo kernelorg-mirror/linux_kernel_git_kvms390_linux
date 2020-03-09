@@ -178,7 +178,6 @@ static int qeth_set_channels(struct net_device *dev,
 			     struct ethtool_channels *channels)
 {
 	struct qeth_card *card = dev->ml_priv;
-	int rc;
 
 	if (channels->rx_count == 0 || channels->tx_count == 0)
 		return -EINVAL;
@@ -195,20 +194,13 @@ static int qeth_set_channels(struct net_device *dev,
 		if (netif_running(dev) &&
 		    channels->tx_count < dev->real_num_tx_queues)
 			return -EPERM;
-
-		/* Per netif_setup_tc(), adjust the mapping first: */
-		qeth_iqd_set_prio_tc_map(dev, channels->tx_count - 1);
 	} else {
 		/* OSA still uses the legacy prio-queue mechanism: */
 		if (!IS_VM_NIC(card))
 			return -EOPNOTSUPP;
 	}
 
-	rc = netif_set_real_num_tx_queues(dev, channels->tx_count);
-	if (rc && IS_IQD(card))
-		qeth_iqd_set_prio_tc_map(dev, dev->real_num_tx_queues - 1);
-
-	return rc;
+	return qeth_set_real_num_tx_queues(card, channels->tx_count);
 }
 
 static int qeth_get_ts_info(struct net_device *dev,
