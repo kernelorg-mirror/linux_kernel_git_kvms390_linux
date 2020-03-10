@@ -15,7 +15,6 @@
  * moves the new kernel to its destination...
  * %r2 = pointer to first kimage_entry_t
  * %r3 = start address - where to jump to after the job is done...
- * %r4 = diag 0x308 subcode
  *
  * %r5 will be used as temp. storage
  * %r6 holds the destination address
@@ -61,12 +60,12 @@ ENTRY(relocate_kernel)
 		sgr	%r0,%r0		# clear register r0
 		cghi	%r3,0
 		je	.diag
-		la	%r10,load_psw-.base(%r13) # load psw-address into the register
-		o	%r3,4(%r10)	# or load address into psw
-		st	%r3,4(%r10)
-		mvc	0(8,%r0),0(%r10) # copy psw to absolute address 0
+		la	%r4,load_psw-.base(%r13)	# load psw-address into the register
+		o	%r3,4(%r4)	# or load address into psw
+		st	%r3,4(%r4)
+		mvc	0(8,%r0),0(%r4)	# copy psw to absolute address 0
 	.diag:
-		diag	%r0,%r4,0x308
+		diag	%r0,%r0,0x308
 ENDPROC(relocate_kernel)
 
 		.align	8
