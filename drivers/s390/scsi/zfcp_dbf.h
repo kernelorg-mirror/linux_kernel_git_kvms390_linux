@@ -190,7 +190,7 @@ enum zfcp_dbf_hba_id {
 	ZFCP_DBF_HBA_USS	= 2,
 	ZFCP_DBF_HBA_BIT	= 3,
 	ZFCP_DBF_HBA_BASIC	= 4,
-	ZFCP_DBF_HBA_FCES       = 5,
+	ZFCP_DBF_HBA_FCES	= 5,
 };
 
 /**
