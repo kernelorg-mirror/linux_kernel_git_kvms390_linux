@@ -1559,35 +1559,29 @@ EXPORT_SYMBOL(cca_get_info);
 static int findcard(u64 mkvp, u16 *pcardnr, u16 *pdomain,
 		    int verify, int minhwtype)
 {
-	struct zcrypt_device_status_ext *dev_states, state;
+	struct zcrypt_device_status_ext *device_status;
+	u16 card, dom;
 	struct cca_info ci;
-	int i, card, dom, rc, oi = -1;
+	int i, rc, oi = -1;
 
 	/* mkvp must not be zero, minhwtype needs to be >= 0 */
 	if (mkvp == 0 || minhwtype < 0)
 		return -EINVAL;
 
 	/* fetch status of all crypto cards */
-	dev_states = kmalloc_array(MAX_ZDEV_ENTRIES_EXT,
-				   sizeof(struct zcrypt_device_status_ext),
-				   GFP_KERNEL);
-	/* the 256k malloc may fail, the following code can handle this */
-	if (dev_states)
-		zcrypt_device_status_mask_ext(dev_states);
+	device_status = kmalloc_array(MAX_ZDEV_ENTRIES_EXT,
+				      sizeof(struct zcrypt_device_status_ext),
+				      GFP_KERNEL);
+	if (!device_status)
+		return -ENOMEM;
+	zcrypt_device_status_mask_ext(device_status);
 
 	/* walk through all crypto cards */
 	for (i = 0; i < MAX_ZDEV_ENTRIES_EXT; i++) {
-		if (dev_states) {
-			state = dev_states[i];
-			card = AP_QID_CARD(state.qid);
-			dom = AP_QID_QUEUE(state.qid);
-			rc = 0;
-		} else {
-			card = i / MAX_ZDEV_DOMAINS_EXT;
-			dom = i % MAX_ZDEV_DOMAINS_EXT;
-			rc = zcrypt_device_status_ext(card, dom, &state);
-		}
-		if (rc == 0 && state.online && state.functions & 0x04) {
+		card = AP_QID_CARD(device_status[i].qid);
+		dom = AP_QID_QUEUE(device_status[i].qid);
+		if (device_status[i].online &&
+		    device_status[i].functions & 0x04) {
 			/* enabled CCA card, check current mkvp from cache */
 			if (cca_info_cache_fetch(card, dom, &ci) == 0 &&
 			    ci.hwtype >= minhwtype &&
@@ -1613,19 +1607,11 @@ static int findcard(u64 mkvp, u16 *pcardnr, u16 *pdomain,
 	if (i >= MAX_ZDEV_ENTRIES_EXT) {
 		/* nothing found, so this time without cache */
 		for (i = 0; i < MAX_ZDEV_ENTRIES_EXT; i++) {
-			if (dev_states) {
-				state = dev_states[i];
-				card = AP_QID_CARD(state.qid);
-				dom = AP_QID_QUEUE(state.qid);
-				rc = 0;
-			} else {
-				card = i / MAX_ZDEV_DOMAINS_EXT;
-				dom = i % MAX_ZDEV_DOMAINS_EXT;
-				rc = zcrypt_device_status_ext(card, dom,
-							      &state);
-			}
-			if (rc || !(state.online && state.functions & 0x04))
+			if (!(device_status[i].online &&
+			      device_status[i].functions & 0x04))
 				continue;
+			card = AP_QID_CARD(device_status[i].qid);
+			dom = AP_QID_QUEUE(device_status[i].qid);
 			/* fresh fetch mkvp from adapter */
 			if (fetch_cca_info(card, dom, &ci) == 0) {
 				cca_info_cache_update(card, dom, &ci);
@@ -1642,14 +1628,8 @@ static int findcard(u64 mkvp, u16 *pcardnr, u16 *pdomain,
 		}
 		if (i >= MAX_ZDEV_ENTRIES_EXT && oi >= 0) {
 			/* old mkvp matched, use this card then */
-			if (dev_states) {
-				card = AP_QID_CARD(dev_states[oi].qid);
-				dom = AP_QID_QUEUE(dev_states[oi].qid);
-				rc = 0;
-			} else {
-				card = oi / MAX_ZDEV_DOMAINS_EXT;
-				dom = oi % MAX_ZDEV_DOMAINS_EXT;
-			}
+			card = AP_QID_CARD(device_status[oi].qid);
+			dom = AP_QID_QUEUE(device_status[oi].qid);
 		}
 	}
 	if (i < MAX_ZDEV_ENTRIES_EXT || oi >= 0) {
@@ -1661,7 +1641,7 @@ static int findcard(u64 mkvp, u16 *pcardnr, u16 *pdomain,
 	} else
 		rc = -ENODEV;
 
-	kfree(dev_states);
+	kfree(device_status);
 	return rc;
 }
 
@@ -1697,85 +1677,85 @@ EXPORT_SYMBOL(cca_findcard);
 int cca_findcard2(u32 **apqns, u32 *nr_apqns, u16 cardnr, u16 domain,
 		  int minhwtype, u64 cur_mkvp, u64 old_mkvp, int verify)
 {
-	struct zcrypt_device_status_ext *dev_states, state;
-	int i, card, dom, curmatch, oldmatch, rc = 0;
-	u32 *_apqns = NULL, _nr_apqns = 0;
+	struct zcrypt_device_status_ext *device_status;
+	int i, n, card, dom, curmatch, oldmatch, rc = 0;
 	struct cca_info ci;
 
+	*apqns = NULL;
+	*nr_apqns = 0;
+
 	/* fetch status of all crypto cards */
-	dev_states = kmalloc_array(MAX_ZDEV_ENTRIES_EXT,
-				   sizeof(struct zcrypt_device_status_ext),
-				   GFP_KERNEL);
-	/* the 256k malloc may fail, the following code can handle this */
-	if (dev_states)
-		zcrypt_device_status_mask_ext(dev_states);
-
-	/* allocate 1k space for up to 256 apqns */
-	_apqns = kmalloc_array(256, sizeof(u32), GFP_KERNEL);
-	if (!_apqns) {
-		kfree(dev_states);
+	device_status = kmalloc_array(MAX_ZDEV_ENTRIES_EXT,
+				      sizeof(struct zcrypt_device_status_ext),
+				      GFP_KERNEL);
+	if (!device_status)
 		return -ENOMEM;
-	}
+	zcrypt_device_status_mask_ext(device_status);
 
-	/* walk through all the crypto apqnss */
-	for (i = 0; i < MAX_ZDEV_ENTRIES_EXT; i++) {
-		if (dev_states) {
-			state = dev_states[i];
-			card = AP_QID_CARD(state.qid);
-			dom = AP_QID_QUEUE(state.qid);
-		} else {
-			card = i / MAX_ZDEV_DOMAINS_EXT;
-			dom = i % MAX_ZDEV_DOMAINS_EXT;
-			if (zcrypt_device_status_ext(card, dom, &state))
+	/* loop two times: first gather eligible apqns, then store them */
+	while (1) {
+		n = 0;
+		/* walk through all the crypto cards */
+		for (i = 0; i < MAX_ZDEV_ENTRIES_EXT; i++) {
+			card = AP_QID_CARD(device_status[i].qid);
+			dom = AP_QID_QUEUE(device_status[i].qid);
+			/* check online state */
+			if (!device_status[i].online)
 				continue;
-		}
-		/* check online state, cca functions */
-		if (!(state.online && state.functions & 0x04))
-			continue;
-		/* check cardnr */
-		if (cardnr != 0xFFFF && card != cardnr)
-			continue;
-		/* check domain */
-		if (domain != 0xFFFF && dom != domain)
-			continue;
-		/* get cca info for this apqn */
-		if (cca_get_info(card, dom, &ci, verify))
-			continue;
-		/* current master key needs to be valid */
-		if (ci.cur_mk_state != '2')
-			continue;
-		/* check min hardware type */
-		if (minhwtype > 0 && minhwtype > ci.hwtype)
-			continue;
-		if (cur_mkvp || old_mkvp) {
-			/* check mkvps */
-			curmatch = oldmatch = 0;
-			if (cur_mkvp && cur_mkvp == ci.cur_mkvp)
-				curmatch = 1;
-			if (old_mkvp && ci.old_mk_state == '2' &&
-			    old_mkvp == ci.old_mkvp)
-				oldmatch = 1;
-			if ((cur_mkvp || old_mkvp) &&
-			    (curmatch + oldmatch < 1))
+			/* check for cca functions */
+			if (!(device_status[i].functions & 0x04))
 				continue;
+			/* check cardnr */
+			if (cardnr != 0xFFFF && card != cardnr)
+				continue;
+			/* check domain */
+			if (domain != 0xFFFF && dom != domain)
+				continue;
+			/* get cca info on this apqn */
+			if (cca_get_info(card, dom, &ci, verify))
+				continue;
+			/* current master key needs to be valid */
+			if (ci.cur_mk_state != '2')
+				continue;
+			/* check min hardware type */
+			if (minhwtype > 0 && minhwtype > ci.hwtype)
+				continue;
+			if (cur_mkvp || old_mkvp) {
+				/* check mkvps */
+				curmatch = oldmatch = 0;
+				if (cur_mkvp && cur_mkvp == ci.cur_mkvp)
+					curmatch = 1;
+				if (old_mkvp && ci.old_mk_state == '2' &&
+				    old_mkvp == ci.old_mkvp)
+					oldmatch = 1;
+				if ((cur_mkvp || old_mkvp) &&
+				    (curmatch + oldmatch < 1))
+					continue;
+			}
+			/* apqn passed all filtering criterons */
+			if (*apqns && n < *nr_apqns)
+				(*apqns)[n] = (((u16)card) << 16) | ((u16) dom);
+			n++;
 		}
-		/* apqn passed all filtering criterons, add to the array */
-		if (_nr_apqns < 256)
-			_apqns[_nr_apqns++] = (((u16)card) << 16) | ((u16) dom);
+		/* loop 2nd time: array has been filled */
+		if (*apqns)
+			break;
+		/* loop 1st time: have # of eligible apqns in n */
+		if (!n) {
+			rc = -ENODEV; /* no eligible apqns found */
+			break;
+		}
+		*nr_apqns = n;
+		/* allocate array to store n apqns into */
+		*apqns = kmalloc_array(n, sizeof(u32), GFP_KERNEL);
+		if (!*apqns) {
+			rc = -ENOMEM;
+			break;
+		}
+		verify = 0;
 	}
 
-	/* nothing found ? */
-	if (!_nr_apqns) {
-		kfree(_apqns);
-		rc = -ENODEV;
-	} else {
-		/* no re-allocation, simple return the _apqns array */
-		*apqns = _apqns;
-		*nr_apqns = _nr_apqns;
-		rc = 0;
-	}
-
-	kfree(dev_states);
+	kfree(device_status);
 	return rc;
 }
 EXPORT_SYMBOL(cca_findcard2);
