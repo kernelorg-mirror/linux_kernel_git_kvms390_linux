@@ -567,8 +567,6 @@ static void ism_remove(struct pci_dev *pdev)
 	kfree(ism);
 }
 
-static SIMPLE_DEV_PM_OPS(ism_pm_ops, ism_suspend, ism_resume);
-
 static struct pci_driver ism_driver = {
 	.name	  = DRV_NAME,
 	.id_table = ism_device_table,
