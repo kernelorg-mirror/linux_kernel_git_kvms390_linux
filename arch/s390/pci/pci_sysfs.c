@@ -33,7 +33,7 @@ zpci_attr(pchid, "0x%04x\n", pchid);
 zpci_attr(pfgid, "0x%02x\n", pfgid);
 zpci_attr(vfn, "0x%04x\n", vfn);
 zpci_attr(pft, "0x%02x\n", pft);
-zpci_attr(port, "d\n", port);
+zpci_attr(port, "0x%02x\n", port);
 zpci_attr(uid, "0x%x\n", uid);
 zpci_attr(segment0, "0x%02x\n", pfip[0]);
 zpci_attr(segment1, "0x%02x\n", pfip[1]);
