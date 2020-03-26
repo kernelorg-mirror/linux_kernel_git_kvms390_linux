@@ -6909,15 +6909,15 @@ netdev_features_t qeth_features_check(struct sk_buff *skb,
 		if (skb_is_gso(skb) && !netif_needs_gso(skb, features))
 			restricted |= NETIF_F_ALL_TSO;
 
-		switch (qeth_get_ip_version(skb)) {
-		case 4:
+		switch (vlan_get_protocol(skb)) {
+		case htons(ETH_P_IP):
 			if (!card->info.has_lp2lp_cso_v4)
 				restricted |= NETIF_F_IP_CSUM;
 
 			if (restricted && qeth_next_hop_is_local_v4(card, skb))
 				features &= ~restricted;
 			break;
-		case 6:
+		case htons(ETH_P_IPV6):
 			if (!card->info.has_lp2lp_cso_v6)
 				restricted |= NETIF_F_IPV6_CSUM;
 
