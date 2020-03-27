@@ -222,8 +222,6 @@ struct qdio_buffer {
 	struct qdio_buffer_element element[QDIO_MAX_ELEMENTS_PER_BUFFER];
 } __attribute__ ((packed, aligned(256)));
 
-#define QDIO_ELEMENT_NO(buf, element)	(element - &buf->element[0])
-
 /**
  * struct sl_element - storage list entry
  * @sbal: absolute SBAL address

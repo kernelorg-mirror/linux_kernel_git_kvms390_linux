@@ -5772,7 +5772,7 @@ walk_packet:
 	if (!skb)
 		goto next_packet;
 
-	*element_no = QDIO_ELEMENT_NO(buffer, element);
+	*element_no = element - &buffer->element[0];
 	*__offset = offset;
 
 	qeth_receive_skb(card, skb, hdr, uses_frags);
