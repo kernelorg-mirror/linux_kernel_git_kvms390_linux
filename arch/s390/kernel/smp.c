@@ -55,7 +55,6 @@
 #include <asm/nmi.h>
 #include <asm/stacktrace.h>
 #include <asm/topology.h>
-#include <asm/nmi.h>
 #include "entry.h"
 
 enum {
