@@ -796,8 +796,8 @@ static inline unsigned long *gmap_table_walk(struct gmap *gmap,
 	if (WARN_ON_ONCE(level > (asce_type >> 2) + 1))
 		return NULL;
 
-	if (WARN_ON_ONCE(asce_type != _ASCE_TYPE_REGION1 &&
-			 gaddr & (-1UL << (31 + (asce_type >> 2) * 11))))
+	if (asce_type != _ASCE_TYPE_REGION1 &&
+	    gaddr & (-1UL << (31 + (asce_type >> 2) * 11)))
 		return NULL;
 
 	switch (asce_type) {
