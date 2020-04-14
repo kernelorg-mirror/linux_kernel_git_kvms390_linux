@@ -211,6 +211,19 @@ bool ethtool_convert_link_mode_to_legacy_u32(u32 *legacy_u32,
 	 ETHTOOL_COALESCE_TX_MAX_FRAMES_IRQ)
 #define ETHTOOL_COALESCE_USE_ADAPTIVE					\
 	(ETHTOOL_COALESCE_USE_ADAPTIVE_RX | ETHTOOL_COALESCE_USE_ADAPTIVE_TX)
+#define ETHTOOL_COALESCE_USECS_LOW_HIGH					\
+	(ETHTOOL_COALESCE_RX_USECS_LOW | ETHTOOL_COALESCE_TX_USECS_LOW | \
+	 ETHTOOL_COALESCE_RX_USECS_HIGH | ETHTOOL_COALESCE_TX_USECS_HIGH)
+#define ETHTOOL_COALESCE_MAX_FRAMES_LOW_HIGH	\
+	(ETHTOOL_COALESCE_RX_MAX_FRAMES_LOW |	\
+	 ETHTOOL_COALESCE_TX_MAX_FRAMES_LOW |	\
+	 ETHTOOL_COALESCE_RX_MAX_FRAMES_HIGH |	\
+	 ETHTOOL_COALESCE_TX_MAX_FRAMES_HIGH)
+#define ETHTOOL_COALESCE_PKT_RATE_RX_USECS				\
+	(ETHTOOL_COALESCE_USE_ADAPTIVE_RX |				\
+	 ETHTOOL_COALESCE_RX_USECS_LOW | ETHTOOL_COALESCE_RX_USECS_HIGH | \
+	 ETHTOOL_COALESCE_PKT_RATE_LOW | ETHTOOL_COALESCE_PKT_RATE_HIGH | \
+	 ETHTOOL_COALESCE_RATE_SAMPLE_INTERVAL)
 
 /**
  * struct ethtool_ops - optional netdev operations
@@ -445,6 +458,8 @@ struct ethtool_ops {
 					 struct ethtool_stats *, u64 *);
 };
 
+int ethtool_check_ops(const struct ethtool_ops *ops);
+
 struct ethtool_rx_flow_rule {
 	struct flow_rule	*rule;
 	unsigned long		priv[0];
@@ -458,5 +473,11 @@ struct ethtool_rx_flow_spec_input {
 struct ethtool_rx_flow_rule *
 ethtool_rx_flow_rule_create(const struct ethtool_rx_flow_spec_input *input);
 void ethtool_rx_flow_rule_destroy(struct ethtool_rx_flow_rule *rule);
+
+bool ethtool_virtdev_validate_cmd(const struct ethtool_link_ksettings *cmd);
+int ethtool_virtdev_set_link_ksettings(struct net_device *dev,
+				       const struct ethtool_link_ksettings *cmd,
+				       u32 *dev_speed, u8 *dev_duplex);
+
 
 #endif /* _LINUX_ETHTOOL_H */

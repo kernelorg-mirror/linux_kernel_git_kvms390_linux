@@ -1574,8 +1574,8 @@ This ioctl would set vcpu's xcr to the value userspace specified.
   };
 
   #define KVM_CPUID_FLAG_SIGNIFCANT_INDEX		BIT(0)
-  #define KVM_CPUID_FLAG_STATEFUL_FUNC		BIT(1)
-  #define KVM_CPUID_FLAG_STATE_READ_NEXT		BIT(2)
+  #define KVM_CPUID_FLAG_STATEFUL_FUNC		BIT(1) /* deprecated */
+  #define KVM_CPUID_FLAG_STATE_READ_NEXT		BIT(2) /* deprecated */
 
   struct kvm_cpuid_entry2 {
 	__u32 function;
@@ -1626,13 +1626,6 @@ emulate them efficiently. The fields in each entry are defined as follows:
 
         KVM_CPUID_FLAG_SIGNIFCANT_INDEX:
            if the index field is valid
-        KVM_CPUID_FLAG_STATEFUL_FUNC:
-           if cpuid for this function returns different values for successive
-           invocations; there will be several entries with the same function,
-           all with this flag set
-        KVM_CPUID_FLAG_STATE_READ_NEXT:
-           for KVM_CPUID_FLAG_STATEFUL_FUNC entries, set if this entry is
-           the first entry to be read by a cpu
 
    eax, ebx, ecx, edx:
          the values returned by the cpuid instruction for
@@ -3349,8 +3342,8 @@ The member 'flags' is used for passing flags from userspace.
 ::
 
   #define KVM_CPUID_FLAG_SIGNIFCANT_INDEX		BIT(0)
-  #define KVM_CPUID_FLAG_STATEFUL_FUNC		BIT(1)
-  #define KVM_CPUID_FLAG_STATE_READ_NEXT		BIT(2)
+  #define KVM_CPUID_FLAG_STATEFUL_FUNC		BIT(1) /* deprecated */
+  #define KVM_CPUID_FLAG_STATE_READ_NEXT		BIT(2) /* deprecated */
 
   struct kvm_cpuid_entry2 {
 	__u32 function;
@@ -3396,13 +3389,6 @@ The fields in each entry are defined as follows:
 
         KVM_CPUID_FLAG_SIGNIFCANT_INDEX:
            if the index field is valid
-        KVM_CPUID_FLAG_STATEFUL_FUNC:
-           if cpuid for this function returns different values for successive
-           invocations; there will be several entries with the same function,
-           all with this flag set
-        KVM_CPUID_FLAG_STATE_READ_NEXT:
-           for KVM_CPUID_FLAG_STATEFUL_FUNC entries, set if this entry is
-           the first entry to be read by a cpu
 
    eax, ebx, ecx, edx:
 
@@ -5763,8 +5749,13 @@ and injected exceptions.
 :Architectures: x86, arm, arm64, mips
 :Parameters: args[0] whether feature should be enabled or not
 
-With this capability enabled, KVM_GET_DIRTY_LOG will not automatically
-clear and write-protect all pages that are returned as dirty.
+Valid flags are::
+
+  #define KVM_DIRTY_LOG_MANUAL_PROTECT_ENABLE   (1 << 0)
+  #define KVM_DIRTY_LOG_INITIALLY_SET           (1 << 1)
+
+With KVM_DIRTY_LOG_MANUAL_PROTECT_ENABLE is set, KVM_GET_DIRTY_LOG will not
+automatically clear and write-protect all pages that are returned as dirty.
 Rather, userspace will have to do this operation separately using
 KVM_CLEAR_DIRTY_LOG.
 
@@ -5775,17 +5766,41 @@ than requiring to sync a full memslot; this ensures that KVM does not
 take spinlocks for an extended period of time.  Second, in some cases a
 large amount of time can pass between a call to KVM_GET_DIRTY_LOG and
 userspace actually using the data in the page.  Pages can be modified
-during this time, which is inefficint for both the guest and userspace:
+during this time, which is inefficient for both the guest and userspace:
 the guest will incur a higher penalty due to write protection faults,
 while userspace can see false reports of dirty pages.  Manual reprotection
 helps reducing this time, improving guest performance and reducing the
 number of dirty log false positives.
+
+With KVM_DIRTY_LOG_INITIALLY_SET set, all the bits of the dirty bitmap
+will be initialized to 1 when created.  This also improves performance because
+dirty logging can be enabled gradually in small chunks on the first call
+to KVM_CLEAR_DIRTY_LOG.  KVM_DIRTY_LOG_INITIALLY_SET depends on
+KVM_DIRTY_LOG_MANUAL_PROTECT_ENABLE (it is also only available on
+x86 for now).
 
 KVM_CAP_MANUAL_DIRTY_LOG_PROTECT2 was previously available under the name
 KVM_CAP_MANUAL_DIRTY_LOG_PROTECT, but the implementation had bugs that make
 it hard or impossible to use it correctly.  The availability of
 KVM_CAP_MANUAL_DIRTY_LOG_PROTECT2 signals that those bugs are fixed.
 Userspace should not try to use KVM_CAP_MANUAL_DIRTY_LOG_PROTECT.
+
+7.19 KVM_CAP_PPC_SECURE_GUEST
+------------------------------
+
+:Architectures: ppc
+
+This capability indicates that KVM is running on a host that has
+ultravisor firmware and thus can support a secure guest.  On such a
+system, a guest can ask the ultravisor to make it a secure guest,
+one whose memory is inaccessible to the host except for pages which
+are explicitly requested to be shared with the host.  The ultravisor
+notifies KVM when a guest requests to become a secure guest, and KVM
+has the opportunity to veto the transition.
+
+If present, this capability can be enabled for a VM, meaning that KVM
+will allow the transition to secure guest mode.  Otherwise KVM will
+veto the transition.
 
 8. Other capabilities.
 ======================
