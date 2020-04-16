@@ -793,7 +793,7 @@ ENTRY(io_int_handler)
 .Lio_restore:
 #if IS_ENABLED(CONFIG_TRACE_IRQFLAGS)
 	TSTMSK	__PT_PSW(%r11),3
-	jnz	0f
+	jno	0f
 	TRACE_IRQS_ON
 0:
 #endif
