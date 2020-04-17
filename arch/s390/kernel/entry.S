@@ -792,7 +792,7 @@ ENTRY(io_int_handler)
 	jnz	.Lio_work
 .Lio_restore:
 #if IS_ENABLED(CONFIG_TRACE_IRQFLAGS)
-	TSTMSK	__PT_PSW(%r11),3
+	tm	__PT_PSW(%r11),3
 	jno	0f
 	TRACE_IRQS_ON
 0:
