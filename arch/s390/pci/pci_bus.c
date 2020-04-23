@@ -29,15 +29,7 @@ static LIST_HEAD(zbus_list);
 static DEFINE_SPINLOCK(zbus_list_lock);
 static int zpci_nb_devices;
 
-/* zpci_bus_scan
- * @zbus: the zbus holding the zdevices
- * @ops: the pci operations
- *
- * The domain number must be set before pci_scan_root_bus is called.
- * This function can be called once the domain is known, hence
- * when the function_0 is dicovered.
- */
-static int zpci_bus_scan(struct zpci_bus *zbus, int domain, struct pci_ops *ops)
+int zpci_bus_scan(struct zpci_bus *zbus, int domain, struct pci_ops *ops)
 {
 	struct pci_bus *bus;
 	int rc;
