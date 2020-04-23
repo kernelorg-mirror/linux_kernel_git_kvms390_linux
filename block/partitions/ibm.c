@@ -23,6 +23,15 @@ union label_t {
 	struct vtoc_cms_label cms;
 };
 
+struct dasd_gd_private {
+	void *devmap;
+	unsigned int cu_type;
+	unsigned int dev_type;
+	unsigned int label_block;
+	unsigned int format;
+	char type[4];
+};
+
 /*
  * compute the block number from a
  * cyl-cyl-head-head structure
@@ -61,7 +70,7 @@ static sector_t cchhb2blk(struct vtoc_cchhb *ptr, struct hd_geometry *geo)
 }
 
 static int find_label(struct parsed_partitions *state,
-		      dasd_information2_t *info,
+		      struct dasd_gd_private *gd_priv,
 		      struct hd_geometry *geo,
 		      int blocksize,
 		      sector_t *labelsect,
@@ -81,15 +90,16 @@ static int find_label(struct parsed_partitions *state,
 	 * - on an FBA disk it's block 1
 	 * - on an CMS formatted FBA disk it is sector 1, even if the block size
 	 *   is larger than 512 bytes (possible if the DIAG discipline is used)
-	 * If we have a valid info structure, then we know exactly which case we
-	 * have, otherwise we just search through all possebilities.
+	 * If we have a valid dasd_gd_private structure, then we know exactly
+	 * which case we have, otherwise we just search through all
+	 * possibilities.
 	 */
-	if (info) {
-		if ((info->cu_type == 0x6310 && info->dev_type == 0x9336) ||
-		    (info->cu_type == 0x3880 && info->dev_type == 0x3370))
-			testsect[0] = info->label_block;
+	if (gd_priv) {
+		if ((gd_priv->cu_type == 0x6310 && gd_priv->dev_type == 0x9336) ||
+		    (gd_priv->cu_type == 0x3880 && gd_priv->dev_type == 0x3370))
+			testsect[0] = gd_priv->label_block;
 		else
-			testsect[0] = info->label_block * (blocksize >> 9);
+			testsect[0] = gd_priv->label_block * (blocksize >> 9);
 		testcount = 1;
 	} else {
 		testsect[0] = 1;
@@ -198,7 +208,7 @@ static int find_lnx1_partitions(struct parsed_partitions *state,
 				union label_t *label,
 				sector_t labelsect,
 				loff_t i_size,
-				dasd_information2_t *info)
+				struct dasd_gd_private *gd_priv)
 {
 	loff_t offset, geo_size, size;
 	char tmp[64];
@@ -221,11 +231,11 @@ static int find_lnx1_partitions(struct parsed_partitions *state,
 			* geo->sectors * secperblk;
 		size = i_size >> 9;
 		if (size != geo_size) {
-			if (!info) {
+			if (!gd_priv) {
 				strlcat(state->pp_buf, "\n", PAGE_SIZE);
 				return 1;
 			}
-			if (!strcmp(info->type, "ECKD"))
+			if (!strcmp(gd_priv->type, "ECKD"))
 				if (geo_size < size)
 					size = geo_size;
 			/* else keep size based on i_size */
@@ -289,9 +299,10 @@ static int find_cms1_partitions(struct parsed_partitions *state,
 int ibm_partition(struct parsed_partitions *state)
 {
 	struct block_device *bdev = state->bdev;
+	struct dasd_gd_private *gd_priv = NULL;
+	struct gendisk *disk = bdev->bd_disk;
 	int blocksize, res;
 	loff_t i_size, offset, size;
-	dasd_information2_t *info;
 	struct hd_geometry *geo;
 	char type[5] = {0,};
 	char name[7] = {0,};
@@ -305,23 +316,21 @@ int ibm_partition(struct parsed_partitions *state)
 	i_size = i_size_read(bdev->bd_inode);
 	if (i_size == 0)
 		goto out_exit;
-	info = kmalloc(sizeof(dasd_information2_t), GFP_KERNEL);
-	if (info == NULL)
-		goto out_exit;
-	geo = kmalloc(sizeof(struct hd_geometry), GFP_KERNEL);
+	geo = kzalloc(sizeof(struct hd_geometry), GFP_KERNEL);
 	if (geo == NULL)
-		goto out_nogeo;
+		goto out_exit;
 	label = kmalloc(sizeof(union label_t), GFP_KERNEL);
 	if (label == NULL)
 		goto out_nolab;
-	if (ioctl_by_bdev(bdev, HDIO_GETGEO, (unsigned long)geo) != 0)
+	geo->start = get_start_sect(bdev);
+	if (!disk->fops->getgeo || disk->fops->getgeo(bdev, geo))
 		goto out_freeall;
-	if (ioctl_by_bdev(bdev, BIODASDINFO2, (unsigned long)info) != 0) {
-		kfree(info);
-		info = NULL;
-	}
 
-	if (find_label(state, info, geo, blocksize, &labelsect, name, type,
+	/* gd_priv pointer is only valid for DASD devices */
+	if (disk && disk->major == DASD_MAJOR)
+		gd_priv = disk->private_data;
+
+	if (find_label(state, gd_priv, geo, blocksize, &labelsect, name, type,
 		       label)) {
 		if (!strncmp(type, "VOL1", 4)) {
 			res = find_vol1_partitions(state, geo, blocksize, name,
@@ -329,24 +338,24 @@ int ibm_partition(struct parsed_partitions *state)
 		} else if (!strncmp(type, "LNX1", 4)) {
 			res = find_lnx1_partitions(state, geo, blocksize, name,
 						   label, labelsect, i_size,
-						   info);
+						   gd_priv);
 		} else if (!strncmp(type, "CMS1", 4)) {
 			res = find_cms1_partitions(state, geo, blocksize, name,
 						   label, labelsect);
 		}
-	} else if (info) {
+	} else if (gd_priv) {
 		/*
 		 * ugly but needed for backward compatibility:
-		 * If the block device is a DASD (i.e. BIODASDINFO2 works),
+		 * If the block device is a DASD (i.e. valid gd_priv),
 		 * then we claim it in any case, even though it has no valid
 		 * label. If it has the LDL format, then we simply define a
 		 * partition as if it had an LNX1 label.
 		 */
 		res = 1;
-		if (info->format == DASD_FORMAT_LDL) {
+		if (gd_priv->format == DASD_FORMAT_LDL) {
 			strlcat(state->pp_buf, "(nonl)", PAGE_SIZE);
 			size = i_size >> 9;
-			offset = (info->label_block + 1) * (blocksize >> 9);
+			offset = (gd_priv->label_block + 1) * (blocksize >> 9);
 			put_partition(state, 1, offset, size-offset);
 			strlcat(state->pp_buf, "\n", PAGE_SIZE);
 		}
@@ -357,8 +366,6 @@ out_freeall:
 	kfree(label);
 out_nolab:
 	kfree(geo);
-out_nogeo:
-	kfree(info);
 out_exit:
 	return res;
 }
