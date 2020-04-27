@@ -1665,9 +1665,7 @@ static void smc_llc_testlink_work(struct work_struct *work)
 	if (link->state != SMC_LNK_ACTIVE)
 		return;		/* link state changed */
 	if (rc <= 0) {
-		mutex_lock(&link->lgr->llc_conf_mutex);
-		smcr_link_down_cond(link);
-		mutex_unlock(&link->lgr->llc_conf_mutex);
+		smcr_link_down_cond_sched(link);
 		return;
 	}
 	next_interval = link->llc_testlink_time;
