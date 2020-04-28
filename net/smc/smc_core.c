@@ -371,9 +371,11 @@ free_link_mem:
 clear_llc_lnk:
 	smc_llc_link_clear(lnk, false);
 out:
-	atomic_dec(&ini->ib_dev->lnk_cnt);
 	put_device(&ini->ib_dev->ibdev->dev);
+	memset(lnk, 0, sizeof(struct smc_link));
 	lnk->state = SMC_LNK_UNUSED;
+	if (!atomic_dec_return(&ini->ib_dev->lnk_cnt))
+		wake_up(&ini->ib_dev->lnks_deleted);
 	return rc;
 }
 
@@ -719,6 +721,7 @@ static void smcr_rtoken_clear_link(struct smc_link *lnk)
 void smcr_link_clear(struct smc_link *lnk, bool log)
 {
 	struct smc_link_group *lgr = lnk->lgr;
+	struct smc_ib_device *smcibdev;
 
 	if (!lgr || lnk->state == SMC_LNK_UNUSED)
 		return;
@@ -732,10 +735,11 @@ void smcr_link_clear(struct smc_link *lnk, bool log)
 	smc_ib_dealloc_protection_domain(lnk);
 	smc_wr_free_link_mem(lnk);
 	put_device(&lnk->smcibdev->ibdev->dev);
-	if (!atomic_dec_return(&lnk->smcibdev->lnk_cnt))
-		wake_up(&lnk->smcibdev->lnks_deleted);
+	smcibdev = lnk->smcibdev;
 	memset(lnk, 0, sizeof(struct smc_link));
 	lnk->state = SMC_LNK_UNUSED;
+	if (!atomic_dec_return(&smcibdev->lnk_cnt))
+		wake_up(&smcibdev->lnks_deleted);
 }
 
 static void smcr_buf_free(struct smc_link_group *lgr, bool is_rmb,
