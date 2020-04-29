@@ -39,7 +39,7 @@ static inline int __pcistb_mio_inuser(
 		"2:     sacf 768\n"
 		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
 		: [cc] "+d" (cc), [len] "+d" (len)
-		: [ioaddr] "a" (ioaddr), [src] "Q" (*((u8 *)src))
+		: [ioaddr] "a" (ioaddr), [src] "Q" (*((u8 __force*)src))
 		: "cc", "memory");
 	*status = len >> 24 & 0xff;
 	return cc;
@@ -101,7 +101,7 @@ static inline int __memcpy_toio_inuser(void __iomem *dst,
 	old_fs = enable_sacf_uaccess();
 	while (n > 0) {
 		size = zpci_get_max_write_size((u64 __force) dst,
-					       (u64) src, n,
+					       (u64 __force) src, n,
 					       ZPCI_MAX_WRITE_SIZE);
 		if (size > 8) /* main path */
 			rc = __pcistb_mio_inuser(dst, src, size, &status);
@@ -251,7 +251,7 @@ static inline int __memcpy_fromio_inuser(void __user *dst,
 	old_fs = enable_sacf_uaccess();
 	while (n > 0) {
 		size = zpci_get_max_write_size((u64 __force) src,
-					       (u64) dst, n,
+					       (u64 __force) dst, n,
 					       ZPCI_MAX_READ_SIZE);
 		rc = __pcilg_mio_inuser(dst, src, size, &status);
 		if (rc)
