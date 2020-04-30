@@ -39,7 +39,7 @@ static inline int __pcistb_mio_inuser(
 		"2:     sacf 768\n"
 		EX_TABLE(0b, 2b) EX_TABLE(1b, 2b)
 		: [cc] "+d" (cc), [len] "+d" (len)
-		: [ioaddr] "a" (ioaddr), [src] "Q" (*((u8 __force*)src))
+		: [ioaddr] "a" (ioaddr), [src] "Q" (*((u8 __force *)src))
 		: "cc", "memory");
 	*status = len >> 24 & 0xff;
 	return cc;
