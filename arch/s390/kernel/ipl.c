@@ -1110,7 +1110,7 @@ static void __reipl_run(void *unused)
 		else
 			diag308(DIAG308_LOAD_NORMAL, NULL);
 		break;
-    case IPL_TYPE_NVME:
+	case IPL_TYPE_NVME:
 		diag308(DIAG308_SET, reipl_block_nvme);
 		diag308(DIAG308_LOAD_CLEAR, NULL);
 		break;
