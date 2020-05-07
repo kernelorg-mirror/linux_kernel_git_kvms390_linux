@@ -4901,15 +4901,6 @@ dasd_eckd_fill_info(struct dasd_device * device,
 	return 0;
 }
 
-static void dasd_eckd_fill_gd_priv(struct dasd_gd_private *gd_priv,
-				  struct dasd_device *device)
-{
-	struct dasd_eckd_private *private = device->private;
-
-	gd_priv->label_block = 2;
-	gd_priv->format = private->uses_cdl ? DASD_FORMAT_CDL : DASD_FORMAT_LDL;
-}
-
 /*
  * SECTION: ioctl functions for eckd devices.
  */
@@ -6736,7 +6727,6 @@ static struct dasd_discipline dasd_eckd_discipline = {
 	.ext_pool_exhaust = dasd_eckd_ext_pool_exhaust,
 	.ese_format = dasd_eckd_ese_format,
 	.ese_read = dasd_eckd_ese_read,
-	.fill_gd_priv = dasd_eckd_fill_gd_priv,
 };
 
 static int __init

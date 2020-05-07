@@ -259,15 +259,6 @@ struct dasd_uid {
 	char vduit[33];
 };
 
-struct dasd_gd_private {
-	struct dasd_devmap *devmap;
-	unsigned int cu_type;
-	unsigned int dev_type;
-	unsigned int label_block;
-	unsigned int format;
-	char type[4];
-};
-
 /*
  * the struct dasd_discipline is
  * sth like a table of virtual functions, if you think of dasd_eckd
@@ -400,7 +391,6 @@ struct dasd_discipline {
 	struct dasd_ccw_req *(*ese_format)(struct dasd_device *,
 					   struct dasd_ccw_req *, struct irb *);
 	int (*ese_read)(struct dasd_ccw_req *, struct irb *);
-	void (*fill_gd_priv)(struct dasd_gd_private *, struct dasd_device *);
 };
 
 extern struct dasd_discipline *dasd_diag_discipline_pointer;

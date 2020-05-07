@@ -677,30 +677,18 @@ dasd_device_from_cdev(struct ccw_device *cdev)
 
 void dasd_add_link_to_gendisk(struct gendisk *gdp, struct dasd_device *device)
 {
-	struct dasd_gd_private *gd_priv;
 	struct dasd_devmap *devmap;
-	struct ccw_device *cdev;
 
-	gd_priv = kzalloc(sizeof(struct dasd_gd_private), GFP_KERNEL);
-	if (!gd_priv)
-		return;
 	devmap = dasd_find_busid(dev_name(&device->cdev->dev));
 	if (IS_ERR(devmap))
 		return;
-	cdev = device->cdev;
 	spin_lock(&dasd_devmap_lock);
-	gd_priv->devmap = devmap;
-	gd_priv->cu_type = cdev->id.cu_type;
-	gd_priv->dev_type = cdev->id.dev_type;
-	memcpy(gd_priv->type, device->discipline->name, sizeof(gd_priv->type));
-	device->discipline->fill_gd_priv(gd_priv, device);
-	gdp->private_data = gd_priv;
+	gdp->private_data = devmap;
 	spin_unlock(&dasd_devmap_lock);
 }
 
 struct dasd_device *dasd_device_from_gendisk(struct gendisk *gdp)
 {
-	struct dasd_gd_private *gd_priv;
 	struct dasd_device *device;
 	struct dasd_devmap *devmap;
 
@@ -708,8 +696,7 @@ struct dasd_device *dasd_device_from_gendisk(struct gendisk *gdp)
 		return NULL;
 	device = NULL;
 	spin_lock(&dasd_devmap_lock);
-	gd_priv = gdp->private_data;
-	devmap = gd_priv->devmap;
+	devmap = gdp->private_data;
 	if (devmap && devmap->device) {
 		device = devmap->device;
 		dasd_get_device(device);

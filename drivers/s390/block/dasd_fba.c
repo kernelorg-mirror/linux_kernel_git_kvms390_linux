@@ -642,13 +642,6 @@ dasd_fba_fill_info(struct dasd_device * device,
 	return 0;
 }
 
-static void dasd_fba_fill_gd_priv(struct dasd_gd_private *gd_priv,
-				   struct dasd_device *device)
-{
-	gd_priv->label_block = 1;
-	gd_priv->format = DASD_FORMAT_LDL;
-}
-
 static void
 dasd_fba_dump_sense_dbf(struct dasd_device *device, struct irb *irb,
 			char *reason)
@@ -829,7 +822,6 @@ static struct dasd_discipline dasd_fba_discipline = {
 	.dump_sense = dasd_fba_dump_sense,
 	.dump_sense_dbf = dasd_fba_dump_sense_dbf,
 	.fill_info = dasd_fba_fill_info,
-	.fill_gd_priv = dasd_fba_fill_gd_priv,
 };
 
 static int __init

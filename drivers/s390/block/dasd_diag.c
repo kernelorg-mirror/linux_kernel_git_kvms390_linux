@@ -607,15 +607,6 @@ dasd_diag_fill_info(struct dasd_device * device,
 	return 0;
 }
 
-static void dasd_diag_fill_gd_priv(struct dasd_gd_private *gd_priv,
-				   struct dasd_device *device)
-{
-	struct dasd_diag_private *private = device->private;
-
-	gd_priv->label_block = (unsigned int) private->pt_block;
-	gd_priv->format = DASD_FORMAT_LDL;
-}
-
 static void
 dasd_diag_dump_sense(struct dasd_device *device, struct dasd_ccw_req * req,
 		     struct irb *stat)
@@ -661,7 +652,6 @@ static struct dasd_discipline dasd_diag_discipline = {
 	.free_cp = dasd_diag_free_cp,
 	.dump_sense = dasd_diag_dump_sense,
 	.fill_info = dasd_diag_fill_info,
-	.fill_gd_priv = dasd_diag_fill_gd_priv,
 };
 
 static int __init
