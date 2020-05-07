@@ -74,7 +74,7 @@ struct smc_llc_msg_add_link_cont_rt {
 	__be32 rmb_key;
 	__be32 rmb_key_new;
 	__be64 rmb_vaddr_new;
-} __packed;			/* format defined in RFC7609 */
+};
 
 #define SMC_LLC_RKEYS_PER_CONT_MSG	2
 
@@ -1418,7 +1418,7 @@ static void smc_llc_rmt_delete_rkey(struct smc_link_group *lgr)
 
 static void smc_llc_protocol_violation(struct smc_link_group *lgr, u8 type)
 {
-	pr_warn_ratelimited("smc: LLC protocol violation, link group id %*phN, "
+	pr_warn_ratelimited("smc: SMC-R lg %*phN LLC protocol violation: "
 			    "llc_type %d\n", SMC_LGR_ID_SIZE, &lgr->id, type);
 	smc_llc_set_termination_rsn(lgr, SMC_LLC_DEL_PROT_VIOL);
 	smc_lgr_terminate_sched(lgr);
