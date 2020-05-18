@@ -222,8 +222,8 @@ static bool smc_llc_flow_start(struct smc_llc_flow *flow,
 	}
 	if (qentry == lgr->delayed_event)
 		lgr->delayed_event = NULL;
-	smc_llc_flow_qentry_set(flow, qentry);
 	spin_unlock_bh(&lgr->llc_flow_lock);
+	smc_llc_flow_qentry_set(flow, qentry);
 	return true;
 }
 
@@ -251,7 +251,7 @@ again:
 		return 0;
 	}
 	spin_unlock_bh(&lgr->llc_flow_lock);
-	rc = wait_event_interruptible_timeout(lgr->llc_flow_waiter,
+	rc = wait_event_interruptible_timeout(lgr->llc_waiter,
 			(lgr->llc_flow_lcl.type == SMC_LLC_FLOW_NONE &&
 			 (lgr->llc_flow_rmt.type == SMC_LLC_FLOW_NONE ||
 			  lgr->llc_flow_rmt.type == allowed_remote)),
@@ -272,7 +272,7 @@ void smc_llc_flow_stop(struct smc_link_group *lgr, struct smc_llc_flow *flow)
 	    flow == &lgr->llc_flow_lcl)
 		schedule_work(&lgr->llc_event_work);
 	else
-		wake_up_interruptible(&lgr->llc_flow_waiter);
+		wake_up_interruptible(&lgr->llc_waiter);
 }
 
 /* lnk is optional and used for early wakeup when link goes down, useful in
@@ -284,9 +284,7 @@ struct smc_llc_qentry *smc_llc_wait(struct smc_link_group *lgr,
 {
 	struct smc_llc_flow *flow = &lgr->llc_flow_lcl;
 
-	if (flow->qentry)
-		goto out;
-	wait_event_interruptible_timeout(lgr->llc_msg_waiter,
+	wait_event_interruptible_timeout(lgr->llc_waiter,
 					 (flow->qentry ||
 					  (lnk && !smc_link_usable(lnk)) ||
 					  list_empty(&lgr->list)),
@@ -1461,7 +1459,7 @@ static void smc_llc_event_handler(struct smc_llc_qentry *qentry)
 				/* a flow is waiting for this message */
 				smc_llc_flow_qentry_set(&lgr->llc_flow_lcl,
 							qentry);
-				wake_up_interruptible(&lgr->llc_msg_waiter);
+				wake_up_interruptible(&lgr->llc_waiter);
 			} else if (smc_llc_flow_start(&lgr->llc_flow_lcl,
 						      qentry)) {
 				schedule_work(&lgr->llc_add_link_work);
@@ -1476,7 +1474,7 @@ static void smc_llc_event_handler(struct smc_llc_qentry *qentry)
 		if (lgr->llc_flow_lcl.type != SMC_LLC_FLOW_NONE) {
 			/* a flow is waiting for this message */
 			smc_llc_flow_qentry_set(&lgr->llc_flow_lcl, qentry);
-			wake_up_interruptible(&lgr->llc_msg_waiter);
+			wake_up_interruptible(&lgr->llc_waiter);
 			return;
 		}
 		break;
@@ -1487,7 +1485,7 @@ static void smc_llc_event_handler(struct smc_llc_qentry *qentry)
 				/* DEL LINK REQ during ADD LINK SEQ */
 				smc_llc_flow_qentry_set(&lgr->llc_flow_lcl,
 							qentry);
-				wake_up_interruptible(&lgr->llc_msg_waiter);
+				wake_up_interruptible(&lgr->llc_waiter);
 			} else if (smc_llc_flow_start(&lgr->llc_flow_lcl,
 						      qentry)) {
 				schedule_work(&lgr->llc_del_link_work);
@@ -1498,7 +1496,7 @@ static void smc_llc_event_handler(struct smc_llc_qentry *qentry)
 				/* DEL LINK REQ during ADD LINK SEQ */
 				smc_llc_flow_qentry_set(&lgr->llc_flow_lcl,
 							qentry);
-				wake_up_interruptible(&lgr->llc_msg_waiter);
+				wake_up_interruptible(&lgr->llc_waiter);
 			} else if (smc_llc_flow_start(&lgr->llc_flow_lcl,
 						      qentry)) {
 				schedule_work(&lgr->llc_del_link_work);
@@ -1583,7 +1581,7 @@ static void smc_llc_rx_response(struct smc_link *link,
 	case SMC_LLC_DELETE_RKEY:
 		/* assign responses to the local flow, we requested them */
 		smc_llc_flow_qentry_set(&link->lgr->llc_flow_lcl, qentry);
-		wake_up_interruptible(&link->lgr->llc_msg_waiter);
+		wake_up_interruptible(&link->lgr->llc_waiter);
 		return;
 	case SMC_LLC_CONFIRM_RKEY_CONT:
 		/* not used because max links is 3 */
@@ -1679,8 +1677,7 @@ void smc_llc_lgr_init(struct smc_link_group *lgr, struct smc_sock *smc)
 	INIT_LIST_HEAD(&lgr->llc_event_q);
 	spin_lock_init(&lgr->llc_event_q_lock);
 	spin_lock_init(&lgr->llc_flow_lock);
-	init_waitqueue_head(&lgr->llc_flow_waiter);
-	init_waitqueue_head(&lgr->llc_msg_waiter);
+	init_waitqueue_head(&lgr->llc_waiter);
 	mutex_init(&lgr->llc_conf_mutex);
 	lgr->llc_testlink_time = net->ipv4.sysctl_tcp_keepalive_time;
 }
@@ -1689,8 +1686,7 @@ void smc_llc_lgr_init(struct smc_link_group *lgr, struct smc_sock *smc)
 void smc_llc_lgr_clear(struct smc_link_group *lgr)
 {
 	smc_llc_event_flush(lgr);
-	wake_up_interruptible_all(&lgr->llc_flow_waiter);
-	wake_up_interruptible_all(&lgr->llc_msg_waiter);
+	wake_up_interruptible_all(&lgr->llc_waiter);
 	cancel_work_sync(&lgr->llc_event_work);
 	cancel_work_sync(&lgr->llc_add_link_work);
 	cancel_work_sync(&lgr->llc_del_link_work);
