@@ -193,21 +193,6 @@ static void qeth_get_drvinfo(struct net_device *dev,
 		 CARD_RDEV_ID(card), CARD_WDEV_ID(card), CARD_DDEV_ID(card));
 }
 
-static int qeth_reset(struct net_device *dev, u32 *flags)
-{
-	struct qeth_card *card = dev->ml_priv;
-	int rc;
-
-	if (*flags != ETH_RESET_ALL)
-		return -EINVAL;
-
-	rc = qeth_schedule_recovery(card);
-	if (!rc)
-		*flags = 0;
-
-	return rc;
-}
-
 static void qeth_get_channels(struct net_device *dev,
 			      struct ethtool_channels *channels)
 {
@@ -537,7 +522,6 @@ const struct ethtool_ops qeth_ethtool_ops = {
 	.get_ethtool_stats = qeth_get_ethtool_stats,
 	.get_sset_count = qeth_get_sset_count,
 	.get_drvinfo = qeth_get_drvinfo,
-	.reset = qeth_reset,
 	.get_channels = qeth_get_channels,
 	.set_channels = qeth_set_channels,
 	.get_ts_info = qeth_get_ts_info,
