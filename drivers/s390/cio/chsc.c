@@ -1357,9 +1357,9 @@ int chsc_pnso(struct subchannel_id schid,
 	pnso_area->request.code = 0x003d; /* network-subchannel operation */
 	pnso_area->m	   = schid.m;
 	pnso_area->ssid  = schid.ssid;
-	pnso_area->sch   = schid.sch_no;
+	pnso_area->sch	 = schid.sch_no;
 	pnso_area->cssid = schid.cssid;
-	pnso_area->oc    = 0; /* Store-network-bridging-information list */
+	pnso_area->oc	 = 0; /* Store-network-bridging-information list */
 	pnso_area->resume_token = resume_token;
 	pnso_area->n	   = (cnc != 0);
 	if (chsc(pnso_area))
