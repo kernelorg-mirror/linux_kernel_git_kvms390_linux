@@ -462,8 +462,10 @@ int notrace s390_do_machine_check(struct pt_regs *regs)
 	}
 	clear_cpu_flag(CIF_MCCK_GUEST);
 
-	if (user_mode(regs) && mcck_pending)
+	if (user_mode(regs) && mcck_pending) {
+		nmi_exit();
 		return 1;
+	}
 
 	if (mcck_pending)
 		schedule_mcck_handler();
