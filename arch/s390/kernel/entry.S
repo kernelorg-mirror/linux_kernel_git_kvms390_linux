@@ -55,7 +55,7 @@ _TIF_WORK	= (_TIF_SIGPENDING | _TIF_NOTIFY_RESUME | _TIF_NEED_RESCHED | \
 		   _TIF_UPROBE | _TIF_GUARDED_STORAGE | _TIF_PATCH_PENDING)
 _TIF_TRACE	= (_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SECCOMP | \
 		   _TIF_SYSCALL_TRACEPOINT)
-_CIF_WORK	= (_CIF_ASCE_PRIMARY |  _CIF_ASCE_SECONDARY | _CIF_FPU)
+_CIF_WORK	= (_CIF_ASCE_PRIMARY | _CIF_ASCE_SECONDARY | _CIF_FPU)
 _PIF_WORK	= (_PIF_PER_TRAP | _PIF_SYSCALL_RESTART)
 
 _LPP_OFFSET	= __LC_LPP
@@ -1010,7 +1010,7 @@ ENTRY(psw_idle)
 	stpt	__TIMER_IDLE_ENTER(%r2)
 	lpswe	__SF_EMPTY(%r15)
 .Lpsw_idle_exit:
-	BR_EX   %r14
+	BR_EX	%r14
 ENDPROC(psw_idle)
 
 /*
@@ -1204,7 +1204,7 @@ ENTRY(mcck_int_handler)
 	brasl	%r14,s390_do_machine_check
 	cghi	%r2,0
 	je	.Lmcck_return
-	lg	%r1,__LC_KERNEL_STACK   # switch to kernel stack
+	lg	%r1,__LC_KERNEL_STACK	# switch to kernel stack
 	mvc	STACK_FRAME_OVERHEAD(__PT_SIZE,%r1),0(%r11)
 	xc	__SF_BACKCHAIN(8,%r1),__SF_BACKCHAIN(%r1)
 	la	%r11,STACK_FRAME_OVERHEAD(%r1)
