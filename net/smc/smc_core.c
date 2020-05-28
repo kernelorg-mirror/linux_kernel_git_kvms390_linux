@@ -1128,13 +1128,14 @@ static void smcr_link_up(struct smc_link_group *lgr,
 			return;
 		if (lgr->llc_flow_lcl.type != SMC_LLC_FLOW_NONE) {
 			/* some other llc task is ongoing */
-			wait_event(lgr->llc_flow_waiter,
+			wait_event_timeout(lgr->llc_flow_waiter,
 				(list_empty(&lgr->list) ||
-				 lgr->llc_flow_lcl.type == SMC_LLC_FLOW_NONE));
+				 lgr->llc_flow_lcl.type == SMC_LLC_FLOW_NONE),
+				SMC_LLC_WAIT_TIME);
 		}
 		/* lgr or device no longer active? */
-		if (list_empty(&lgr->list) ||
-		    !smc_ib_port_active(smcibdev, ibport))
+		if (!list_empty(&lgr->list) &&
+		    smc_ib_port_active(smcibdev, ibport))
 			link = smc_llc_usable_link(lgr);
 		if (link)
 			smc_llc_send_add_link(link, smcibdev->mac[ibport - 1],
@@ -1193,9 +1194,10 @@ static void smcr_link_down(struct smc_link *lnk)
 		if (lgr->llc_flow_lcl.type != SMC_LLC_FLOW_NONE) {
 			/* another llc task is ongoing */
 			mutex_unlock(&lgr->llc_conf_mutex);
-			wait_event(lgr->llc_flow_waiter,
+			wait_event_timeout(lgr->llc_flow_waiter,
 				(list_empty(&lgr->list) ||
-				 lgr->llc_flow_lcl.type == SMC_LLC_FLOW_NONE));
+				 lgr->llc_flow_lcl.type == SMC_LLC_FLOW_NONE),
+				SMC_LLC_WAIT_TIME);
 			mutex_lock(&lgr->llc_conf_mutex);
 		}
 		if (!list_empty(&lgr->list))

@@ -186,6 +186,23 @@ static inline void smc_llc_flow_qentry_set(struct smc_llc_flow *flow,
 	flow->qentry = qentry;
 }
 
+static void smc_llc_flow_parallel(struct smc_link_group *lgr, u8 flow_type,
+				  struct smc_llc_qentry *qentry)
+{
+	u8 msg_type = qentry->msg.raw.hdr.common.type;
+
+	if ((msg_type == SMC_LLC_ADD_LINK || msg_type == SMC_LLC_DELETE_LINK) &&
+	    flow_type != msg_type && !lgr->delayed_event) {
+		lgr->delayed_event = qentry;
+		return;
+	}
+	/* drop parallel or already-in-progress llc requests */
+	pr_warn_once("smc: SMC-R lg %*phN dropped parallel "
+		     "LLC msg: flow %d msg_type %d\n",
+		     SMC_LGR_ID_SIZE, &lgr->id, flow_type, msg_type);
+	kfree(qentry);
+}
+
 /* try to start a new llc flow, initiated by an incoming llc msg */
 static bool smc_llc_flow_start(struct smc_llc_flow *flow,
 			       struct smc_llc_qentry *qentry)
@@ -195,18 +212,7 @@ static bool smc_llc_flow_start(struct smc_llc_flow *flow,
 	spin_lock_bh(&lgr->llc_flow_lock);
 	if (flow->type) {
 		/* a flow is already active */
-		if ((qentry->msg.raw.hdr.common.type == SMC_LLC_ADD_LINK ||
-		     qentry->msg.raw.hdr.common.type == SMC_LLC_DELETE_LINK) &&
-		    !lgr->delayed_event) {
-			lgr->delayed_event = qentry;
-		} else {
-			/* forget this llc request */
-			pr_warn_once("smc: SMC-R lg %*phN dropped parallel "
-				     "LLC msg: flow %d msg_type %d\n",
-				     SMC_LGR_ID_SIZE, &lgr->id, flow->type,
-				     qentry->msg.raw.hdr.common.type);
-			kfree(qentry);
-		}
+		smc_llc_flow_parallel(lgr, flow->type, qentry);
 		spin_unlock_bh(&lgr->llc_flow_lock);
 		return false;
 	}
@@ -309,8 +315,9 @@ struct smc_llc_qentry *smc_llc_wait(struct smc_link_group *lgr,
 			return NULL;
 		}
 		pr_warn_once("smc: SMC-R lg %*phN dropped unexpected LLC msg: "
-			     "msg_type %d exp_type %d\n",
-			     SMC_LGR_ID_SIZE, &lgr->id, rcv_msg, exp_msg);
+			     "msg_type %d exp_type %d flow %d\n",
+			     SMC_LGR_ID_SIZE, &lgr->id, rcv_msg, exp_msg,
+			     flow->type);
 		smc_llc_flow_qentry_del(flow);
 	}
 out:
