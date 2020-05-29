@@ -197,9 +197,10 @@ static void smc_llc_flow_parallel(struct smc_link_group *lgr, u8 flow_type,
 		return;
 	}
 	/* drop parallel or already-in-progress llc requests */
-	pr_warn_once("smc: SMC-R lg %*phN dropped parallel "
-		     "LLC msg: flow %d msg_type %d\n",
-		     SMC_LGR_ID_SIZE, &lgr->id, flow_type, msg_type);
+	if (flow_type != msg_type)
+		pr_warn_once("smc: SMC-R lg %*phN dropped parallel "
+			     "LLC msg: flow %d msg_type %d\n",
+			     SMC_LGR_ID_SIZE, &lgr->id, flow_type, msg_type);
 	kfree(qentry);
 }
 
