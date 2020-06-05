@@ -885,6 +885,7 @@ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
 		goto skip;
 	}
 
+#ifdef CONFIG_SECCOMP
 	/* Do the secure computing check after ptrace. */
 	if (unlikely(test_thread_flag(TIF_SECCOMP))) {
 		struct seccomp_data sd;
@@ -908,6 +909,7 @@ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
 		if (__secure_computing(&sd) == -1)
 			goto skip;
 	}
+#endif /* CONFIG_SECCOMP */
 
 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
 		trace_sys_enter(regs, regs->int_code & 0xffff);
