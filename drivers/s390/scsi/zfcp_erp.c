@@ -578,7 +578,8 @@ static void zfcp_erp_strategy_check_fsfreq(struct zfcp_erp_action *act)
 			req->status |= ZFCP_STATUS_FSFREQ_DISMISSED;
 			zfcp_dbf_rec_run("erscf_1", act);
 			/* lock-free concurrent access with
-			 * zfcp_erp_timeout_handler() */
+			 * zfcp_erp_timeout_handler()
+			 */
 			WRITE_ONCE(req->erp_action, NULL);
 		}
 		if (act->status & ZFCP_STATUS_ERP_TIMEDOUT)
