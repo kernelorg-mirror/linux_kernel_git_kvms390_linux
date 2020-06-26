@@ -816,7 +816,7 @@ static ssize_t online_store(struct device *dev,
  * Can't use DEVICE_ATTR because the attribute should be named
  * stp/online but dev_attr_online already exists in this file ..
  */
-DEVICE_ATTR_RW(online);
+static DEVICE_ATTR_RW(online);
 
 static struct device_attribute *stp_attributes[] = {
 	&dev_attr_ctn_id,
