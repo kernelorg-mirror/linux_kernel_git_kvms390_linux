@@ -199,8 +199,10 @@ static void smc_llc_flow_parallel(struct smc_link_group *lgr, u8 flow_type,
 	/* drop parallel or already-in-progress llc requests */
 	if (flow_type != msg_type)
 		pr_warn_once("smc: SMC-R lg %*phN dropped parallel "
-			     "LLC msg: flow %d msg_type %d\n",
-			     SMC_LGR_ID_SIZE, &lgr->id, flow_type, msg_type);
+			     "LLC msg: msg %d flow %d role %d\n",
+			     SMC_LGR_ID_SIZE, &lgr->id,
+			     qentry->msg.raw.hdr.common.type,
+			     flow_type, lgr->role);
 	kfree(qentry);
 }
 
@@ -316,9 +318,10 @@ struct smc_llc_qentry *smc_llc_wait(struct smc_link_group *lgr,
 			return NULL;
 		}
 		pr_warn_once("smc: SMC-R lg %*phN dropped unexpected LLC msg: "
-			     "msg_type %d exp_type %d flow %d\n",
+			     "msg %d exp %d flow %d role %d flags %x\n",
 			     SMC_LGR_ID_SIZE, &lgr->id, rcv_msg, exp_msg,
-			     flow->type);
+			     flow->type, lgr->role,
+			     flow->qentry->msg.raw.hdr.flags);
 		smc_llc_flow_qentry_del(flow);
 	}
 out:
@@ -1632,7 +1635,7 @@ static void smc_llc_enqueue(struct smc_link *link, union smc_llc_msg *llc)
 	spin_lock_irqsave(&lgr->llc_event_q_lock, flags);
 	list_add_tail(&qentry->list, &lgr->llc_event_q);
 	spin_unlock_irqrestore(&lgr->llc_event_q_lock, flags);
-	schedule_work(&link->lgr->llc_event_work);
+	schedule_work(&lgr->llc_event_work);
 }
 
 /* copy received msg and add it to the event queue */
