@@ -566,6 +566,11 @@ void smc_wr_free_link(struct smc_link *lnk)
 		return;
 	ibdev = lnk->smcibdev->ibdev;
 
+	if (smc_wr_tx_wait_no_pending_sends(lnk))
+		memset(lnk->wr_tx_mask, 0,
+		       BITS_TO_LONGS(SMC_WR_BUF_CNT) *
+						sizeof(*lnk->wr_tx_mask));
+
 	if (lnk->wr_rx_dma_addr) {
 		ib_dma_unmap_single(ibdev, lnk->wr_rx_dma_addr,
 				    SMC_WR_BUF_SIZE * lnk->wr_rx_cnt,
