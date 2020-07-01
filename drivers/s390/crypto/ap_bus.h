@@ -192,7 +192,7 @@ struct ap_message {
 	unsigned long long psmid;	/* Message id. */
 	void *msg;			/* Pointer to message buffer. */
 	unsigned int len;		/* Message length. */
-	u32 flags;                      /* Flags, see AP_MSG_FLAG_xxx */
+	u32 flags;			/* Flags, see AP_MSG_FLAG_xxx */
 	int rc;				/* Return code for this message */
 	void *private;			/* ap driver private pointer. */
 	/* receive is called from tasklet context */
