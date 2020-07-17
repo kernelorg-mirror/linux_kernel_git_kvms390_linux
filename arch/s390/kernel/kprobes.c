@@ -523,8 +523,10 @@ static int kprobe_trap_handler(struct pt_regs *regs, int trapnr)
 		 * zero, try to fix up.
 		 */
 		entry = s390_search_extables(regs->psw.addr);
-		if (entry && ex_handle(entry, regs))
+		if (entry) {
+			regs->psw.addr = extable_fixup(entry);
 			return 1;
+		}
 
 		/*
 		 * fixup_exception() could not handle it,

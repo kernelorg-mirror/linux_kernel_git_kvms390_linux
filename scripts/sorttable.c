@@ -255,29 +255,6 @@ static void x86_sort_relative_table(char *extab_image, int image_size)
 	}
 }
 
-static void s390_sort_relative_table(char *extab_image, int image_size)
-{
-	int i;
-
-	for (i = 0; i < image_size; i += 16) {
-		char *loc = extab_image + i;
-
-		w(r((uint32_t *)loc) + i, (uint32_t *)loc);
-		w(r((uint32_t *)(loc + 4)) + (i + 4), (uint32_t *)(loc + 4));
-		w8(r8((uint64_t *)(loc + 8)) + (i + 8), (uint64_t *)(loc + 8));
-	}
-
-	qsort(extab_image, image_size / 16, 16, compare_relative_table);
-
-	for (i = 0; i < image_size; i += 16) {
-		char *loc = extab_image + i;
-
-		w(r((uint32_t *)loc) - i, (uint32_t *)loc);
-		w(r((uint32_t *)(loc + 4)) - (i + 4), (uint32_t *)(loc + 4));
-		w8(r8((uint64_t *)(loc + 8)) - (i + 8), (uint64_t *)(loc + 8));
-	}
-}
-
 static int do_file(char const *const fname, void *addr)
 {
 	int rc = -1;
@@ -320,8 +297,6 @@ static int do_file(char const *const fname, void *addr)
 		custom_sort = x86_sort_relative_table;
 		break;
 	case EM_S390:
-		custom_sort = s390_sort_relative_table;
-		break;
 	case EM_AARCH64:
 	case EM_PARISC:
 	case EM_PPC:
