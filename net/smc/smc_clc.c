@@ -498,9 +498,9 @@ int smc_clc_send_proposal(struct smc_sock *smc, int smc_type,
 }
 
 /* build and send CLC CONFIRM / ACCEPT message */
-int smc_clc_send_confirm_accept(struct smc_sock *smc,
-				struct smc_clc_msg_accept_confirm *clc,
-				int first_contact)
+static int smc_clc_send_confirm_accept(struct smc_sock *smc,
+				       struct smc_clc_msg_accept_confirm *clc,
+				       int first_contact)
 {
 	struct smc_connection *conn = &smc->conn;
 	struct msghdr msg;
@@ -516,8 +516,8 @@ int smc_clc_send_confirm_accept(struct smc_sock *smc,
 		       sizeof(SMCD_EYECATCHER));
 		clc->hdr.path = SMC_TYPE_D;
 		clc->hdr.length = htons(SMCD_CLC_ACCEPT_CONFIRM_LEN);
-		clc->d0.gid = cpu_to_be64(conn->lgr->smcd->local_gid);
-		clc->d0.token = cpu_to_be64(conn->rmb_desc->token);
+		clc->d0.gid = conn->lgr->smcd->local_gid;
+		clc->d0.token = conn->rmb_desc->token;
 		clc->d0.dmbe_size = conn->rmbe_size_short;
 		clc->d0.dmbe_idx = 0;
 		memcpy(&clc->d0.linkid, conn->lgr->id, SMC_LGR_ID_SIZE);

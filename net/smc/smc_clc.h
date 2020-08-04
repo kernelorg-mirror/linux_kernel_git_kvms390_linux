@@ -139,8 +139,8 @@ struct smcr_clc_msg_accept_confirm {	/* SMCR accept/confirm */
 } __packed;
 
 struct smcd_clc_msg_accept_confirm {	/* SMCD accept/confirm */
-	__be64 gid;		/* Sender GID */
-	__be64 token;		/* DMB token */
+	u64 gid;		/* Sender GID */
+	u64 token;		/* DMB token */
 	u8 dmbe_idx;		/* DMBE index */
 #if defined(__BIG_ENDIAN_BITFIELD)
 	u8 dmbe_size : 4,	/* buf size (compressed) */
