@@ -21,6 +21,8 @@
 
 #ifdef CONFIG_ARCH_HAS_VDSO_DATA
 #include <asm/vdso/data.h>
+#else
+struct arch_vdso_data {};
 #endif
 
 #define VDSO_BASES	(CLOCK_TAI + 1)
@@ -68,6 +70,7 @@ struct vdso_timestamp {
  * @tz_dsttime:		type of DST correction
  * @hrtimer_res:	hrtimer resolution
  * @__unused:		unused
+ * @arch_data:		architecture specific data
  *
  * vdso_data will be accessed by 64 bit and compat code at the same time
  * so we should be careful before modifying this structure.
@@ -101,9 +104,8 @@ struct vdso_data {
 	s32			tz_dsttime;
 	u32			hrtimer_res;
 	u32			__unused;
-#ifdef CONFIG_ARCH_HAS_VDSO_DATA
-	struct arch_vdso_data arch;
-#endif
+
+	struct arch_vdso_data	arch_data;
 };
 
 /*
