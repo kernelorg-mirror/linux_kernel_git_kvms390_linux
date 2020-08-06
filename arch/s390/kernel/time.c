@@ -41,6 +41,7 @@
 #include <linux/gfp.h>
 #include <linux/kprobes.h>
 #include <linux/uaccess.h>
+#include <vdso/vsyscall.h>
 #include <vdso/clocksource.h>
 #include <vdso/helpers.h>
 #include <asm/facility.h>
@@ -86,7 +87,7 @@ void __init time_early_init(void)
 
 	/* Initialize TOD steering parameters */
 	tod_steering_end = *(unsigned long long *) &tod_clock_base[1];
-	vdso_data->arch.tod_steering_end = tod_steering_end;
+	vdso_data->arch_data.tod_steering_end = tod_steering_end;
 
 	if (!test_facility(28))
 		return;
@@ -395,7 +396,7 @@ static void clock_sync_global(unsigned long long delta)
 		panic("TOD clock sync offset %lli is too large to drift\n",
 		      tod_steering_delta);
 	tod_steering_end = now + (abs(tod_steering_delta) << 15);
-	vdso_data->arch.tod_steering_end = tod_steering_end;
+	vdso_data->arch_data.tod_steering_end = tod_steering_end;
 
 	/* Update LPAR offset. */
 	if (ptff_query(PTFF_QTO) && ptff(&qto, sizeof(qto), PTFF_QTO) == 0)
@@ -537,7 +538,7 @@ void stp_queue_work(void)
 static int stp_sync_clock(void *data)
 {
 	struct clock_sync_data *sync = data;
-	unsigned long long clock_delta;
+	unsigned long long clock_delta, flags;
 	static int first;
 	int rc;
 
@@ -550,13 +551,7 @@ static int stp_sync_clock(void *data)
 		if (stp_info.todoff[0] || stp_info.todoff[1] ||
 		    stp_info.todoff[2] || stp_info.todoff[3] ||
 		    stp_info.tmd != 2) {
-			vdso_data->arch.tb_update_cnt++;
-			/*
-			 * This barrier isn't really needed as we're called
-			 * from stop_machine_cpuslocked(). However it doesn't
-			 * hurt in case the code gets changed.
-			 */
-			smp_wmb();
+			flags = vdso_update_begin();
 			rc = chsc_sstpc(stp_page, STP_OP_SYNC, 0,
 					&clock_delta);
 			if (rc == 0) {
@@ -567,8 +562,7 @@ static int stp_sync_clock(void *data)
 				if (rc == 0 && stp_info.tmd != 2)
 					rc = -EAGAIN;
 			}
-			smp_wmb(); /* see comment above */
-			vdso_data->arch.tb_update_cnt++;
+			vdso_update_end(flags);
 		}
 		sync->in_sync = rc ? -EAGAIN : 1;
 		xchg(&first, 0);

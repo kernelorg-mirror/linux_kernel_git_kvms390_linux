@@ -8,7 +8,6 @@
 struct arch_vdso_data {
 	__u64 tod_steering_delta;
 	__u64 tod_steering_end;
-	__u32 tb_update_cnt;
 };
 
 #endif /* __S390_ASM_VDSO_DATA_H */
