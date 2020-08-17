@@ -1750,7 +1750,7 @@ out:
 }
 
 static int smc_setsockopt(struct socket *sock, int level, int optname,
-			  char __user *optval, unsigned int optlen)
+			  sockptr_t optval, unsigned int optlen)
 {
 	struct sock *sk = sock->sk;
 	struct smc_sock *smc;
@@ -1761,8 +1761,11 @@ static int smc_setsockopt(struct socket *sock, int level, int optname,
 	/* generic setsockopts reaching us here always apply to the
 	 * CLC socket
 	 */
-	rc = smc->clcsock->ops->setsockopt(smc->clcsock, level, optname,
-					   optval, optlen);
+	if (unlikely(!smc->clcsock->ops->setsockopt))
+		rc = -EOPNOTSUPP;
+	else
+		rc = smc->clcsock->ops->setsockopt(smc->clcsock, level, optname,
+						   optval, optlen);
 	if (smc->clcsock->sk->sk_err) {
 		sk->sk_err = smc->clcsock->sk->sk_err;
 		sk->sk_error_report(sk);
@@ -1770,7 +1773,7 @@ static int smc_setsockopt(struct socket *sock, int level, int optname,
 
 	if (optlen < sizeof(int))
 		return -EINVAL;
-	if (get_user(val, (int __user *)optval))
+	if (copy_from_sockptr(&val, optval, sizeof(int)))
 		return -EFAULT;
 
 	lock_sock(sk);
@@ -1827,6 +1830,8 @@ static int smc_getsockopt(struct socket *sock, int level, int optname,
 
 	smc = smc_sk(sock->sk);
 	/* socket options apply to the CLC socket */
+	if (unlikely(!smc->clcsock->ops->getsockopt))
+		return -EOPNOTSUPP;
 	return smc->clcsock->ops->getsockopt(smc->clcsock, level, optname,
 					     optval, optlen);
 }

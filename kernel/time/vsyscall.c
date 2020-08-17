@@ -134,7 +134,13 @@ void update_vsyscall_tz(void)
  * vdso_update_begin - Start of a VDSO update section
  *
  * Allows architecture code to safely update the architecture specific VDSO
- * data.
+ * data. Disables interrupts, acquires timekeeper lock to serialize against
+ * concurrent updates from timekeeping and invalidates the VDSO data
+ * sequence counter to prevent concurrent readers from accessing
+ * inconsistent data.
+ *
+ * Returns: Saved interrupt flags which need to be handed in to
+ * vdso_update_end().
  */
 unsigned long vdso_update_begin(void)
 {
@@ -148,8 +154,11 @@ unsigned long vdso_update_begin(void)
 
 /**
  * vdso_update_end - End of a VDSO update section
+ * @flags:	Interrupt flags as returned from vdso_update_begin()
  *
- * Pairs with vdso_update_begin().
+ * Pairs with vdso_update_begin(). Marks vdso data consistent, invokes data
+ * synchronization if the architecture requires it, drops timekeeper lock
+ * and restores interrupt flags.
  */
 void vdso_update_end(unsigned long flags)
 {

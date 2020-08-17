@@ -22,7 +22,7 @@ static __always_inline const struct vdso_data *__arch_get_vdso_data(void)
 	return _vdso_data;
 }
 
-static inline u64 __arch_get_hw_counter(s32 clock_mode)
+static inline u64 __arch_get_hw_counter(s32 clock_mode, const struct vdso_data *vd)
 {
 	const struct vdso_data *vdso = __arch_get_vdso_data();
 	u64 adj, now;
