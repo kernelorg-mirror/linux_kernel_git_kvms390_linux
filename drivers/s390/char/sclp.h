@@ -322,6 +322,8 @@ extern unsigned long sclp_console_full;
 extern bool sclp_mask_compat_mode;
 
 extern char *sclp_early_sccb;
+extern int sclp_info_sccb_valid;
+extern struct read_info_sccb sclp_info_sccb;
 
 void sclp_early_wait_irq(void);
 int sclp_early_cmd(sclp_cmdw_t cmd, void *sccb);
@@ -330,7 +332,6 @@ unsigned int sclp_early_con_check_vt220(struct init_sccb *sccb);
 int sclp_early_set_event_mask(struct init_sccb *sccb,
 			      sccb_mask_t receive_mask,
 			      sccb_mask_t send_mask);
-int sclp_early_get_info(struct read_info_sccb *info);
 
 /* useful inlines */
 

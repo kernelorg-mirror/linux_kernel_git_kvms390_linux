@@ -14,8 +14,8 @@
 #include "sclp.h"
 #include "sclp_rw.h"
 
-static struct read_info_sccb __bootdata(sclp_info_sccb);
-static int __bootdata(sclp_info_sccb_valid);
+struct read_info_sccb __bootdata(sclp_info_sccb);
+int __bootdata(sclp_info_sccb_valid);
 char *sclp_early_sccb = (char *) EARLY_SCCB_OFFSET;
 int sclp_init_state __section(.data) = sclp_init_state_uninitialized;
 /*
@@ -261,15 +261,6 @@ int __init sclp_early_read_info(void)
 			break;
 	}
 	return -EIO;
-}
-
-int __init sclp_early_get_info(struct read_info_sccb *info)
-{
-	if (!sclp_info_sccb_valid)
-		return -EIO;
-
-	*info = sclp_info_sccb;
-	return 0;
 }
 
 int __init sclp_early_get_memsize(unsigned long *mem)

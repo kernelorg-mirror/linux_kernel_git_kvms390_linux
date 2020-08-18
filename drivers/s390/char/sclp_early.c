@@ -25,7 +25,7 @@ static void __init sclp_early_facilities_detect(struct read_info_sccb *sccb)
 	struct sclp_core_entry *cpue;
 	u16 boot_cpu_address, cpu;
 
-	if (sclp_early_get_info(sccb))
+	if (!sclp_info_sccb_valid)
 		return;
 
 	sclp.facilities = sccb->facilities;
@@ -146,9 +146,13 @@ static void __init sclp_early_console_detect(struct init_sccb *sccb)
 
 void __init sclp_early_detect(void)
 {
-	void *sccb = sclp_early_sccb;
+	void *sccb = &sclp_info_sccb;
 
 	sclp_early_facilities_detect(sccb);
+	/*
+	 * Utilize the same sclp_info_sccb space for read cpu info as well.
+	 * Required read scp info is already copied before in sclp_info
+	 */
 	sclp_early_init_core_info(sccb);
 
 	/*
