@@ -13,6 +13,7 @@
 #include <linux/list.h>
 #include <asm/sclp.h>
 #include <asm/ebcdic.h>
+#include <asm/facility.h>
 
 /* maximum number of pages concerning our own memory management */
 #define MAX_KMEM_PAGES (sizeof(unsigned long) << 3)
@@ -150,13 +151,27 @@ static inline void sccb_set_mask(u8 *masks, size_t len, int i, sccb_mask_t val)
 #define sccb_set_sclp_recv_mask(sccb, val)  sccb_set_generic_mask(sccb, 2, val)
 #define sccb_set_sclp_send_mask(sccb, val)  sccb_set_generic_mask(sccb, 3, val)
 
+#define needs_extended_sccb(sccb)					\
+({									\
+	__typeof__(sccb) __sccb = sccb;					\
+	((__sccb)->header.response_code == 0x300 && test_facility(140) && \
+	((__sccb)->header.control_mask[2] & (1 << 7)));			\
+})
+
 struct read_cpu_info_sccb {
 	struct	sccb_header header;
 	u16	nr_configured;
 	u16	offset_configured;
 	u16	nr_standby;
 	u16	offset_standby;
-	u8	reserved[4096 - 16];
+	/*
+	 * Without ext sccb, struct size is EARLY_SCCB_SIZE.
+	 * With ext sccb, struct size is EXT_SCCB_SIZE.
+	 * Function _sclp_get_core_info allocates this dynamically.
+	 * Function sclp_early_init_core_info uses necessary space from
+	 * sclp_info_sccb.
+	 */
+	u8	reserved[];
 } __attribute__((packed, aligned(PAGE_SIZE)));
 
 struct read_info_sccb {
@@ -199,7 +214,7 @@ struct read_info_sccb {
 	u8	byte_134;			/* 134 */
 	u8	cpudirq;		/* 135 */
 	u16	cbl;			/* 136-137 */
-	u8	_pad_138[4096 - 138];	/* 138-4095 */
+	u8	_pad_138[EXT_SCCB_SIZE - 138];
 } __packed __aligned(PAGE_SIZE);
 
 struct read_storage_sccb {

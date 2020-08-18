@@ -112,16 +112,30 @@ static int sclp_early_core_info_valid __initdata;
 
 static void __init sclp_early_init_core_info(struct read_cpu_info_sccb *sccb)
 {
+	int length;
+
 	if (!SCLP_HAS_CPU_INFO)
 		return;
-	memset(sccb, 0, sizeof(*sccb));
-	sccb->header.length = sizeof(*sccb);
+	/* Without extended sccb, only 4k bytes are needed */
+	memset(sccb, 0, EARLY_SCCB_SIZE);
+	sccb->header.length = EARLY_SCCB_SIZE;
 	if (sclp_early_cmd(SCLP_CMDW_READ_CPU_INFO, sccb))
 		return;
-	if (sccb->header.response_code != 0x0010)
-		return;
-	sclp_fill_core_info(&sclp_early_core_info, sccb);
-	sclp_early_core_info_valid = 1;
+
+	/* If extended sccb is available, Again try this sclp command */
+	if (needs_extended_sccb(sccb)) {
+		if (sccb->header.length > EXT_SCCB_SIZE)
+			return;
+		length = sccb->header.length;
+		memset(sccb, 0, length);
+		sccb->header.length = length;
+		if (sclp_early_cmd(SCLP_CMDW_READ_CPU_INFO, sccb))
+			return;
+	}
+	if (sccb->header.response_code == 0x0010) {
+		sclp_fill_core_info(&sclp_early_core_info, sccb);
+		sclp_early_core_info_valid = 1;
+	}
 }
 
 int __init sclp_early_get_core_info(struct sclp_core_info *info)
