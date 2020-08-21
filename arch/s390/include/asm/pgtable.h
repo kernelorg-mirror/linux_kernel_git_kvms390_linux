@@ -512,6 +512,55 @@ static inline bool mm_pmd_folded(struct mm_struct *mm)
 }
 #define mm_pmd_folded(mm) mm_pmd_folded(mm)
 
+static inline unsigned long gup_folded_addr_end(unsigned long rste,
+						unsigned long addr, unsigned long end)
+{
+	unsigned int type = rste & _REGION_ENTRY_TYPE_MASK;
+	unsigned long size, mask, boundary;
+
+	switch (type) {
+	case _REGION_ENTRY_TYPE_R1:
+		size = PGDIR_SIZE;
+		mask = PGDIR_MASK;
+		break;
+	case _REGION_ENTRY_TYPE_R2:
+		size = P4D_SIZE;
+		mask = P4D_MASK;
+		break;
+	case _REGION_ENTRY_TYPE_R3:
+		size = PUD_SIZE;
+		mask = PUD_MASK;
+		break;
+	default:
+		BUG();
+	};
+
+	boundary = (addr + size) & mask;
+
+	return (boundary - 1) < (end - 1) ? boundary : end;
+}
+
+#define gup_pgd_addr_end gup_pgd_addr_end
+static inline unsigned long gup_pgd_addr_end(pgd_t pgd,
+					     unsigned long addr, unsigned long end)
+{
+	return gup_folded_addr_end(pgd_val(pgd), addr, end);
+}
+
+#define gup_p4d_addr_end gup_p4d_addr_end
+static inline unsigned long gup_p4d_addr_end(p4d_t p4d,
+					     unsigned long addr, unsigned long end)
+{
+	return gup_folded_addr_end(p4d_val(p4d), addr, end);
+}
+
+#define gup_pud_addr_end gup_pud_addr_end
+static inline unsigned long gup_pud_addr_end(pud_t pud,
+					     unsigned long addr, unsigned long end)
+{
+	return gup_folded_addr_end(pud_val(pud), addr, end);
+}
+
 static inline int mm_has_pgste(struct mm_struct *mm)
 {
 #ifdef CONFIG_PGSTE

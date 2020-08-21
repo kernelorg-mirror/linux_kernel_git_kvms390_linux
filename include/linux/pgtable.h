@@ -681,6 +681,22 @@ static inline int arch_unmap_one(struct mm_struct *mm,
 })
 #endif
 
+#ifndef gup_pgd_addr_end
+#define gup_pgd_addr_end(pgd, addr, end)	pgd_addr_end(addr, end)
+#endif
+
+#ifndef gup_p4d_addr_end
+#define gup_p4d_addr_end(p4d, addr, end)	p4d_addr_end(addr, end)
+#endif
+
+#ifndef gup_pud_addr_end
+#define gup_pud_addr_end(pud, addr, end)	pud_addr_end(addr, end)
+#endif
+
+#ifndef gup_pmd_addr_end
+#define gup_pmd_addr_end(pmd, addr, end)	pmd_addr_end(addr, end)
+#endif
+
 /*
  * When walking page tables, we usually want to skip any p?d_none entries;
  * and any p?d_bad entries - reporting the error before resetting to none.
