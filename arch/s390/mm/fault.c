@@ -859,6 +859,17 @@ void do_non_secure_storage_access(struct pt_regs *regs)
 }
 NOKPROBE_SYMBOL(do_non_secure_storage_access);
 
+void do_secure_storage_violation(struct pt_regs *regs)
+{
+	/*
+	 * Either KVM messed up the secure guest mapping or the same
+	 * page is mapped into multiple secure guests
+	 */
+	send_sig(SIGSEGV, current, 0);
+}
+NOKPROBE_SYMBOL(do_secure_storage_violation);
+
+
 #else
 void do_secure_storage_access(struct pt_regs *regs)
 {
@@ -866,6 +877,10 @@ void do_secure_storage_access(struct pt_regs *regs)
 }
 
 void do_non_secure_storage_access(struct pt_regs *regs)
+{
+	default_trap_handler(regs);
+}
+void do_secure_storage_violation(struct pt_regs *regs)
 {
 	default_trap_handler(regs);
 }
