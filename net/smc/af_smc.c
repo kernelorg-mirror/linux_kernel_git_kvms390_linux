@@ -1425,7 +1425,8 @@ static void smc_clcsock_data_ready(struct sock *listen_clcsock)
 {
 	struct smc_sock *lsmc;
 
-	lsmc = rcu_dereference_sk_user_data(listen_clcsock);
+	lsmc = (struct smc_sock *)
+	       ((uintptr_t)listen_clcsock->sk_user_data & ~SK_USER_DATA_NOCOPY);
 	if (!lsmc)
 		return;
 	lsmc->clcsk_data_ready(listen_clcsock);
@@ -1467,7 +1468,8 @@ static int smc_listen(struct socket *sock, int backlog)
 	 */
 	smc->clcsk_data_ready = smc->clcsock->sk->sk_data_ready;
 	smc->clcsock->sk->sk_data_ready = smc_clcsock_data_ready;
-	rcu_assign_sk_user_data(smc->clcsock->sk, smc);
+	smc->clcsock->sk->sk_user_data =
+		(void *)((uintptr_t)smc | SK_USER_DATA_NOCOPY);
 	rc = kernel_listen(smc->clcsock, backlog);
 	if (rc)
 		goto out;
