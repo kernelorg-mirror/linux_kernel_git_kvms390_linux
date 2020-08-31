@@ -208,7 +208,7 @@ again:
 	case SMC_LISTEN:
 		sk->sk_state = SMC_CLOSED;
 		smc->clcsock->sk->sk_data_ready = smc->clcsk_data_ready;
-		rcu_assign_sk_user_data(smc->clcsock->sk, NULL);
+		smc->clcsock->sk->sk_user_data = NULL;
 		sk->sk_state_change(sk); /* wake up accept */
 		if (smc->clcsock && smc->clcsock->sk)
 			rc = kernel_sock_shutdown(smc->clcsock, SHUT_RDWR);
