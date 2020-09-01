@@ -1789,6 +1789,32 @@ void zcrypt_rng_device_remove(void)
 	mutex_unlock(&zcrypt_rng_mutex);
 }
 
+/*
+ * Wait until the zcrypt api is operational.
+ * The AP bus scan and the binding of ap devices to device drivers
+ * is an asnychronous job. This function waits until these initial
+ * jobs are done and so the zcrypt api should be ready to serve
+ * crypto requests - if there are resources available.
+ * The function uses an internal timeout of 60s. So when called
+ * and the ap bus bindings complete does not happen within this
+ * time the function returns -ETIME. On success the return
+ * value is 0.
+ */
+int zcrypt_wait_api_operational(void)
+{
+	int rc;
+	unsigned long timeout = msecs_to_jiffies(60 * 1000);
+
+	rc = ap_wait_init_apqn_bindings_complete(timeout);
+	if (rc == -ETIME)
+		ZCRYPT_DBF(DBF_WARN,
+			   "%s ap_wait_init_apqn_bindings_complete() returned with ETIME\n",
+			   __func__);
+
+	return rc;
+}
+EXPORT_SYMBOL(zcrypt_wait_api_operational);
+
 int __init zcrypt_debug_init(void)
 {
 	zcrypt_dbf_info = debug_register("zcrypt", 1, 1,

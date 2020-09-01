@@ -145,4 +145,6 @@ void zcrypt_device_status_mask_ext(struct zcrypt_device_status_ext *devstatus);
 int zcrypt_device_status_ext(int card, int queue,
 			     struct zcrypt_device_status_ext *devstatus);
 
+int zcrypt_wait_api_operational(void);
+
 #endif /* _ZCRYPT_API_H_ */
