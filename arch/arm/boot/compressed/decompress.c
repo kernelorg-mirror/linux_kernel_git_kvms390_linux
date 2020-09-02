@@ -9,7 +9,6 @@
 #include "misc.h"
 
 #define STATIC static
-#define STATIC_RW_DATA	/* non-static please */
 
 /* Diagnostic functions */
 #ifdef DEBUG
