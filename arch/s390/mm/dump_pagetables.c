@@ -16,9 +16,10 @@ struct addr_marker {
 };
 
 enum address_markers_idx {
-	IDENTITY_NR = 0,
+	IDENTITY_BEFORE_NR = 0,
 	KERNEL_START_NR,
 	KERNEL_END_NR,
+	IDENTITY_AFTER_NR,
 #ifdef CONFIG_KASAN
 	KASAN_SHADOW_START_NR,
 	KASAN_SHADOW_END_NR,
@@ -29,9 +30,10 @@ enum address_markers_idx {
 };
 
 static struct addr_marker address_markers[] = {
-	[IDENTITY_NR]		= {0, "Identity Mapping"},
+	[IDENTITY_BEFORE_NR]	= {0, "Identity Mapping"},
 	[KERNEL_START_NR]	= {(unsigned long)_stext, "Kernel Image Start"},
 	[KERNEL_END_NR]		= {(unsigned long)_end, "Kernel Image End"},
+	[IDENTITY_AFTER_NR]	= {(unsigned long)_end, "Identity Mapping"},
 #ifdef CONFIG_KASAN
 	[KASAN_SHADOW_START_NR]	= {KASAN_SHADOW_START, "Kasan Shadow Start"},
 	[KASAN_SHADOW_END_NR]	= {KASAN_SHADOW_END, "Kasan Shadow End"},
