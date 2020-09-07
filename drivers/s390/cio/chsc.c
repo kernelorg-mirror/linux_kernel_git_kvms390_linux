@@ -1364,7 +1364,7 @@ int chsc_pnso(struct subchannel_id schid, struct chsc_pnso_area *pnso_area,
 	pnso_area->ssid  = schid.ssid;
 	pnso_area->sch	 = schid.sch_no;
 	pnso_area->cssid = schid.cssid;
-	pnso_area->oc    = oc;
+	pnso_area->oc	 = oc;
 	pnso_area->resume_token = resume_token;
 	pnso_area->n	   = (cnc != 0);
 	if (chsc(pnso_area))

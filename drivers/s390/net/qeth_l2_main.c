@@ -748,8 +748,8 @@ static bool qeth_is_my_net_if_token(struct qeth_card *card,
 
 /**
  *	qeth_l2_dev2br_fdb_notify() - update fdb of master bridge
- *	@card:  qeth_card structure pointer
- *	@code:  event bitmask: high order bit 0x80 set to
+ *	@card:	qeth_card structure pointer
+ *	@code:	event bitmask: high order bit 0x80 set to
  *				1 - removal of an object
  *				0 - addition of an object
  *			       Object type(s):
@@ -963,8 +963,8 @@ static const struct net_device_ops qeth_l2_netdev_ops = {
 	.ndo_tx_timeout	   	= qeth_tx_timeout,
 	.ndo_fix_features	= qeth_fix_features,
 	.ndo_set_features	= qeth_set_features,
-	.ndo_bridge_getlink     = qeth_l2_bridge_getlink,
-	.ndo_bridge_setlink     = qeth_l2_bridge_setlink,
+	.ndo_bridge_getlink	= qeth_l2_bridge_getlink,
+	.ndo_bridge_setlink	= qeth_l2_bridge_setlink,
 };
 
 static const struct net_device_ops qeth_osn_netdev_ops = {
