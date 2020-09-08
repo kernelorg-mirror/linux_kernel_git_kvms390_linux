@@ -241,35 +241,22 @@ void sclp_early_printk_force(const char *str)
 
 int __init sclp_early_read_info(void)
 {
-	int i, length;
+	int i;
 	struct read_info_sccb *sccb = &sclp_info_sccb;
 	sclp_cmdw_t commands[] = {SCLP_CMDW_READ_SCP_INFO_FORCED,
 				  SCLP_CMDW_READ_SCP_INFO};
 
 	for (i = 0; i < ARRAY_SIZE(commands); i++) {
-		memset(sccb, 0, EARLY_SCCB_SIZE);
-		sccb->header.length = EARLY_SCCB_SIZE;
+		memset(sccb, 0, sizeof(*sccb));
+		sccb->header.length = sizeof(*sccb);
 		sccb->header.function_code = 0x80;
 		sccb->header.control_mask[2] = 0x80;
 		if (sclp_early_cmd(commands[i], sccb))
 			break;
-		/* Retry with extended sccb facility */
-		if (needs_extended_sccb(sccb)) {
-			if (sccb->header.length > EXT_SCCB_SIZE)
-				break;
-			length = sccb->header.length;
-			memset(sccb, 0, length);
-			sccb->header.length = length;
-			sccb->header.function_code = 0x80;
-			sccb->header.control_mask[2] = 0x80;
-			if (sclp_early_cmd(commands[i], sccb))
-				break;
-		}
 		if (sccb->header.response_code == 0x10) {
 			sclp_info_sccb_valid = 1;
 			return 0;
 		}
-
 		if (sccb->header.response_code != 0x1f0)
 			break;
 	}

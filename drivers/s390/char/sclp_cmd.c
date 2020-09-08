@@ -87,41 +87,18 @@ out:
 int _sclp_get_core_info(struct sclp_core_info *info)
 {
 	int rc;
-	int length = EARLY_SCCB_SIZE, prev_length = EARLY_SCCB_SIZE;
 	struct read_cpu_info_sccb *sccb;
 
 	if (!SCLP_HAS_CPU_INFO)
 		return -EOPNOTSUPP;
-	sccb = (void *) __get_free_pages(GFP_KERNEL | GFP_DMA | __GFP_ZERO,
-				get_order(length));
+	sccb = (void *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
 	if (!sccb)
 		return -ENOMEM;
-	sccb->header.length = length;
+	sccb->header.length = sizeof(*sccb);
 	rc = sclp_sync_request_timeout(SCLP_CMDW_READ_CPU_INFO, sccb,
 				       SCLP_QUEUE_INTERVAL);
 	if (rc)
 		goto out;
-
-	if (needs_extended_sccb(sccb)) {
-		if (sccb->header.length > EXT_SCCB_SIZE) {
-			rc = -EIO;
-			goto out;
-		}
-		length = sccb->header.length;
-		free_pages((unsigned long) sccb, get_order(prev_length));
-		/* Allocate enough room for ext sccb */
-		sccb = (void *) __get_free_pages(GFP_KERNEL | GFP_DMA | __GFP_ZERO,
-					get_order(length));
-		if (!sccb)
-			return -ENOMEM;
-		sccb->header.length = length;
-		rc = sclp_sync_request_timeout(SCLP_CMDW_READ_CPU_INFO, sccb,
-						SCLP_QUEUE_INTERVAL);
-		if (rc)
-			goto out;
-	}
-
-	/* Check response code for both normal sccb and extended sccb case */
 	if (sccb->header.response_code != 0x0010) {
 		pr_warn("readcpuinfo failed (response=0x%04x)\n",
 			sccb->header.response_code);
@@ -130,7 +107,7 @@ int _sclp_get_core_info(struct sclp_core_info *info)
 	}
 	sclp_fill_core_info(info, sccb);
 out:
-	free_pages((unsigned long) sccb, get_order(length));
+	free_page((unsigned long) sccb);
 	return rc;
 }
 

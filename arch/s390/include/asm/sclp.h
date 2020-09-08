@@ -10,17 +10,9 @@
 #include <linux/types.h>
 #include <asm/chpid.h>
 #include <asm/cpu.h>
-#include <linux/kernel.h>
 
 #define SCLP_CHP_INFO_MASK_SIZE		32
-#define EARLY_SCCB_SIZE		PAGE_SIZE
-#define MAX_STORAGE_AREAS	512
-#define SCLP_MAX_CORES		512
-#define EXT_SCCB_READ_SCP	(144 + 16 * SCLP_MAX_CORES + \
-				16 * MAX_STORAGE_AREAS + \
-				2 * (SCLP_MAX_CORES - 1))
-/* Max sccb size available for both read scp and read cpu info command */
-#define EXT_SCCB_SIZE		ALIGN(EXT_SCCB_READ_SCP, PAGE_SIZE)
+#define SCLP_MAX_CORES			256
 
 struct sclp_chp_info {
 	u8 recognized[SCLP_CHP_INFO_MASK_SIZE];
