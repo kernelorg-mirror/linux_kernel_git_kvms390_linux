@@ -1128,8 +1128,7 @@ int __init chsc_get_cssid_iid(int idx, u8 *cssid, u8 *iid)
 		struct {
 			u8 cssid;
 			u8 iid;
-			u8 pn;
-			u32 : 8;
+			u32 : 16;
 		} list[0];
 	} *sdcal_area;
 	int ret;
