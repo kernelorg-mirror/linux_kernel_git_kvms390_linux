@@ -301,8 +301,8 @@ int __noreturn __put_kernel_bad(void);
 	__rc;								\
 })
 
-#define __put_kernel_nofault(dst, src, type, err_label)                 \
-do {                                                                    \
+#define __put_kernel_nofault(dst, src, type, err_label)			\
+do {									\
 	u64 __x = (u64)(*((type *)(src)));				\
 	int __pk_err;							\
 									\
@@ -348,8 +348,8 @@ int __noreturn __get_kernel_bad(void);
 	__rc;								\
 })
 
-#define __get_kernel_nofault(dst, src, type, err_label)                 \
-do {                                                                    \
+#define __get_kernel_nofault(dst, src, type, err_label)			\
+do {									\
 	int __gk_err;							\
 									\
 	switch (sizeof(type)) {						\
