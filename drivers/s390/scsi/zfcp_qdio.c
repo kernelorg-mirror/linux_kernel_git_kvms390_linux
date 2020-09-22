@@ -131,9 +131,9 @@ static void zfcp_qdio_int_resp(struct ccw_device *cdev, unsigned int qdio_err,
 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdires2");
 }
 
-static void zfcp_qdio_irq_tasklet(unsigned long data)
+static void zfcp_qdio_irq_tasklet(struct tasklet_struct *tasklet)
 {
-	struct zfcp_qdio *qdio = (struct zfcp_qdio *) data;
+	struct zfcp_qdio *qdio = from_tasklet(qdio, tasklet, irq_tasklet);
 	struct ccw_device *cdev = qdio->adapter->ccw_device;
 	unsigned int start, error;
 	int completed;
@@ -143,7 +143,8 @@ static void zfcp_qdio_irq_tasklet(unsigned long data)
 	if (completed < 0)
 		return;
 	if (completed > 0)
-		zfcp_qdio_int_resp(cdev, error, 0, start, completed, data);
+		zfcp_qdio_int_resp(cdev, error, 0, start, completed,
+				   (unsigned long) qdio);
 
 	if (qdio_start_irq(cdev))
 		/* More work pending: */
@@ -511,8 +512,7 @@ int zfcp_qdio_setup(struct zfcp_adapter *adapter)
 
 	spin_lock_init(&qdio->req_q_lock);
 	spin_lock_init(&qdio->stat_lock);
-	tasklet_init(&qdio->irq_tasklet, zfcp_qdio_irq_tasklet,
-		     (unsigned long) qdio);
+	tasklet_setup(&qdio->irq_tasklet, zfcp_qdio_irq_tasklet);
 	tasklet_disable(&qdio->irq_tasklet);
 
 	adapter->qdio = qdio;
