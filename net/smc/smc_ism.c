@@ -338,11 +338,7 @@ int smcd_register_dev(struct smcd_dev *smcd)
 		if ((*system_eid) + 24 != '0' || (*system_eid) + 28 != '0')
 			smc_ism_v2_capable = true;
 	}
-	/* sort list: devices without pnetid before devices with pnetid */
-	if (smcd->pnetid[0])
-		list_add_tail(&smcd->list, &smcd_dev_list.list);
-	else
-		list_add(&smcd->list, &smcd_dev_list.list);
+	list_add_tail(&smcd->list, &smcd_dev_list.list);
 	mutex_unlock(&smcd_dev_list.mutex);
 
 	pr_warn_ratelimited("smc: adding smcd device %s with pnetid %.16s%s\n",
