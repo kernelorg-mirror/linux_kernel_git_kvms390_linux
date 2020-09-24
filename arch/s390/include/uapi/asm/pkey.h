@@ -97,13 +97,13 @@ struct pkey_clrkey {
  * are ep11 blobs prepended by this header:
  */
 struct ep11kblob_header {
-	__u8  type;     /* always 0x00 */
-	__u8  hver;     /* header version,  currently needs to be 0x00 */
-	__u16 len;      /* total length in bytes (including this header) */
-	__u8  version;  /* PKEY_TYPE_EP11_AES or PKEY_TYPE_EP11_ECC */
-	__u8  res0;     /* unused */
-	__u16 bitlen;   /* clear key bit len, 0 for unknown */
-	__u8  res1[8];  /* unused */
+	__u8  type;	/* always 0x00 */
+	__u8  hver;	/* header version,  currently needs to be 0x00 */
+	__u16 len;	/* total length in bytes (including this header) */
+	__u8  version;	/* PKEY_TYPE_EP11_AES or PKEY_TYPE_EP11_ECC */
+	__u8  res0;	/* unused */
+	__u16 bitlen;	/* clear key bit len, 0 for unknown */
+	__u8  res1[8];	/* unused */
 } __packed;
 
 /*

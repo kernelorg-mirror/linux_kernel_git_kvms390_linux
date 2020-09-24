@@ -31,9 +31,9 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("IBM Corporation");
 MODULE_DESCRIPTION("s390 protected key interface");
 
-#define KEYBLOBBUFSIZE 8192  /* key buffer size used for internal processing */
-#define PROTKEYBLOBBUFSIZE 256  /* protected key buffer size used internal */
-#define MAXAPQNSINLIST 64    /* max 64 apqns within a apqn list */
+#define KEYBLOBBUFSIZE 8192	/* key buffer size used for internal processing */
+#define PROTKEYBLOBBUFSIZE 256	/* protected key buffer size used internal */
+#define MAXAPQNSINLIST 64	/* max 64 apqns within a apqn list */
 
 /* mask of available pckmo subfunctions, fetched once at module init */
 static cpacf_mask_t pckmo_functions;

@@ -5063,7 +5063,7 @@ static int qeth_qdio_establish(struct qeth_card *card)
 	init_data.q_format		 = IS_IQD(card) ? QDIO_IQDIO_QFMT :
 							  QDIO_QETH_QFMT;
 	init_data.qib_param_field_format = 0;
-	init_data.qib_param_field        = (void *)qib_parms;
+	init_data.qib_param_field	 = (void *)qib_parms;
 	init_data.no_input_qs            = card->qdio.no_in_queues;
 	init_data.no_output_qs           = card->qdio.no_out_queues;
 	init_data.input_handler		 = qeth_qdio_input_handler;
