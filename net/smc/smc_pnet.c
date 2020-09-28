@@ -793,8 +793,8 @@ static void smc_pnet_add_base_pnetid(struct net *net, struct net_device *dev,
 /* create initial list of netdevice pnetids */
 static void smc_pnet_create_pnetids_list(struct net *net)
 {
-	struct net_device *dev;
 	u8 ndev_pnetid[SMC_MAX_PNETID_LEN];
+	struct net_device *dev;
 
 	rtnl_lock();
 	for_each_netdev(net, dev)

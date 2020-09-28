@@ -1325,8 +1325,8 @@ static int smc_listen_v2_check(struct smc_sock *new_smc,
 			       struct smc_clc_msg_proposal *pclc,
 			       struct smc_init_info *ini)
 {
-	struct smc_clc_v2_extension *pclc_v2_ext;
 	struct smc_clc_smcd_v2_extension *pclc_smcd_v2_ext;
+	struct smc_clc_v2_extension *pclc_v2_ext;
 
 	ini->smc_type_v1 = pclc->hdr.typev1;
 	ini->smc_type_v2 = pclc->hdr.typev2;

@@ -641,8 +641,8 @@ static int smc_clc_send_confirm_accept(struct smc_sock *smc,
 	struct smc_clc_msg_accept_confirm *clc;
 	struct smc_clc_first_contact_ext fce;
 	struct smc_clc_msg_trail trl;
-	struct msghdr msg;
 	struct kvec vec[3];
+	struct msghdr msg;
 	int i, len;
 
 	/* send SMC Confirm CLC msg */
