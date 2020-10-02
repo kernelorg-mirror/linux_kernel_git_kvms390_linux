@@ -1859,6 +1859,7 @@ void dasd_path_create_kobj(struct dasd_device *device, int chp)
 		kobject_put(&device->path[chp].kobj);
 	device->path[chp].in_sysfs = true;
 }
+EXPORT_SYMBOL(dasd_path_create_kobj);
 
 void dasd_path_create_kobjects(struct dasd_device *device)
 {
@@ -1871,6 +1872,7 @@ void dasd_path_create_kobjects(struct dasd_device *device)
 		dasd_path_create_kobj(device, pathmask_to_pos(lpm));
 	}
 }
+EXPORT_SYMBOL(dasd_path_create_kobjects);
 
 void dasd_path_remove_kobj(struct dasd_device *device, int chp)
 {
@@ -1879,6 +1881,7 @@ void dasd_path_remove_kobj(struct dasd_device *device, int chp)
 		device->path[chp].in_sysfs = false;
 	}
 }
+EXPORT_SYMBOL(dasd_path_remove_kobj);
 
 int dasd_add_sysfs_files(struct ccw_device *cdev)
 {
