@@ -1874,6 +1874,10 @@ void dasd_path_create_kobjects(struct dasd_device *device)
 }
 EXPORT_SYMBOL(dasd_path_create_kobjects);
 
+/*
+ * As we keep kobjects for the lifetime of a device, this function must not be
+ * called anywhere but in the context of offlining a device.
+ */
 void dasd_path_remove_kobj(struct dasd_device *device, int chp)
 {
 	if (device->path[chp].in_sysfs) {
