@@ -1342,6 +1342,7 @@ static int smc_listen_v2_check(struct smc_sock *new_smc,
 {
 	struct smc_clc_smcd_v2_extension *pclc_smcd_v2_ext;
 	struct smc_clc_v2_extension *pclc_v2_ext;
+	int rc;
 
 	ini->smc_type_v1 = pclc->hdr.typev1;
 	ini->smc_type_v2 = pclc->hdr.typev2;
@@ -1349,29 +1350,30 @@ static int smc_listen_v2_check(struct smc_sock *new_smc,
 	if (pclc->hdr.version > SMC_V1)
 		ini->smcd_version |=
 				ini->smc_type_v2 != SMC_TYPE_N ? SMC_V2 : 0;
+	if (!(ini->smcd_version & SMC_V2)) {
+		rc = SMC_CLC_DECL_PEERNOSMC;
+		goto out;
+	}
 	if (!smc_ism_v2_capable) {
 		ini->smcd_version &= ~SMC_V2;
+		rc = SMC_CLC_DECL_NOISM2SUPP;
 		goto out;
 	}
 	pclc_v2_ext = smc_get_clc_v2_ext(pclc);
 	if (!pclc_v2_ext) {
 		ini->smcd_version &= ~SMC_V2;
+		rc = SMC_CLC_DECL_NOV2EXT;
 		goto out;
 	}
 	pclc_smcd_v2_ext = smc_get_clc_smcd_v2_ext(pclc_v2_ext);
-	if (!pclc_smcd_v2_ext)
+	if (!pclc_smcd_v2_ext) {
 		ini->smcd_version &= ~SMC_V2;
+		rc = SMC_CLC_DECL_NOV2DEXT;
+	}
 
 out:
-	if (!ini->smcd_version) {
-		if (pclc->hdr.typev1 == SMC_TYPE_B ||
-		    pclc->hdr.typev2 == SMC_TYPE_B)
-			return SMC_CLC_DECL_NOSMCDEV;
-		if (pclc->hdr.typev1 == SMC_TYPE_D ||
-		    pclc->hdr.typev2 == SMC_TYPE_D)
-			return SMC_CLC_DECL_NOSMCDDEV;
-		return SMC_CLC_DECL_NOSMCRDEV;
-	}
+	if (!ini->smcd_version)
+		return rc;
 
 	return 0;
 }
@@ -1466,6 +1468,12 @@ static void smc_check_ism_v2_match(struct smc_init_info *ini,
 	}
 }
 
+static void smc_find_ism_store_rc(u32 rc, struct smc_init_info *ini)
+{
+	if (!ini->rc)
+		ini->rc = rc;
+}
+
 static void smc_find_ism_v2_device_serv(struct smc_sock *new_smc,
 					struct smc_clc_msg_proposal *pclc,
 					struct smc_init_info *ini)
@@ -1476,7 +1484,7 @@ static void smc_find_ism_v2_device_serv(struct smc_sock *new_smc,
 	unsigned int matches = 0;
 	u8 smcd_version;
 	u8 *eid = NULL;
-	int i;
+	int i, rc;
 
 	if (!(ini->smcd_version & SMC_V2) || !smcd_indicated(ini->smc_type_v2))
 		goto not_found;
@@ -1485,8 +1493,10 @@ static void smc_find_ism_v2_device_serv(struct smc_sock *new_smc,
 	smc_v2_ext = smc_get_clc_v2_ext(pclc);
 	smcd_v2_ext = smc_get_clc_smcd_v2_ext(smc_v2_ext);
 	if (!smcd_v2_ext ||
-	    !smc_v2_ext->hdr.flag.seid) /* no system EID support for SMCD */
+	    !smc_v2_ext->hdr.flag.seid) { /* no system EID support for SMCD */
+		smc_find_ism_store_rc(SMC_CLC_DECL_NOSEID, ini);
 		goto not_found;
+	}
 
 	mutex_lock(&smcd_dev_list.mutex);
 	if (pclc_smcd->ism.chid)
@@ -1518,9 +1528,12 @@ static void smc_find_ism_v2_device_serv(struct smc_sock *new_smc,
 		ini->smcd_version = SMC_V2;
 		ini->is_smcd = true;
 		ini->ism_selected = i;
-		if (smc_listen_ism_init(new_smc, ini))
+		rc = smc_listen_ism_init(new_smc, ini);
+		if (rc) {
+			smc_find_ism_store_rc(rc, ini);
 			/* try next active ISM device */
 			continue;
+		}
 		return; /* matching and usable V2 ISM device found */
 	}
 	/* no V2 ISM device could be initialized */
@@ -1537,19 +1550,23 @@ static void smc_find_ism_v1_device_serv(struct smc_sock *new_smc,
 					struct smc_init_info *ini)
 {
 	struct smc_clc_msg_smcd *pclc_smcd = smc_get_clc_msg_smcd(pclc);
+	int rc = 0;
 
 	/* check if ISM V1 is available */
 	if (!(ini->smcd_version & SMC_V1) || !smcd_indicated(ini->smc_type_v1))
 		goto not_found;
 	ini->is_smcd = true; /* prepare ISM check */
 	ini->ism_peer_gid[0] = ntohll(pclc_smcd->ism.gid);
-	if (smc_find_ism_device(new_smc, ini))
+	rc = smc_find_ism_device(new_smc, ini);
+	if (rc)
 		goto not_found;
 	ini->ism_selected = 0;
-	if (!smc_listen_ism_init(new_smc, ini))
+	rc = smc_listen_ism_init(new_smc, ini);
+	if (!rc)
 		return;		/* V1 ISM device found */
 
 not_found:
+	smc_find_ism_store_rc(rc, ini);
 	ini->ism_dev[0] = NULL;
 	ini->is_smcd = false;
 }
@@ -1606,16 +1623,16 @@ static int smc_listen_find_device(struct smc_sock *new_smc,
 		return 0;
 
 	if (!(ini->smcd_version & SMC_V1))
-		return SMC_CLC_DECL_NOSMCDEV;
+		return ini->rc ?: SMC_CLC_DECL_NOSMCD2DEV;
 
 	/* check for matching IP prefix and subnet length */
 	rc = smc_listen_prfx_check(new_smc, pclc);
 	if (rc)
-		return rc;
+		return ini->rc ?: rc;
 
 	/* get vlan id from IP device */
 	if (smc_vlan_by_tcpsk(new_smc->clcsock, ini))
-		return SMC_CLC_DECL_GETVLANERR;
+		return ini->rc ?: SMC_CLC_DECL_GETVLANERR;
 
 	/* check for ISM device matching V1 proposed device */
 	smc_find_ism_v1_device_serv(new_smc, pclc, ini);
@@ -1623,10 +1640,14 @@ static int smc_listen_find_device(struct smc_sock *new_smc,
 		return 0;
 
 	if (pclc->hdr.typev1 == SMC_TYPE_D)
-		return SMC_CLC_DECL_NOSMCDDEV; /* skip RDMA and decline */
+		/* skip RDMA and decline */
+		return ini->rc ?: SMC_CLC_DECL_NOSMCDDEV;
 
 	/* check if RDMA is available */
-	return smc_find_rdma_v1_device_serv(new_smc, pclc, ini);
+	rc = smc_find_rdma_v1_device_serv(new_smc, pclc, ini);
+	smc_find_ism_store_rc(rc, ini);
+
+	return (!rc) ? 0 : ini->rc;
 }
 
 /* listen worker: finish RDMA setup */
