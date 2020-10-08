@@ -377,7 +377,7 @@ static int __mod_vtimer(struct vtimer_list *timer, u64 expires, int periodic)
 	BUG_ON(!timer->function);
 
 	if (timer->expires == expires && vtimer_pending(timer))
-		return 1;
+	return 1;
 	spin_lock_irqsave(&virt_timer_lock, flags);
 	rc = vtimer_pending(timer);
 	if (rc)
