@@ -107,7 +107,7 @@ static inline u64 scale_vtime(u64 vtime)
 	u64 div = __this_cpu_read(mt_scaling_div);
 
 	if (smp_cpu_mtid)
-	return vtime * mult / div;
+		return vtime * mult / div;
 	return vtime;
 }
 
