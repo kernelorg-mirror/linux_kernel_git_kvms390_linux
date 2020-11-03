@@ -851,10 +851,8 @@ static int __init pci_base_init(void)
 	if (!s390_pci_probe)
 		return 0;
 
-	if (!test_facility(69) || !test_facility(71)) {
-		pr_warn("PCI is not supported because CPU facilities 69 and 71 are not available\n");
+	if (!test_facility(69) || !test_facility(71))
 		return 0;
-	}
 
 	if (test_facility(153) && !s390_pci_no_mio) {
 		static_branch_enable(&have_mio);
