@@ -2,6 +2,7 @@
 #ifndef _UAPI_SMC_DIAG_H_
 #define _UAPI_SMC_DIAG_H_
 
+#include <linux/if.h>
 #include <linux/types.h>
 #include <linux/inet_diag.h>
 #include <linux/smc.h>
