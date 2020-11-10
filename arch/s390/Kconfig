@@ -327,13 +327,13 @@ config MARCH_Z14
 	  work on older machines.
 
 config MARCH_Z15
-	bool "IBM z15 Model T02 and z15"
+	bool "IBM z15"
 	select HAVE_MARCH_Z15_FEATURES
 	depends on $(cc-option,-march=z15)
 	help
-	  Select this to enable optimizations for IBM z15 Model T02 and z15
-	  (8562 and 8561 series). The kernel will be slightly faster but
-	  will not work on older machines.
+	  Select this to enable optimizations for IBM z15 (8562
+	  and 8561 series). The kernel will be slightly faster but will not
+	  work on older machines.
 
 endchoice
 
