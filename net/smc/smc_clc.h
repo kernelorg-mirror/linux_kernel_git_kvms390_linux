@@ -14,8 +14,10 @@
 #define _SMC_CLC_H
 
 #include <rdma/ib_verbs.h>
+#include <linux/smc.h>
 
 #include "smc.h"
+#include "smc_netlink.h"
 
 #define SMC_CLC_PROPOSAL	0x01
 #define SMC_CLC_ACCEPT		0x02
@@ -330,10 +332,18 @@ int smc_clc_wait_msg(struct smc_sock *smc, void *buf, int buflen,
 int smc_clc_send_decline(struct smc_sock *smc, u32 peer_diag_info, u8 version);
 int smc_clc_send_proposal(struct smc_sock *smc, struct smc_init_info *ini);
 int smc_clc_send_confirm(struct smc_sock *smc, bool clnt_first_contact,
-			 u8 version);
+			 u8 version, u8 *eid);
 int smc_clc_send_accept(struct smc_sock *smc, bool srv_first_contact,
-			u8 version);
+			u8 version, u8 *negotiated_eid);
 void smc_clc_init(void) __init;
+void smc_clc_exit(void);
 void smc_clc_get_hostname(u8 **host);
+bool smc_clc_match_eid(u8 *negotiated_eid,
+		       struct smc_clc_v2_extension *smc_v2_ext,
+		       u8 *peer_eid, u8 *local_eid);
+int smc_nl_dump_ueid(struct sk_buff *skb, struct netlink_callback *cb);
+int smc_nl_add_ueid(struct sk_buff *skb, struct genl_info *info);
+int smc_nl_remove_ueid(struct sk_buff *skb, struct genl_info *info);
+int smc_nl_flush_ueid(struct sk_buff *skb, struct genl_info *info);
 
 #endif
