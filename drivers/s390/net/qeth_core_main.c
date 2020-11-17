@@ -6084,17 +6084,22 @@ static void qeth_iqd_tx_complete(struct qeth_qdio_out_q *queue,
 			qeth_notify_skbs(queue, buffer, TX_NOTIFY_PENDING);
 
 			/* Handle race with qeth_qdio_handle_aob(): */
-			switch (atomic_xchg(&buffer->state, QETH_QDIO_BUF_NEED_QAOB)) {
+			switch (atomic_xchg(&buffer->state,
+					    QETH_QDIO_BUF_NEED_QAOB)) {
 			case QETH_QDIO_BUF_PENDING:
 				/* No concurrent QAOB notification. */
 				break;
 			case QETH_QDIO_BUF_QAOB_OK:
-				qeth_notify_skbs(queue, buffer, TX_NOTIFY_DELAYED_OK);
-				atomic_set(&buffer->state, QETH_QDIO_BUF_HANDLED_DELAYED);
+				qeth_notify_skbs(queue, buffer,
+						 TX_NOTIFY_DELAYED_OK);
+				atomic_set(&buffer->state,
+					   QETH_QDIO_BUF_HANDLED_DELAYED);
 				break;
 			case QETH_QDIO_BUF_QAOB_ERROR:
-				qeth_notify_skbs(queue, buffer, TX_NOTIFY_DELAYED_GENERALERROR);
-				atomic_set(&buffer->state, QETH_QDIO_BUF_HANDLED_DELAYED);
+				qeth_notify_skbs(queue, buffer,
+						 TX_NOTIFY_DELAYED_GENERALERROR);
+				atomic_set(&buffer->state,
+					   QETH_QDIO_BUF_HANDLED_DELAYED);
 				break;
 			default:
 				WARN_ON_ONCE(1);
