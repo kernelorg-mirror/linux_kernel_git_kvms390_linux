@@ -130,8 +130,10 @@ int uv_destroy_page(unsigned long paddr)
 	};
 
 	if (uv_call(0, (u64)&uvcb)) {
-		/* older firmware uses 107/d as an indication of a non secure
-		 * page. Let us emulate the newer variant (no-op) */
+		/*
+		 * older firmware uses 107/d as an indication of a non secure
+		 * page. Let us emulate the newer variant (no-op)
+		 */
 		if (uvcb.header.rc == 0x107 && uvcb.header.rrc == 0xd)
 			return 0;
 		return -EINVAL;
