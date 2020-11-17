@@ -994,8 +994,8 @@ static void qeth_l2_detect_dev2br_support(struct qeth_card *card)
 		return;
 
 	/* dev2br requires valid cssid,iid,chid */
-	dev2br_supported = (card->info.ids_valid &
-			    css_general_characteristics.enarf);
+	dev2br_supported = card->info.ids_valid &&
+			   css_general_characteristics.enarf;
 	QETH_CARD_TEXT_(card, 2, "D2Bsup%02x", dev2br_supported);
 
 	if (dev2br_supported)
