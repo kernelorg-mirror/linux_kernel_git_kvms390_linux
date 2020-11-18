@@ -529,7 +529,7 @@ static void qeth_qdio_handle_aob(struct qeth_card *card,
 			kmem_cache_free(qeth_core_header_cache, data);
 	}
 
-	if (aob->aorc)  {
+	if (aob->aorc) {
 		QETH_CARD_TEXT_(card, 2, "aorc%02X", aob->aorc);
 		new_state = QETH_QDIO_BUF_QAOB_ERROR;
 	}
