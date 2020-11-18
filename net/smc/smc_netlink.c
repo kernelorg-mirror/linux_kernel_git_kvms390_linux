@@ -21,10 +21,25 @@
 
 static const struct nla_policy smc_gen_nl_policy[SMC_GEN_MAX + 1] = {
 	[SMC_GEN_UNSPEC]	= { .type = NLA_UNSPEC, },
+	[SMC_GEN_SYS_INFO]	= { .type = NLA_NESTED, },
 };
+
+static int smc_nl_start(struct netlink_callback *cb)
+{
+	struct smc_nl_dmp_ctx *cb_ctx = smc_nl_dmp_ctx(cb);
+
+	cb_ctx->pos[0] = 0;
+	return 0;
+}
 
 /* SMC_GENL generic netlink operation definition */
 static const struct genl_ops smc_gen_nl_ops[] = {
+	{
+		.cmd = SMC_NETLINK_GET_SYS_INFO,
+		/* can be retrieved by unprivileged users */
+		.dumpit = smc_nl_get_sys_info,
+		.start = smc_nl_start
+	},
 };
 
 /* SMC_GENL family definition */
