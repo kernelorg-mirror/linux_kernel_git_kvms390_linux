@@ -1181,6 +1181,7 @@ ENTRY(mcck_int_handler)
 	xgr	%r10,%r10
 	mvc	__PT_R8(64,%r11),0(%r14)
 	stmg	%r8,%r9,__PT_PSW(%r11)
+	la	%r14,4095
 	mvc	__PT_CR1(8,%r11),__LC_CREGS_SAVE_AREA-4095+8(%r14)
 	lctlg	%c1,%c1,__LC_KERNEL_ASCE
 	xc	__PT_FLAGS(8,%r11),__PT_FLAGS(%r11)
