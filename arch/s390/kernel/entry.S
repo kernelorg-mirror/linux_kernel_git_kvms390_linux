@@ -383,10 +383,10 @@ ENTRY(system_call)
 	stpt	__LC_SYNC_ENTER_TIMER
 	stmg	%r8,%r15,__LC_SAVE_AREA_SYNC
 	BPOFF
-	lctlg	%c1,%c1,__LC_KERNEL_ASCE
 	lg	%r12,__LC_CURRENT
 	lghi	%r14,_PIF_SYSCALL
 .Lsysc_per:
+	lctlg	%c1,%c1,__LC_KERNEL_ASCE
 	lghi	%r13,__TASK_thread
 	lg	%r15,__LC_KERNEL_STACK
 	la	%r11,STACK_FRAME_OVERHEAD(%r15)	# pointer to pt_regs
