@@ -25,8 +25,8 @@ void debug_user_asce(void)
 	__ctl_store(cr7, 7, 7);
 	if (cr1 == S390_lowcore.kernel_asce && cr7 == S390_lowcore.user_asce)
 		return;
-	panic("Incorrect ASCE on kernel exit.\n"
-	      "cr1:    %016lx  cr7:  %016lx\n"
+	panic("incorrect ASCE on kernel exit\n"
+	      "cr1:    %016lx cr7:  %016lx\n"
 	      "kernel: %016llx user: %016llx\n",
 	      cr1, cr7, S390_lowcore.kernel_asce, S390_lowcore.user_asce);
 }
