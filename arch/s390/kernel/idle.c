@@ -7,6 +7,7 @@
  * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
  */
 
+#include "asm/irqflags.h"
 #include <linux/kernel.h>
 #include <linux/kernel_stat.h>
 #include <linux/kprobes.h>
@@ -21,12 +22,29 @@
 
 static DEFINE_PER_CPU(struct s390_idle_data, s390_idle);
 
+void account_idle_time_irq(struct pt_regs *regs)
+{
+	struct s390_idle_data *idle = this_cpu_ptr(&s390_idle);
+
+	clear_cpu_flag(CIF_ENABLED_WAIT);
+
+	idle->clock_idle_exit = S390_lowcore.int_clock;
+	idle->timer_idle_exit = S390_lowcore.sys_enter_timer;
+
+	S390_lowcore.steal_timer += idle->clock_idle_enter - S390_lowcore.last_update_clock;
+	S390_lowcore.last_update_clock = idle->clock_idle_exit;
+
+	S390_lowcore.system_timer += S390_lowcore.last_update_timer - idle->timer_idle_enter;
+	S390_lowcore.last_update_timer = idle->timer_idle_exit;
+
+	regs->psw.mask &= ~(PSW_MASK_EXT|PSW_MASK_IO|PSW_MASK_WAIT);
+}
+
 void enabled_wait(void)
 {
 	struct s390_idle_data *idle = this_cpu_ptr(&s390_idle);
 	unsigned long long idle_time;
 	unsigned long psw_mask, flags;
-
 
 	/* Wait for external, I/O or machine check interrupt. */
 	psw_mask = PSW_KERNEL_BITS | PSW_MASK_WAIT | PSW_MASK_DAT |

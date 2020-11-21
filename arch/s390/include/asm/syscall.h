@@ -14,8 +14,8 @@
 #include <linux/err.h>
 #include <asm/ptrace.h>
 
-extern const unsigned long sys_call_table[];
-extern const unsigned long sys_call_table_emu[];
+extern const sys_call_ptr_t sys_call_table[];
+extern const sys_call_ptr_t sys_call_table_emu[];
 
 static inline long syscall_get_nr(struct task_struct *task,
 				  struct pt_regs *regs)
@@ -56,6 +56,7 @@ static inline void syscall_set_return_value(struct task_struct *task,
 					    struct pt_regs *regs,
 					    int error, long val)
 {
+	set_pt_regs_flag(regs, PIF_SYSCALL_RET_SET);
 	regs->gprs[2] = error ? error : val;
 }
 

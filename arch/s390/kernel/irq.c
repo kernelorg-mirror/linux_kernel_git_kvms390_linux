@@ -8,6 +8,7 @@
  * This file contains interrupt related functions.
  */
 
+#include "asm/compat.h"
 #include <linux/kernel_stat.h>
 #include <linux/interrupt.h>
 #include <linux/seq_file.h>
@@ -21,6 +22,7 @@
 #include <linux/init.h>
 #include <linux/cpu.h>
 #include <linux/irq.h>
+#include <linux/entry-common.h>
 #include <asm/irq_regs.h>
 #include <asm/cputime.h>
 #include <asm/lowcore.h>
@@ -95,9 +97,12 @@ static const struct irq_class irqclass_sub_desc[] = {
 	{.irq = CPU_RST,    .name = "RST", .desc = "[CPU] CPU Restart"},
 };
 
-void do_IRQ(struct pt_regs *regs, int irq)
+static void do_irq(struct pt_regs *regs, int irq)
 {
 	struct pt_regs *old_regs;
+
+	if (user_mode(regs))
+		update_timer_sys();
 
 	old_regs = set_irq_regs(regs);
 	irq_enter();
@@ -108,6 +113,67 @@ void do_IRQ(struct pt_regs *regs, int irq)
 	generic_handle_irq(irq);
 	irq_exit();
 	set_irq_regs(old_regs);
+}
+
+static int on_async_stack(void)
+{
+	unsigned long frame = current_frame_address();
+
+	return !!!((S390_lowcore.async_stack - frame) >> (PAGE_SHIFT + THREAD_SIZE_ORDER));
+}
+
+static void do_irq_async(struct pt_regs *regs, int irq)
+{
+	if (on_async_stack())
+		do_irq(regs, irq);
+	else
+		CALL_ON_STACK(do_irq, S390_lowcore.async_stack, 2, regs, irq);
+}
+
+static int irq_pending(struct pt_regs *regs)
+{
+	int cc;
+
+	asm volatile("tpi 0\n"
+		     "ipm %0" : "=d" (cc) : : "cc");
+	return cc >> 28;
+}
+
+void do_io_irq(struct pt_regs *regs)
+{
+	irqentry_state_t state;
+
+	if (!user_mode(regs) && regs->psw.addr == (unsigned long)psw_idle_exit)
+		account_idle_time_irq(regs);
+
+	state = irqentry_enter(regs);
+	if (!test_cpu_flag(CIF_IGNORE_IRQ)) {
+		do {
+			memcpy(&regs->int_code, &S390_lowcore.subchannel_id, 12);
+			if (S390_lowcore.io_int_word & BIT(31))
+				do_irq_async(regs, THIN_INTERRUPT);
+			else
+				do_irq_async(regs, IO_INTERRUPT);
+		} while (MACHINE_IS_LPAR && irq_pending(regs));
+	}
+	irqentry_exit(regs, state);
+}
+
+void do_ext_irq(struct pt_regs *regs)
+{
+	irqentry_state_t state;
+
+	memcpy(&regs->int_code, &S390_lowcore.ext_cpu_addr, 4);
+	regs->int_parm = S390_lowcore.ext_params;
+	regs->int_parm_long = *(unsigned long *)S390_lowcore.ext_params2;
+
+	state = irqentry_enter(regs);
+	if (!user_mode(regs) && regs->psw.addr == (unsigned long)psw_idle_exit)
+		account_idle_time_irq(regs);
+
+	if (!test_cpu_flag(CIF_IGNORE_IRQ))
+		do_irq_async(regs, EXT_INTERRUPT);
+	irqentry_exit(regs, state);
 }
 
 static void show_msi_interrupt(struct seq_file *p, int irq)
