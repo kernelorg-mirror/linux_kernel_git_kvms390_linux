@@ -619,8 +619,8 @@ ENTRY(pgm_check_handler)
 0:	lg	%r12,__LC_CURRENT
 	lghi	%r11,0
 	lmg	%r8,%r9,__LC_PGM_OLD_PSW
-	tmhh	%r8,0x0001		# test problem state bit
-	jno	.Lpgm_skip_asce		# -> fault in user space
+	tmhh	%r8,0x0001		# coming from user space?
+	jno	.Lpgm_skip_asce
 	lctlg	%c1,%c1,__LC_KERNEL_ASCE
 	j	3f
 .Lpgm_skip_asce:
