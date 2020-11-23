@@ -89,8 +89,6 @@ struct smc_diag_linkinfo {
 	__u8 ibport;			/* RDMA device port number */
 	__u8 gid[40];			/* local GID */
 	__u8 peer_gid[40];		/* peer GID */
-	/* Fields above used by legacy v1 code */
-	__u32 conn_cnt;
 };
 
 struct smc_diag_lgrinfo {
