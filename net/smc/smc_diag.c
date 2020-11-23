@@ -293,24 +293,19 @@ static int smc_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
 	return skb->len;
 }
 
-static int smc_diag_dump_ext(struct sk_buff *skb, struct netlink_callback *cb)
-{
-	return skb->len;
-}
-
 static int smc_diag_handler_dump(struct sk_buff *skb, struct nlmsghdr *h)
 {
 	struct net *net = sock_net(skb->sk);
-	struct netlink_dump_control c = {
-		.min_dump_alloc = SKB_WITH_OVERHEAD(32768),
-	};
+
 	if (h->nlmsg_type == SOCK_DIAG_BY_FAMILY &&
 	    h->nlmsg_flags & NLM_F_DUMP) {
-		if (h->nlmsg_seq >= MAGIC_SEQ_V2)
-			c.dump = smc_diag_dump_ext;
-		else
-			c.dump = smc_diag_dump;
-		return netlink_dump_start(net->diag_nlsk, skb, h, &c);
+		{
+			struct netlink_dump_control c = {
+				.dump = smc_diag_dump,
+				.min_dump_alloc = SKB_WITH_OVERHEAD(32768),
+			};
+			return netlink_dump_start(net->diag_nlsk, skb, h, &c);
+		}
 	}
 	return 0;
 }
