@@ -221,7 +221,7 @@ int smc_nl_get_sys_info(struct sk_buff *skb, struct netlink_callback *cb)
 {
 	struct smc_nl_dmp_ctx *cb_ctx = smc_nl_dmp_ctx(cb);
 	char hostname[SMC_MAX_HOSTNAME_LEN + 1];
-	int snum = cb_ctx->pos[0], num  = 0;
+	int snum = cb_ctx->pos[0], num = 0;
 	char smc_seid[SMC_MAX_EID_LEN + 1];
 	struct smcd_dev *smcd_dev;
 	struct nlattr *attrs;
