@@ -22,6 +22,7 @@
 #include "smc.h"
 #include "smc_ib.h"
 #include "smc_ism.h"
+#include "smc_ib.h"
 #include "smc_core.h"
 #include "smc_clc.h"
 
