@@ -303,15 +303,6 @@ static u8 smcr_next_link_id(struct smc_link_group *lgr)
 	return link_id;
 }
 
-static inline void smcr_copy_dev_info_to_link(struct smc_link *link)
-{
-	struct smc_ib_device *smcibdev = link->smcibdev;
-
-	memcpy(link->ibname, smcibdev->ibdev->name, sizeof(link->ibname));
-	memcpy(link->ndevname, smcibdev->netdev[link->ibport - 1],
-	       sizeof(link->ndevname));
-}
-
 int smcr_link_init(struct smc_link_group *lgr, struct smc_link *lnk,
 		   u8 link_idx, struct smc_init_info *ini)
 {
@@ -326,7 +317,6 @@ int smcr_link_init(struct smc_link_group *lgr, struct smc_link *lnk,
 	lnk->smcibdev = ini->ib_dev;
 	lnk->ibport = ini->ib_port;
 	atomic_inc(&ini->ib_dev->lnk_cnt_by_port[ini->ib_port - 1]);
-	smcr_copy_dev_info_to_link(lnk);
 	lnk->path_mtu = ini->ib_dev->pattr[ini->ib_port - 1].active_mtu;
 	atomic_set(&lnk->conn_cnt, 0);
 	smc_llc_link_set_uid(lnk);
