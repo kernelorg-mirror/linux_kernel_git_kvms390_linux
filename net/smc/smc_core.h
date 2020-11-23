@@ -13,7 +13,6 @@
 #define _SMC_CORE_H
 
 #include <linux/atomic.h>
-#include <linux/pci.h>
 #include <rdma/ib_verbs.h>
 
 #include "smc.h"
@@ -365,32 +364,6 @@ static inline bool smc_link_usable(struct smc_link *lnk)
 static inline bool smc_link_active(struct smc_link *lnk)
 {
 	return lnk->state == SMC_LNK_ACTIVE;
-}
-
-struct smc_pci_dev {
-	__u32		pci_fid;
-	__u16		pci_pchid;
-	__u16		pci_vendor;
-	__u16		pci_device;
-	__u8		pci_id[SMC_PCI_ID_STR_LEN];
-};
-
-static inline void smc_set_pci_values(struct pci_dev *pci_dev,
-				      struct smc_pci_dev *smc_dev)
-{
-	smc_dev->pci_vendor = pci_dev->vendor;
-	smc_dev->pci_device = pci_dev->device;
-	snprintf(smc_dev->pci_id, sizeof(smc_dev->pci_id), "%s",
-		 pci_name(pci_dev));
-#if IS_ENABLED(CONFIG_S390)
-	{
-	struct zpci_dev *zdev;
-
-	zdev = to_zpci(pci_dev);
-	smc_dev->pci_fid = zdev->fid;
-	smc_dev->pci_pchid = zdev->pchid;
-	}
-#endif
 }
 
 struct smc_sock;

@@ -19,6 +19,7 @@
 #include <rdma/ib_verbs.h>
 #include <net/smc.h>
 
+#define SMC_MAX_PORTS			2	/* Max # of ports */
 #define SMC_GID_SIZE			sizeof(union ib_gid)
 
 #define SMC_IB_MAX_SEND_SGE		2

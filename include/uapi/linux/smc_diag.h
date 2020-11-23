@@ -73,7 +73,6 @@ enum {
 /* V2 Commands */
 enum {
 	SMC_DIAG_GET_LGR_INFO = SMC_DIAG_EXTS_PER_CMD,
-	SMC_DIAG_GET_DEV_INFO,
 	__SMC_DIAG_EXT_MAX,
 };
 
@@ -82,11 +81,6 @@ enum {
 	SMC_DIAG_LGR_INFO_SMCR = 1,
 	SMC_DIAG_LGR_INFO_SMCR_LINK,
 	SMC_DIAG_LGR_INFO_SMCD,
-};
-
-/* SMC_DIAG_GET_DEV_INFO command extensions */
-enum {
-	SMC_DIAG_DEV_INFO_SMCD = 1,
 };
 
 #define SMC_DIAG_MAX (__SMC_DIAG_MAX - 1)
@@ -167,20 +161,6 @@ struct smcd_diag_dmbinfo {		/* SMC-D Socket internals */
 	__u16		chid;		/* Linkgroup CHID */
 	__u8		vlan_id;	/* Linkgroup vlan id */
 	struct smc_diag_v2_lgr_info v2_lgr_info; /* SMCv2 info */
-};
-
-struct smc_diag_dev_info {
-	/* Pnet ID per device port */
-	__u8		pnet_id[SMC_MAX_PORTS][SMC_MAX_PNETID_LEN];
-	/* whether pnetid is set by user */
-	__u8		pnetid_by_user[SMC_MAX_PORTS];
-	__u32		use_cnt;		/* Number of linkgroups */
-	__u8		is_critical;		/* Is device critical */
-	__u32		pci_fid;		/* PCI FID */
-	__u16		pci_pchid;		/* PCI CHID */
-	__u16		pci_vendor;		/* PCI Vendor */
-	__u16		pci_device;		/* PCI Device Vendor ID */
-	__u8		pci_id[SMC_PCI_ID_STR_LEN]; /* PCI ID */
 };
 
 struct smc_diag_lgr {

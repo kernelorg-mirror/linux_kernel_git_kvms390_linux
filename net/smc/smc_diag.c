@@ -448,78 +448,6 @@ errout:
 	return rc;
 }
 
-static int smc_diag_handle_smcd_dev(struct smcd_dev *smcd,
-				    struct sk_buff *skb,
-				    struct netlink_callback *cb,
-				    struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_dev_info smc_diag_dev;
-	struct smc_pci_dev smc_pci_dev;
-	struct nlmsghdr *nlh;
-	int dummy = 0;
-	int rc = 0;
-
-	nlh = nlmsg_put(skb, NETLINK_CB(cb->skb).portid, MAGIC_SEQ_V2_ACK,
-			cb->nlh->nlmsg_type, 0, NLM_F_MULTI);
-	if (!nlh)
-		return -EMSGSIZE;
-
-	memset(&smc_diag_dev, 0, sizeof(smc_diag_dev));
-	memset(&smc_pci_dev, 0, sizeof(smc_pci_dev));
-	smc_diag_dev.use_cnt = atomic_read(&smcd->lgr_cnt);
-	smc_diag_dev.is_critical = (smc_diag_dev.use_cnt > 0);
-	smc_diag_dev.pnetid_by_user[0] = smcd->pnetid_by_user;
-	smc_set_pci_values(to_pci_dev(smcd->dev.parent), &smc_pci_dev);
-	smc_diag_dev.pci_device = smc_pci_dev.pci_device;
-	smc_diag_dev.pci_fid = smc_pci_dev.pci_fid;
-	smc_diag_dev.pci_pchid = smc_pci_dev.pci_pchid;
-	smc_diag_dev.pci_vendor = smc_pci_dev.pci_vendor;
-	snprintf(smc_diag_dev.pci_id, sizeof(smc_diag_dev.pci_id), "%s",
-		 smc_pci_dev.pci_id);
-	snprintf((char *)&smc_diag_dev.pnet_id[0],
-		 sizeof(smc_diag_dev.pnet_id[0]), "%s", smcd->pnetid);
-	/* Just a command place holder to signal back the command reply type */
-	if (nla_put(skb, SMC_DIAG_GET_DEV_INFO, sizeof(dummy), &dummy) < 0)
-		goto errout;
-
-	if (nla_put(skb, SMC_DIAG_DEV_INFO_SMCD,
-		    sizeof(smc_diag_dev), &smc_diag_dev) < 0)
-		goto errout;
-
-	nlmsg_end(skb, nlh);
-	return rc;
-
-errout:
-	nlmsg_cancel(skb, nlh);
-	return -EMSGSIZE;
-}
-
-static int smc_diag_prep_smcd_dev(struct smcd_dev_list *dev_list,
-				  struct sk_buff *skb,
-				  struct netlink_callback *cb,
-				  struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_dump_ctx *cb_ctx = smc_dump_context(cb);
-	struct smcd_dev *smcd;
-	int snum = cb_ctx->pos[0];
-	int rc = 0, num = 0;
-
-	mutex_lock(&dev_list->mutex);
-	list_for_each_entry(smcd, &dev_list->list, list) {
-		if (num < snum)
-			goto next;
-		rc = smc_diag_handle_smcd_dev(smcd, skb, cb, req);
-		if (rc < 0)
-			goto errout;
-next:
-		num++;
-	}
-errout:
-	mutex_unlock(&dev_list->mutex);
-	cb_ctx->pos[0] = num;
-	return rc;
-}
-
 static int __smc_diag_dump(struct sock *sk, struct sk_buff *skb,
 			   struct netlink_callback *cb,
 			   const struct smc_diag_req *req)
@@ -620,10 +548,6 @@ static int smc_diag_dump_ext(struct sk_buff *skb, struct netlink_callback *cb)
 					       req);
 		if ((req->cmd_ext & (1 << (SMC_DIAG_LGR_INFO_SMCD - 1))))
 			smc_diag_fill_smcd_dev(&smcd_dev_list, skb, cb,
-					       req);
-	} else if (req->cmd == SMC_DIAG_GET_DEV_INFO) {
-		if ((req->cmd_ext & (1 << (SMC_DIAG_DEV_INFO_SMCD - 1))))
-			smc_diag_prep_smcd_dev(&smcd_dev_list, skb, cb,
 					       req);
 	}
 
