@@ -24,7 +24,6 @@
 #include "smc_ism.h"
 #include "smc_ib.h"
 #include "smc_core.h"
-#include "smc_clc.h"
 
 struct smc_diag_dump_ctx {
 	int pos[2];
@@ -652,63 +651,6 @@ out:
 	return rc;
 }
 
-static int smc_diag_prep_sys_info(struct smcd_dev_list *dev_list,
-				  struct sk_buff *skb,
-				  struct netlink_callback *cb,
-				  struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_dump_ctx *cb_ctx = smc_dump_context(cb);
-	struct smc_system_info smc_sys_info;
-	int dummy = 0, rc = 0, num = 0;
-	struct smcd_dev *smcd_dev;
-	int snum = cb_ctx->pos[0];
-	struct nlmsghdr *nlh;
-	u8 *seid = NULL;
-	u8 *host = NULL;
-
-	nlh = nlmsg_put(skb, NETLINK_CB(cb->skb).portid, MAGIC_SEQ_V2_ACK,
-			cb->nlh->nlmsg_type, 0, NLM_F_MULTI);
-	if (!nlh)
-		return -EMSGSIZE;
-
-	if (snum > num)
-		goto errout;
-
-	memset(&smc_sys_info, 0, sizeof(smc_sys_info));
-	smc_sys_info.smc_ism_is_v2 = smc_ism_is_v2_capable();
-	smc_sys_info.smc_version = SMC_V2;
-	smc_sys_info.smc_release = SMC_RELEASE;
-	smc_clc_get_hostname(&host);
-
-	if (host)
-		memcpy(smc_sys_info.local_hostname, host,
-		       sizeof(smc_sys_info.local_hostname));
-	mutex_lock(&dev_list->mutex);
-	smcd_dev = list_first_entry_or_null(&dev_list->list, struct smcd_dev, list);
-	if (smcd_dev)
-		smc_ism_get_system_eid(smcd_dev, &seid);
-	mutex_unlock(&dev_list->mutex);
-
-	if (seid && smc_sys_info.smc_ism_is_v2)
-		memcpy(smc_sys_info.seid, seid, sizeof(smc_sys_info.seid));
-
-	/* Just a command place holder to signal back the command reply type */
-	if (nla_put(skb, SMC_DIAG_GET_SYS_INFO, sizeof(dummy), &dummy) < 0)
-		goto errout;
-
-	if (nla_put(skb, SMC_DIAG_SYS_INFO,
-		    sizeof(smc_sys_info), &smc_sys_info) < 0)
-		goto errout;
-	nlmsg_end(skb, nlh);
-	num++;
-	cb_ctx->pos[0] = num;
-	return rc;
-
-errout:
-	nlmsg_cancel(skb, nlh);
-	return -EMSGSIZE;
-}
-
 static int __smc_diag_dump(struct sock *sk, struct sk_buff *skb,
 			   struct netlink_callback *cb,
 			   const struct smc_diag_req *req)
@@ -816,10 +758,6 @@ static int smc_diag_dump_ext(struct sk_buff *skb, struct netlink_callback *cb)
 					       req);
 		if ((req->cmd_ext & (1 << (SMC_DIAG_DEV_INFO_SMCR - 1))))
 			smc_diag_prep_smcr_dev(&smc_ib_devices, skb, cb,
-					       req);
-	} else if (req->cmd == SMC_DIAG_GET_SYS_INFO) {
-		if ((req->cmd_ext & (1 << (SMC_DIAG_SYS_INFO - 1))))
-			smc_diag_prep_sys_info(&smcd_dev_list, skb, cb,
 					       req);
 	}
 

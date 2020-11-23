@@ -74,7 +74,6 @@ enum {
 enum {
 	SMC_DIAG_GET_LGR_INFO = SMC_DIAG_EXTS_PER_CMD,
 	SMC_DIAG_GET_DEV_INFO,
-	SMC_DIAG_GET_SYS_INFO,
 	__SMC_DIAG_EXT_MAX,
 };
 
@@ -89,11 +88,6 @@ enum {
 enum {
 	SMC_DIAG_DEV_INFO_SMCD = 1,
 	SMC_DIAG_DEV_INFO_SMCR,
-};
-
-/* SMC_DIAG_GET_SYS_INFO command extensions */
-enum {
-	SMC_DIAG_SYS_INFO = 1,
 };
 
 #define SMC_DIAG_MAX (__SMC_DIAG_MAX - 1)
@@ -134,18 +128,6 @@ struct smc_diag_v2_lgr_info {
 	__u8		peer_os;		/* Peer operating system */
 	__u8		negotiated_eid[SMC_MAX_EID_LEN]; /* Negotiated EID */
 	__u8		peer_hostname[SMC_MAX_HOSTNAME_LEN]; /* Peer host */
-};
-
-
-struct smc_system_info {
-	__u8		smc_version;		/* SMC Version */
-	__u8		smc_release;		/* SMC Release */
-	__u8		ueid_count;		/* Number of UEIDs */
-	__u8		smc_ism_is_v2;		/* Is ISM SMC v2 capable */
-	__u32		reserved;		/* Reserved for future use */
-	__u8		local_hostname[SMC_MAX_HOSTNAME_LEN]; /* Hostnames */
-	__u8		seid[SMC_MAX_EID_LEN];	/* System EID */
-	__u8		ueid[SMC_MAX_EID][SMC_MAX_EID_LEN]; /* User EIDs */
 };
 
 /* SMC_DIAG_LINKINFO */
