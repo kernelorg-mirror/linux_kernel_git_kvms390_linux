@@ -20,7 +20,6 @@ struct smcd_dev_list smcd_dev_list = {
 	.list = LIST_HEAD_INIT(smcd_dev_list.list),
 	.mutex = __MUTEX_INITIALIZER(smcd_dev_list.mutex)
 };
-EXPORT_SYMBOL_GPL(smcd_dev_list);
 
 bool smc_ism_v2_capable;
 
@@ -51,7 +50,6 @@ u16 smc_ism_get_chid(struct smcd_dev *smcd)
 {
 	return smcd->ops->get_chid(smcd);
 }
-EXPORT_SYMBOL_GPL(smc_ism_get_chid);
 
 /* Set a connection using this DMBE. */
 void smc_ism_set_conn(struct smc_connection *conn)

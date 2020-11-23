@@ -21,7 +21,6 @@
 
 #include "smc.h"
 #include "smc_ib.h"
-#include "smc_ism.h"
 #include "smc_core.h"
 
 struct smc_diag_dump_ctx {
@@ -253,53 +252,6 @@ errout:
 	return -EMSGSIZE;
 }
 
-static int smc_diag_fill_smcd_lgr(struct smc_link_group *lgr,
-				  struct sk_buff *skb,
-				  struct netlink_callback *cb,
-				  struct smc_diag_req_v2 *req)
-{
-	struct smcd_diag_dmbinfo smcd_lgr;
-	struct nlmsghdr *nlh;
-	int dummy = 0;
-	int rc = 0;
-
-	nlh = nlmsg_put(skb, NETLINK_CB(cb->skb).portid, MAGIC_SEQ_V2_ACK,
-			cb->nlh->nlmsg_type, 0, NLM_F_MULTI);
-	if (!nlh)
-		return -EMSGSIZE;
-
-	memset(&smcd_lgr, 0, sizeof(smcd_lgr));
-	memcpy(&smcd_lgr.linkid, lgr->id, sizeof(lgr->id));
-	smcd_lgr.conns_num = lgr->conns_num;
-	smcd_lgr.vlan_id = lgr->vlan_id;
-	smcd_lgr.peer_gid = lgr->peer_gid;
-	smcd_lgr.my_gid = lgr->smcd->local_gid;
-	smcd_lgr.chid = smc_ism_get_chid(lgr->smcd);
-	memcpy(&smcd_lgr.v2_lgr_info.negotiated_eid, lgr->negotiated_eid,
-	       sizeof(smcd_lgr.v2_lgr_info.negotiated_eid));
-	memcpy(&smcd_lgr.v2_lgr_info.peer_hostname, lgr->peer_hostname,
-	       sizeof(smcd_lgr.v2_lgr_info.peer_hostname));
-	smcd_lgr.v2_lgr_info.peer_os = lgr->peer_os;
-	smcd_lgr.v2_lgr_info.peer_smc_release = lgr->peer_smc_release;
-	smcd_lgr.v2_lgr_info.smc_version = lgr->smc_version;
-	snprintf(smcd_lgr.pnet_id, sizeof(smcd_lgr.pnet_id), "%s",
-		 lgr->smcd->pnetid);
-
-	/* Just a command place holder to signal back the command reply type */
-	if (nla_put(skb, SMC_DIAG_GET_LGR_INFO, sizeof(dummy), &dummy) < 0)
-		goto errout;
-
-	if (nla_put(skb, SMC_DIAG_LGR_INFO_SMCD,
-		    sizeof(smcd_lgr), &smcd_lgr) < 0)
-		goto errout;
-
-	nlmsg_end(skb, nlh);
-	return rc;
-errout:
-	nlmsg_cancel(skb, nlh);
-	return -EMSGSIZE;
-}
-
 static int smc_diag_fill_lgr(struct smc_link_group *lgr,
 			     struct sk_buff *skb,
 			     struct netlink_callback *cb,
@@ -387,63 +339,6 @@ next:
 	}
 errout:
 	spin_unlock_bh(&smc_lgr->lock);
-	cb_ctx->pos[0] = num;
-	return rc;
-}
-
-static int smc_diag_handle_smcd_lgr(struct smcd_dev *dev,
-				    struct sk_buff *skb,
-				    struct netlink_callback *cb,
-				    struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_dump_ctx *cb_ctx = smc_dump_context(cb);
-	struct smc_link_group *lgr;
-	int snum = cb_ctx->pos[1];
-	int rc = 0, num = 0;
-
-	spin_lock_bh(&dev->lgr_lock);
-	list_for_each_entry(lgr, &dev->lgr_list, list) {
-		if (lgr->is_smcd) {
-			if (num < snum)
-				goto next;
-			rc = smc_diag_fill_smcd_lgr(lgr, skb, cb, req);
-			if (rc < 0)
-				goto errout;
-next:
-			num++;
-		}
-	}
-errout:
-	spin_unlock_bh(&dev->lgr_lock);
-	cb_ctx->pos[1] = num;
-	return rc;
-}
-
-static int smc_diag_fill_smcd_dev(struct smcd_dev_list *dev_list,
-				  struct sk_buff *skb,
-				  struct netlink_callback *cb,
-				  struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_dump_ctx *cb_ctx = smc_dump_context(cb);
-	struct smcd_dev *smcd_dev;
-	int snum = cb_ctx->pos[0];
-	int rc = 0, num = 0;
-
-	mutex_lock(&dev_list->mutex);
-	list_for_each_entry(smcd_dev, &dev_list->list, list) {
-		if (!list_empty(&smcd_dev->lgr_list)) {
-			if (num < snum)
-				goto next;
-			rc = smc_diag_handle_smcd_lgr(smcd_dev, skb,
-						      cb, req);
-			if (rc < 0)
-				goto errout;
-next:
-			num++;
-		}
-	}
-errout:
-	mutex_unlock(&dev_list->mutex);
 	cb_ctx->pos[0] = num;
 	return rc;
 }
@@ -545,9 +440,6 @@ static int smc_diag_dump_ext(struct sk_buff *skb, struct netlink_callback *cb)
 	if (req->cmd == SMC_DIAG_GET_LGR_INFO) {
 		if ((req->cmd_ext & (1 << (SMC_DIAG_LGR_INFO_SMCR - 1))))
 			smc_diag_fill_lgr_list(&smc_lgr_list, skb, cb,
-					       req);
-		if ((req->cmd_ext & (1 << (SMC_DIAG_LGR_INFO_SMCD - 1))))
-			smc_diag_fill_smcd_dev(&smcd_dev_list, skb, cb,
 					       req);
 	}
 

@@ -80,7 +80,6 @@ enum {
 enum {
 	SMC_DIAG_LGR_INFO_SMCR = 1,
 	SMC_DIAG_LGR_INFO_SMCR_LINK,
-	SMC_DIAG_LGR_INFO_SMCD,
 };
 
 #define SMC_DIAG_MAX (__SMC_DIAG_MAX - 1)
@@ -155,12 +154,6 @@ struct smcd_diag_dmbinfo {		/* SMC-D Socket internals */
 	__aligned_u64	my_gid;		/* My GID */
 	__aligned_u64	token;		/* Token of DMB */
 	__aligned_u64	peer_token;	/* Token of remote DMBE */
-	/* Fields above used by legacy v1 code */
-	__u8		pnet_id[SMC_MAX_PNETID_LEN]; /* Pnet ID */
-	__u32		conns_num;	/* Number of connections */
-	__u16		chid;		/* Linkgroup CHID */
-	__u8		vlan_id;	/* Linkgroup vlan id */
-	struct smc_diag_v2_lgr_info v2_lgr_info; /* SMCv2 info */
 };
 
 struct smc_diag_lgr {
