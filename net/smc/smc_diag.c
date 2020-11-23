@@ -20,7 +20,6 @@
 #include <net/smc.h>
 
 #include "smc.h"
-#include "smc_ib.h"
 #include "smc_core.h"
 
 struct smc_diag_dump_ctx {
@@ -204,54 +203,6 @@ static bool smc_diag_fill_dmbinfo(struct sock *sk, struct sk_buff *skb)
 	return true;
 }
 
-static int smc_diag_fill_lgr_link(struct smc_link_group *lgr,
-				  struct smc_link *link,
-				  struct sk_buff *skb,
-				  struct netlink_callback *cb,
-				  struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_linkinfo link_info;
-	int dummy = 0, rc = 0;
-	struct nlmsghdr *nlh;
-
-	nlh = nlmsg_put(skb, NETLINK_CB(cb->skb).portid, MAGIC_SEQ_V2_ACK,
-			cb->nlh->nlmsg_type, 0, NLM_F_MULTI);
-
-	memset(&link_info, 0, sizeof(link_info));
-	link_info.link_state = link->state;
-	link_info.link_id = link->link_id;
-	link_info.conn_cnt = atomic_read(&link->conn_cnt);
-	link_info.ibport = link->ibport;
-
-	memcpy(link_info.link_uid, link->link_uid,
-	       sizeof(link_info.link_uid));
-	snprintf(link_info.ibname, sizeof(link_info.ibname), "%s",
-		 link->ibname);
-	snprintf(link_info.netdev, sizeof(link_info.netdev), "%s",
-		 link->ndevname);
-	memcpy(link_info.peer_link_uid, link->peer_link_uid,
-	       sizeof(link_info.peer_link_uid));
-
-	smc_gid_be16_convert(link_info.gid,
-			     link->gid);
-	smc_gid_be16_convert(link_info.peer_gid,
-			     link->peer_gid);
-
-	/* Just a command place holder to signal back the command reply type */
-	if (nla_put(skb, SMC_DIAG_GET_LGR_INFO, sizeof(dummy), &dummy) < 0)
-		goto errout;
-	if (nla_put(skb, SMC_DIAG_LGR_INFO_SMCR_LINK,
-		    sizeof(link_info), &link_info) < 0)
-		goto errout;
-
-	nlmsg_end(skb, nlh);
-	return rc;
-
-errout:
-	nlmsg_cancel(skb, nlh);
-	return -EMSGSIZE;
-}
-
 static int smc_diag_fill_lgr(struct smc_link_group *lgr,
 			     struct sk_buff *skb,
 			     struct netlink_callback *cb,
@@ -287,7 +238,7 @@ static int smc_diag_handle_lgr(struct smc_link_group *lgr,
 			       struct smc_diag_req_v2 *req)
 {
 	struct nlmsghdr *nlh;
-	int i, rc = 0;
+	int rc = 0;
 
 	nlh = nlmsg_put(skb, NETLINK_CB(cb->skb).portid, MAGIC_SEQ_V2_ACK,
 			cb->nlh->nlmsg_type, 0, NLM_F_MULTI);
@@ -299,17 +250,6 @@ static int smc_diag_handle_lgr(struct smc_link_group *lgr,
 		goto errout;
 
 	nlmsg_end(skb, nlh);
-
-	if ((req->cmd_ext & (1 << (SMC_DIAG_LGR_INFO_SMCR_LINK - 1)))) {
-		for (i = 0; i < SMC_LINKS_PER_LGR_MAX; i++) {
-			if (!smc_link_usable(&lgr->lnk[i]))
-				continue;
-			rc = smc_diag_fill_lgr_link(lgr, &lgr->lnk[i], skb,
-						    cb, req);
-			if (rc < 0)
-				goto errout;
-		}
-	}
 	return rc;
 
 errout:

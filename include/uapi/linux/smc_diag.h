@@ -79,7 +79,6 @@ enum {
 /* SMC_DIAG_GET_LGR_INFO command extensions */
 enum {
 	SMC_DIAG_LGR_INFO_SMCR = 1,
-	SMC_DIAG_LGR_INFO_SMCR_LINK,
 };
 
 #define SMC_DIAG_MAX (__SMC_DIAG_MAX - 1)
@@ -132,10 +131,6 @@ struct smc_diag_linkinfo {
 	__u8 peer_gid[40];		/* peer GID */
 	/* Fields above used by legacy v1 code */
 	__u32 conn_cnt;
-	__u8 netdev[IFNAMSIZ];		/* ethernet device name */
-	__u8 link_uid[4];		/* unique link id */
-	__u8 peer_link_uid[4];		/* unique peer link id */
-	__u32 link_state;		/* link state */
 };
 
 struct smc_diag_lgrinfo {
