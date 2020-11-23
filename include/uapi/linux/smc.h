@@ -3,7 +3,6 @@
  *  Shared Memory Communications over RDMA (SMC-R) and RoCE
  *
  *  Definitions for generic netlink based configuration of an SMC-R PNET table
- *  Definitions for SMC Linkgroup and Devices.
  *
  *  Copyright IBM Corp. 2016
  *
@@ -34,8 +33,4 @@ enum {				/* SMC PNET Table commands */
 #define SMCR_GENL_FAMILY_NAME		"SMC_PNETID"
 #define SMCR_GENL_FAMILY_VERSION	1
 
-#define SMC_MAX_PNETID_LEN		16 /* Max. length of PNET id */
-#define SMC_LGR_ID_SIZE			4
-#define SMC_MAX_HOSTNAME_LEN		32 /* Max length of hostname */
-#define SMC_MAX_EID_LEN			32 /* Max length of eid */
 #endif /* _UAPI_LINUX_SMC_H */

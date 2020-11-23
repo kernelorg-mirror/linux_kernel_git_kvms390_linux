@@ -4,10 +4,8 @@
 
 #include <linux/types.h>
 #include <linux/inet_diag.h>
-#include <linux/smc.h>
 #include <rdma/ib_user_verbs.h>
 
-#define SMC_DIAG_EXTS_PER_CMD 16
 /* Sequence numbers */
 enum {
 	MAGIC_SEQ = 123456,
@@ -21,17 +19,6 @@ struct smc_diag_req {
 	__u8	pad[2];
 	__u8	diag_ext;		/* Query extended information */
 	struct inet_diag_sockid	id;
-};
-
-/* Request structure v2 */
-struct smc_diag_req_v2 {
-	__u8	diag_family;
-	__u8	pad[2];
-	__u8	diag_ext;		/* Query extended information */
-	struct inet_diag_sockid	id;
-	__u32	cmd;
-	__u32	cmd_ext;
-	__u8	cmd_val[8];
 };
 
 /* Base info structure. It contains socket identity (addrs/ports/cookie) based
@@ -70,19 +57,7 @@ enum {
 	__SMC_DIAG_MAX,
 };
 
-/* V2 Commands */
-enum {
-	SMC_DIAG_GET_LGR_INFO = SMC_DIAG_EXTS_PER_CMD,
-	__SMC_DIAG_EXT_MAX,
-};
-
-/* SMC_DIAG_GET_LGR_INFO command extensions */
-enum {
-	SMC_DIAG_LGR_INFO_SMCR = 1,
-};
-
 #define SMC_DIAG_MAX (__SMC_DIAG_MAX - 1)
-#define SMC_DIAG_EXT_MAX (__SMC_DIAG_EXT_MAX - 1)
 
 /* SMC_DIAG_CONNINFO */
 
@@ -111,14 +86,6 @@ struct smc_diag_conninfo {
 	struct smc_diag_cursor	tx_prep;	/* prepared to be sent cursor */
 	struct smc_diag_cursor	tx_sent;	/* sent cursor */
 	struct smc_diag_cursor	tx_fin;		/* confirmed sent cursor */
-};
-
-struct smc_diag_v2_lgr_info {
-	__u8		smc_version;		/* SMC Version */
-	__u8		peer_smc_release;	/* Peer SMC Version */
-	__u8		peer_os;		/* Peer operating system */
-	__u8		negotiated_eid[SMC_MAX_EID_LEN]; /* Negotiated EID */
-	__u8		peer_hostname[SMC_MAX_HOSTNAME_LEN]; /* Peer host */
 };
 
 /* SMC_DIAG_LINKINFO */
@@ -151,14 +118,4 @@ struct smcd_diag_dmbinfo {		/* SMC-D Socket internals */
 	__aligned_u64	peer_token;	/* Token of remote DMBE */
 };
 
-struct smc_diag_lgr {
-	__u8		lgr_id[SMC_LGR_ID_SIZE]; /* Linkgroup identifier */
-	__u8		lgr_role;		/* Linkgroup role */
-	__u8		lgr_type;		/* Linkgroup type */
-	__u8		pnet_id[SMC_MAX_PNETID_LEN]; /* Linkgroup pnet id */
-	__u8		vlan_id;		/* Linkgroup vland id */
-	__u32		conns_num;		/* Number of connections */
-	__u8		reserved;		/* Reserved for future use */
-	struct smc_diag_v2_lgr_info v2_lgr_info; /* SMCv2 info */
-};
 #endif /* _UAPI_SMC_DIAG_H_ */

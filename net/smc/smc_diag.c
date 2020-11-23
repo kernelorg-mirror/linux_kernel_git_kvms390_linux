@@ -203,86 +203,6 @@ static bool smc_diag_fill_dmbinfo(struct sock *sk, struct sk_buff *skb)
 	return true;
 }
 
-static int smc_diag_fill_lgr(struct smc_link_group *lgr,
-			     struct sk_buff *skb,
-			     struct netlink_callback *cb,
-			     struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_lgr lgr_link;
-	int dummy = 0;
-	int rc = 0;
-
-	memset(&lgr_link, 0, sizeof(lgr_link));
-	memcpy(&lgr_link.lgr_id, lgr->id, sizeof(lgr->id));
-	lgr_link.lgr_role = lgr->role;
-	lgr_link.lgr_type = lgr->type;
-	lgr_link.conns_num = lgr->conns_num;
-	lgr_link.vlan_id = lgr->vlan_id;
-	memcpy(lgr_link.pnet_id, lgr->pnet_id, sizeof(lgr_link.pnet_id));
-
-	/* Just a command place holder to signal back the command reply type */
-	if (nla_put(skb, SMC_DIAG_GET_LGR_INFO, sizeof(dummy), &dummy) < 0)
-		goto errout;
-	if (nla_put(skb, SMC_DIAG_LGR_INFO_SMCR,
-		    sizeof(lgr_link), &lgr_link) < 0)
-		goto errout;
-
-	return rc;
-errout:
-	return -EMSGSIZE;
-}
-
-static int smc_diag_handle_lgr(struct smc_link_group *lgr,
-			       struct sk_buff *skb,
-			       struct netlink_callback *cb,
-			       struct smc_diag_req_v2 *req)
-{
-	struct nlmsghdr *nlh;
-	int rc = 0;
-
-	nlh = nlmsg_put(skb, NETLINK_CB(cb->skb).portid, MAGIC_SEQ_V2_ACK,
-			cb->nlh->nlmsg_type, 0, NLM_F_MULTI);
-	if (!nlh)
-		return -EMSGSIZE;
-
-	rc = smc_diag_fill_lgr(lgr, skb, cb, req);
-	if (rc < 0)
-		goto errout;
-
-	nlmsg_end(skb, nlh);
-	return rc;
-
-errout:
-	nlmsg_cancel(skb, nlh);
-	return rc;
-}
-
-static int smc_diag_fill_lgr_list(struct smc_lgr_list *smc_lgr,
-				  struct sk_buff *skb,
-				  struct netlink_callback *cb,
-				  struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_dump_ctx *cb_ctx = smc_dump_context(cb);
-	struct smc_link_group *lgr;
-	int snum = cb_ctx->pos[0];
-	int rc = 0, num = 0;
-
-	spin_lock_bh(&smc_lgr->lock);
-	list_for_each_entry(lgr, &smc_lgr->list, list) {
-		if (num < snum)
-			goto next;
-		rc = smc_diag_handle_lgr(lgr, skb, cb, req);
-		if (rc < 0)
-			goto errout;
-next:
-		num++;
-	}
-errout:
-	spin_unlock_bh(&smc_lgr->lock);
-	cb_ctx->pos[0] = num;
-	return rc;
-}
-
 static int __smc_diag_dump(struct sock *sk, struct sk_buff *skb,
 			   struct netlink_callback *cb,
 			   const struct smc_diag_req *req)
@@ -375,14 +295,6 @@ static int smc_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
 
 static int smc_diag_dump_ext(struct sk_buff *skb, struct netlink_callback *cb)
 {
-	struct smc_diag_req_v2 *req = nlmsg_data(cb->nlh);
-
-	if (req->cmd == SMC_DIAG_GET_LGR_INFO) {
-		if ((req->cmd_ext & (1 << (SMC_DIAG_LGR_INFO_SMCR - 1))))
-			smc_diag_fill_lgr_list(&smc_lgr_list, skb, cb,
-					       req);
-	}
-
 	return skb->len;
 }
 

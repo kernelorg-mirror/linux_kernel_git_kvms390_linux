@@ -14,7 +14,6 @@
 #include <linux/socket.h>
 #include <linux/types.h>
 #include <linux/compiler.h> /* __aligned */
-#include <uapi/linux/smc.h>
 #include <net/sock.h>
 
 #include "smc_ib.h"
@@ -30,9 +29,11 @@
 					 * devices
 					 */
 
+#define SMC_MAX_HOSTNAME_LEN	32
+#define SMC_MAX_EID_LEN		32
+
 extern struct proto smc_proto;
 extern struct proto smc_proto6;
-extern struct smc_lgr_list smc_lgr_list;
 
 #ifdef ATOMIC64_INIT
 #define KERNEL_HAS_ATOMIC64
