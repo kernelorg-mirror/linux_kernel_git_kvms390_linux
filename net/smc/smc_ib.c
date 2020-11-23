@@ -557,52 +557,6 @@ out:
 
 static struct ib_client smc_ib_client;
 
-static void smc_copy_netdev_name(struct smc_ib_device *smcibdev, int port)
-{
-	struct ib_device *ibdev = smcibdev->ibdev;
-	struct net_device *ndev;
-
-	if (ibdev->ops.get_netdev) {
-		ndev = ibdev->ops.get_netdev(ibdev, port + 1);
-		if (ndev) {
-			snprintf((char *)&smcibdev->netdev[port],
-				 sizeof(smcibdev->netdev[port]),
-				 "%s", ndev->name);
-			dev_put(ndev);
-		}
-	}
-}
-
-void smc_ib_ndev_name_change(struct net_device *ndev)
-{
-	struct smc_ib_device *smcibdev;
-	struct ib_device *libdev;
-	struct net_device *lndev;
-	u8 port_cnt;
-	int i;
-
-	mutex_lock(&smc_ib_devices.mutex);
-	list_for_each_entry(smcibdev, &smc_ib_devices.list, list) {
-		port_cnt = smcibdev->ibdev->phys_port_cnt;
-		for (i = 0;
-		     i < min_t(size_t, port_cnt, SMC_MAX_PORTS);
-		     i++) {
-			libdev = smcibdev->ibdev;
-			if (libdev->ops.get_netdev) {
-				lndev = libdev->ops.get_netdev(libdev, i + 1);
-				if (lndev)
-					dev_put(lndev);
-				if (lndev == ndev) {
-					snprintf((char *)&smcibdev->netdev[i],
-						 sizeof(smcibdev->netdev[i]),
-						 "%s", ndev->name);
-				}
-			}
-		}
-	}
-	mutex_unlock(&smc_ib_devices.mutex);
-}
-
 /* callback function for ib_register_client() */
 static int smc_ib_add_dev(struct ib_device *ibdev)
 {
@@ -642,7 +596,6 @@ static int smc_ib_add_dev(struct ib_device *ibdev)
 		if (smc_pnetid_by_dev_port(ibdev->dev.parent, i,
 					   smcibdev->pnetid[i]))
 			smc_pnetid_by_table_ib(smcibdev, i + 1);
-		smc_copy_netdev_name(smcibdev, i);
 		pr_warn_ratelimited("smc:    ib device %s port %d has pnetid "
 				    "%.16s%s\n",
 				    smcibdev->ibdev->name, i + 1,
