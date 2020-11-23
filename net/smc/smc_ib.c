@@ -37,7 +37,6 @@ struct smc_ib_devices smc_ib_devices = {	/* smc-registered ib devices */
 	.mutex = __MUTEX_INITIALIZER(smc_ib_devices.mutex),
 	.list = LIST_HEAD_INIT(smc_ib_devices.list),
 };
-EXPORT_SYMBOL_GPL(smc_ib_devices);
 
 u8 local_systemid[SMC_SYSTEMID_LEN];		/* unique system identifier */
 
@@ -182,7 +181,6 @@ bool smc_ib_port_active(struct smc_ib_device *smcibdev, u8 ibport)
 {
 	return smcibdev->pattr[ibport - 1].state == IB_PORT_ACTIVE;
 }
-EXPORT_SYMBOL_GPL(smc_ib_port_active);
 
 /* determine the gid for an ib-device port and vlan id */
 int smc_ib_determine_gid(struct smc_ib_device *smcibdev, u8 ibport,

@@ -22,7 +22,6 @@
 #include "smc.h"
 #include "smc_ib.h"
 #include "smc_ism.h"
-#include "smc_ib.h"
 #include "smc_core.h"
 
 struct smc_diag_dump_ctx {
@@ -366,34 +365,6 @@ errout:
 	return rc;
 }
 
-static bool smcr_diag_is_dev_critical(struct smc_lgr_list *smc_lgr,
-				      struct smc_ib_device *smcibdev)
-{
-	struct smc_link_group *lgr;
-	bool rc = false;
-	int i;
-
-	spin_lock_bh(&smc_lgr->lock);
-	list_for_each_entry(lgr, &smc_lgr->list, list) {
-		if (lgr->is_smcd)
-			continue;
-		for (i = 0; i < SMC_LINKS_PER_LGR_MAX; i++) {
-			if (lgr->lnk[i].state == SMC_LNK_UNUSED)
-				continue;
-			if (lgr->lnk[i].smcibdev == smcibdev) {
-				if (lgr->type == SMC_LGR_SINGLE ||
-				    lgr->type == SMC_LGR_ASYMMETRIC_LOCAL) {
-					rc = true;
-					goto out;
-				}
-			}
-		}
-	}
-out:
-	spin_unlock_bh(&smc_lgr->lock);
-	return rc;
-}
-
 static int smc_diag_fill_lgr_list(struct smc_lgr_list *smc_lgr,
 				  struct sk_buff *skb,
 				  struct netlink_callback *cb,
@@ -549,108 +520,6 @@ errout:
 	return rc;
 }
 
-static inline void smc_diag_handle_dev_port(struct smc_diag_dev_info *smc_diag_dev,
-					    struct ib_device *ibdev,
-					    struct smc_ib_device *smcibdev,
-					    int port)
-{
-	unsigned char port_state;
-
-	smc_diag_dev->port_valid[port] = 1;
-	snprintf((char *)&smc_diag_dev->netdev[port],
-		 sizeof(smc_diag_dev->netdev[port]),
-		 "%s", (char *)&smcibdev->netdev[port]);
-	snprintf((char *)&smc_diag_dev->pnet_id[port],
-		 sizeof(smc_diag_dev->pnet_id[port]), "%s",
-		 (char *)&smcibdev->pnetid[port]);
-	smc_diag_dev->pnetid_by_user[port] = smcibdev->pnetid_by_user[port];
-	port_state = smc_ib_port_active(smcibdev, port + 1);
-	smc_diag_dev->port_state[port] = port_state;
-	smc_diag_dev->lnk_cnt_by_port[port] =
-			atomic_read(&smcibdev->lnk_cnt_by_port[port]);
-}
-
-static int smc_diag_handle_smcr_dev(struct smc_ib_device *smcibdev,
-				    struct sk_buff *skb,
-				    struct netlink_callback *cb,
-				    struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_dev_info smc_dev;
-	struct smc_pci_dev smc_pci_dev;
-	struct pci_dev *pci_dev;
-	unsigned char is_crit;
-	struct nlmsghdr *nlh;
-	int dummy = 0;
-	int i, rc = 0;
-
-	nlh = nlmsg_put(skb, NETLINK_CB(cb->skb).portid, MAGIC_SEQ_V2_ACK,
-			cb->nlh->nlmsg_type, 0, NLM_F_MULTI);
-	if (!nlh)
-		return -EMSGSIZE;
-
-	memset(&smc_dev, 0, sizeof(smc_dev));
-	memset(&smc_pci_dev, 0, sizeof(smc_pci_dev));
-	for (i = 1; i <= SMC_MAX_PORTS; i++) {
-		if (rdma_is_port_valid(smcibdev->ibdev, i)) {
-			smc_diag_handle_dev_port(&smc_dev, smcibdev->ibdev,
-						 smcibdev, i - 1);
-		}
-	}
-	pci_dev = to_pci_dev(smcibdev->ibdev->dev.parent);
-	smc_set_pci_values(pci_dev, &smc_pci_dev);
-	smc_dev.pci_device = smc_pci_dev.pci_device;
-	smc_dev.pci_fid = smc_pci_dev.pci_fid;
-	smc_dev.pci_pchid = smc_pci_dev.pci_pchid;
-	smc_dev.pci_vendor = smc_pci_dev.pci_vendor;
-	snprintf(smc_dev.pci_id, sizeof(smc_dev.pci_id), "%s",
-		 smc_pci_dev.pci_id);
-	snprintf(smc_dev.dev_name, sizeof(smc_dev.dev_name),
-		 "%s", smcibdev->ibdev->name);
-	is_crit = smcr_diag_is_dev_critical(&smc_lgr_list, smcibdev);
-	smc_dev.is_critical = is_crit;
-
-	/* Just a command place holder to signal back the command reply type */
-	if (nla_put(skb, SMC_DIAG_GET_DEV_INFO, sizeof(dummy), &dummy) < 0)
-		goto errout;
-
-	if (nla_put(skb, SMC_DIAG_DEV_INFO_SMCR,
-		    sizeof(smc_dev), &smc_dev) < 0)
-		goto errout;
-
-	nlmsg_end(skb, nlh);
-	return rc;
-
-errout:
-	nlmsg_cancel(skb, nlh);
-	return -EMSGSIZE;
-}
-
-static int smc_diag_prep_smcr_dev(struct smc_ib_devices *dev_list,
-				  struct sk_buff *skb,
-				  struct netlink_callback *cb,
-				  struct smc_diag_req_v2 *req)
-{
-	struct smc_diag_dump_ctx *cb_ctx = smc_dump_context(cb);
-	struct smc_ib_device *smcibdev;
-	int snum = cb_ctx->pos[0];
-	int rc = 0, num = 0;
-
-	mutex_lock(&dev_list->mutex);
-	list_for_each_entry(smcibdev, &dev_list->list, list) {
-		if (num < snum)
-			goto next;
-		rc = smc_diag_handle_smcr_dev(smcibdev, skb, cb, req);
-		if (rc < 0)
-			goto out;
-next:
-		num++;
-	}
-out:
-	mutex_unlock(&dev_list->mutex);
-	cb_ctx->pos[0] = num;
-	return rc;
-}
-
 static int __smc_diag_dump(struct sock *sk, struct sk_buff *skb,
 			   struct netlink_callback *cb,
 			   const struct smc_diag_req *req)
@@ -755,9 +624,6 @@ static int smc_diag_dump_ext(struct sk_buff *skb, struct netlink_callback *cb)
 	} else if (req->cmd == SMC_DIAG_GET_DEV_INFO) {
 		if ((req->cmd_ext & (1 << (SMC_DIAG_DEV_INFO_SMCD - 1))))
 			smc_diag_prep_smcd_dev(&smcd_dev_list, skb, cb,
-					       req);
-		if ((req->cmd_ext & (1 << (SMC_DIAG_DEV_INFO_SMCR - 1))))
-			smc_diag_prep_smcr_dev(&smc_ib_devices, skb, cb,
 					       req);
 	}
 
