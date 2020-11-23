@@ -69,145 +69,26 @@ static void smc_diag_msg_common_fill(struct smc_diag_msg *r, struct sock *sk)
 	}
 }
 
-static bool smc_diag_msg_attrs_fill(struct sock *sk, struct sk_buff *skb,
-				    struct smc_diag_msg *r,
-				    struct user_namespace *user_ns)
+static int smc_diag_msg_attrs_fill(struct sock *sk, struct sk_buff *skb,
+				   struct smc_diag_msg *r,
+				   struct user_namespace *user_ns)
 {
-	if (nla_put_u8(skb, SMC_DIAG_SHUTDOWN, sk->sk_shutdown) < 0)
-		return false;
+	if (nla_put_u8(skb, SMC_DIAG_SHUTDOWN, sk->sk_shutdown))
+		return 1;
 
 	r->diag_uid = from_kuid_munged(user_ns, sock_i_uid(sk));
 	r->diag_inode = sock_i_ino(sk);
-	return true;
-}
-
-static bool smc_diag_fill_base_struct(struct sock *sk, struct sk_buff *skb,
-				      struct netlink_callback *cb,
-				      struct smc_diag_msg *r)
-{
-	struct smc_sock *smc = smc_sk(sk);
-	struct user_namespace *user_ns;
-
-	smc_diag_msg_common_fill(r, sk);
-	r->diag_state = sk->sk_state;
-	if (smc->use_fallback)
-		r->diag_mode = SMC_DIAG_MODE_FALLBACK_TCP;
-	else if (smc->conn.lgr && smc->conn.lgr->is_smcd)
-		r->diag_mode = SMC_DIAG_MODE_SMCD;
-	else
-		r->diag_mode = SMC_DIAG_MODE_SMCR;
-	user_ns = sk_user_ns(NETLINK_CB(cb->skb).sk);
-	if (!smc_diag_msg_attrs_fill(sk, skb, r, user_ns))
-		return false;
-
-	return true;
-}
-
-static bool smc_diag_fill_fallback(struct sock *sk, struct sk_buff *skb)
-{
-	struct smc_diag_fallback fallback;
-	struct smc_sock *smc = smc_sk(sk);
-
-	memset(&fallback, 0, sizeof(fallback));
-	fallback.reason = smc->fallback_rsn;
-	fallback.peer_diagnosis = smc->peer_diagnosis;
-	if (nla_put(skb, SMC_DIAG_FALLBACK, sizeof(fallback), &fallback) < 0)
-		return false;
-
-	return true;
-}
-
-static bool smc_diag_fill_conninfo(struct sock *sk, struct sk_buff *skb)
-{
-	struct smc_host_cdc_msg *local_tx, *local_rx;
-	struct smc_diag_conninfo cinfo;
-	struct smc_connection *conn;
-	struct smc_sock *smc;
-
-	smc = smc_sk(sk);
-	conn = &smc->conn;
-	local_tx = &conn->local_tx_ctrl;
-	local_rx = &conn->local_rx_ctrl;
-	memset(&cinfo, 0, sizeof(cinfo));
-	cinfo.token = conn->alert_token_local;
-	cinfo.sndbuf_size = conn->sndbuf_desc ? conn->sndbuf_desc->len : 0;
-	cinfo.rmbe_size = conn->rmb_desc ? conn->rmb_desc->len : 0;
-	cinfo.peer_rmbe_size = conn->peer_rmbe_size;
-
-	cinfo.rx_prod.wrap = local_rx->prod.wrap;
-	cinfo.rx_prod.count = local_rx->prod.count;
-	cinfo.rx_cons.wrap = local_rx->cons.wrap;
-	cinfo.rx_cons.count = local_rx->cons.count;
-
-	cinfo.tx_prod.wrap = local_tx->prod.wrap;
-	cinfo.tx_prod.count = local_tx->prod.count;
-	cinfo.tx_cons.wrap = local_tx->cons.wrap;
-	cinfo.tx_cons.count = local_tx->cons.count;
-
-	cinfo.tx_prod_flags = *(u8 *)&local_tx->prod_flags;
-	cinfo.tx_conn_state_flags = *(u8 *)&local_tx->conn_state_flags;
-	cinfo.rx_prod_flags = *(u8 *)&local_rx->prod_flags;
-	cinfo.rx_conn_state_flags = *(u8 *)&local_rx->conn_state_flags;
-
-	cinfo.tx_prep.wrap = conn->tx_curs_prep.wrap;
-	cinfo.tx_prep.count = conn->tx_curs_prep.count;
-	cinfo.tx_sent.wrap = conn->tx_curs_sent.wrap;
-	cinfo.tx_sent.count = conn->tx_curs_sent.count;
-	cinfo.tx_fin.wrap = conn->tx_curs_fin.wrap;
-	cinfo.tx_fin.count = conn->tx_curs_fin.count;
-
-	if (nla_put(skb, SMC_DIAG_CONNINFO, sizeof(cinfo), &cinfo) < 0)
-		return false;
-
-	return true;
-}
-
-static bool smc_diag_fill_lgrinfo(struct sock *sk, struct sk_buff *skb)
-{
-	struct smc_sock *smc = smc_sk(sk);
-	struct smc_diag_lgrinfo linfo;
-
-	memset(&linfo, 0, sizeof(linfo));
-	linfo.role = smc->conn.lgr->role;
-	linfo.lnk[0].ibport = smc->conn.lnk->ibport;
-	linfo.lnk[0].link_id = smc->conn.lnk->link_id;
-	memcpy(linfo.lnk[0].ibname, smc->conn.lnk->ibname,
-	       sizeof(linfo.lnk[0].ibname));
-	smc_gid_be16_convert(linfo.lnk[0].gid,
-			     smc->conn.lnk->gid);
-	smc_gid_be16_convert(linfo.lnk[0].peer_gid,
-			     smc->conn.lnk->peer_gid);
-
-	if (nla_put(skb, SMC_DIAG_LGRINFO, sizeof(linfo), &linfo) < 0)
-		return false;
-
-	return true;
-}
-
-static bool smc_diag_fill_dmbinfo(struct sock *sk, struct sk_buff *skb)
-{
-	struct smc_sock *smc = smc_sk(sk);
-	struct smcd_diag_dmbinfo dinfo;
-	struct smc_connection *conn;
-
-	memset(&dinfo, 0, sizeof(dinfo));
-	conn = &smc->conn;
-	dinfo.linkid = *((u32 *)conn->lgr->id);
-	dinfo.peer_gid = conn->lgr->peer_gid;
-	dinfo.my_gid = conn->lgr->smcd->local_gid;
-	dinfo.token = conn->rmb_desc->token;
-	dinfo.peer_token = conn->peer_token;
-
-	if (nla_put(skb, SMC_DIAG_DMBINFO, sizeof(dinfo), &dinfo) < 0)
-		return false;
-	return true;
+	return 0;
 }
 
 static int __smc_diag_dump(struct sock *sk, struct sk_buff *skb,
 			   struct netlink_callback *cb,
-			   const struct smc_diag_req *req)
+			   const struct smc_diag_req *req,
+			   struct nlattr *bc)
 {
 	struct smc_sock *smc = smc_sk(sk);
+	struct smc_diag_fallback fallback;
+	struct user_namespace *user_ns;
 	struct smc_diag_msg *r;
 	struct nlmsghdr *nlh;
 
@@ -217,28 +98,98 @@ static int __smc_diag_dump(struct sock *sk, struct sk_buff *skb,
 		return -EMSGSIZE;
 
 	r = nlmsg_data(nlh);
-	if (!smc_diag_fill_base_struct(sk, skb, cb, r))
+	smc_diag_msg_common_fill(r, sk);
+	r->diag_state = sk->sk_state;
+	if (smc->use_fallback)
+		r->diag_mode = SMC_DIAG_MODE_FALLBACK_TCP;
+	else if (smc->conn.lgr && smc->conn.lgr->is_smcd)
+		r->diag_mode = SMC_DIAG_MODE_SMCD;
+	else
+		r->diag_mode = SMC_DIAG_MODE_SMCR;
+	user_ns = sk_user_ns(NETLINK_CB(cb->skb).sk);
+	if (smc_diag_msg_attrs_fill(sk, skb, r, user_ns))
 		goto errout;
 
-	if (!smc_diag_fill_fallback(sk, skb))
+	fallback.reason = smc->fallback_rsn;
+	fallback.peer_diagnosis = smc->peer_diagnosis;
+	if (nla_put(skb, SMC_DIAG_FALLBACK, sizeof(fallback), &fallback) < 0)
 		goto errout;
 
 	if ((req->diag_ext & (1 << (SMC_DIAG_CONNINFO - 1))) &&
 	    smc->conn.alert_token_local) {
-		if (!smc_diag_fill_conninfo(sk, skb))
+		struct smc_connection *conn = &smc->conn;
+		struct smc_diag_conninfo cinfo = {
+			.token = conn->alert_token_local,
+			.sndbuf_size = conn->sndbuf_desc ?
+				conn->sndbuf_desc->len : 0,
+			.rmbe_size = conn->rmb_desc ? conn->rmb_desc->len : 0,
+			.peer_rmbe_size = conn->peer_rmbe_size,
+
+			.rx_prod.wrap = conn->local_rx_ctrl.prod.wrap,
+			.rx_prod.count = conn->local_rx_ctrl.prod.count,
+			.rx_cons.wrap = conn->local_rx_ctrl.cons.wrap,
+			.rx_cons.count = conn->local_rx_ctrl.cons.count,
+
+			.tx_prod.wrap = conn->local_tx_ctrl.prod.wrap,
+			.tx_prod.count = conn->local_tx_ctrl.prod.count,
+			.tx_cons.wrap = conn->local_tx_ctrl.cons.wrap,
+			.tx_cons.count = conn->local_tx_ctrl.cons.count,
+
+			.tx_prod_flags =
+				*(u8 *)&conn->local_tx_ctrl.prod_flags,
+			.tx_conn_state_flags =
+				*(u8 *)&conn->local_tx_ctrl.conn_state_flags,
+			.rx_prod_flags = *(u8 *)&conn->local_rx_ctrl.prod_flags,
+			.rx_conn_state_flags =
+				*(u8 *)&conn->local_rx_ctrl.conn_state_flags,
+
+			.tx_prep.wrap = conn->tx_curs_prep.wrap,
+			.tx_prep.count = conn->tx_curs_prep.count,
+			.tx_sent.wrap = conn->tx_curs_sent.wrap,
+			.tx_sent.count = conn->tx_curs_sent.count,
+			.tx_fin.wrap = conn->tx_curs_fin.wrap,
+			.tx_fin.count = conn->tx_curs_fin.count,
+		};
+
+		if (nla_put(skb, SMC_DIAG_CONNINFO, sizeof(cinfo), &cinfo) < 0)
 			goto errout;
 	}
 
 	if (smc->conn.lgr && !smc->conn.lgr->is_smcd &&
 	    (req->diag_ext & (1 << (SMC_DIAG_LGRINFO - 1))) &&
 	    !list_empty(&smc->conn.lgr->list)) {
-		if (!smc_diag_fill_lgrinfo(sk, skb))
+		struct smc_diag_lgrinfo linfo = {
+			.role = smc->conn.lgr->role,
+			.lnk[0].ibport = smc->conn.lnk->ibport,
+			.lnk[0].link_id = smc->conn.lnk->link_id,
+		};
+
+		memcpy(linfo.lnk[0].ibname,
+		       smc->conn.lgr->lnk[0].smcibdev->ibdev->name,
+		       sizeof(smc->conn.lnk->smcibdev->ibdev->name));
+		smc_gid_be16_convert(linfo.lnk[0].gid,
+				     smc->conn.lnk->gid);
+		smc_gid_be16_convert(linfo.lnk[0].peer_gid,
+				     smc->conn.lnk->peer_gid);
+
+		if (nla_put(skb, SMC_DIAG_LGRINFO, sizeof(linfo), &linfo) < 0)
 			goto errout;
 	}
 	if (smc->conn.lgr && smc->conn.lgr->is_smcd &&
 	    (req->diag_ext & (1 << (SMC_DIAG_DMBINFO - 1))) &&
 	    !list_empty(&smc->conn.lgr->list)) {
-		if (!smc_diag_fill_dmbinfo(sk, skb))
+		struct smc_connection *conn = &smc->conn;
+		struct smcd_diag_dmbinfo dinfo;
+
+		memset(&dinfo, 0, sizeof(dinfo));
+
+		dinfo.linkid = *((u32 *)conn->lgr->id);
+		dinfo.peer_gid = conn->lgr->peer_gid;
+		dinfo.my_gid = conn->lgr->smcd->local_gid;
+		dinfo.token = conn->rmb_desc->token;
+		dinfo.peer_token = conn->peer_token;
+
+		if (nla_put(skb, SMC_DIAG_DMBINFO, sizeof(dinfo), &dinfo) < 0)
 			goto errout;
 	}
 
@@ -256,6 +207,7 @@ static int smc_diag_dump_proto(struct proto *prot, struct sk_buff *skb,
 	struct smc_diag_dump_ctx *cb_ctx = smc_dump_context(cb);
 	struct net *net = sock_net(skb->sk);
 	int snum = cb_ctx->pos[p_type];
+	struct nlattr *bc = NULL;
 	struct hlist_head *head;
 	int rc = 0, num = 0;
 	struct sock *sk;
@@ -270,7 +222,7 @@ static int smc_diag_dump_proto(struct proto *prot, struct sk_buff *skb,
 			continue;
 		if (num < snum)
 			goto next;
-		rc = __smc_diag_dump(sk, skb, cb, nlmsg_data(cb->nlh));
+		rc = __smc_diag_dump(sk, skb, cb, nlmsg_data(cb->nlh), bc);
 		if (rc < 0)
 			goto out;
 next:
