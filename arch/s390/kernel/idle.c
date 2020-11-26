@@ -37,7 +37,7 @@ void account_idle_time_irq(struct pt_regs *regs)
 	S390_lowcore.system_timer += S390_lowcore.last_update_timer - idle->timer_idle_enter;
 	S390_lowcore.last_update_timer = idle->timer_idle_exit;
 
-	regs->psw.mask &= ~(PSW_MASK_EXT|PSW_MASK_IO|PSW_MASK_WAIT);
+	regs->psw.mask &= ~(PSW_MASK_EXT | PSW_MASK_IO | PSW_MASK_WAIT);
 }
 
 void enabled_wait(void)

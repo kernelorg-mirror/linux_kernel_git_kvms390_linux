@@ -32,7 +32,6 @@
 #include <linux/string.h>
 #include <linux/thread_info.h>
 #include <linux/entry-common.h>
-#include <linux/syscalls.h>
 
 #include <asm/ptrace.h>
 #include <asm/vtime.h>

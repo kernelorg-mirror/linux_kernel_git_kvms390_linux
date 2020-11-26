@@ -300,7 +300,6 @@ void __do_pgm_check(struct pt_regs *regs)
 	unsigned int trapnr;
 
 	if (user_mode(regs)) {
-
 		update_timer_sys();
 		if (last_break < 4096)
 			last_break = 1;

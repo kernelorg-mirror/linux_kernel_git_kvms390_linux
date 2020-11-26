@@ -5,8 +5,8 @@
 #include <linux/sched.h>
 #include <linux/audit.h>
 #include <linux/tracehook.h>
-#include <asm/processor.h>
-#include <asm/uaccess.h>
+#include <linux/processor.h>
+#include <linux/uaccess.h>
 
 #define ARCH_EXIT_TO_USER_MODE_WORK (_TIF_GUARDED_STORAGE | _TIF_PER_TRAP)
 
@@ -22,6 +22,7 @@ static __always_inline void arch_check_user_regs(struct pt_regs *regs)
 {
 	debug_user_asce(0);
 }
+
 #define arch_check_user_regs arch_check_user_regs
 #endif /* CONFIG_DEBUG_ENTRY */
 
@@ -36,6 +37,7 @@ static __always_inline void arch_exit_to_user_mode_work(struct pt_regs *regs,
 	if (ti_work & _TIF_GUARDED_STORAGE)
 		gs_load_bc_cb(regs);
 }
+
 #define arch_exit_to_user_mode_work arch_exit_to_user_mode_work
 
 static __always_inline void arch_exit_to_user_mode(void)
@@ -46,13 +48,14 @@ static __always_inline void arch_exit_to_user_mode(void)
 	if (IS_ENABLED(CONFIG_DEBUG_ENTRY))
 		debug_user_asce(1);
 }
+
 #define arch_exit_to_user_mode arch_exit_to_user_mode
 
 #define arch_do_signal do_signal
 
 static inline bool on_thread_stack(void)
 {
-	return !(((unsigned long)(current->stack) ^ current_stack_pointer()) & ~(THREAD_SIZE-1));
+	return !(((unsigned long)(current->stack) ^ current_stack_pointer()) & ~(THREAD_SIZE - 1));
 }
 
 #endif
