@@ -7,6 +7,7 @@
 #include <linux/tracehook.h>
 #include <linux/processor.h>
 #include <linux/uaccess.h>
+#include <asm/fpu/api.h>
 
 #define ARCH_EXIT_TO_USER_MODE_WORK (_TIF_GUARDED_STORAGE | _TIF_PER_TRAP)
 

@@ -18,6 +18,7 @@
 #include <asm/sclp.h>
 #include <asm/nmi.h>
 #include <asm/dis.h>
+#include <asm/fpu/api.h>
 #include "kvm-s390.h"
 #include "gaccess.h"
 

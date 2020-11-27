@@ -45,6 +45,7 @@
 #include <asm/timex.h>
 #include <asm/ap.h>
 #include <asm/uv.h>
+#include <asm/fpu/api.h>
 #include "kvm-s390.h"
 #include "gaccess.h"
 
