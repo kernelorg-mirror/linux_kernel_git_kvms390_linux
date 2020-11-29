@@ -144,7 +144,7 @@ void do_syscall(struct pt_regs *regs)
 	syscall_exit_to_user_mode(regs);
 }
 
-void __do_syscall(struct pt_regs *regs, int per_trap)
+void noinstr __do_syscall(struct pt_regs *regs, int per_trap)
 {
 	memcpy(&regs->gprs[8], S390_lowcore.save_area_sync, 8 * sizeof(unsigned long));
 	memcpy(&regs->int_code, &S390_lowcore.svc_ilc, sizeof(regs->int_code));

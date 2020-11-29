@@ -293,7 +293,7 @@ void __init trap_init(void)
 	test_monitor_call();
 }
 
-void __do_pgm_check(struct pt_regs *regs)
+void noinstr __do_pgm_check(struct pt_regs *regs)
 {
 	irqentry_state_t state;
 	unsigned long last_break = S390_lowcore.breaking_event_addr;

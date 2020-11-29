@@ -139,7 +139,7 @@ static int irq_pending(struct pt_regs *regs)
 	return cc >> 28;
 }
 
-void do_io_irq(struct pt_regs *regs)
+void noinstr do_io_irq(struct pt_regs *regs)
 {
 	irqentry_state_t state;
 
@@ -159,7 +159,7 @@ void do_io_irq(struct pt_regs *regs)
 	irqentry_exit(regs, state);
 }
 
-void do_ext_irq(struct pt_regs *regs)
+void noinstr do_ext_irq(struct pt_regs *regs)
 {
 	irqentry_state_t state;
 

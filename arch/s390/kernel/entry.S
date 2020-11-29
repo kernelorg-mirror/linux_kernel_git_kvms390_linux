@@ -287,6 +287,7 @@ ENTRY(system_call)
 	lctlg	%c1,%c1,__LC_KERNEL_ASCE
 	lg	%r12,__LC_CURRENT
 	lg	%r15,__LC_KERNEL_STACK
+	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
 	stmg	%r0,%r7,STACK_FRAME_OVERHEAD+__PT_R0(%r15)
 	BPENTER __TI_flags(%r12),_TIF_ISOLATE_BP
 	# clear user controlled register to prevent speculative use
