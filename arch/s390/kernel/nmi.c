@@ -344,9 +344,6 @@ int notrace s390_do_machine_check(struct pt_regs *regs)
 	int mcck_pending = 0;
 
 	nmi_enter();
-
-	if (user_mode(regs))
-		update_timer_mcck();
 	inc_irq_stat(NMI_NMI);
 	mci.val = S390_lowcore.mcck_interruption_code;
 	mcck = this_cpu_ptr(&cpu_mcck);

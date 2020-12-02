@@ -13,8 +13,6 @@
  * 'Traps.c' handles hardware traps and faults after we have saved some
  * state in 'asm.s'.
  */
-#include "asm/irqflags.h"
-#include "asm/ptrace.h"
 #include <linux/kprobes.h>
 #include <linux/kdebug.h>
 #include <linux/extable.h>
@@ -25,9 +23,7 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/cpu.h>
-#include <linux/entry-common.h>
 #include <asm/fpu/api.h>
-#include <asm/vtime.h>
 #include "entry.h"
 
 static inline void __user *get_trap_ip(struct pt_regs *regs)
@@ -291,60 +287,4 @@ void __init trap_init(void)
 	sort_extable(__start_dma_ex_table, __stop_dma_ex_table);
 	local_mcck_enable();
 	test_monitor_call();
-}
-
-void noinstr __do_pgm_check(struct pt_regs *regs)
-{
-	irqentry_state_t state;
-	unsigned long last_break = S390_lowcore.breaking_event_addr;
-	unsigned int trapnr;
-
-	if (user_mode(regs)) {
-		update_timer_sys();
-		if (last_break < 4096)
-			last_break = 1;
-		current->thread.last_break = last_break;
-		regs->args[0] = last_break;
-	}
-
-	regs->int_code = *(u32 *)&S390_lowcore.pgm_ilc;
-	regs->int_parm_long = S390_lowcore.trans_exc_code;
-
-	if (S390_lowcore.pgm_code & 0x0200) {
-		/* transaction abort */
-		memcpy(&current->thread.trap_tdb, &S390_lowcore.pgm_tdb, 256);
-	}
-
-	state = irqentry_enter(regs);
-	if (S390_lowcore.pgm_code & PGM_INT_CODE_PER) {
-		if (user_mode(regs)) {
-			struct per_event *ev = &current->thread.per_event;
-
-			set_thread_flag(TIF_PER_TRAP);
-			ev->address = S390_lowcore.per_address;
-			ev->cause = *(u16 *)&S390_lowcore.per_code;
-			ev->paid = S390_lowcore.per_access_id;
-		} else {
-			/* PER event in kernel is kprobes */
-			__arch_local_irq_ssm(regs->psw.mask & ~PSW_MASK_PER);
-			do_per_trap(regs);
-			goto out;
-		}
-	}
-
-	if (!irqs_disabled_flags(regs->psw.mask))
-		trace_hardirqs_on();
-	__arch_local_irq_ssm(regs->psw.mask & ~PSW_MASK_PER);
-
-	trapnr = regs->int_code & PGM_INT_CODE_MASK;
-	if (trapnr)
-		pgm_check_table[trapnr](regs);
-out:
-	local_irq_disable();
-	irqentry_exit(regs, state);
-
-	if (user_mode(regs) && test_pt_regs_flag(regs, PIF_SYSCALL)) {
-		regs->orig_gpr2 = regs->gprs[2];
-		do_syscall(regs);
-	}
 }
