@@ -18,7 +18,6 @@
 
 #include "smc_core.h"
 #include "smc_ism.h"
-#include "smc_ib.h"
 #include "smc_netlink.h"
 
 static const struct nla_policy smc_gen_nl_policy[SMC_GEN_MAX + 1] = {
@@ -28,7 +27,6 @@ static const struct nla_policy smc_gen_nl_policy[SMC_GEN_MAX + 1] = {
 	[SMC_GEN_LINK_SMCR]	= { .type = NLA_NESTED, },
 	[SMC_GEN_LGR_SMCD]	= { .type = NLA_NESTED, },
 	[SMC_GEN_DEV_SMCD]	= { .type = NLA_NESTED, },
-	[SMC_GEN_DEV_SMCR]	= { .type = NLA_NESTED, },
 };
 
 static int smc_nl_start(struct netlink_callback *cb)
@@ -70,12 +68,6 @@ static const struct genl_ops smc_gen_nl_ops[] = {
 		.cmd = SMC_NETLINK_GET_DEV_SMCD,
 		/* can be retrieved by unprivileged users */
 		.dumpit = smcd_nl_get_device,
-		.start = smc_nl_start
-	},
-	{
-		.cmd = SMC_NETLINK_GET_DEV_SMCR,
-		/* can be retrieved by unprivileged users */
-		.dumpit = smcr_nl_get_device,
 		.start = smc_nl_start
 	},
 };
