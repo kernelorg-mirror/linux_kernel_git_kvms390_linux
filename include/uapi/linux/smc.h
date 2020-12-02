@@ -41,7 +41,6 @@ enum {				/* SMC PNET Table commands */
 enum {
 	SMC_NETLINK_GET_SYS_INFO = 1,
 	SMC_NETLINK_GET_LGR_SMCR,
-	SMC_NETLINK_GET_LINK_SMCR,
 };
 
 /* SMC_GENL_FAMILY top level attributes */
@@ -49,7 +48,6 @@ enum {
 	SMC_GEN_UNSPEC,
 	SMC_GEN_SYS_INFO,		/* nest */
 	SMC_GEN_LGR_SMCR,		/* nest */
-	SMC_GEN_LINK_SMCR,		/* nest */
 	__SMC_GEN_MAX,
 	SMC_GEN_MAX = __SMC_GEN_MAX - 1
 };
@@ -79,20 +77,4 @@ enum {
 	SMC_NLA_LGR_R_MAX = __SMC_NLA_LGR_R_MAX - 1
 };
 
-/* SMC_GEN_LINK_SMCR attributes */
-enum {
-	SMC_NLA_LINK_UNSPEC,
-	SMC_NLA_LINK_ID,		/* u8 */
-	SMC_NLA_LINK_IB_DEV,		/* string */
-	SMC_NLA_LINK_IB_PORT,		/* u8 */
-	SMC_NLA_LINK_GID,		/* string */
-	SMC_NLA_LINK_PEER_GID,		/* string */
-	SMC_NLA_LINK_CONN_CNT,		/* u32 */
-	SMC_NLA_LINK_NET_DEV,		/* u32 */
-	SMC_NLA_LINK_UID,		/* u32 */
-	SMC_NLA_LINK_PEER_UID,		/* u32 */
-	SMC_NLA_LINK_STATE,		/* u32 */
-	__SMC_NLA_LINK_MAX,
-	SMC_NLA_LINK_MAX = __SMC_NLA_LINK_MAX - 1
-};
 #endif /* _UAPI_LINUX_SMC_H */

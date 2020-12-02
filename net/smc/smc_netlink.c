@@ -23,7 +23,6 @@ static const struct nla_policy smc_gen_nl_policy[SMC_GEN_MAX + 1] = {
 	[SMC_GEN_UNSPEC]	= { .type = NLA_UNSPEC, },
 	[SMC_GEN_SYS_INFO]	= { .type = NLA_NESTED, },
 	[SMC_GEN_LGR_SMCR]	= { .type = NLA_NESTED, },
-	[SMC_GEN_LINK_SMCR]	= { .type = NLA_NESTED, },
 };
 
 static int smc_nl_start(struct netlink_callback *cb)
@@ -46,12 +45,6 @@ static const struct genl_ops smc_gen_nl_ops[] = {
 		.cmd = SMC_NETLINK_GET_LGR_SMCR,
 		/* can be retrieved by unprivileged users */
 		.dumpit = smcr_nl_get_lgr,
-		.start = smc_nl_start
-	},
-	{
-		.cmd = SMC_NETLINK_GET_LINK_SMCR,
-		/* can be retrieved by unprivileged users */
-		.dumpit = smcr_nl_get_link,
 		.start = smc_nl_start
 	},
 };
