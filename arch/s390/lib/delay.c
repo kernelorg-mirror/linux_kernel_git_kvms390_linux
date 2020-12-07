@@ -45,11 +45,11 @@ static void delay_loop(unsigned long delta, bool simple)
 
 	if (static_branch_likely(&udelay_ready) && !simple) {
 		end = get_tod_clock_monotonic() + delta;
-		while (get_tod_clock_monotonic() < end)
+		while (!tod_after(get_tod_clock_monotonic(), end))
 			cpu_relax();
 	} else {
-		end = get_tod_clock_fast() + delta;
-		while (get_tod_clock_fast() < end)
+		end = get_tod_clock() + delta;
+		while (!tod_after(get_tod_clock(), end))
 			cpu_relax();
 	}
 }
