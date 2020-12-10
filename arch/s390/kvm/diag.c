@@ -182,7 +182,6 @@ static int __diag_time_slice_end_directed(struct kvm_vcpu *vcpu)
 
 	/* target VCPU already running */
 	if (READ_ONCE(tcpu->cpu) >= 0) {
-
 		if (!diag9c_forwarding_hz || diag9c_forwarding_overrun())
 			goto no_yield;
 
