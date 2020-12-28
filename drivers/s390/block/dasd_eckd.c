@@ -1008,6 +1008,11 @@ static void dasd_eckd_store_conf_data(struct dasd_device *device,
 	struct subchannel_id sch_id;
 
 	ccw_device_get_schid(device->cdev, &sch_id);
+	/*
+	 * path handling and read_conf allocate data
+	 * free it before replacing the pointer
+	 */
+	kfree(device->path[chp].conf_data);
 	device->path[chp].conf_data = conf_data;
 	device->path[chp].cssid = sch_id.cssid;
 	device->path[chp].ssid = sch_id.ssid;
