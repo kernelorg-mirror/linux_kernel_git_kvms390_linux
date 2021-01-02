@@ -7,7 +7,6 @@
  * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
  */
 
-
 #include <linux/kernel.h>
 #include <linux/kernel_stat.h>
 #include <linux/notifier.h>
@@ -44,7 +43,6 @@ void account_idle_time_irq(void)
 	S390_lowcore.system_timer += S390_lowcore.last_update_timer - idle->timer_idle_enter;
 	S390_lowcore.last_update_timer = idle->timer_idle_exit;
 }
-
 
 void arch_cpu_idle(void)
 {

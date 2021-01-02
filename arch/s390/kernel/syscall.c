@@ -169,5 +169,4 @@ void noinstr __do_syscall(struct pt_regs *regs, int per_trap)
 		local_irq_enable();
 	}
 	exit_to_user_mode();
-
 }

@@ -170,6 +170,7 @@ static int restore_sigregs(struct pt_regs *regs, _sigregs __user *sregs)
 	fpregs_load(&user_sregs.fpregs, &current->thread.fpu);
 
 	clear_pt_regs_flag(regs, PIF_SYSCALL); /* No longer in a system call */
+	clear_pt_regs_flag(regs, PIF_SYSCALL_RESTART);
 	return 0;
 }
 
@@ -499,6 +500,7 @@ void arch_do_signal_or_restart(struct pt_regs *regs, bool has_signal)
 		}
 		/* No longer in a system call */
 		clear_pt_regs_flag(regs, PIF_SYSCALL);
+		clear_pt_regs_flag(regs, PIF_SYSCALL_RESTART);
 		rseq_signal_deliver(&ksig, regs);
 		if (is_compat_task())
 			handle_signal32(&ksig, oldset, regs);
@@ -509,6 +511,7 @@ void arch_do_signal_or_restart(struct pt_regs *regs, bool has_signal)
 
 	/* No handlers present - check for system call restart */
 	clear_pt_regs_flag(regs, PIF_SYSCALL);
+	clear_pt_regs_flag(regs, PIF_SYSCALL_RESTART);
 	if (current->thread.system_call) {
 		regs->int_code = current->thread.system_call;
 		switch (regs->gprs[2]) {

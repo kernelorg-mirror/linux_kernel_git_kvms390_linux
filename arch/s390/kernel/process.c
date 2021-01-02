@@ -44,7 +44,7 @@
 #include <asm/unwind.h>
 #include "entry.h"
 
-void ret_from_fork(void) asm ("ret_from_fork");
+void ret_from_fork(void) asm("ret_from_fork");
 
 void __ret_from_fork(struct task_struct *prev, struct pt_regs *regs)
 {
