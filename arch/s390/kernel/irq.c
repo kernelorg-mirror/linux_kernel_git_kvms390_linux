@@ -96,11 +96,8 @@ static const struct irq_class irqclass_sub_desc[] = {
 	{.irq = CPU_RST,    .name = "RST", .desc = "[CPU] CPU Restart"},
 };
 
-static void do_irq(struct pt_regs *regs, int irq)
+static void do_IRQ(struct pt_regs *regs, int irq)
 {
-	if (user_mode(regs))
-		update_timer_sys();
-
 	if (tod_after_eq(S390_lowcore.int_clock,
 			 S390_lowcore.clock_comparator))
 		/* Serve timer interrupts first. */
@@ -118,9 +115,9 @@ static int on_async_stack(void)
 static void do_irq_async(struct pt_regs *regs, int irq)
 {
 	if (on_async_stack())
-		do_irq(regs, irq);
+		do_IRQ(regs, irq);
 	else
-		CALL_ON_STACK(do_irq, S390_lowcore.async_stack, 2, regs, irq);
+		CALL_ON_STACK(do_IRQ, S390_lowcore.async_stack, 2, regs, irq);
 }
 
 static int irq_pending(struct pt_regs *regs)
@@ -139,6 +136,10 @@ void noinstr do_io_irq(struct pt_regs *regs)
 	int from_idle;
 
 	irq_enter();
+
+	if (user_mode(regs))
+		update_timer_sys();
+
 	from_idle = !user_mode(regs) && regs->psw.addr == (unsigned long)psw_idle_exit;
 	if (from_idle)
 		account_idle_time_irq();
@@ -166,6 +167,9 @@ void noinstr do_ext_irq(struct pt_regs *regs)
 	int from_idle;
 
 	irq_enter();
+
+	if (user_mode(regs))
+		update_timer_sys();
 
 	memcpy(&regs->int_code, &S390_lowcore.ext_cpu_addr, 4);
 	regs->int_parm = S390_lowcore.ext_params;
