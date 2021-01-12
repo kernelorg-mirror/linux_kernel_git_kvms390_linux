@@ -791,6 +791,20 @@ void do_secure_storage_access(struct pt_regs *regs)
 	struct page *page;
 	int rc;
 
+	/* There are cases where we don't have a TEID. */
+	if (!(regs->int_parm_long & 0x4)) {
+		/*
+		 * When this happens, userspace did something that it
+		 * was not supposed to do, e.g. branching into secure
+		 * memory. Trigger a segmentation fault.
+		 */
+		if (user_mode(regs)) {
+			send_sig(SIGSEGV, current, 0);
+			return;
+		} else
+			panic("Unexpected PGM 0x3d with TEID bit 61=0");
+	}
+
 	switch (get_fault_type(regs)) {
 	case USER_FAULT:
 		mm = current->mm;
