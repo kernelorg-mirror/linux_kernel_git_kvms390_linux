@@ -2,7 +2,7 @@
 /*
  * Adjunct processor matrix VFIO device driver callbacks.
  *
- * Copyright IBM Corp. 2018
+ * Copyright IBM Corp. 2018, 2020
  *
  * Author(s): Tony Krowiak <akrowiak@linux.ibm.com>
  *	      Halil Pasic <pasic@linux.ibm.com>
@@ -16,6 +16,7 @@
 #include <linux/bitops.h>
 #include <linux/kvm_host.h>
 #include <linux/module.h>
+#include <asm/facility.h>
 #include <asm/kvm.h>
 #include <asm/zcrypt.h>
 
@@ -1189,7 +1190,8 @@ static int vfio_ap_mdev_reset_queues(struct mdev_device *mdev)
 			 */
 			if (ret)
 				rc = ret;
-			vfio_ap_irq_disable_apqn(AP_MKQID(apid, apqi));
+			if (test_facility(65))
+				vfio_ap_irq_disable_apqn(AP_MKQID(apid, apqi));
 		}
 	}
 
