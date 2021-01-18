@@ -14,9 +14,6 @@
 
 #include <linux/bits.h>
 
-/* Disable the full-word alignment of IP headers in network code. */
-#define NET_IP_ALIGN		0
-
 #define CIF_NOHZ_DELAY		2	/* delay HZ disable for a tick */
 #define CIF_FPU			3	/* restore FPU registers */
 #define CIF_ENABLED_WAIT	5	/* in enabled wait state */
