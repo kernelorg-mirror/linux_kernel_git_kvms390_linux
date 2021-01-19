@@ -467,7 +467,7 @@ ENTRY(psw_idle)
 	lpswe	__SF_EMPTY(%r15)
 .globl psw_idle_exit
 psw_idle_exit:
-	BR_EX   %r14
+	BR_EX	%r14
 ENDPROC(psw_idle)
 
 /*
