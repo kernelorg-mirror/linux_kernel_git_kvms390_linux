@@ -25,7 +25,6 @@
 #define VFIO_AP_MDEV_NAME_HWVIRT "VFIO AP Passthrough Device"
 
 static int vfio_ap_mdev_reset_queues(struct mdev_device *mdev);
-static struct vfio_ap_queue *vfio_ap_find_queue(int apqn);
 
 static int match_apqn(struct device *dev, const void *data)
 {
@@ -50,15 +49,20 @@ static struct vfio_ap_queue *vfio_ap_get_queue(
 					int apqn)
 {
 	struct vfio_ap_queue *q;
+	struct device *dev;
 
 	if (!test_bit_inv(AP_QID_CARD(apqn), matrix_mdev->matrix.apm))
 		return NULL;
 	if (!test_bit_inv(AP_QID_QUEUE(apqn), matrix_mdev->matrix.aqm))
 		return NULL;
 
-	q = vfio_ap_find_queue(apqn);
-	if (q)
-		q->matrix_mdev = matrix_mdev;
+	dev = driver_find_device(&matrix_dev->vfio_ap_drv->driver, NULL,
+				 &apqn, match_apqn);
+	if (!dev)
+		return NULL;
+	q = dev_get_drvdata(dev);
+	q->matrix_mdev = matrix_mdev;
+	put_device(dev);
 
 	return q;
 }
@@ -115,18 +119,13 @@ static void vfio_ap_wait_for_irqclear(int apqn)
  */
 static void vfio_ap_free_aqic_resources(struct vfio_ap_queue *q)
 {
-	if (!q)
-		return;
-	if (q->saved_isc != VFIO_AP_ISC_INVALID
-	    && !WARN_ON(!(q->matrix_mdev && q->matrix_mdev->kvm))) {
+	if (q->saved_isc != VFIO_AP_ISC_INVALID && q->matrix_mdev)
 		kvm_s390_gisc_unregister(q->matrix_mdev->kvm, q->saved_isc);
-		q->saved_isc = VFIO_AP_ISC_INVALID;
-	}
-	if (q->saved_pfn && !WARN_ON(!q->matrix_mdev)) {
+	if (q->saved_pfn && q->matrix_mdev)
 		vfio_unpin_pages(mdev_dev(q->matrix_mdev->mdev),
 				 &q->saved_pfn, 1);
-		q->saved_pfn = 0;
-	}
+	q->saved_pfn = 0;
+	q->saved_isc = VFIO_AP_ISC_INVALID;
 }
 
 /**
@@ -1127,68 +1126,48 @@ notify_done:
 	return notify_rc;
 }
 
-static struct vfio_ap_queue *vfio_ap_find_queue(int apqn)
+static void vfio_ap_irq_disable_apqn(int apqn)
 {
 	struct device *dev;
-	struct vfio_ap_queue *q = NULL;
+	struct vfio_ap_queue *q;
 
 	dev = driver_find_device(&matrix_dev->vfio_ap_drv->driver, NULL,
 				 &apqn, match_apqn);
 	if (dev) {
 		q = dev_get_drvdata(dev);
+		vfio_ap_irq_disable(q);
 		put_device(dev);
 	}
-
-	return q;
 }
 
 int vfio_ap_mdev_reset_queue(unsigned int apid, unsigned int apqi,
 			     unsigned int retry)
 {
 	struct ap_queue_status status;
-	struct vfio_ap_queue *q;
-	int ret;
 	int retry2 = 2;
 	int apqn = AP_MKQID(apid, apqi);
 
-	q = vfio_ap_find_queue(apqn);
-	if (!q)
-		return 0;
-
-retry_zapq:
-	status = ap_zapq(apqn);
-	switch (status.response_code) {
-	case AP_RESPONSE_NORMAL:
-	case AP_RESPONSE_DECONFIGURED:
-	case AP_RESPONSE_CHECKSTOPPED:
-		ret = 0;
-		break;
-	case AP_RESPONSE_RESET_IN_PROGRESS:
-		if (retry--) {
+	do {
+		status = ap_zapq(apqn);
+		switch (status.response_code) {
+		case AP_RESPONSE_NORMAL:
+			while (!status.queue_empty && retry2--) {
+				msleep(20);
+				status = ap_tapq(apqn, NULL);
+			}
+			WARN_ON_ONCE(retry2 <= 0);
+			return 0;
+		case AP_RESPONSE_RESET_IN_PROGRESS:
+		case AP_RESPONSE_BUSY:
 			msleep(20);
-			goto retry_zapq;
-		}
-		ret = -EBUSY;
-		break;
-	default:
-		/* things are really broken, give up */
-		WARN(true, "PQAP/ZAPQ completed with invalid rc (%x)\n",
-		     status.response_code);
-		return -EIO;
-	}
-
-	/* wait for the reset to take effect */
-	while (retry2--) {
-		if (status.queue_empty && !status.irq_enabled)
 			break;
-		msleep(20);
-		status = ap_tapq(apqn, NULL);
-	}
-	WARN_ON_ONCE(retry2 <= 0);
+		default:
+			/* things are really broken, give up */
+			return -EIO;
+		}
+	} while (retry--);
 
-	vfio_ap_free_aqic_resources(q);
-
-	return 0;
+	return -EBUSY;
 }
 
 static int vfio_ap_mdev_reset_queues(struct mdev_device *mdev)
@@ -1210,6 +1189,7 @@ static int vfio_ap_mdev_reset_queues(struct mdev_device *mdev)
 			 */
 			if (ret)
 				rc = ret;
+			vfio_ap_irq_disable_apqn(AP_MKQID(apid, apqi));
 		}
 	}
 
