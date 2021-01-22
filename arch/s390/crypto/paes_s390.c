@@ -129,7 +129,7 @@ static inline int __paes_keyblob2pkey(struct key_blob *kb,
 
 	/* try three times in case of failure */
 	for (i = 0; i < 3; i++) {
-		if ( i > 0 && ret == -EAGAIN && in_task())
+		if (i > 0 && ret == -EAGAIN && in_task())
 			if (msleep_interruptible(1000))
 				return -EINTR;
 		ret = pkey_keyblob2pkey(kb->key, kb->keylen, pk);
