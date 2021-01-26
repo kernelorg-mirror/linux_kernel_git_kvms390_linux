@@ -89,7 +89,7 @@ static int disable_slot(struct hotplug_slot *hotplug_slot)
 	}
 	pci_dev_put(pdev);
 
-	zpci_remove_device(zdev, false);
+	zpci_bus_remove_device(zdev, false);
 
 	rc = zpci_disable_device(zdev);
 	if (rc)

@@ -681,39 +681,6 @@ int zpci_disable_device(struct zpci_dev *zdev)
 }
 EXPORT_SYMBOL_GPL(zpci_disable_device);
 
-/* zpci_remove_device - Removes the given zdev from the PCI core
- * @zdev: the zdev to be removed from the PCI core
- * @set_error: if true the device's error state is set to permanent failure
- *
- * Sets a zPCI device to a configured but offline state; the zPCI
- * device is still accessible through its hotplug slot and the zPCI
- * API but is removed from the common code PCI bus, making it
- * no longer available to drivers.
- */
-void zpci_remove_device(struct zpci_dev *zdev, bool set_error)
-{
-	struct zpci_bus *zbus = zdev->zbus;
-	struct pci_dev *pdev;
-
-	if (!zdev->zbus->bus)
-		return;
-
-	pdev = pci_get_slot(zbus->bus, zdev->devfn);
-	if (pdev) {
-		if (set_error)
-			pdev->error_state = pci_channel_io_perm_failure;
-		if (pdev->is_virtfn) {
-			zpci_iov_remove_virtfn(pdev, zdev->vfn);
-			/* balance pci_get_slot */
-			pci_dev_put(pdev);
-			return;
-		}
-		pci_stop_and_remove_bus_device_locked(pdev);
-		/* balance pci_get_slot */
-		pci_dev_put(pdev);
-	}
-}
-
 /**
  * zpci_create_device() - Create a new zpci_dev and add it to the zbus
  * @fid: Function ID of the device to be created
@@ -785,7 +752,7 @@ void zpci_release_device(struct kref *kref)
 	int ret;
 
 	if (zdev->zbus->bus)
-		zpci_remove_device(zdev, false);
+		zpci_bus_remove_device(zdev, false);
 
 	if (zdev_enabled(zdev))
 		zpci_disable_device(zdev);
