@@ -9,6 +9,18 @@
 
 #define CLKOFFSET 0x1000000
 
+static inline int store_tod_clock_asm(__u64 *time)
+{
+	int cc;
+
+	asm volatile(
+		"   stck  %1\n"
+		"   ipm	  %0\n"
+		"   srl	  %0,28\n"
+		: "=d" (cc), "=Q" (*time) : : "cc");
+	return cc;
+}
+
 int test_sck(void)
 {
 	u64 start, end;
@@ -20,7 +32,7 @@ int test_sck(void)
 	mdelay(20);
 
 	//printk("cpu%i: Doing SCK + ...\n", cpu);
-	store_tod_clock(&start);
+	store_tod_clock_asm(&start);
 	set_tod_clock(start + CLKOFFSET);
 
 	ctl_clear_bit(0, (63-34));
@@ -30,7 +42,7 @@ int test_sck(void)
 	ctl_set_bit(0, (63-34));
 	mdelay(20);
 
-	store_tod_clock(&end);
+	store_tod_clock_asm(&end);
 	set_tod_clock(end - CLKOFFSET);
 
 	ctl_clear_bit(0, (63-34));
