@@ -136,8 +136,7 @@ static int do_account_vtime(struct task_struct *tsk)
 		"	stck	%1"	/* Store current tod clock value */
 #endif
 		: "=Q" (S390_lowcore.last_update_timer),
-		  "=Q" (S390_lowcore.last_update_clock)
-		: "cc");
+		  "=Q" (S390_lowcore.last_update_clock));
 	clock = S390_lowcore.last_update_clock - clock;
 	timer -= S390_lowcore.last_update_timer;
 
