@@ -107,7 +107,7 @@ struct lowcore {
 	__u64	async_stack;			/* 0x0350 */
 	__u64	nodat_stack;			/* 0x0358 */
 	__u64	restart_stack;			/* 0x0360 */
-	__u64   mcck_stack;			/* 0x0368 */
+	__u64	mcck_stack;			/* 0x0368 */
 	/* Restart function and parameter. */
 	__u64	restart_fn;			/* 0x0370 */
 	__u64	restart_data;			/* 0x0378 */
