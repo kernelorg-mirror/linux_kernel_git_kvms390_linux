@@ -435,10 +435,12 @@ EXPORT_SYMBOL(smp_yield_cpu);
  */
 void notrace smp_emergency_stop(void)
 {
-	cpumask_t cpumask;
+	static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
+	static cpumask_t cpumask;
 	u64 end;
 	int cpu;
 
+	arch_spin_lock(&lock);
 	cpumask_copy(&cpumask, cpu_online_mask);
 	cpumask_clear_cpu(smp_processor_id(), &cpumask);
 
@@ -459,6 +461,7 @@ void notrace smp_emergency_stop(void)
 			break;
 		cpu_relax();
 	}
+	arch_spin_unlock(&lock);
 }
 NOKPROBE_SYMBOL(smp_emergency_stop);
 
