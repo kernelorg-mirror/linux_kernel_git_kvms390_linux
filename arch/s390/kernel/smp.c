@@ -781,6 +781,8 @@ static int __smp_rescan_cpus(struct sclp_core_info *info, bool early)
 	u16 core_id;
 	int nr, i;
 
+	get_online_cpus();
+	mutex_lock(&smp_cpu_state_mutex);
 	nr = 0;
 	cpumask_xor(&avail, cpu_possible_mask, cpu_present_mask);
 	/*
@@ -801,6 +803,8 @@ static int __smp_rescan_cpus(struct sclp_core_info *info, bool early)
 		configured = i < info->configured;
 		nr += smp_add_core(&info->core[i], &avail, configured, early);
 	}
+	mutex_unlock(&smp_cpu_state_mutex);
+	put_online_cpus();
 	return nr;
 }
 
@@ -848,9 +852,7 @@ void __init smp_detect_cpus(void)
 	pr_info("%d configured CPUs, %d standby CPUs\n", c_cpus, s_cpus);
 
 	/* Add CPUs present at boot */
-	get_online_cpus();
 	__smp_rescan_cpus(info, true);
-	put_online_cpus();
 	memblock_free_early((unsigned long)info, sizeof(*info));
 }
 
@@ -1179,11 +1181,7 @@ int __ref smp_rescan_cpus(void)
 	if (!info)
 		return -ENOMEM;
 	smp_get_core_info(info, 0);
-	get_online_cpus();
-	mutex_lock(&smp_cpu_state_mutex);
 	nr = __smp_rescan_cpus(info, false);
-	mutex_unlock(&smp_cpu_state_mutex);
-	put_online_cpus();
 	kfree(info);
 	if (nr)
 		topology_schedule_update();
