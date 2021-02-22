@@ -206,9 +206,10 @@ static int get_authctrsets(void)
 	enum cpumf_ctr_set i;
 
 	cpuhw = &get_cpu_var(cpu_cf_events);
-	for (i = CPUMF_CTR_SET_BASIC; i < CPUMF_CTR_SET_MAX; ++i)
+	for (i = CPUMF_CTR_SET_BASIC; i < CPUMF_CTR_SET_MAX; ++i) {
 		if (cpuhw->info.auth_ctl & cpumf_ctr_ctl[i])
 			auth |= cpumf_ctr_ctl[i];
+	}
 	put_cpu_var(cpu_cf_events);
 	return auth;
 }
@@ -321,7 +322,7 @@ static void cf_diag_read(struct perf_event *event)
  * depending on type and model number.
  */
 static size_t cf_diag_ctrset_size(enum cpumf_ctr_set ctrset,
-				  struct cpumf_ctr_info *info)
+				 struct cpumf_ctr_info *info)
 {
 	size_t ctrset_size = 0;
 
@@ -654,7 +655,6 @@ static struct attribute_group cf_diag_format_group = {
 	.name = "format",
 	.attrs = cf_diag_format_attr,
 };
-
 static const struct attribute_group *cf_diag_attr_groups[] = {
 	&cf_diag_events_group,
 	&cf_diag_format_group,
@@ -702,7 +702,6 @@ static atomic_t ctrset_opencnt = ATOMIC_INIT(0);	/* Excl. access */
 
 static int cf_diag_open(struct inode *inode, struct file *file)
 {
-
 	int err = 0;
 
 	if (!capable(CAP_SYS_ADMIN))
@@ -880,9 +879,9 @@ static int cf_diag_all_read(unsigned long arg)
 				    cf_diag_ctrset.lastread);
 		rc = -EAGAIN;
 		goto out;
-	} else
+	} else {
 		cf_diag_ctrset.lastread = now;
-
+	}
 	p.sets = cf_diag_ctrset.ctrset;
 	cpumask_and(mask, &cf_diag_ctrset.mask, cpu_online_mask);
 	on_each_cpu_mask(mask, cf_diag_cpu_read, &p, 1);
@@ -1055,6 +1054,8 @@ static long cf_diag_ioctl_start(unsigned long arg)
 	umask = (void __user *)start.cpumask;
 	if (copy_from_user(&cf_diag_ctrset.mask, umask, len))
 		return -EFAULT;
+	if (cpumask_empty(&cf_diag_ctrset.mask))
+		return -EINVAL;
 	need = cf_diag_needspace(start.counter_sets);
 	if (put_user(need, &ustart->data_bytes))
 		ret = -EFAULT;
@@ -1203,5 +1204,4 @@ out_dbf:
 out:
 	return rc;
 }
-
 device_initcall(cf_diag_init);
