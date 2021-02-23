@@ -477,6 +477,6 @@ void kvm_s390_vcpu_crypto_reset_all(struct kvm *kvm);
  *
  * Set the maximum number of diag9c forwarding per second
  */
-extern unsigned int diag9c_forwarding_hz;
+extern int diag9c_forwarding_hz;
 
 #endif

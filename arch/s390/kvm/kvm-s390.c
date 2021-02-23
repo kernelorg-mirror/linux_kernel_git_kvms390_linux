@@ -187,8 +187,8 @@ module_param(use_gisa, bool, 0644);
 MODULE_PARM_DESC(use_gisa, "Use the GISA if the host supports it.");
 
 /* maximum diag9c forwarding per second */
-unsigned int diag9c_forwarding_hz;
-module_param(diag9c_forwarding_hz, uint, 0644);
+int diag9c_forwarding_hz;
+module_param(diag9c_forwarding_hz, int, 0644);
 MODULE_PARM_DESC(diag9c_forwarding_hz, "Maximum diag9c forwarding per second");
 
 /*

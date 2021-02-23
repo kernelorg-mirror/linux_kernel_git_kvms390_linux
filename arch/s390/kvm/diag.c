@@ -150,7 +150,7 @@ static int __diag_time_slice_end(struct kvm_vcpu *vcpu)
 	return 0;
 }
 
-static unsigned int forward_cnt;
+static int forward_cnt;
 static unsigned long cur_slice;
 
 static int diag9c_forwarding_overrun(void)
@@ -160,7 +160,7 @@ static int diag9c_forwarding_overrun(void)
 		cur_slice = jiffies;
 		forward_cnt = diag9c_forwarding_hz / HZ;
 	}
-	return forward_cnt-- ? 1 : 0;
+	return (forward_cnt-- <= 0) ? 1 : 0;
 }
 
 static int __diag_time_slice_end_directed(struct kvm_vcpu *vcpu)
