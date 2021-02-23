@@ -14,6 +14,7 @@
 #define _PERF_CPUM_CF_DIAG_H
 
 #include <linux/ioctl.h>
+#include <linux/types.h>
 
 #define S390_HWCTR_DEVICE		"hwctr"
 #define S390_HWCTR_START_VERSION	1
