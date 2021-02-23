@@ -220,7 +220,7 @@ static void test_run(void func(unsigned long data), const char *string,
 		if (end > teststart + 100 * 1000 * 4096)
 			break;
 	}
-	pr_warn("exit time (%s): min %llu avg: %llu max: %llu\n",
+	pr_warn("exit time (%s): min %lu avg: %lu max: %lu\n",
 		string,
 		tod_to_ns(shortest) / LOOPS,
 		tod_to_ns(sum) / LOOPS / i,
