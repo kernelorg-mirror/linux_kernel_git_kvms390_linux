@@ -66,10 +66,8 @@ static void cpu_group_map(cpumask_t *dst, struct mask_info *info, unsigned int c
 {
 	static cpumask_t mask;
 
+	cpumask_copy(&mask, cpumask_of(cpu));
 	switch (topology_mode) {
-	case TOPOLOGY_MODE_PACKAGE:
-		cpumask_copy(&mask, cpu_present_mask);
-		break;
 	case TOPOLOGY_MODE_HW:
 		while (info) {
 			if (cpumask_test_cpu(cpu, &info->mask)) {
@@ -78,14 +76,20 @@ static void cpu_group_map(cpumask_t *dst, struct mask_info *info, unsigned int c
 			}
 			info = info->next;
 		}
-		fallthrough;
+		if (cpumask_empty(&mask))
+			cpumask_copy(&mask, cpumask_of(cpu));
+		break;
+	case TOPOLOGY_MODE_PACKAGE:
+		cpumask_copy(&mask, cpu_present_mask);
+		break;
 	default:
 		fallthrough;
 	case TOPOLOGY_MODE_SINGLE:
 		cpumask_copy(&mask, cpumask_of(cpu));
 		break;
 	}
-	cpumask_and(dst, &mask, cpu_online_mask);
+	cpumask_and(&mask, &mask, cpu_online_mask);
+	cpumask_copy(dst, &mask);
 }
 
 static void cpu_thread_map(cpumask_t *dst, unsigned int cpu)
