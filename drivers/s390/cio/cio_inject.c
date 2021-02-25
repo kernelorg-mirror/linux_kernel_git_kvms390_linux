@@ -126,7 +126,7 @@ static ssize_t crw_inject_write(struct file *file, const char __user *buf,
 
 /* Debugfs write handler for inject_enable node*/
 static ssize_t enable_inject_write(struct file *file, const char __user *buf,
-					size_t lbuf, loff_t *ppos)
+				   size_t lbuf, loff_t *ppos)
 {
 	unsigned long en = 0;
 	int rc;
@@ -161,10 +161,10 @@ static int __init cio_inject_init(void)
 {
 	/* enable_inject node enables the static branching */
 	debugfs_create_file("enable_inject", 0200, cio_debugfs_dir,
-					 NULL, &cio_en_fops);
+			    NULL, &cio_en_fops);
 
 	debugfs_create_file("crw_inject", 0200, cio_debugfs_dir,
-					   NULL, &crw_fops);
+			    NULL, &crw_fops);
 	return 0;
 }
 
