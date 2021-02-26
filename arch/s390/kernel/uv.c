@@ -411,6 +411,7 @@ static ssize_t uv_is_prot_virt_guest(struct kobject *kobj,
 {
 	return scnprintf(page, PAGE_SIZE, "%d\n", prot_virt_guest);
 }
+
 static ssize_t uv_is_prot_virt_host(struct kobject *kobj,
 				    struct kobj_attribute *attr, char *page)
 {
@@ -419,6 +420,7 @@ static ssize_t uv_is_prot_virt_host(struct kobject *kobj,
 
 static struct kobj_attribute uv_prot_virt_guest =
 	__ATTR(prot_virt_guest, 0444, uv_is_prot_virt_guest, NULL);
+
 static struct kobj_attribute uv_prot_virt_host =
 	__ATTR(prot_virt_host, 0444, uv_is_prot_virt_host, NULL);
 
