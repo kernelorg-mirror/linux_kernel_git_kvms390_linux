@@ -409,7 +409,12 @@ static struct attribute_group uv_query_attr_group = {
 static ssize_t uv_is_prot_virt_guest(struct kobject *kobj,
 				     struct kobj_attribute *attr, char *page)
 {
-	return scnprintf(page, PAGE_SIZE, "%d\n", prot_virt_guest);
+	int val = 0;
+
+#ifdef CONFIG_PROTECTED_VIRTUALIZATION_GUEST
+	val = prot_virt_guest;
+#endif
+	return scnprintf(page, PAGE_SIZE, "%d\n", val);
 }
 
 static ssize_t uv_is_prot_virt_host(struct kobject *kobj,
