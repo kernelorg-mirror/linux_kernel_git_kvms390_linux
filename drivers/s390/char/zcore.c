@@ -240,8 +240,8 @@ static int __init zcore_reipl_init(void)
 }
 
 static int zcore_reboot_and_on_panic_handler(struct notifier_block *self,
-					     unsigned long         event,
-					     void                  *data)
+					     unsigned long	   event,
+					     void		   *data)
 {
 	if (hsa_available)
 		release_hsa();
