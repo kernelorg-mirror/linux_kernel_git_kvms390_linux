@@ -458,8 +458,7 @@ static int __init uv_info_init(void)
 
 	kset_unregister(uv_query_kset);
 out_ind_files:
-	sysfs_remove_file(uv_kobj, &uv_prot_virt_guest.attr);
-	sysfs_remove_file(uv_kobj, &uv_prot_virt_host.attr);
+	sysfs_remove_files(uv_kobj, uv_prot_virt_attrs);
 out_kobj:
 	kobject_del(uv_kobj);
 	kobject_put(uv_kobj);
