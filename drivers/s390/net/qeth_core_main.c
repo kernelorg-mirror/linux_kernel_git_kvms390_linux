@@ -485,9 +485,6 @@ static void qeth_cleanup_handled_pending(struct qeth_qdio_out_q *q, int bidx,
 				/* release here to avoid interleaving between
 				   outbound tasklet and inbound tasklet
 				   regarding notifications and lifecycle */
-				if (forced_cleanup)
-					qeth_notify_skbs(q, c,
-							 TX_NOTIFY_GENERALERROR);
 				qeth_tx_complete_buf(c, forced_cleanup, 0);
 
 				c = f->next_pending;
@@ -1426,6 +1423,9 @@ static void qeth_tx_complete_buf(struct qeth_qdio_out_buffer *buf, bool error,
 {
 	struct qeth_qdio_out_q *queue = buf->q;
 	struct sk_buff *skb;
+
+	if (atomic_read(&buf->state) == QETH_QDIO_BUF_PENDING)
+		qeth_notify_skbs(queue, buf, TX_NOTIFY_GENERALERROR);
 
 	/* Empty buffer? */
 	if (buf->next_element_to_fill == 0)
