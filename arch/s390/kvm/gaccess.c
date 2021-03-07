@@ -977,8 +977,8 @@ int kvm_s390_check_low_addr_prot_real(struct kvm_vcpu *vcpu, unsigned long gra)
  * @sg: pointer to the shadow guest address space structure
  * @saddr: faulting address in the shadow gmap
  * @pgt: pointer to the beginning of the page table for the given address if
- *       successful (return value 0), or to the first invalid DAT entry in
- *       case of exceptions (return value > 0)
+ *	 successful (return value 0), or to the first invalid DAT entry in
+ *	 case of exceptions (return value > 0)
  * @fake: pgt references contiguous guest memory block, not a pgtable
  */
 static int kvm_s390_shadow_tables(struct gmap *sg, unsigned long saddr,
@@ -1164,7 +1164,7 @@ shadow_pgt:
  * @sg: pointer to the shadow guest address space structure
  * @saddr: faulting address in the shadow gmap
  * @datptr: will contain the address of the faulting DAT table entry, or of
- *          the valid leaf, plus some flags
+ *	    the valid leaf, plus some flags
  *
  * Returns: - 0 if the shadow fault was successfully resolved
  *	    - > 0 (pgm exception code) on exceptions while faulting
