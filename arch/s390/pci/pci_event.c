@@ -82,7 +82,7 @@ static void zpci_event_hard_deconfigured(struct zpci_dev *zdev, u32 fh)
 	/* Give the driver a hint that the function is
 	 * already unusable.
 	 */
-	zpci_bus_remove_device(zdev, true);
+	zpci_remove_device(zdev, true);
 	if (zdev_enabled(zdev)) {
 		rc = zpci_disable_device(zdev);
 		if (rc)
@@ -143,7 +143,8 @@ static void __zpci_event_availability(struct zpci_ccdf_avail *ccdf)
 	case 0x0303: /* Deconfiguration requested */
 		if (!zdev)
 			break;
-		zpci_bus_remove_device(zdev, false);
+		zpci_remove_device(zdev, false);
+
 		ret = zpci_disable_device(zdev);
 		if (ret)
 			break;
