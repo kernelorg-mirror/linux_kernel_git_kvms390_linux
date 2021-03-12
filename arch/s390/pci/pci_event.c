@@ -98,6 +98,9 @@ static void zpci_event_hard_deconfigured(struct zpci_dev *zdev, u32 fh)
 static void __zpci_event_availability(struct zpci_ccdf_avail *ccdf)
 {
 	struct zpci_dev *zdev = get_zdev_by_fid(ccdf->fid);
+	enum zpci_state state;
+	struct pci_dev *pdev;
+	int ret;
 
 	zpci_err("avail CCDF:\n");
 	zpci_err_hex(ccdf, sizeof(*ccdf));
@@ -111,20 +114,45 @@ static void __zpci_event_availability(struct zpci_ccdf_avail *ccdf)
 		/* the configuration request may be stale */
 		if (zdev->state != ZPCI_FN_STATE_STANDBY)
 			break;
+		zdev->fh = ccdf->fh;
 		zdev->state = ZPCI_FN_STATE_CONFIGURED;
-		zpci_configure_device(zdev, ccdf->fh);
+		ret = zpci_enable_device(zdev);
+		if (ret)
+			break;
+
+		/* the PCI function will be scanned once function 0 appears */
+		if (!zdev->zbus->bus)
+			break;
+
+		pdev = pci_scan_single_device(zdev->zbus->bus, zdev->devfn);
+		if (!pdev)
+			break;
+
+		pci_bus_add_device(pdev);
+		pci_lock_rescan_remove();
+		pci_bus_add_devices(zdev->zbus->bus);
+		pci_unlock_rescan_remove();
 		break;
 	case 0x0302: /* Reserved -> Standby */
-		if (!zdev)
+		if (!zdev) {
 			zpci_create_device(ccdf->fid, ccdf->fh, ZPCI_FN_STATE_STANDBY);
-		else
-			zdev->fh = ccdf->fh;
+			break;
+		}
+		zdev->fh = ccdf->fh;
 		break;
 	case 0x0303: /* Deconfiguration requested */
-		if (zdev) {
-			zdev->fh = ccdf->fh;
-			zpci_deconfigure_device(zdev);
-		}
+		if (!zdev)
+			break;
+		zpci_bus_remove_device(zdev, false);
+		ret = zpci_disable_device(zdev);
+		if (ret)
+			break;
+
+		ret = sclp_pci_deconfigure(zdev->fid);
+		zpci_dbg(3, "deconf fid:%x, rc:%d\n", zdev->fid, ret);
+		if (!ret)
+			zdev->state = ZPCI_FN_STATE_STANDBY;
+
 		break;
 	case 0x0304: /* Configured -> Standby|Reserved */
 		if (zdev)
