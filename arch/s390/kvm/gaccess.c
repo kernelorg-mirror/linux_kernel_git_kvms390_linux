@@ -1211,7 +1211,7 @@ int kvm_s390_shadow_fault(struct kvm_vcpu *vcpu, struct gmap *sg,
 		pgt += vaddr.px * 8;
 		rc = gmap_read_table(sg->parent, pgt, &pte.val);
 	}
-	if (datptr)
+	if (*datptr)
 		*datptr = pgt | dat_protection * PEI_DAT_PROT;
 	if (!rc && pte.i)
 		rc = PGM_PAGE_TRANSLATION;
