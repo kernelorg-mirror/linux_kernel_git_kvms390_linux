@@ -1012,9 +1012,9 @@ static int vsie_handle_mvpg(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 	mask = _kvm_s390_logical_to_effective(&scb_s->gpsw, PAGE_MASK);
 	prefix = scb_s->prefix << GUEST_PREFIX_SHIFT;
 
-	dest = vsie_get_register(vcpu, vsie_page, scb_s->ipb >> 20) & mask;
+	dest = vsie_get_register(vcpu, vsie_page, scb_s->ipb >> 16) & mask;
 	dest = _kvm_s390_real_to_abs(prefix, dest) + scb_s->mso;
-	src = vsie_get_register(vcpu, vsie_page, scb_s->ipb >> 16) & mask;
+	src = vsie_get_register(vcpu, vsie_page, scb_s->ipb >> 20) & mask;
 	src = _kvm_s390_real_to_abs(prefix, src) + scb_s->mso;
 
 	rc_dest = kvm_s390_shadow_fault(vcpu, vsie_page->gmap, dest, &pei_dest);
