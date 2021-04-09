@@ -79,7 +79,7 @@ void do_per_trap(struct pt_regs *regs)
 }
 NOKPROBE_SYMBOL(do_per_trap);
 
-static void default_trap_handler(struct pt_regs *regs)
+void default_trap_handler(struct pt_regs *regs)
 {
 	if (user_mode(regs)) {
 		report_user_fault(regs, SIGSEGV, 0);
