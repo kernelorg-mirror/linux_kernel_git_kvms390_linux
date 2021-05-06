@@ -148,7 +148,6 @@ void noinstr do_io_irq(struct pt_regs *regs)
 	do {
 		regs->int_code = S390_lowcore.subchannel;
 		regs->int_parm = S390_lowcore.io_int_parm;
-		regs->int_parm_long = (unsigned long)S390_lowcore.io_int_word << 32;
 
 		if (S390_lowcore.io_int_word & BIT(31))
 			do_irq_async(regs, THIN_INTERRUPT);
