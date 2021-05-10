@@ -142,6 +142,7 @@ void do_syscall(struct pt_regs *regs)
 
 void noinstr __do_syscall(struct pt_regs *regs, int per_trap)
 {
+	add_random_kstack_offset();
 	enter_from_user_mode(regs);
 	regs->psw = S390_lowcore.svc_old_psw;
 	regs->int_code = S390_lowcore.svc_int_code;
