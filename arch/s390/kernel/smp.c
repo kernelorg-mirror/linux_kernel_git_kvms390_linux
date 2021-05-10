@@ -1237,9 +1237,9 @@ static __always_inline void set_new_lowcore(struct lowcore *lc)
 	struct lowcore *new_lc = lc;
 	u32 pfx;
 	register struct lowcore *reg2 asm ("2") = new_lc;
-	register unsigned long   reg3 asm ("3") = sizeof(*reg2);
+	register unsigned long	 reg3 asm ("3") = sizeof(*reg2);
 	register struct lowcore *reg4 asm ("4") = old_lc;
-	register unsigned long   reg5 asm ("5") = sizeof(*reg4);
+	register unsigned long	 reg5 asm ("5") = sizeof(*reg4);
 
 	asm volatile(
 		"	st	2,%[pfx]\n"
