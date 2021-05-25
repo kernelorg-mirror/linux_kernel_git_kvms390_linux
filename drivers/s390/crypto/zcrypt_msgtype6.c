@@ -675,7 +675,6 @@ static int convert_type86_ica(struct zcrypt_queue *zq,
 			       AP_QID_CARD(zq->queue->qid),
 			       AP_QID_QUEUE(zq->queue->qid),
 			       (int) service_rc, (int) service_rs);
-		ap_send_online_uevent(&zq->queue->ap_dev, zq->online);
 		return -EAGAIN;
 	}
 	data = msg->text;
@@ -821,7 +820,6 @@ static int convert_response_ica(struct zcrypt_queue *zq,
 			       AP_QID_CARD(zq->queue->qid),
 			       AP_QID_QUEUE(zq->queue->qid),
 			       (int) msg->hdr.type);
-		ap_send_online_uevent(&zq->queue->ap_dev, zq->online);
 		return -EAGAIN;
 	}
 }
@@ -856,7 +854,6 @@ static int convert_response_xcrb(bool userspace, struct zcrypt_queue *zq,
 			       AP_QID_CARD(zq->queue->qid),
 			       AP_QID_QUEUE(zq->queue->qid),
 			       (int) msg->hdr.type);
-		ap_send_online_uevent(&zq->queue->ap_dev, zq->online);
 		return -EAGAIN;
 	}
 }
@@ -886,7 +883,6 @@ static int convert_response_ep11_xcrb(bool userspace, struct zcrypt_queue *zq,
 			       AP_QID_CARD(zq->queue->qid),
 			       AP_QID_QUEUE(zq->queue->qid),
 			       (int) msg->hdr.type);
-		ap_send_online_uevent(&zq->queue->ap_dev, zq->online);
 		return -EAGAIN;
 	}
 }
@@ -917,7 +913,6 @@ static int convert_response_rng(struct zcrypt_queue *zq,
 			       AP_QID_CARD(zq->queue->qid),
 			       AP_QID_QUEUE(zq->queue->qid),
 			       (int) msg->hdr.type);
-		ap_send_online_uevent(&zq->queue->ap_dev, zq->online);
 		return -EAGAIN;
 	}
 }
