@@ -898,7 +898,6 @@ static int slab_pad_check(struct kmem_cache *s, struct page *page)
 			fault, end - 1, fault - start);
 	print_section(KERN_ERR, "Padding ", pad, remainder);
 
-	BUG();
 	restore_bytes(s, "slab padding", POISON_INUSE, fault, end);
 	return 0;
 }
