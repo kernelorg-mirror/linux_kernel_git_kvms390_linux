@@ -2,6 +2,7 @@
 #ifndef _ASM_S390_TPI_H
 #define _ASM_S390_TPI_H
 
+#include <linux/types.h>
 #include <uapi/asm/schid.h>
 
 #ifndef __ASSEMBLY__
