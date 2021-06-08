@@ -162,6 +162,5 @@ void noinstr __do_syscall(struct pt_regs *regs, int per_trap)
 			break;
 		local_irq_enable();
 	}
-	BUG_ON((long)regs->gprs[2] > -MAX_ERRNO && (long)regs->gprs[2] <= -ERESTARTSYS);
 	exit_to_user_mode();
 }
