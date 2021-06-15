@@ -21,6 +21,7 @@ ENTRY(startup_continue)
 	larl	%r1,tod_clock_base
 	mvc	0(16,%r1),__LC_BOOT_CLOCK
 	larl	%r13,.LPG1		# get base
+	lctlg	%c0,%c15,.Lctl-.LPG1(%r13)	# load control registers
 #
 # Setup stack
 #
@@ -41,3 +42,39 @@ ENTRY(startup_continue)
 	.align	16
 .LPG1:
 .Ldw:	.quad	0x0002000180000000,0x0000000000000000
+.Lctl:	.quad	0x04040000		# cr0: AFP registers & secondary space
+	.quad	0			# cr1: primary space segment table
+	.quad	__ctl_duct_dma		# cr2: dispatchable unit control table
+	.quad	0			# cr3: instruction authorization
+	.quad	0xffff			# cr4: instruction authorization
+	.quad	__ctl_duct_dma		# cr5: primary-aste origin
+	.quad	0			# cr6: I/O interrupts
+	.quad	0			# cr7: secondary space segment table
+	.quad	0x0000000000008000	# cr8: access registers translation
+	.quad	0			# cr9: tracing off
+	.quad	0			# cr10: tracing off
+	.quad	0			# cr11: tracing off
+	.quad	0			# cr12: tracing off
+	.quad	0			# cr13: home space segment table
+	.quad	0xc0000000		# cr14: machine check handling off
+	.quad	__ctl_linkage_stack_dma	# cr15: linkage stack operations
+
+	.section .dma.data,"aw",@progbits
+	.align	64
+SYM_DATA_START(__ctl_duct_dma)
+	.long	0,__ctl_aste_dma,__ctl_aste_dma,0,__ctl_duald_dma,0,0,0
+	.long	0,0,0,0,0,0,0,0
+SYM_DATA_END(__ctl_duct_dma)
+SYM_DATA_START(__ctl_aste_dma)
+	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
+SYM_DATA_END(__ctl_aste_dma)
+	.align	128
+SYM_DATA_START(__ctl_duald_dma)
+	.rept	8
+	.long	0x80000000,0,0,0	# invalid access-list entries
+	.endr
+SYM_DATA_END(__ctl_duald_dma)
+SYM_DATA_START(__ctl_linkage_stack_dma)
+	.long	0,0,0x89000000,0,0,0,0x8a000000,0
+SYM_DATA_END(__ctl_linkage_stack_dma)
+	.previous
