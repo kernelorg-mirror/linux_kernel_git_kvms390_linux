@@ -45,6 +45,7 @@ void uv_query_info(void)
 #endif
 }
 
+#if IS_ENABLED(CONFIG_KVM)
 static bool has_uv_sec_stor_limit(void)
 {
 	/*
@@ -67,3 +68,4 @@ void adjust_to_uv_max(unsigned long *vmax)
 	if (has_uv_sec_stor_limit())
 		*vmax = min_t(unsigned long, *vmax, uv_info.max_sec_stor_addr);
 }
+#endif
