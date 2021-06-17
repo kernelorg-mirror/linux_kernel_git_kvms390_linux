@@ -558,25 +558,27 @@ static inline int mm_uses_skeys(struct mm_struct *mm)
 
 static inline void csp(unsigned int *ptr, unsigned int old, unsigned int new)
 {
-	union register_pair r1 = { .even = old, .odd = new, };
+	register unsigned long reg2 asm("2") = old;
+	register unsigned long reg3 asm("3") = new;
 	unsigned long address = (unsigned long)ptr | 1;
 
 	asm volatile(
-		"	csp	%[r1],%[address]"
-		: [r1] "+&d" (r1.pair), "+m" (*ptr)
-		: [address] "d" (address)
+		"	csp	%0,%3"
+		: "+d" (reg2), "+m" (*ptr)
+		: "d" (reg3), "d" (address)
 		: "cc");
 }
 
 static inline void cspg(unsigned long *ptr, unsigned long old, unsigned long new)
 {
-	union register_pair r1 = { .even = old, .odd = new, };
+	register unsigned long reg2 asm("2") = old;
+	register unsigned long reg3 asm("3") = new;
 	unsigned long address = (unsigned long)ptr | 1;
 
 	asm volatile(
-		"	.insn	rre,0xb98a0000,%[r1],%[address]"
-		: [r1] "+&d" (r1.pair), "+m" (*ptr)
-		: [address] "d" (address)
+		"	.insn	rre,0xb98a0000,%0,%3"
+		: "+d" (reg2), "+m" (*ptr)
+		: "d" (reg3), "d" (address)
 		: "cc");
 }
 
@@ -590,12 +592,14 @@ static inline void crdte(unsigned long old, unsigned long new,
 			 unsigned long table, unsigned long dtt,
 			 unsigned long address, unsigned long asce)
 {
-	union register_pair r1 = { .even = old, .odd = new, };
-	union register_pair r2 = { .even = table | dtt, .odd = address, };
+	register unsigned long reg2 asm("2") = old;
+	register unsigned long reg3 asm("3") = new;
+	register unsigned long reg4 asm("4") = table | dtt;
+	register unsigned long reg5 asm("5") = address;
 
-	asm volatile(".insn rrf,0xb98f0000,%[r1],%[asce],%[r2],0"
-		     : [r1] "+&d" (r1.pair)
-		     : [r2] "d" (r2.pair), [asce] "a" (asce)
+	asm volatile(".insn rrf,0xb98f0000,%0,%2,%4,0"
+		     : "+d" (reg2)
+		     : "d" (reg3), "d" (reg4), "d" (reg5), "a" (asce)
 		     : "memory", "cc");
 }
 
