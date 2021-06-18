@@ -501,6 +501,7 @@ void arch_do_signal_or_restart(struct pt_regs *regs, bool has_signal)
 		}
 		/* No longer in a system call */
 		clear_pt_regs_flag(regs, PIF_SYSCALL);
+		clear_pt_regs_flag(regs, PIF_SYSCALL_RESTART);
 		rseq_signal_deliver(&ksig, regs);
 		if (is_compat_task())
 			handle_signal32(&ksig, oldset, regs);
