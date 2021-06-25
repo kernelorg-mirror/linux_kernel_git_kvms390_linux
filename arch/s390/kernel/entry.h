@@ -5,6 +5,7 @@
 #include <linux/percpu.h>
 #include <linux/types.h>
 #include <linux/signal.h>
+#include <linux/ftrace.h>
 #include <asm/ptrace.h>
 #include <asm/idle.h>
 
@@ -63,5 +64,7 @@ unsigned long stack_alloc(void);
 void stack_free(unsigned long stack);
 
 extern char kprobes_insn_page[];
+
+extern ftrace_func_t ftrace_func;
 
 #endif /* _ENTRY_H */
