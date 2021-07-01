@@ -4,7 +4,7 @@
  *
  *  Copyright IBM Corp. 2012, 2021
  *  Author(s): Hendrik Brueckner <brueckner@linux.ibm.com>
- *             Thomas Richter <tmricht@linux.ibm.com>
+ *	       Thomas Richter <tmricht@linux.ibm.com>
  */
 #define KMSG_COMPONENT	"cpum_cf"
 #define pr_fmt(fmt)	KMSG_COMPONENT ": " fmt
