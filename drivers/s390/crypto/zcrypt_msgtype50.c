@@ -443,9 +443,9 @@ static void zcrypt_cex2a_receive(struct ap_queue *aq,
 	t80h = reply->msg;
 	if (t80h->type == TYPE80_RSP_CODE) {
 		len = t80h->len;
-		if (len > reply->bufsize || len > msg->bufsize)
+		if (len > reply->bufsize || len > msg->bufsize) {
 			msg->rc = -EMSGSIZE;
-		else {
+		} else {
 			memcpy(msg->msg, reply->msg, len);
 			msg->len = len;
 		}

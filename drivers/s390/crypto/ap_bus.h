@@ -25,7 +25,7 @@
 #define AP_RESET_TIMEOUT (HZ*0.7)	/* Time in ticks for reset timeouts. */
 #define AP_CONFIG_TIME 30	/* Time in seconds between AP bus rescans. */
 #define AP_POLL_TIME 1		/* Time in ticks between receive polls. */
-#define AP_DEFAULT_MAX_MSG_SIZE (12*1024)
+#define AP_DEFAULT_MAX_MSG_SIZE (12 * 1024)
 #define AP_TAPQ_ML_FIELD_CHUNK_SIZE (4096)
 
 extern int ap_domain_index;

@@ -941,18 +941,18 @@ static void zcrypt_msgtype6_receive(struct ap_queue *aq,
 		switch (resp_type->type) {
 		case CEXXC_RESPONSE_TYPE_ICA:
 			len = sizeof(struct type86x_reply) + t86r->length - 2;
-			if (len > reply->bufsize || len > msg->bufsize)
+			if (len > reply->bufsize || len > msg->bufsize) {
 				msg->rc = -EMSGSIZE;
-			else {
+			} else {
 				memcpy(msg->msg, reply->msg, len);
 				msg->len = len;
 			}
 			break;
 		case CEXXC_RESPONSE_TYPE_XCRB:
 			len = t86r->fmt2.offset2 + t86r->fmt2.count2;
-			if (len > reply->bufsize || len > msg->bufsize)
+			if (len > reply->bufsize || len > msg->bufsize) {
 				msg->rc = -EMSGSIZE;
-			else {
+			} else {
 				memcpy(msg->msg, reply->msg, len);
 				msg->len = len;
 			}
@@ -996,9 +996,9 @@ static void zcrypt_msgtype6_receive_ep11(struct ap_queue *aq,
 		switch (resp_type->type) {
 		case CEXXC_RESPONSE_TYPE_EP11:
 			len = t86r->fmt2.offset1 + t86r->fmt2.count1;
-			if (len > reply->bufsize || len > msg->bufsize)
+			if (len > reply->bufsize || len > msg->bufsize) {
 				msg->rc = -EMSGSIZE;
-			else {
+			} else {
 				memcpy(msg->msg, reply->msg, len);
 				msg->len = len;
 			}
