@@ -58,7 +58,7 @@ static inline bool ap_instructions_available(void)
 
 	asm volatile(
 		"	lgr	0,%[reg0]\n"   /* qid into gr0 */
-		"	lghi	1,0\n"         /* 0 into gr1 */
+		"	lghi	1,0\n"	       /* 0 into gr1 */
 		"	lghi	2,0\n"	       /* 0 into gr2 */
 		"	.long	0xb2af0000\n"  /* PQAP(TAPQ) */
 		"0:	la	%[reg1],1\n"   /* 1 into reg1 */
@@ -391,9 +391,9 @@ static inline struct ap_queue_status ap_dqap(ap_qid_t qid,
 
 	asm volatile(
 		"	lgr	0,%[reg0]\n"   /* qid param into gr0 */
-		"	lghi	2,0\n"         /* 0 into gr2 (res length) */
+		"	lghi	2,0\n"	       /* 0 into gr2 (res length) */
 		"0:	ltgr	%N[rp2],%N[rp2]\n" /* check buf len */
-		"	jz	2f\n"          /* go out if buf len is 0 */
+		"	jz	2f\n"	       /* go out if buf len is 0 */
 		"1:	.insn	rre,0xb2ae0000,%[rp1],%[rp2]\n"
 		"	brc	6,0b\n"        /* handle partial complete */
 		"2:	lgr	%[reg0],0\n"   /* gr0 (qid + info) into reg0 */
