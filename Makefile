@@ -4,7 +4,7 @@ PATCHLEVEL = 13
 SUBLEVEL = 0
 EXTRAVERSION =
 NAME = Opossums on Parade
- 
+
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
