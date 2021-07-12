@@ -13,19 +13,23 @@
 
 static int _stsi(void *sysinfo, u32 r0in, u32 r1in)
 {
-	register int r0 asm("0") = r0in;
-	register int r1 asm("1") = r1in;
+	int r0 = r0in;
+	int r1 = r1in;
 	int rc = -EINVAL;
 
 	asm volatile(
-		"	stsi	0(%3)\n"
-		"0:	ipm	%1\n"
-		"	srl	%1,28\n"
+		"	lgr	0,%[r0]\n"
+		"	lgr	1,%[r1]\n"
+		"	stsi	0(%[sysinfo])\n"
+		"0:	ipm	%[rc]\n"
+		"	srl	%[rc],28\n"
 		"1:\n"
 		EX_TABLE(0b, 1b)
-		: "+d" (r0), "+d" (rc)
-		: "d" (r1), "a" (sysinfo)
-		: "cc", "memory");
+		: [rc] "+&d" (rc)
+		: [r0] "d" (r0),
+		  [r1] "d" (r1),
+		  [sysinfo] "a" (sysinfo)
+		: "cc", "memory", "0", "1");
 	return rc;
 }
 

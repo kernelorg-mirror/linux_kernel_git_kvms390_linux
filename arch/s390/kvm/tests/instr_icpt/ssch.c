@@ -12,18 +12,19 @@
 
 static int _ssch(u64 schid, void *buf)
 {
-	register int r1 asm("1") = schid;
+	int r1 = schid;
 	int rc = -EINVAL;
 
 	asm volatile(
-		"	ssch	0(%2)\n"
-		"0:	ipm	%0\n"
-		"	srl	%0,28\n"
+		"	lgr	1,%[r1]\n"
+		"	ssch	0(%[buf])\n"
+		"0:	ipm	%[rc]\n"
+		"	srl	%[rc],28\n"
 		"1:\n"
 		EX_TABLE(0b, 1b)
-		: "+d" (rc)
-		: "d" (r1), "a" (buf)
-		: "cc", "memory");
+		: [rc] "+&d" (rc)
+		: [r1] "d" (r1), [buf] "a" (buf)
+		: "cc", "memory", "1");
 	return rc;
 }
 

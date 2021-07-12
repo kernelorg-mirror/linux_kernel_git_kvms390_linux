@@ -35,15 +35,18 @@ struct cpu_thread_data {
 
 static inline int _sigp(u16 addr, u8 order, u32 parm, u32 *status)
 {
-	register unsigned int reg1 asm ("1") = parm;
+	unsigned int reg1 = parm;
 	int cc;
 
 	asm volatile(
-		"	sigp	%1,%2,0(%3)\n"
-		"	ipm	%0\n"
-		"	srl	%0,28\n"
-		: "=d" (cc), "+d" (reg1) : "d" (addr), "a" (order)
-		: "cc", "memory");
+		"	lgr	1,%[reg1]\n"
+		"	sigp	1,%[addr],0(%[order])\n"
+		"	lgr	%[reg1],1\n"
+		"	ipm	%[cc]\n"
+		"	srl	%[cc],28\n"
+		: [cc] "=&d" (cc), [reg1] "+&d" (reg1)
+		: [addr] "d" (addr), [order] "a" (order)
+		: "cc", "memory", "1");
 	if (status && cc == 1)
 		*status = reg1;
 	return cc;

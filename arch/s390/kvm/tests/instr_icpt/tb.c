@@ -8,16 +8,20 @@
 /* Inline function for TEST BLOCK */
 static inline int tb(u64 addr)
 {
-	register unsigned long r0 asm ("r0") = 0L;
+	unsigned long r0 = 0L;
 	int ret = -EACCES;
 
 	asm volatile(
-		"0: .insn rre,0xb22c0000,0,%2\n" /* tb 0,%2 */
-		"   ipm   %0\n"
-		"   srl   %0,28\n"
+		"	lgr	0,%[r0]\n"
+		"0:	.insn	rre,0xb22c0000,0,%2\n" /* tb 0,%2 */
+		"	ipm	%[ret]\n"
+		"	srl	%[ret],28\n"
 		"2:\n"
 		EX_TABLE(0b, 2b)
-		: "+d" (ret), "+r"(r0) : "r" (addr) : "memory", "cc");
+		: [ret] "+&d" (ret)
+		: [r0] "d" (r0),
+		  [addr] "d" (addr)
+		: "memory", "cc", "0");
 	return ret;
 }
 

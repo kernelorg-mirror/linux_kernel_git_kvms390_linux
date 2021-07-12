@@ -175,18 +175,26 @@ static void run_stsi(unsigned long dummy)
 
 static unsigned long kick(unsigned long cookie)
 {
-	register unsigned long __nr asm("1") = 3;
-	register unsigned long __schid asm("2") = 0x10000;
-	register unsigned long __index asm("3") = 0;
-	register long __rc asm("2");
-	register long __cookie asm("4") = cookie;
+	unsigned long __nr = 3;
+	unsigned long __schid = 0x10000;
+	unsigned long __index = 0;
+	long __rc;
+	long __cookie = cookie;
 
-	asm volatile ("diag 2,4,0x500\n"
-		      "1: nop\n"
-		      EX_TABLE(1b, 1b)
-		      : "=d" (__rc)
-		      : "d" (__nr), "d" (__schid), "d" (__index), "d"(__cookie)
-		      : "memory", "cc");
+	asm volatile (
+		"	lgr	1,%[r1]\n"
+		"	lgr	2,%[r2]\n"
+		"	lgr	3,%[r3]\n"
+		"	lgr	4,%[r4]\n"
+		"	diag	2,4,0x500\n"
+		"1:	lgr	%[rc],2\n"
+		EX_TABLE(1b, 1b)
+		: [rc] "=&d" (__rc)
+		: [r1] "d" (__nr),
+		  [r2] "d" (__schid),
+		  [r3] "d" (__index),
+		  [r4] "d"(__cookie)
+		: "memory", "cc", "1", "2", "3", "4");
 	return __rc;
 }
 
