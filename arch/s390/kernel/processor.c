@@ -30,8 +30,6 @@
 unsigned long __read_mostly elf_hwcap;
 char elf_platform[ELF_PLATFORM_SIZE];
 
-unsigned long int_hwcap;
-
 struct cpu_info {
 	unsigned int cpu_mhz_dynamic;
 	unsigned int cpu_mhz_static;
