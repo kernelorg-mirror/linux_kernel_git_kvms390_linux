@@ -114,6 +114,29 @@ struct exception_table_entry __dma_ref *__stop_dma_ex_table = _stop_dma_ex_table
  * updated automatically during DMA relocation and always contain a valid
  * address within DMA sections.
  */
+
+static __dma_data u32 __ctl_duct_dma[16] __aligned(64);
+
+static __dma_data u64 __ctl_aste_dma[8] __aligned(64) = {
+	[1] = 0xffffffffffffffff
+};
+
+static __dma_data u32 __ctl_duald_dma[32] __aligned(128) = {
+	0x80000000, 0, 0, 0,
+	0x80000000, 0, 0, 0,
+	0x80000000, 0, 0, 0,
+	0x80000000, 0, 0, 0,
+	0x80000000, 0, 0, 0,
+	0x80000000, 0, 0, 0,
+	0x80000000, 0, 0, 0,
+	0x80000000, 0, 0, 0
+};
+
+static __dma_data u32 __ctl_linkage_stack_dma[8] __aligned(64) = {
+	0, 0, 0x89000000, 0,
+	0, 0, 0x8a000000, 0
+};
+
 static u64 __dma_ref *__ctl_aste = __ctl_aste_dma;
 static u32 __dma_ref *__ctl_duald = __ctl_duald_dma;
 static u32 __dma_ref *__ctl_linkage_stack = __ctl_linkage_stack_dma;
@@ -800,7 +823,7 @@ static void __init relocate_dma_section(void)
 	/* Allocate a new DMA capable memory region */
 	dma_size = __edma - __sdma;
 	pr_info("Relocating DMA section of size 0x%08lx\n", dma_size);
-	dma_addr = (unsigned long) memblock_alloc_low(dma_size, PAGE_SIZE);
+	dma_addr = (unsigned long)memblock_alloc_low(dma_size, PAGE_SIZE);
 	if (!dma_addr)
 		panic("Failed to allocate memory for DMA section\n");
 	dma_offset = dma_addr - __sdma;
@@ -818,13 +841,24 @@ static void __init relocate_dma_section(void)
 /* This must be called after DMA relocation */
 static void __init setup_cr(void)
 {
-	__ctl_duct[1] = __ctl_duct[2] = (unsigned long)__ctl_aste;
+	union ctlreg2 cr2;
+	union ctlreg5 cr5;
+	union ctlreg15 cr15;
+
+	__ctl_duct[1] = (unsigned long)__ctl_aste;
+	__ctl_duct[2] = (unsigned long)__ctl_aste;
 	__ctl_duct[4] = (unsigned long)__ctl_duald;
 
 	/* Update control registers CR2, CR5 and CR15 */
-	__ctl_load(__ctl_duct, 2, 2);
-	__ctl_load(__ctl_duct, 5, 5);
-	__ctl_load(__ctl_linkage_stack, 15, 15);
+	__ctl_store(cr2.val, 2, 2);
+	__ctl_store(cr5.val, 5, 5);
+	__ctl_store(cr15.val, 15, 15);
+	cr2.ducto = (unsigned long)__ctl_duct >> 6;
+	cr5.pasteo = (unsigned long)__ctl_duct >> 6;
+	cr15.lsea = (unsigned long)__ctl_linkage_stack >> 3;
+	__ctl_load(cr2.val, 2, 2);
+	__ctl_load(cr5.val, 5, 5);
+	__ctl_load(cr15.val, 15, 15);
 }
 
 /*

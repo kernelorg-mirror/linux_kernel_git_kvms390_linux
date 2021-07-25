@@ -73,9 +73,4 @@ extern struct exception_table_entry _stop_dma_ex_table[];
 #define __dma_ref __section(".dma.refs")
 extern long _start_dma_refs[], _end_dma_refs[];
 
-extern u64 __ctl_aste_dma[];
-extern u32 __ctl_duald_dma[];
-extern u32 __ctl_linkage_stack_dma[];
-extern u32 __ctl_duct_dma[];
-
 #endif /* _ENTRY_H */
