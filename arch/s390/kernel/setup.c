@@ -964,6 +964,17 @@ void __init setup_arch(char **cmdline_p)
 	else
 		pr_info("Linux is running as a guest in 64-bit mode\n");
 
+	if (initrd_data.start && initrd_data.size) {
+		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			initrd_data.start,
+			initrd_data.size);
+		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			((unsigned long *)initrd_data.start)[0],
+			((unsigned long *)(initrd_data.start + initrd_data.size))[-1]);
+	}
+
 	log_component_list();
 
 	/* Have one command line that is parsed and saved in /proc/cmdline */
@@ -1013,7 +1024,30 @@ void __init setup_arch(char **cmdline_p)
 	if (MACHINE_HAS_EDAT2)
 		hugetlb_cma_reserve(PUD_SHIFT - PAGE_SHIFT);
 
+	if (initrd_data.start && initrd_data.size) {
+		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			initrd_data.start,
+			initrd_data.size);
+		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			((unsigned long *)initrd_data.start)[0],
+			((unsigned long *)(initrd_data.start + initrd_data.size))[-1]);
+	}
+
 	check_initrd();
+
+	if (initrd_data.start && initrd_data.size) {
+		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			initrd_data.start,
+			initrd_data.size);
+		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			((unsigned long *)initrd_data.start)[0],
+			((unsigned long *)(initrd_data.start + initrd_data.size))[-1]);
+	}
+
 	reserve_crashkernel();
 #ifdef CONFIG_CRASH_DUMP
 	/*
@@ -1056,4 +1090,15 @@ void __init setup_arch(char **cmdline_p)
 
 	/* Add system specific data to the random pool */
 	setup_randomness();
+
+	if (initrd_data.start && initrd_data.size) {
+		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			initrd_data.start,
+			initrd_data.size);
+		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			((unsigned long *)initrd_data.start)[0],
+			((unsigned long *)(initrd_data.start + initrd_data.size))[-1]);
+	}
 }
