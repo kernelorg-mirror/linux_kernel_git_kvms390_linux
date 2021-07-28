@@ -686,14 +686,16 @@ static void __init do_populate_rootfs(void *unused, async_cookie_t cookie)
 {
 	char *err;
 
-	pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
-		__func__, __LINE__,
-		initrd_start,
-		initrd_end);
-	pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
-		__func__, __LINE__,
-		((unsigned long *)initrd_start)[0],
-		((unsigned long *)initrd_end)[-1]);
+	if (initrd_start) {
+		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			initrd_start,
+			initrd_end);
+		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
+			__func__, __LINE__,
+			((unsigned long *)initrd_start)[0],
+			((unsigned long *)initrd_end)[-1]);
+	}
 
 	/* Load the built in initramfs */
 	err = unpack_to_rootfs(__initramfs_start, __initramfs_size);
