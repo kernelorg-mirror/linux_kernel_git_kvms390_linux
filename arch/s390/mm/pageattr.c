@@ -4,11 +4,11 @@
  * Author(s): Jan Glauber <jang@linux.vnet.ibm.com>
  */
 #include <linux/hugetlb.h>
-#include <linux/kfence.h>
 #include <linux/mm.h>
 #include <asm/cacheflush.h>
 #include <asm/facility.h>
 #include <asm/pgalloc.h>
+#include <asm/kfence.h>
 #include <asm/page.h>
 #include <asm/set_memory.h>
 
