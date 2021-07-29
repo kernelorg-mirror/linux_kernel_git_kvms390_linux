@@ -86,6 +86,8 @@ static int walk_pte_level(pmd_t *pmdp, unsigned long addr, unsigned long end,
 {
 	pte_t *ptep, new;
 
+	if ((flags & SET_MEMORY_4K) == SET_MEMORY_4K)
+		return 0;
 	ptep = pte_offset_kernel(pmdp, addr);
 	do {
 		new = *ptep;
@@ -166,9 +168,9 @@ static int walk_pmd_level(pud_t *pudp, unsigned long addr, unsigned long end,
 			return -EINVAL;
 		next = pmd_addr_end(addr, end);
 		if (pmd_large(*pmdp)) {
-			need_split  =  (flags & SET_MEMORY_4K) != 0;
-			need_split |= (addr & ~PMD_MASK) != 0;
-			need_split |= addr + PMD_SIZE > next;
+			need_split  = !!(flags & SET_MEMORY_4K);
+			need_split |= !!(addr & ~PMD_MASK);
+			need_split |= !!(addr + PMD_SIZE > next);
 			if (need_split) {
 				rc = split_pmd_page(pmdp, addr);
 				if (rc)
@@ -247,9 +249,9 @@ static int walk_pud_level(p4d_t *p4d, unsigned long addr, unsigned long end,
 			return -EINVAL;
 		next = pud_addr_end(addr, end);
 		if (pud_large(*pudp)) {
-			need_split  = (flags & SET_MEMORY_4K) != 0;
-			need_split |= (addr & ~PUD_MASK) != 0;
-			need_split |= addr + PUD_SIZE > next;
+			need_split  = !!(flags & SET_MEMORY_4K);
+			need_split |= !!(addr & ~PUD_MASK);
+			need_split |= !!(addr + PUD_SIZE > next);
 			if (need_split) {
 				rc = split_pud_page(pudp, addr);
 				if (rc)
