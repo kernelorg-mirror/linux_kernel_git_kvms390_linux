@@ -766,10 +766,10 @@ int smc_clc_send_proposal(struct smc_sock *smc, struct smc_init_info *ini)
 	struct smc_clc_ipv6_prefix *ipv6_prfx;
 	struct smc_clc_v2_extension *v2_ext;
 	struct smc_clc_msg_smcd *pclc_smcd;
-	struct kvec vec[8 + SMC_MAX_UEID];
 	struct smc_clc_msg_trail *trl;
 	int len, i, plen, rc;
 	int reason_code = 0;
+	struct kvec vec[8];
 	struct msghdr msg;
 
 	pclc = kzalloc(sizeof(*pclc), GFP_KERNEL);
@@ -827,10 +827,10 @@ int smc_clc_send_proposal(struct smc_sock *smc, struct smc_init_info *ini)
 				htons(smc_ism_get_chid(ini->ism_dev[0]));
 		}
 	}
-	read_lock(&smc_clc_eid_table.lock);
 	if (ini->smc_type_v2 == SMC_TYPE_N) {
 		pclc_smcd->v2_ext_offset = 0;
 	} else {
+		struct smc_clc_eid_entry *ueident;
 		u16 v2_ext_offset;
 		u8 *eid = NULL;
 
@@ -842,9 +842,16 @@ int smc_clc_send_proposal(struct smc_sock *smc, struct smc_init_info *ini)
 						sizeof(ipv6_prfx[0]);
 		pclc_smcd->v2_ext_offset = htons(v2_ext_offset);
 
+		read_lock(&smc_clc_eid_table.lock);
 		v2_ext->hdr.eid_cnt = smc_clc_eid_table.ueid_cnt;
 		plen += smc_clc_eid_table.ueid_cnt * SMC_MAX_EID_LEN;
+		i = 0;
+		list_for_each_entry(ueident, &smc_clc_eid_table.list, list) {
+			memcpy(v2_ext->user_eids[i++], ueident->eid,
+			       sizeof(ueident->eid));
+		}
 		v2_ext->hdr.flag.seid = smc_clc_eid_table.seid_enabled;
+		read_unlock(&smc_clc_eid_table.lock);
 		v2_ext->hdr.ism_gid_cnt = ini->ism_offered_cnt;
 		v2_ext->hdr.flag.release = SMC_RELEASE;
 		v2_ext->hdr.smcd_v2_ext_offset = htons(sizeof(*v2_ext) -
@@ -886,14 +893,9 @@ int smc_clc_send_proposal(struct smc_sock *smc, struct smc_init_info *ini)
 		}
 	}
 	if (ini->smc_type_v2 != SMC_TYPE_N) {
-		struct smc_clc_eid_entry *ueident;
-
 		vec[i].iov_base = v2_ext;
-		vec[i++].iov_len = sizeof(*v2_ext);
-		list_for_each_entry(ueident, &smc_clc_eid_table.list, list) {
-			vec[i].iov_base = ueident->eid;
-			vec[i++].iov_len = sizeof(ueident->eid);
-		}
+		vec[i++].iov_len = sizeof(*v2_ext) +
+				   (v2_ext->hdr.eid_cnt * SMC_MAX_EID_LEN);
 		vec[i].iov_base = smcd_v2_ext;
 		vec[i++].iov_len = sizeof(*smcd_v2_ext);
 		if (ini->ism_offered_cnt) {
@@ -906,7 +908,6 @@ int smc_clc_send_proposal(struct smc_sock *smc, struct smc_init_info *ini)
 	vec[i++].iov_len = sizeof(*trl);
 	/* due to the few bytes needed for clc-handshake this cannot block */
 	len = kernel_sendmsg(smc->clcsock, &msg, vec, i, plen);
-	read_unlock(&smc_clc_eid_table.lock);
 	if (len < 0) {
 		smc->sk.sk_err = smc->clcsock->sk->sk_err;
 		reason_code = -smc->sk.sk_err;
