@@ -160,6 +160,7 @@ struct smc_clc_msg_proposal {	/* clc proposal message sent by Linux */
 } __aligned(4);
 
 #define SMC_CLC_MAX_V6_PREFIX		8
+#define SMC_CLC_MAX_UEID		8
 
 struct smc_clc_msg_proposal_area {
 	struct smc_clc_msg_proposal		pclc_base;
@@ -167,6 +168,7 @@ struct smc_clc_msg_proposal_area {
 	struct smc_clc_msg_proposal_prefix	pclc_prfx;
 	struct smc_clc_ipv6_prefix	pclc_prfx_ipv6[SMC_CLC_MAX_V6_PREFIX];
 	struct smc_clc_v2_extension		pclc_v2_ext;
+	u8			user_eids[SMC_CLC_MAX_UEID][SMC_MAX_EID_LEN];
 	struct smc_clc_smcd_v2_extension	pclc_smcd_v2_ext;
 	struct smc_clc_smcd_gid_chid		pclc_gidchids[SMC_MAX_ISM_DEVS];
 	struct smc_clc_msg_trail		pclc_trl;
