@@ -63,17 +63,6 @@ static void rescue_initrd(unsigned long addr)
 		return;
 	memmove((void *)addr, (void *)initrd_data.start, initrd_data.size);
 	initrd_data.start = addr;
-
-	if (initrd_data.start && initrd_data.size) {
-		decompressor_printk("%s:%x: initrd: 0x%016lx 0x%016lx\n",
-				    __func__, __LINE__,
-				    initrd_data.start,
-				    initrd_data.size);
-		decompressor_printk("%s:%x: initrd data: 0x%016lx 0x%016lx\n",
-				    __func__, __LINE__,
-				    ((unsigned long *)initrd_data.start)[0],
-				    ((unsigned long *)(initrd_data.start + initrd_data.size))[-1]);
-	}
 }
 
 static void copy_bootdata(void)
@@ -281,17 +270,6 @@ void startup_kernel(void)
 	oldmem_data.start = parmarea.oldmem_base;
 	oldmem_data.size = parmarea.oldmem_size;
 
-	if (initrd_data.start && initrd_data.size) {
-		decompressor_printk("%s:%x: initrd: 0x%016lx 0x%016lx\n",
-				    __func__, __LINE__,
-				    initrd_data.start,
-				    initrd_data.size);
-		decompressor_printk("%s:%x: initrd data: 0x%016lx 0x%016lx\n",
-				    __func__, __LINE__,
-				    ((unsigned long *)initrd_data.start)[0],
-				    ((unsigned long *)(initrd_data.start + initrd_data.size))[-1]);
-	}
-
 	setup_lpp();
 	store_ipl_parmblock();
 	safe_addr = mem_safe_offset();
@@ -336,17 +314,5 @@ void startup_kernel(void)
 		if (IS_ENABLED(CONFIG_KERNEL_UNCOMPRESSED))
 			memset(img, 0, vmlinux.image_size);
 	}
-
-	if (initrd_data.start && initrd_data.size) {
-		decompressor_printk("%s:%x: initrd: 0x%016lx 0x%016lx\n",
-				    __func__, __LINE__,
-				    initrd_data.start,
-				    initrd_data.size);
-		decompressor_printk("%s:%x: initrd data: 0x%016lx 0x%016lx\n",
-				    __func__, __LINE__,
-				    ((unsigned long *)initrd_data.start)[0],
-				    ((unsigned long *)(initrd_data.start + initrd_data.size))[-1]);
-	}
-
 	vmlinux.entry();
 }

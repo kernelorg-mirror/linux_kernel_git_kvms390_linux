@@ -256,10 +256,6 @@ static int __init do_collect(void)
 
 static int __init do_header(void)
 {
-	pr_info("%s:%d: collected: 0x%016lx\n",
-		__func__, __LINE__,
-		((unsigned long *)collected)[0]);
-
 	if (memcmp(collected, "070707", 6)==0) {
 		error("incorrect cpio method used: use -H newc option");
 		return 1;
@@ -471,17 +467,6 @@ static char * __init unpack_to_rootfs(char *buf, unsigned long len)
 	const char *compress_name;
 	static __initdata char msg_buf[64];
 
-	if (buf && len) {
-		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
-			__func__, __LINE__,
-			(unsigned long)buf,
-			(unsigned long)(buf + len));
-		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
-			__func__, __LINE__,
-			((unsigned long *)buf)[0],
-			((unsigned long *)(buf + len))[-1]);
-	}
-
 	header_buf = kmalloc(110, GFP_KERNEL);
 	symlink_buf = kmalloc(PATH_MAX + N_ALIGN(PATH_MAX) + 1, GFP_KERNEL);
 	name_buf = kmalloc(N_ALIGN(PATH_MAX), GFP_KERNEL);
@@ -684,19 +669,8 @@ static void __init populate_initrd_image(char *err)
 
 static void __init do_populate_rootfs(void *unused, async_cookie_t cookie)
 {
-	char *err;
-
-	pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
-		__func__, __LINE__,
-		initrd_start,
-		initrd_end);
-	pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
-		__func__, __LINE__,
-		((unsigned long *)initrd_start)[0],
-		((unsigned long *)initrd_end)[-1]);
-
 	/* Load the built in initramfs */
-	err = unpack_to_rootfs(__initramfs_start, __initramfs_size);
+	char *err = unpack_to_rootfs(__initramfs_start, __initramfs_size);
 	if (err)
 		panic_show_mem("%s", err); /* Failed to decompress INTERNAL initramfs */
 
@@ -707,17 +681,6 @@ static void __init do_populate_rootfs(void *unused, async_cookie_t cookie)
 		printk(KERN_INFO "Trying to unpack rootfs image as initramfs...\n");
 	else
 		printk(KERN_INFO "Unpacking initramfs...\n");
-
-	if (initrd_start) {
-		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
-			__func__, __LINE__,
-			initrd_start,
-			initrd_end);
-		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
-			__func__, __LINE__,
-			((unsigned long *)initrd_start)[0],
-			((unsigned long *)initrd_end)[-1]);
-	}
 
 	err = unpack_to_rootfs((char *)initrd_start, initrd_end - initrd_start);
 	if (err) {
@@ -746,17 +709,6 @@ static async_cookie_t initramfs_cookie;
 
 void wait_for_initramfs(void)
 {
-	if (initrd_start) {
-		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
-			__func__, __LINE__,
-			initrd_start,
-			initrd_end);
-		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
-			__func__, __LINE__,
-			((unsigned long *)initrd_start)[0],
-			((unsigned long *)initrd_end)[-1]);
-	}
-
 	if (!initramfs_cookie) {
 		/*
 		 * Something before rootfs_initcall wants to access
@@ -773,17 +725,6 @@ EXPORT_SYMBOL_GPL(wait_for_initramfs);
 
 static int __init populate_rootfs(void)
 {
-	if (initrd_start) {
-		pr_info("%s:%d: initrd: 0x%016lx 0x%016lx\n",
-			__func__, __LINE__,
-			initrd_start,
-			initrd_end);
-		pr_info("%s:%d: initrd data: 0x%016lx 0x%016lx\n",
-			__func__, __LINE__,
-			((unsigned long *)initrd_start)[0],
-			((unsigned long *)initrd_end)[-1]);
-	}
-
 	initramfs_cookie = async_schedule_domain(do_populate_rootfs, NULL,
 						 &initramfs_domain);
 	if (!initramfs_async)
