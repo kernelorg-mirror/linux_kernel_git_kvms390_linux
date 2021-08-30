@@ -361,7 +361,6 @@ unsigned long stack_alloc(void)
 
 	ret = __vmalloc_node(THREAD_SIZE, THREAD_SIZE, THREADINFO_GFP,
 			     NUMA_NO_NODE, __builtin_return_address(0));
-
 	kmemleak_not_leak(ret);
 	return (unsigned long)ret;
 #else
