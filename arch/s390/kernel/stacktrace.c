@@ -16,11 +16,15 @@ void arch_stack_walk(stack_trace_consume_fn consume_entry, void *cookie,
 {
 	struct unwind_state state;
 	unsigned long addr;
+	bool init = true;
 
 	unwind_for_each_frame(&state, task, regs, 0) {
 		addr = unwind_get_return_address(&state);
-		if (!addr || !consume_entry(cookie, addr))
+		if (!addr)
 			break;
+		if (!init && !consume_entry(cookie, addr))
+			break;
+		init = false;
 	}
 }
 
@@ -29,6 +33,7 @@ int arch_stack_walk_reliable(stack_trace_consume_fn consume_entry,
 {
 	struct unwind_state state;
 	unsigned long addr;
+	bool init = true;
 
 	unwind_for_each_frame(&state, task, NULL, 0) {
 		if (state.stack_info.type != STACK_TYPE_TASK)
@@ -50,8 +55,9 @@ int arch_stack_walk_reliable(stack_trace_consume_fn consume_entry,
 			return -EINVAL;
 #endif
 
-		if (!consume_entry(cookie, addr))
+		if (!init && !consume_entry(cookie, addr))
 			return -EINVAL;
+		init = false;
 	}
 
 	/* Check for stack corruption */
