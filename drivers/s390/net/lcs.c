@@ -451,6 +451,7 @@ static void lcs_clear_multicast_list(struct lcs_card *card)
 	spin_unlock_irqrestore(&card->ipm_lock, flags);
 #endif
 }
+
 /*
  * Cleanup channels,card and state machines.
  */
