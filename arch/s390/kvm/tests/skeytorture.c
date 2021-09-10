@@ -215,9 +215,8 @@ static int key_set_read_ro(void *arg)
 		schedule_timeout_uninterruptible(1);
 
 		for  (i = 0; i < PAGES; i++) {
-			volatile long dummy;
 			/* Only read all pages (shared zero page in host) */
-			dummy = *(unsigned long *) page_to_phys(pages4[i]);
+			*(volatile unsigned long *) page_to_phys(pages4[i]);
 
 			if (i % 2)
 				pfmf(PFMF_SET_KEY | (i & 0xfe),
