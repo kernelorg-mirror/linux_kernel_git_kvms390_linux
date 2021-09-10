@@ -97,32 +97,32 @@ static int do_essa(struct page *page, int state)
 /* Set CMMA values to deterministic values */
 static void set_cmma_values(int base)
 {
-	int i, rc;
+	int i;
 
 	for (i = 0; i < NUM_PAGES; i++) {
 		int curval = states[(base + i) % 8];
 
 		if (!testnodat) {
-			rc = do_essa(pages[i], (curval & 3) + 1);
+			do_essa(pages[i], (curval & 3) + 1);
 		} else {
 			switch (curval) {
 			case 0:
-				rc = do_essa(pages[i], 1);
+				do_essa(pages[i], 1);
 				break;
 			case 1:
 			case 2:
 			case 3:
-				rc = do_essa(pages[i], 1);
-				rc = do_essa(pages[i], (curval & 3) + 1);
+				do_essa(pages[i], 1);
+				do_essa(pages[i], (curval & 3) + 1);
 				break;
 			case 8:
-				rc = do_essa(pages[i], 7);
+				do_essa(pages[i], 7);
 				break;
 			case 9:
 			case 0xA:
 			case 0xB:
-				rc = do_essa(pages[i], 7);
-				rc = do_essa(pages[i], (curval & 3) + 1);
+				do_essa(pages[i], 7);
+				do_essa(pages[i], (curval & 3) + 1);
 				break;
 			default:
 				pr_warn("%s: unsupported value (%d)!!\n",

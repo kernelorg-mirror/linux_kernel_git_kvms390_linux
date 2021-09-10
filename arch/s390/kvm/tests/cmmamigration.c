@@ -65,13 +65,13 @@ static int do_essa(struct page *page, int state)
 /* Set CMMA values to deterministic values */
 static void set_cmma_values(void)
 {
-	int i, rc;
+	int i;
 
 	for (i = 0; i < NUM_PAGES; i++) {
 		int curval = i % 4;
 		struct page *curpage = start_page + i;
 
-		rc = do_essa(curpage, curval + 1);
+		do_essa(curpage, curval + 1);
 	}
 }
 
