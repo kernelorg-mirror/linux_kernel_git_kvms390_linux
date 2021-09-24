@@ -147,7 +147,7 @@ static bool can_probe(unsigned long paddr)
 				 * the original instruction is unknown, stop following
 				 * instructions and prevent setting a kprobe.
 				 */
-				 return false;
+				return false;
 			}
 			/*
 			 * Check if the instruction has been modified by another
