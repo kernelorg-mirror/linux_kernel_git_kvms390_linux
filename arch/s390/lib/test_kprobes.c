@@ -12,7 +12,7 @@ static void setup_kprobe(struct kunit *test, struct kprobe *kp,
 			 const char *symbol, int offset)
 {
 	kp->offset = offset;
-	kp->addr = 0;
+	kp->addr = NULL;
 	kp->symbol_name = symbol;
 }
 
