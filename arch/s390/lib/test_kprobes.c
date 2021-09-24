@@ -9,7 +9,7 @@
 static struct kprobe kp;
 
 static void setup_kprobe(struct kunit *test, struct kprobe *kp,
-			      const char *symbol, int offset)
+			 const char *symbol, int offset)
 {
 	kp->offset = offset;
 	kp->addr = 0;
@@ -49,7 +49,6 @@ static void test_kprobe_in_insn6_lo(struct kunit *test)
 {
 	test_kprobe_offset(test, &kp, "kprobes_target_in_insn6_lo",
 			   kprobes_target_in_insn6_lo_offs);
-
 }
 
 static void test_kprobe_in_insn6_hi(struct kunit *test)
@@ -73,3 +72,4 @@ static struct kunit_suite kprobes_test_suite = {
 
 kunit_test_suites(&kprobes_test_suite);
 
+MODULE_LICENSE("GPL");
