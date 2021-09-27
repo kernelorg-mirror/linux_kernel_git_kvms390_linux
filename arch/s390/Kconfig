@@ -968,6 +968,7 @@ config S390_UNWIND_SELFTEST
 config S390_KPROBES_SANITY_TEST
 	def_tristate n
 	prompt "Enable s390 specific kprobes tests"
+	depends on KPROBES
 	depends on KUNIT
 	help
 	  This option enables an s390 specific kprobes test module. This option
@@ -975,6 +976,5 @@ config S390_KPROBES_SANITY_TEST
 	  developers working on architecture code.
 
 	  Say N if you are unsure.
-
 
 endmenu
