@@ -259,7 +259,7 @@ EXPORT_SYMBOL(strcmp);
 #ifdef __HAVE_ARCH_STRRCHR
 char *strrchr(const char *s, int c)
 {
-	size_t len = __strend(s) - s;
+	ssize_t len = __strend(s) - s;
 
 	do {
 		if (s[len] == (char)c)
