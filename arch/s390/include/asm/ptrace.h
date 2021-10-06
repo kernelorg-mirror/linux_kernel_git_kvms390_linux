@@ -185,6 +185,24 @@ static inline long regs_return_value(struct pt_regs *regs)
 	return regs->gprs[2];
 }
 
+/**
+ * regs_get_kernel_argument() - get Nth function argument in kernel
+ * @regs:	pt_regs of that context
+ * @n:		function argument number (start from 0)
+ *
+ * regs_get_kernel_argument() returns @n th argument of the function call.
+ */
+static inline unsigned long regs_get_kernel_argument(struct pt_regs *regs,
+						     unsigned int n)
+{
+	unsigned long *args = &regs->gprs[2];
+
+#define NR_REG_ARGUMENTS 5
+	if (n < NR_REG_ARGUMENTS)
+		return args[n];
+	return 0;
+}
+
 static inline void instruction_pointer_set(struct pt_regs *regs,
 					   unsigned long val)
 {
