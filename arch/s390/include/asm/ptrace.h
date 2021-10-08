@@ -185,24 +185,6 @@ static inline long regs_return_value(struct pt_regs *regs)
 	return regs->gprs[2];
 }
 
-/**
- * regs_get_kernel_argument() - get Nth function argument in kernel
- * @regs:	pt_regs of that context
- * @n:		function argument number (start from 0)
- *
- * regs_get_kernel_argument() returns @n th argument of the function call.
- */
-static inline unsigned long regs_get_kernel_argument(struct pt_regs *regs,
-						     unsigned int n)
-{
-	unsigned long *args = &regs->gprs[2];
-
-#define NR_REG_ARGUMENTS 5
-	if (n < NR_REG_ARGUMENTS)
-		return args[n];
-	return 0;
-}
-
 static inline void instruction_pointer_set(struct pt_regs *regs,
 					   unsigned long val)
 {
@@ -213,6 +195,25 @@ int regs_query_register_offset(const char *name);
 const char *regs_query_register_name(unsigned int offset);
 unsigned long regs_get_register(struct pt_regs *regs, unsigned int offset);
 unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs, unsigned int n);
+
+/**
+ * regs_get_kernel_argument() - get Nth function argument in kernel
+ * @regs:	pt_regs of that context
+ * @n:		function argument number (start from 0)
+ *
+ * regs_get_kernel_argument() returns @n th argument of the function call.
+ */
+static inline unsigned long regs_get_kernel_argument(struct pt_regs *regs,
+						     unsigned int n)
+{
+	unsigned int argoffset = STACK_FRAME_OVERHEAD / sizeof(long);
+
+#define NR_REG_ARGUMENTS 5
+	if (n < NR_REG_ARGUMENTS)
+		return regs_get_register(regs, 2 + n);
+	n -= NR_REG_ARGUMENTS;
+	return regs_get_kernel_stack_nth(regs, argoffset + n);
+}
 
 static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
 {
