@@ -1086,7 +1086,6 @@ static void dasd_eckd_get_uid_string(struct dasd_conf *conf,
 			 "%s.%s.%04x.%02x",
 			 uid.vendor, uid.serial, uid.ssid,
 			 uid.real_unit_addr);
-
 }
 
 static int dasd_eckd_check_cabling(struct dasd_device *device,
