@@ -1355,7 +1355,7 @@ static void dasd_eckd_path_available_action(struct dasd_device *device,
 		 */
 		memcpy(&path_rcd_buf, data->rcd_buffer,
 		       DASD_ECKD_RCD_DATA_SIZE);
-		path_conf.data = (void *) &path_rcd_buf;
+		path_conf.data = (void *)&path_rcd_buf;
 		path_conf.len = DASD_ECKD_RCD_DATA_SIZE;
 		if (dasd_eckd_identify_conf_parts(&path_conf)) {
 			path_conf.data = NULL;
