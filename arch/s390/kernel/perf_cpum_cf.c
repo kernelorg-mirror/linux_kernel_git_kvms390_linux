@@ -1184,8 +1184,9 @@ static long cfset_ioctl_start(unsigned long arg, struct file *file)
 		file->private_data = preq;
 		debug_sprintf_event(cf_dbg, 4, "%s set %#lx need %ld ret %d\n",
 				    __func__, preq->ctrset, need, ret);
-	} else
+	} else {
 		kfree(preq);
+	}
 	return ret;
 }
 
