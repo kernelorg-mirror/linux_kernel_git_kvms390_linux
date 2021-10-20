@@ -254,11 +254,11 @@ static void __zpci_event_error(struct zpci_ccdf_err *ccdf)
 	zpci_err("error CCDF:\n");
 	zpci_err_hex(ccdf, sizeof(*ccdf));
 
-	if (zdev)
+	if (zdev) {
 		zpci_update_fh(zdev, ccdf->fh);
-
-	if (zdev->zbus->bus)
-		pdev = pci_get_slot(zdev->zbus->bus, zdev->devfn);
+		if (zdev->zbus->bus)
+			pdev = pci_get_slot(zdev->zbus->bus, zdev->devfn);
+	}
 
 	pr_err("%s: Event 0x%x reports an error for PCI function 0x%x\n",
 	       pdev ? pci_name(pdev) : "n/a", ccdf->pec, ccdf->fid);
