@@ -66,7 +66,7 @@ static bool is_passed_through(struct zpci_dev *zdev)
 
 static bool is_driver_supported(struct pci_driver *driver)
 {
-	if (!driver)
+	if (!driver || !driver->err_handler)
 		return false;
 	if (!driver->err_handler->error_detected)
 		return false;
@@ -77,10 +77,10 @@ static bool is_driver_supported(struct pci_driver *driver)
 	return true;
 }
 
-static pci_ers_result_t zpci_event_notify_error_detected(struct pci_dev *pdev)
+static pci_ers_result_t zpci_event_notify_error_detected(struct pci_dev *pdev,
+							 struct pci_driver *driver)
 {
 	pci_ers_result_t ers_res = PCI_ERS_RESULT_DISCONNECT;
-	struct pci_driver *driver = pdev->driver;
 
 	ers_res = driver->err_handler->error_detected(pdev,  pdev->error_state);
 	if (ers_result_indicates_abort(ers_res))
@@ -91,10 +91,10 @@ static pci_ers_result_t zpci_event_notify_error_detected(struct pci_dev *pdev)
 	return ers_res;
 }
 
-static pci_ers_result_t zpci_event_do_error_state_clear(struct pci_dev *pdev)
+static pci_ers_result_t zpci_event_do_error_state_clear(struct pci_dev *pdev,
+							struct pci_driver *driver)
 {
 	pci_ers_result_t ers_res = PCI_ERS_RESULT_DISCONNECT;
-	struct pci_driver *driver = pdev->driver;
 	struct zpci_dev *zdev = to_zpci(pdev);
 	int rc;
 
@@ -131,10 +131,10 @@ static pci_ers_result_t zpci_event_do_error_state_clear(struct pci_dev *pdev)
 	return ers_res;
 }
 
-static pci_ers_result_t zpci_event_do_reset(struct pci_dev *pdev)
+static pci_ers_result_t zpci_event_do_reset(struct pci_dev *pdev,
+					    struct pci_driver *driver)
 {
 	pci_ers_result_t ers_res = PCI_ERS_RESULT_DISCONNECT;
-	struct pci_driver *driver = pdev->driver;
 
 	pr_info("%s: Initiating reset\n", pci_name(pdev));
 	if (zpci_hot_reset_device(to_zpci(pdev))) {
@@ -182,26 +182,30 @@ static pci_ers_result_t zpci_event_attempt_error_recovery(struct pci_dev *pdev)
 		goto out_unlock;
 	}
 
-	driver = pdev->driver;
+	driver = pdev->dev.driver ? to_pci_driver(pdev->dev.driver) : NULL;
 	if (!is_driver_supported(driver)) {
-		pr_info("%s: The %s driver bound to the device does not support error recovery\n",
-			driver->name,
-			pci_name(pdev));
+		if (!driver)
+			pr_info("%s: Cannot be recovered because no driver is bound to the device\n",
+				pci_name(pdev));
+		else
+			pr_info("%s: The %s driver bound to the device does not support error recovery\n",
+				pci_name(pdev),
+				driver->name);
 		goto out_unlock;
 	}
 
-	ers_res = zpci_event_notify_error_detected(pdev);
+	ers_res = zpci_event_notify_error_detected(pdev, driver);
 	if (ers_result_indicates_abort(ers_res))
 		goto out_unlock;
 
 	if (ers_res == PCI_ERS_RESULT_CAN_RECOVER) {
-		ers_res = zpci_event_do_error_state_clear(pdev);
+		ers_res = zpci_event_do_error_state_clear(pdev, driver);
 		if (ers_result_indicates_abort(ers_res))
 			goto out_unlock;
 	}
 
 	if (ers_res == PCI_ERS_RESULT_NEED_RESET)
-		ers_res = zpci_event_do_reset(pdev);
+		ers_res = zpci_event_do_reset(pdev, driver);
 
 	if (ers_res != PCI_ERS_RESULT_RECOVERED) {
 		pr_err("%s: Automatic recovery failed; operator intervention is required\n",
@@ -237,8 +241,9 @@ static void zpci_event_io_failure(struct pci_dev *pdev, pci_channel_state_t es)
 	 */
 	if (is_passed_through(to_zpci(pdev)))
 		goto out;
-	driver = pdev->driver;
-	driver->err_handler->error_detected(pdev, pdev->error_state);
+	driver = pdev->dev.driver ? to_pci_driver(pdev->dev.driver) : NULL;
+	if (driver && driver->err_handler && driver->err_handler->error_detected)
+		driver->err_handler->error_detected(pdev, pdev->error_state);
 out:
 	pci_dev_unlock(pdev);
 }
