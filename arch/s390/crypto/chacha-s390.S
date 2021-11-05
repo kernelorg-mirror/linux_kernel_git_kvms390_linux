@@ -37,7 +37,7 @@
 
 #############################################################################
 # void chacha20_vx_4x(u8 *out, counst u8 *inp, size_t len,
-#                     counst u32 *key, const u32 *counter)
+#		      counst u32 *key, const u32 *counter)
 
 #define	OUT		%r2
 #define	INP		%r3
@@ -421,7 +421,7 @@ ENDPROC(chacha20_vx_4x)
 
 #############################################################################
 # void chacha20_vx(u8 *out, counst u8 *inp, size_t len,
-#                  counst u32 *key, const u32 *counter)
+#		   counst u32 *key, const u32 *counter)
 
 #define	OUT		%r2
 #define	INP		%r3
