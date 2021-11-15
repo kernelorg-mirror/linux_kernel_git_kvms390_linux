@@ -182,7 +182,7 @@ static pci_ers_result_t zpci_event_attempt_error_recovery(struct pci_dev *pdev)
 		goto out_unlock;
 	}
 
-	driver = pdev->dev.driver ? to_pci_driver(pdev->dev.driver) : NULL;
+	driver = to_pci_driver(pdev->dev.driver);
 	if (!is_driver_supported(driver)) {
 		if (!driver)
 			pr_info("%s: Cannot be recovered because no driver is bound to the device\n",
@@ -241,7 +241,7 @@ static void zpci_event_io_failure(struct pci_dev *pdev, pci_channel_state_t es)
 	 */
 	if (is_passed_through(to_zpci(pdev)))
 		goto out;
-	driver = pdev->dev.driver ? to_pci_driver(pdev->dev.driver) : NULL;
+	driver = to_pci_driver(pdev->dev.driver);
 	if (driver && driver->err_handler && driver->err_handler->error_detected)
 		driver->err_handler->error_detected(pdev, pdev->error_state);
 out:
