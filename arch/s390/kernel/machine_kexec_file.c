@@ -12,6 +12,7 @@
 #include <linux/kexec.h>
 #include <linux/module_signature.h>
 #include <linux/verification.h>
+#include <linux/vmalloc.h>
 #include <asm/boot_data.h>
 #include <asm/ipl.h>
 #include <asm/setup.h>
@@ -332,7 +333,7 @@ int arch_kexec_apply_relocations_add(struct purgatory_info *pi,
 
 int arch_kimage_file_post_load_cleanup(struct kimage *image)
 {
-	kvfree(image->arch.ipl_buf);
+	vfree(image->arch.ipl_buf);
 	image->arch.ipl_buf = NULL;
 
 	return kexec_image_post_load_cleanup_default(image);
