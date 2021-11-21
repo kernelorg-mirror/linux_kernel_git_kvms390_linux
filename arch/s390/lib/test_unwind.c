@@ -174,7 +174,7 @@ static noinline int unwindme_func4(struct unwindme *u)
 
 		/*
 		 * Trigger operation exception; use insn notation to bypass
-		 * clangs internal assembler sanity checks.
+		 * llvm's integrated assembler sanity checks.
 		 */
 		asm volatile(
 			"	.insn	e,0x0000\n"	/* illegal opcode */
