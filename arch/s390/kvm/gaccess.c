@@ -817,8 +817,8 @@ static int low_address_protection_enabled(struct kvm_vcpu *vcpu,
  * The resulting gpas are stored into @gpas, unless it is NULL.
  *
  * Note: All fragments except the first one start at the beginning of a page.
- *       When deriving the boundaries of a fragment from a gpa, all but the last
- *       fragment end at the end of the page.
+ *	 When deriving the boundaries of a fragment from a gpa, all but the last
+ *	 fragment end at the end of the page.
  *
  * Return:
  * * 0		- success
