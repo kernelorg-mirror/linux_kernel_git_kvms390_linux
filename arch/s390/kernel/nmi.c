@@ -246,7 +246,7 @@ static int notrace s390_validate_registers(union mci mci, int umode)
 			: "Q" (S390_lowcore.fpt_creg_save_area));
 	}
 
-	mcesa = __va((S390_lowcore.mcesad & MCESA_ORIGIN_MASK));
+	mcesa = __va(S390_lowcore.mcesad & MCESA_ORIGIN_MASK);
 	if (!MACHINE_HAS_VX) {
 		/* Validate floating point registers */
 		asm volatile(
