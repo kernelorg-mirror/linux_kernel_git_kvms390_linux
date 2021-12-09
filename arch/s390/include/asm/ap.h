@@ -12,7 +12,7 @@
 #ifndef _ASM_S390_AP_H_
 #define _ASM_S390_AP_H_
 
-#include <asm/io.h>
+#include <linux/io.h>
 
 /**
  * The ap_qid_t identifier of an ap queue.
