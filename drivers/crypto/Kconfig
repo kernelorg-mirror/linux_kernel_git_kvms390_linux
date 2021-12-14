@@ -216,6 +216,7 @@ config CRYPTO_AES_S390
 config CRYPTO_CHACHA_S390
 	tristate "ChaCha20 stream cipher"
 	depends on S390
+	depends on HAVE_MARCH_Z9_109_FEATURES
 	select CRYPTO_ALGAPI
 	select CRYPTO_SKCIPHER
 	select CRYPTO_CHACHA20
