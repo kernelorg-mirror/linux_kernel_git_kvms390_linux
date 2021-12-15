@@ -15,7 +15,7 @@
 #define RC2ERR(rc) ((rc) ? DBF_ERR : DBF_INFO)
 #define RC2WARN(rc) ((rc) ? DBF_WARN : DBF_INFO)
 
-#define DBF_MAX_SPRINTF_ARGS 10
+#define DBF_MAX_SPRINTF_ARGS 5
 
 #define VFIO_AP_DBF(...)					\
 	debug_sprintf_event(vfio_ap_dbf_info, ##__VA_ARGS__)
