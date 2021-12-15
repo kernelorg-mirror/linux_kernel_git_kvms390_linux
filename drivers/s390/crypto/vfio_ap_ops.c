@@ -20,7 +20,6 @@
 #include <asm/zcrypt.h>
 
 #include "vfio_ap_private.h"
-#include "vfio_ap_debug.h"
 
 #define VFIO_AP_MDEV_TYPE_HWVIRT "passthrough"
 #define VFIO_AP_MDEV_NAME_HWVIRT "VFIO AP Passthrough Device"
@@ -287,41 +286,25 @@ static int handle_pqap(struct kvm_vcpu *vcpu)
 			       .response_code = AP_RESPONSE_Q_NOT_AVAIL, };
 	struct ap_matrix_mdev *matrix_mdev;
 
-	apqn = vcpu->run->s.regs.gprs[0] & 0xffff;
-
 	/* If we do not use the AIV facility just go to userland */
-	if (!(vcpu->arch.sie_block->eca & ECA_AIV)) {
-		VFIO_AP_DBF_WARN("%s: AIV facility not installed: apqn=0x%04x, eca=0x%04x\n",
-				 __func__, apqn, vcpu->arch.sie_block->eca);
-
+	if (!(vcpu->arch.sie_block->eca & ECA_AIV))
 		return -EOPNOTSUPP;
-	}
 
+	apqn = vcpu->run->s.regs.gprs[0] & 0xffff;
 	mutex_lock(&matrix_dev->lock);
-	if (!vcpu->kvm->arch.crypto.pqap_hook) {
-		VFIO_AP_DBF_WARN("%s: PQAP(AQIC) hook not registered: apqn=0x%04x\n",
-				 __func__, apqn);
-		goto out_unlock;
-	}
 
+	if (!vcpu->kvm->arch.crypto.pqap_hook)
+		goto out_unlock;
 	matrix_mdev = container_of(vcpu->kvm->arch.crypto.pqap_hook,
 				   struct ap_matrix_mdev, pqap_hook);
 
 	/* If the there is no guest using the mdev, there is nothing to do */
-	if (!matrix_mdev->kvm) {
-		VFIO_AP_DBF_WARN("%s: mdev %s not passed through to a guest: apqn=%04x\n",
-				 __func__, dev_name(mdev_dev(matrix_mdev->mdev)),
-				 apqn);
+	if (!matrix_mdev->kvm)
 		goto out_unlock;
-	}
 
 	q = vfio_ap_get_queue(matrix_mdev, apqn);
-	if (!q) {
-		VFIO_AP_DBF_WARN("%s: Queue %02x.%04x not bound to the vfio_ap device driver\n",
-				 __func__, AP_QID_CARD(apqn),
-				 AP_QID_QUEUE(apqn));
+	if (!q)
 		goto out_unlock;
-	}
 
 	status = vcpu->run->s.regs.gprs[1];
 
