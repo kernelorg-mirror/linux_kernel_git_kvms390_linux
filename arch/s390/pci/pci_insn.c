@@ -365,7 +365,10 @@ EXPORT_SYMBOL_GPL(zpci_write_block);
 
 static inline void __pciwb_mio(void)
 {
-	asm volatile (".insn    rre,0xb9d50000,0,0\n");
+	unsigned long unused = 0;
+
+	asm volatile (".insn    rre,0xb9d50000,%[op],%[op]\n"
+		      : [op] "+d" (unused));
 }
 
 void zpci_barrier(void)
