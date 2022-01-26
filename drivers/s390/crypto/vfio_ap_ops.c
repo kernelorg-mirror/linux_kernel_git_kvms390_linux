@@ -312,9 +312,9 @@ static struct ap_queue_status vfio_ap_irq_enable(struct vfio_ap_queue *q,
 	}
 
 	if (status.response_code != AP_RESPONSE_NORMAL) {
-		VFIO_AP_DBF_WARN("%s: PQAP(AQIC) failed with status=%#02hx:"
-				 "zone=%#hx, ir=%#hx, gisc=%#hx, f=%#hx,"
-				 "gisa=%#hx, isc=%#hx, apqn=%#04x\n",
+		VFIO_AP_DBF_WARN("%s: PQAP(AQIC) failed with status=%#02x: "
+				 "zone=%#x, ir=%#x, gisc=%#x, f=%#x,"
+				 "gisa=%#x, isc=%#x, apqn=%#04x\n",
 				 __func__, status.response_code,
 				 aqic_gisa.zone, aqic_gisa.ir, aqic_gisa.gisc,
 				 aqic_gisa.gf, aqic_gisa.gisa, aqic_gisa.isc,
