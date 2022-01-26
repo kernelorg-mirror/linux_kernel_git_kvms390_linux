@@ -358,9 +358,9 @@ static void vfio_ap_le_guid_to_be_uuid(guid_t *guid, unsigned long *uuid)
 	 * reordered for displaying a UUID as a string. This specifies the
 	 * guid indices in proper order.
 	 */
-	uuid[0] = le32_to_cpup((__u32 *)guid);
-	uuid[1] = le16_to_cpup((__u16 *)&guid->b[4]);
-	uuid[2] = le16_to_cpup((__u16 *)&guid->b[6]);
+	uuid[0] = le32_to_cpup((__le32 *)guid);
+	uuid[1] = le16_to_cpup((__le16 *)&guid->b[4]);
+	uuid[2] = le16_to_cpup((__le16 *)&guid->b[6]);
 	uuid[3] = *((__u16 *)&guid->b[8]);
 	uuid[4] = *((__u16 *)&guid->b[10]);
 	uuid[5] = *((__u32 *)&guid->b[12]);
