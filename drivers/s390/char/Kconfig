@@ -184,3 +184,13 @@ config S390_VMUR
 	depends on S390
 	help
 	  Character device driver for z/VM reader, puncher and printer.
+
+config S390_UV_UAPI
+	def_tristate y
+	prompt "Ultravisor userspace API"
+	help
+	  Selecting exposes parts of the UV interface to userspace
+	  by providing a misc character device at /dev/uv.
+	  Using IOCTLs one can interact with the UV.
+	  The device is only available if the Ultravisor
+	  Facility (158) is present.
