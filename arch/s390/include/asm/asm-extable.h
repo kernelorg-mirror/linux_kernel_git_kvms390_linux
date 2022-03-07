@@ -35,7 +35,7 @@
 	stringify_in_c(.endif;)						\
 	stringify_in_c(.set regnr, regnr+1;)				\
 	stringify_in_c(.endr;)						\
-	stringify_in_c(.if (found != 1);)				\
+	stringify_in_c(.ifne (found != 1);)				\
 	stringify_in_c(.error "extable_reg: bad register argument";)	\
 	stringify_in_c(.endif;)						\
 	stringify_in_c(.endm;)						\
