@@ -564,7 +564,7 @@ static void test_errors_key_fetch_prot_override_enabled(void)
 	 */
 	CHECK_N_DO(ERR_PROT_MOP, t.vcpu, LOGICAL, READ, mem2, 2048 + 1, GADDR_V(0), KEY(2));
 	CHECK_N_DO(ERR_PROT_MOP, t.vcpu, LOGICAL, READ, mem2, PAGE_SIZE + 2048 + 1,
-				 GADDR_V(guest_last_page), KEY(2));
+		   GADDR_V(guest_last_page), KEY(2));
 	/* vm, fetch protected override does not apply */
 	CHECK_N_DO(ERR_PROT_MOP, t.vm, ABSOLUTE, READ, mem2, 2048, GADDR(0), KEY(2));
 	CHECK_N_DO(ERR_PROT_MOP, t.vm, ABSOLUTE, READ, mem2, 2048, GADDR_V(guest_0_page), KEY(2));
