@@ -514,7 +514,7 @@ static void test_copy_key_fetch_prot_override(void)
 	MOP(t.vcpu, LOGICAL, WRITE, mem1, 2 * PAGE_SIZE, GADDR_V(guest_last_page));
 	HOST_SYNC(t.vcpu, STAGE_COPIED);
 	CHECK_N_DO(MOP, t.vcpu, LOGICAL, READ, mem2, PAGE_SIZE + 2048,
-			GADDR_V(guest_last_page), KEY(2));
+		   GADDR_V(guest_last_page), KEY(2));
 	ASSERT_MEM_EQ(mem1, mem2, 2048);
 
 out:
