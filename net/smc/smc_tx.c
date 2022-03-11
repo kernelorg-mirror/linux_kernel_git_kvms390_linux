@@ -330,53 +330,16 @@ static int smcr_tx_rdma_writes(struct smc_connection *conn, size_t len,
 	dma_addr_t dma_addr =
 		sg_dma_address(conn->sndbuf_desc->sgt[link->link_idx].sgl);
 	int src_len_sum = src_len, dst_len_sum = dst_len;
-	int cache_align_size = SMP_CACHE_BYTES;
 	int sent_count = src_off;
 	int srcchunk, dstchunk;
 	int num_sges;
-	int initial;
-	int pmtu;
 	int rc;
 
-	pmtu = ib_mtu_enum_to_int(min(link->path_mtu, link->peer_mtu));
 	for (dstchunk = 0; dstchunk < 2; dstchunk++) {
 		struct ib_sge *sge =
 			wr_rdma_buf->wr_tx_rdma[dstchunk].wr.sg_list;
 
 		num_sges = 0;
-		initial = 0;
-		/* cache line alignment:
-		 * The write is divided into 2 RDMA-writes, if the write:
-		 *   - is bigger than the MTU size and
-		 *   - does not begin at a cache line boundary and
-		 *   - spans more than 1 cache lines.
-		 * Thus, the first RDMA-wr stores the initial value data partially,
-		 * while the second one always stores the rest data from the beginning
-		 * of the cache line. i.e. During the 2nd RDMA-wr, there is (max.) only
-		 * one partial store at the end, if the last packet is not an integer
-		 * multiple of the cache line size.
-		 */
-		if ((src_len > pmtu) &&
-		    (dst_off % cache_align_size) &&
-		    ((dst_off / cache_align_size) !=
-		    ((dst_off + dst_len -1) / cache_align_size))) {
-
-			initial = cache_align_size - dst_off % cache_align_size;
-
-			sge[0].addr = dma_addr + src_off;
-			sge[0].length = initial;
-			num_sges++;
-
-			src_off += initial;
-			src_len = dst_len - initial;
-			rc = smc_tx_rdma_write(conn, dst_off, num_sges,
-					       &wr_rdma_buf->wr_tx_rdma[dstchunk]);
-			if (rc)
-				return rc;
-			num_sges--;
-			dst_off = dst_off + initial;
-		}
-
 		for (srcchunk = 0; srcchunk < 2; srcchunk++) {
 			sge[srcchunk].addr = dma_addr + src_off;
 			sge[srcchunk].length = src_len;
