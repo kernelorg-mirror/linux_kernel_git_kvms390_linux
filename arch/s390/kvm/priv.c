@@ -103,14 +103,15 @@ static int handle_set_clock(struct kvm_vcpu *vcpu)
 
 	VCPU_EVENT(vcpu, 3, "SCK: setting guest TOD to 0x%llx", gtod.tod);
 	/*
-	 * To set the TOD clock we need to take the kvm lock, but we are
-	 * already holding the vcpu lock, and the usual lock order is the
-	 * opposite. Therefore we use trylock instead of lock, and if the
-	 * kvm lock cannot be taken, we retry the instruction and return
-	 * -EAGAIN to userspace, thus freeing the vcpu lock.
-	 * The SCK instruction is considered legacy and at this point it's
-	 * not worth the effort to find a nicer solution.
-	 */
+	 * To set the TOD clock the kvm lock must be taken, but the vcpu lock
+	 * is already held in handle_set_clock. The usual lock order is the
+	 * opposite.  As SCK is deprecated and should not be used in several
+	 * cases, for example when the multiple epoch facility or TOD clock
+	 * steering facility is installed (see Principles of Operation),  a
+	 * slow path can be used.  If the lock can not be taken via try_lock,
+	 * the instruction will be retried via -EAGAIN at a later point in
+	 * time.
+         */
 	if (!kvm_s390_try_set_tod_clock(vcpu->kvm, &gtod)) {
 		kvm_s390_retry_instr(vcpu);
 		return -EAGAIN;
