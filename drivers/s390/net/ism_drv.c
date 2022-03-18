@@ -409,7 +409,7 @@ static void ism_create_system_eid(void)
 	memcpy(&SYSTEM_EID.type, tmp, 4);
 }
 
-static u8* ism_get_system_eid(void)
+static u8 *ism_get_system_eid(void)
 {
 	return SYSTEM_EID.seid_string;
 }
