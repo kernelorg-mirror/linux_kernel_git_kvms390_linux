@@ -1262,7 +1262,6 @@ static int vfio_ap_mdev_iommu_notifier(struct notifier_block *nb,
  * by @matrix_mdev.
  *
  * @matrix_mdev: a matrix mediated device
- * @kvm: the pointer to the kvm structure being unset.
  */
 static void vfio_ap_mdev_unset_kvm(struct ap_matrix_mdev *matrix_mdev)
 {
