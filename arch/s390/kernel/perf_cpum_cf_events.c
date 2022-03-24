@@ -703,12 +703,11 @@ __init const struct attribute_group **cpumf_cf_event_group(void)
 	case 1:
 		cfvn = cpumcf_fvn1_pmu_event_attr;
 		break;
-	default:
-		if (ci.cfvn >= 3)
-			cfvn = cpumcf_fvn3_pmu_event_attr;
-		else
-			cfvn = none;
+	case 3:
+		cfvn = cpumcf_fvn3_pmu_event_attr;
 		break;
+	default:
+		cfvn = none;
 	}
 
 	/* Determine version specific crypto set */
@@ -716,12 +715,11 @@ __init const struct attribute_group **cpumf_cf_event_group(void)
 	case 1 ... 5:
 		csvn = cpumcf_svn_12345_pmu_event_attr;
 		break;
-	default:
-		if (ci.csvn >= 6)
-			csvn = cpumcf_svn_67_pmu_event_attr;
-		else
-			csvn = none;
+	case 6 ... 7:
+		csvn = cpumcf_svn_67_pmu_event_attr;
 		break;
+	default:
+		csvn = none;
 	}
 
 	/* Determine model-specific counter set(s) */
