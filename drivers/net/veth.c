@@ -1579,57 +1579,6 @@ static void veth_setup(struct net_device *dev)
 	dev->mpls_features = NETIF_F_HW_CSUM | NETIF_F_GSO_SOFTWARE;
 }
 
-static bool _is_veth(const struct net_device *dev)
-{
-	return (dev->netdev_ops->ndo_open == veth_open);
-}
-
-static void veth_notify_peer(unsigned long event, const struct net_device *dev)
-{
-	struct net_device *peer;
-	struct veth_priv *priv;
-
-	priv = netdev_priv(dev);
-	peer = rtnl_dereference(priv->peer);
-	/* avoid re-bounce between 2 bridges */
-	if (!netif_is_bridge_port(peer))
-		call_netdevice_notifiers(event, peer);
-}
-
-/* Called under rtnl_lock */
-static int veth_device_event(struct notifier_block *unused,
-			     unsigned long event, void *ptr)
-{
-	struct net_device *dev, *lower;
-	struct list_head *iter;
-
-	dev = netdev_notifier_info_to_dev(ptr);
-
-	switch (event) {
-	case NETDEV_NOTIFY_PEERS:
-	case NETDEV_BONDING_FAILOVER:
-	case NETDEV_RESEND_IGMP:
-		/* propagate to peer of a bridge attached veth */
-		if (netif_is_bridge_master(dev)) {
-			iter = &dev->adj_list.lower;
-			lower = netdev_next_lower_dev_rcu(dev, &iter);
-			while (lower) {
-				if (_is_veth(lower))
-					veth_notify_peer(event, lower);
-				lower = netdev_next_lower_dev_rcu(dev, &iter);
-			}
-		}
-		break;
-	default:
-		break;
-	}
-	return NOTIFY_DONE;
-}
-
-static struct notifier_block veth_notifier_block __read_mostly = {
-		.notifier_call  = veth_device_event,
-};
-
 /*
  * netlink interface
  */
@@ -1875,14 +1824,12 @@ static struct rtnl_link_ops veth_link_ops = {
 
 static __init int veth_init(void)
 {
-	register_netdevice_notifier(&veth_notifier_block);
 	return rtnl_link_register(&veth_link_ops);
 }
 
 static __exit void veth_exit(void)
 {
 	rtnl_link_unregister(&veth_link_ops);
-	unregister_netdevice_notifier(&veth_notifier_block);
 }
 
 module_init(veth_init);
