@@ -21,6 +21,7 @@
 /x86_64/hyperv_clock
 /x86_64/hyperv_cpuid
 /x86_64/hyperv_features
+/x86_64/hyperv_svm_test
 /x86_64/mmio_warning_test
 /x86_64/mmu_role_test
 /x86_64/platform_info_test
@@ -46,6 +47,7 @@
 /x86_64/vmx_tsc_adjust_test
 /x86_64/vmx_nested_tsc_scaling_test
 /x86_64/xapic_ipi_test
+/x86_64/xapic_state_test
 /x86_64/xen_shinfo_test
 /x86_64/xen_vmcall_test
 /x86_64/xss_msr_test
@@ -57,6 +59,7 @@
 /hardware_disable_test
 /kvm_create_max_vcpus
 /kvm_page_table_test
+/max_guest_memory_test
 /memslot_modification_stress_test
 /memslot_perf_test
 /rseq_test

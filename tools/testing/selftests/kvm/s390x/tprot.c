@@ -95,8 +95,8 @@ struct test {
 	 */
 	/*
 	 * guest: set storage key of page_store_prot to 1
-	 *	  storage key of page_fetch_prot to 9 and enable
-	 *	  protection for it
+	 *        storage key of page_fetch_prot to 9 and enable
+	 *        protection for it
 	 * STAGE_INIT_SIMPLE
 	 * host: write protect both via mprotect
 	 */
@@ -119,7 +119,7 @@ struct test {
 	 * guest: set storage key of page 0 to 9 and enable fetch protection
 	 * STAGE_INIT_FETCH_PROT_OVERRIDE
 	 * host: write protect page 0
-	 *	 enable fetch protection override
+	 *       enable fetch protection override
 	 */
 	/* mismatched keys, fetch protection, but override applies -> RO */
 	{ TEST_FETCH_PROT_OVERRIDE, (void *)0x00, 0x10, READ },
