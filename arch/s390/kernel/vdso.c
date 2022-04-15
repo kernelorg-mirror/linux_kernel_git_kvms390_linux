@@ -214,7 +214,7 @@ static unsigned long vdso_addr(unsigned long start, unsigned long len)
 	unsigned long addr, end, offset;
 
 	/*
-	 * Round up the start address.  It can start out unaligned as a result
+	 * Round up the start address. It can start out unaligned as a result
 	 * of stack start randomization.
 	 */
 	start = PAGE_ALIGN(start);
