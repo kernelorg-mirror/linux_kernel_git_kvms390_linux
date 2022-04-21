@@ -3,8 +3,8 @@
  *  Copyright IBM Corp. 2022
  *  Author(s): Steffen Eiden <seiden@linux.ibm.com>
  */
-#ifndef __S390X_ASM_UVDEVICE_H
-#define __S390X_ASM_UVDEVICE_H
+#ifndef __S390_ASM_UVDEVICE_H
+#define __S390_ASM_UVDEVICE_H
 
 #include <linux/types.h>
 
@@ -48,4 +48,4 @@ struct uvio_attest {
 
 #define UVIO_IOCTL_ATT _IOWR(UVIO_TYPE_UVC, 0x01, struct uvio_ioctl_cb)
 
-#endif  /* __S390X_ASM_UVDEVICE_H */
+#endif  /* __S390_ASM_UVDEVICE_H */

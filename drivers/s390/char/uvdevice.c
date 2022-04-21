@@ -97,7 +97,7 @@ static int get_uvio_attest(struct uvio_ioctl_cb *uv_ioctl, struct uvio_attest *u
 /**
  * uvio_attestation() - Perform a Retrieve Attestation Measurement UVC.
  *
- * uv_ioctl: ioctl control block
+ * @uv_ioctl: ioctl control block
  *
  * uvio_attestation() does a  Retrieve Attestation Measurement Ultravisor Call.
  * It verifies that the given userspace addresses are valid and request sizes
