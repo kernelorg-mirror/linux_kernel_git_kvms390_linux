@@ -48,4 +48,4 @@ struct uvio_attest {
 
 #define UVIO_IOCTL_ATT _IOWR(UVIO_TYPE_UVC, 0x01, struct uvio_ioctl_cb)
 
-#endif  /* __S390_ASM_UVDEVICE_H */
+#endif /* __S390_ASM_UVDEVICE_H */
