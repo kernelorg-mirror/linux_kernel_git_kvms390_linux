@@ -43,13 +43,21 @@ static inline int qpaci(struct qpaci_info_block *info)
 #define PAI_CRYPTO_MAXCTR		256	/* Max # of event counters */
 #define PAI_CRYPTO_KERNEL_OFFSET	2048
 
-#ifdef CONFIG_PERF_EVENTS
-
 DECLARE_STATIC_KEY_FALSE(pai_key);
-#define pai_enabled() static_branch_unlikely(&pai_key)
+
+static __always_inline bool pai_enabled(void)
+{
+	if (!IS_ENABLED(CONFIG_PERF_EVENTS))
+		return false;
+	if (static_branch_unlikely(&pai_key))
+		return true;
+	return false;
+}
 
 static __always_inline void pai_kernel_enter(struct pt_regs *regs)
 {
+	if (!IS_ENABLED(CONFIG_PERF_EVENTS))
+		return;
 	if (!S390_lowcore.ccd)
 		return;
 	if (!user_mode(regs))
@@ -59,16 +67,13 @@ static __always_inline void pai_kernel_enter(struct pt_regs *regs)
 
 static __always_inline void pai_kernel_exit(struct pt_regs *regs)
 {
+	if (!IS_ENABLED(CONFIG_PERF_EVENTS))
+		return;
 	if (!S390_lowcore.ccd)
 		return;
 	if (!user_mode(regs))
 		return;
 	WRITE_ONCE(S390_lowcore.ccd, S390_lowcore.ccd & ~PAI_CRYPTO_KERNEL_OFFSET);
 }
-#else
-#define pai_enabled() false
-static __always_inline void pai_kernel_enter(struct pt_regs *regs) {};
-static __always_inline void pai_kernel_exit(struct pt_regs *regs) {};
-#endif
 
 #endif
