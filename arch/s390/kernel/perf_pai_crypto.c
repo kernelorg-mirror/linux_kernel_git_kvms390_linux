@@ -162,8 +162,8 @@ static int paicrypt_busy(struct perf_event_attr *a, struct paicrypt_map *cpump)
 	cpump->page = (unsigned long *)get_zeroed_page(GFP_KERNEL);
 	if (!cpump->page)
 		goto unlock;
-	cpump->save = kvmalloc_array(paicrypt_cnt, sizeof(struct pai_userdata),
-				     GFP_KERNEL);
+	cpump->save = kvmalloc_array(paicrypt_cnt + 1,
+				     sizeof(struct pai_userdata), GFP_KERNEL);
 	if (!cpump->save) {
 		free_page((unsigned long)cpump->page);
 		cpump->page = NULL;
