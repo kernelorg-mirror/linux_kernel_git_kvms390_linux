@@ -45,18 +45,11 @@ static inline int qpaci(struct qpaci_info_block *info)
 
 DECLARE_STATIC_KEY_FALSE(pai_key);
 
-static __always_inline bool pai_enabled(void)
-{
-	if (!IS_ENABLED(CONFIG_PERF_EVENTS))
-		return false;
-	if (static_branch_unlikely(&pai_key))
-		return true;
-	return false;
-}
-
 static __always_inline void pai_kernel_enter(struct pt_regs *regs)
 {
 	if (!IS_ENABLED(CONFIG_PERF_EVENTS))
+		return;
+	if (!static_branch_unlikely(&pai_key))
 		return;
 	if (!S390_lowcore.ccd)
 		return;
@@ -68,6 +61,8 @@ static __always_inline void pai_kernel_enter(struct pt_regs *regs)
 static __always_inline void pai_kernel_exit(struct pt_regs *regs)
 {
 	if (!IS_ENABLED(CONFIG_PERF_EVENTS))
+		return;
+	if (!static_branch_unlikely(&pai_key))
 		return;
 	if (!S390_lowcore.ccd)
 		return;

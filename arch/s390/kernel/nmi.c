@@ -174,11 +174,9 @@ void __s390_handle_mcck(void)
 void noinstr s390_handle_mcck(struct pt_regs *regs)
 {
 	trace_hardirqs_off();
-	if (pai_enabled())
-		pai_kernel_enter(regs);
+	pai_kernel_enter(regs);
 	__s390_handle_mcck();
-	if (pai_enabled())
-		pai_kernel_exit(regs);
+	pai_kernel_exit(regs);
 	trace_hardirqs_on();
 }
 /*

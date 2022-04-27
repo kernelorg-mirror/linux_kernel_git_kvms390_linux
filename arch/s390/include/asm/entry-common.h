@@ -20,8 +20,7 @@ static __always_inline void arch_enter_from_user_mode(struct pt_regs *regs)
 	if (IS_ENABLED(CONFIG_DEBUG_ENTRY))
 		debug_user_asce(0);
 
-	if (pai_enabled())
-		pai_kernel_enter(regs);
+	pai_kernel_enter(regs);
 }
 
 #define arch_enter_from_user_mode arch_enter_from_user_mode
@@ -48,8 +47,7 @@ static __always_inline void arch_exit_to_user_mode(void)
 	if (IS_ENABLED(CONFIG_DEBUG_ENTRY))
 		debug_user_asce(1);
 
-	if (pai_enabled())
-		pai_kernel_exit(current_pt_regs());
+	pai_kernel_exit(current_pt_regs());
 }
 
 #define arch_exit_to_user_mode arch_exit_to_user_mode
