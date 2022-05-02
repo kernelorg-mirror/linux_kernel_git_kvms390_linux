@@ -1183,8 +1183,8 @@ EXPORT_SYMBOL_GPL(gmap_read_table);
 static inline void gmap_insert_rmap(struct gmap *sg, unsigned long vmaddr,
 				    struct gmap_rmap *rmap)
 {
-	void __rcu **slot;
 	struct gmap_rmap *temp;
+	void __rcu **slot;
 
 	BUG_ON(!gmap_is_shadow(sg));
 	slot = radix_tree_lookup_slot(&sg->host_to_rmap, vmaddr >> PAGE_SHIFT);
