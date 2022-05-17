@@ -491,8 +491,8 @@ enum prot_type {
 	PROT_TYPE_IEP  = 4,
 };
 
-static int trans_exc_ending(struct kvm_vcpu *vcpu, int code, unsigned long gva, u8 ar,
-			    enum gacc_mode mode, enum prot_type prot, bool suppress)
+static int trans_exc(struct kvm_vcpu *vcpu, int code, unsigned long gva,
+		     u8 ar, enum gacc_mode mode, enum prot_type prot)
 {
 	struct kvm_s390_pgm_info *pgm = &vcpu->arch.pgm;
 	struct trans_exc_code_bits *tec;
@@ -503,24 +503,22 @@ static int trans_exc_ending(struct kvm_vcpu *vcpu, int code, unsigned long gva, 
 
 	switch (code) {
 	case PGM_PROTECTION:
-		if (suppress) {
-			switch (prot) {
-			case PROT_TYPE_IEP:
-				tec->b61 = 1;
-				fallthrough;
-			case PROT_TYPE_LA:
-				tec->b56 = 1;
-				break;
-			case PROT_TYPE_KEYC:
-				tec->b60 = 1;
-				break;
-			case PROT_TYPE_ALC:
-				tec->b60 = 1;
-				fallthrough;
-			case PROT_TYPE_DAT:
-				tec->b61 = 1;
-				break;
-			}
+		switch (prot) {
+		case PROT_TYPE_IEP:
+			tec->b61 = 1;
+			fallthrough;
+		case PROT_TYPE_LA:
+			tec->b56 = 1;
+			break;
+		case PROT_TYPE_KEYC:
+			tec->b60 = 1;
+			break;
+		case PROT_TYPE_ALC:
+			tec->b60 = 1;
+			fallthrough;
+		case PROT_TYPE_DAT:
+			tec->b61 = 1;
+			break;
 		}
 		fallthrough;
 	case PGM_ASCE_TYPE:
@@ -552,12 +550,6 @@ static int trans_exc_ending(struct kvm_vcpu *vcpu, int code, unsigned long gva, 
 		break;
 	}
 	return code;
-}
-
-static int trans_exc(struct kvm_vcpu *vcpu, int code, unsigned long gva, u8 ar,
-		     enum gacc_mode mode, enum prot_type prot)
-{
-	return trans_exc_ending(vcpu, code, gva, ar, mode, prot, true);
 }
 
 static int get_vcpu_asce(struct kvm_vcpu *vcpu, union asce *asce,
@@ -1118,8 +1110,7 @@ int access_guest_with_key(struct kvm_vcpu *vcpu, unsigned long ga, u8 ar,
 		ga = kvm_s390_logical_to_effective(vcpu, ga + fragment_len);
 	}
 	if (rc > 0)
-		rc = trans_exc_ending(vcpu, rc, ga, ar, mode, prot,
-				      (mode != GACC_STORE) || (idx == 0));
+		rc = trans_exc(vcpu, rc, ga, ar, mode, prot);
 out_unlock:
 	if (need_ipte_lock)
 		ipte_unlock(vcpu);
