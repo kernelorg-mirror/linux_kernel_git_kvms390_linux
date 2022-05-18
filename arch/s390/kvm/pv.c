@@ -325,7 +325,7 @@ int kvm_s390_pv_dump_cpu(struct kvm_vcpu *vcpu, void *buff, u16 *rc, u16 *rrc)
  * @kvm: pointer to the guest's KVM struct
  * @buff_user: Userspace pointer where we will write the results to
  * @gaddr: Starting absolute guest address for which the storage state
- *         is requested.
+ *	   is requested.
  * @buff_user_len: Length of the buff_user buffer
  * @rc: Pointer to where the uvcb return code is stored
  * @rrc: Pointer to where the uvcb return reason code is stored
