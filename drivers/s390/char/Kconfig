@@ -101,7 +101,7 @@ config SCLP_OFB
 	  Service Element.
 
 config S390_UV_UAPI
-	def_tristate y
+	def_tristate m
 	prompt "Ultravisor userspace API"
 	help
 	  Selecting exposes parts of the UV interface to userspace
