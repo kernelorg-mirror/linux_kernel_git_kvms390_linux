@@ -6,7 +6,6 @@
 
 #include <linux/linkage.h>
 #include <asm/asm-offsets.h>
-#include <asm/ptrace.h>
 
 __PT_R0 = __PT_GPRS
 __PT_R8 = __PT_GPRS + 64
