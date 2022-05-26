@@ -58,7 +58,7 @@
 #include <asm/smp.h>
 #include <asm/mmu_context.h>
 #include <asm/cpcmd.h>
-#include <asm/lowcore.h>
+#include <asm/abs_lowcore.h>
 #include <asm/nmi.h>
 #include <asm/irq.h>
 #include <asm/page.h>
@@ -464,11 +464,6 @@ static void __init setup_lowcore_dat_off(void)
 		      __func__, THREAD_SIZE, THREAD_SIZE);
 	restart_stack += STACK_INIT_OFFSET;
 
-	/*
-	 * Set up PSW restart to call ipl.c:do_restart(). Copy the relevant
-	 * restart data to the absolute zero lowcore. This is necessary if
-	 * PSW restart is done on an offline CPU that has lowcore zero.
-	 */
 	lc->restart_stack = (unsigned long) restart_stack;
 	lc->restart_fn = (unsigned long) do_restart;
 	lc->restart_data = 0;
@@ -479,13 +474,6 @@ static void __init setup_lowcore_dat_off(void)
 		panic("%s: Failed to allocate %lu bytes align=0x%lx\n",
 		      __func__, THREAD_SIZE, THREAD_SIZE);
 	lc->mcck_stack = mcck_stack + STACK_INIT_OFFSET;
-
-	/* Setup absolute zero lowcore */
-	put_abs_lowcore(restart_stack, lc->restart_stack);
-	put_abs_lowcore(restart_fn, lc->restart_fn);
-	put_abs_lowcore(restart_data, lc->restart_data);
-	put_abs_lowcore(restart_source, lc->restart_source);
-	put_abs_lowcore(restart_psw, lc->restart_psw);
 
 	lc->spinlock_lockval = arch_spin_lockval(0);
 	lc->spinlock_index = 0;
@@ -500,8 +488,8 @@ static void __init setup_lowcore_dat_off(void)
 
 static void __init setup_lowcore_dat_on(void)
 {
-	struct lowcore *lc = lowcore_ptr[0];
-	int cr;
+	struct lowcore *lc, *abs_lc;
+	unsigned long flags;
 
 	__ctl_clear_bit(0, 28);
 	S390_lowcore.external_new_psw.mask |= PSW_MASK_DAT;
@@ -510,10 +498,24 @@ static void __init setup_lowcore_dat_on(void)
 	S390_lowcore.io_new_psw.mask |= PSW_MASK_DAT;
 	__ctl_store(S390_lowcore.cregs_save_area, 0, 15);
 	__ctl_set_bit(0, 28);
-	put_abs_lowcore(restart_flags, RESTART_FLAG_CTLREGS);
-	put_abs_lowcore(program_new_psw, lc->program_new_psw);
-	for (cr = 0; cr < ARRAY_SIZE(lc->cregs_save_area); cr++)
-		put_abs_lowcore(cregs_save_area[cr], lc->cregs_save_area[cr]);
+	lc = lowcore_ptr[0];
+	if (abs_lowcore_map(0, lc))
+		panic("Couldn't setup absolute lowcore");
+	/*
+	 * Setup absolute zero lowcore. Copy PSW restart data to the absolute
+	 * zero lowcore. This is necessary if PSW restart is done on an offline
+	 * CPU that has lowcore zero.
+	 */
+	abs_lc = get_abs_lowcore(&flags);
+	abs_lc->restart_stack = lc->restart_stack;
+	abs_lc->restart_fn = lc->restart_fn;
+	abs_lc->restart_data = lc->restart_data;
+	abs_lc->restart_source = lc->restart_source;
+	abs_lc->restart_psw = lc->restart_psw;
+	abs_lc->program_new_psw = lc->program_new_psw;
+	abs_lc->restart_flags = RESTART_FLAG_CTLREGS;
+	memcpy(abs_lc->cregs_save_area, lc->cregs_save_area, sizeof(abs_lc->cregs_save_area));
+	put_abs_lowcore(abs_lc, flags);
 }
 
 static struct resource code_resource = {

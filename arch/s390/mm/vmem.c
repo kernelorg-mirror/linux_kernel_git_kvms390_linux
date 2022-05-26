@@ -561,6 +561,82 @@ int vmem_add_mapping(unsigned long start, unsigned long size)
 }
 
 /*
+ * Allocate empty or return existing PTE
+ */
+static pte_t *vmem_pte_reserve(unsigned long addr)
+{
+	pte_t *ptep = NULL;
+	pgd_t *pgd;
+	p4d_t *p4d;
+	pud_t *pud;
+	pmd_t *pmd;
+	pte_t *pte;
+
+	if (!IS_ALIGNED(addr, PAGE_SIZE))
+		return NULL;
+
+	mutex_lock(&vmem_mutex);
+	pgd = pgd_offset_k(addr);
+	if (pgd_none(*pgd)) {
+		p4d = vmem_crst_alloc(_REGION2_ENTRY_EMPTY);
+		if (!p4d)
+			goto out;
+		pgd_populate(&init_mm, pgd, p4d);
+	}
+	p4d = p4d_offset(pgd, addr);
+	if (p4d_none(*p4d)) {
+		pud = vmem_crst_alloc(_REGION3_ENTRY_EMPTY);
+		if (!pud)
+			goto out;
+		p4d_populate(&init_mm, p4d, pud);
+	}
+	pud = pud_offset(p4d, addr);
+	if (pud_none(*pud)) {
+		pmd = vmem_crst_alloc(_SEGMENT_ENTRY_EMPTY);
+		if (!pmd)
+			goto out;
+		pud_populate(&init_mm, pud, pmd);
+	}
+	pmd = pmd_offset(pud, addr);
+	if (pmd_none(*pmd)) {
+		pte = vmem_pte_alloc();
+		if (!pte)
+			goto out;
+		pmd_populate(&init_mm, pmd, pte);
+	}
+	ptep = pte_offset_kernel(pmd, addr);
+out:
+	mutex_unlock(&vmem_mutex);
+	return ptep;
+}
+
+int vmem_map_page(unsigned long addr, unsigned long phys, pgprot_t prot)
+{
+	pte_t *ptep, pte;
+
+	ptep = virt_to_kpte(addr);
+	if (!ptep) {
+		ptep = vmem_pte_reserve(addr);
+		if (!ptep)
+			return -ENOMEM;
+	} else {
+		__ptep_ipte(addr, ptep, 0, 0, IPTE_GLOBAL);
+	}
+	pte = mk_pte_phys(phys, prot);
+	set_pte(ptep, pte);
+	return 0;
+}
+
+void vmem_unmap_page(unsigned long addr)
+{
+	pte_t *ptep;
+
+	ptep = virt_to_kpte(addr);
+	__ptep_ipte(addr, ptep, 0, 0, IPTE_GLOBAL);
+	pte_clear(&init_mm, addr, ptep);
+}
+
+/*
  * map whole physical memory to virtual memory (identity mapping)
  * we reserve enough space in the vmalloc area for vmemmap to hotplug
  * additional memory segments.
