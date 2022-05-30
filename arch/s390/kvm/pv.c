@@ -467,10 +467,9 @@ int kvm_s390_pv_dump_complete(struct kvm *kvm, void __user *buff_user,
 	int ret;
 
 	/* Allocate dump area */
-	ret = -ENOMEM;
 	compl_data = vzalloc(uv_info.conf_dump_finalize_len);
 	if (!compl_data)
-		return ret;
+		return -ENOMEM;
 	complete.dump_area_origin = (u64)compl_data;
 
 	ret = uv_call_sched(0, (u64)&complete);
