@@ -13,7 +13,6 @@ static struct {
 	{ "tb", test_tb },
 	{ "tprot", test_tprot },
 	{ "stsi", test_stsi },
-	{ "stcrw", test_stcrw },
 	{ "stsch", test_stsch },
 	{ "tsch", test_tsch },
 	{ "*qbs", test_qbs },
