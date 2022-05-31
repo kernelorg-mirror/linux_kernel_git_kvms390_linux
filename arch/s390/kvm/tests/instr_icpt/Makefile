@@ -6,5 +6,5 @@
 
 obj-m	+= instr_icpt.o
 
-instr_icpt-objs := main.o pfmf.o sck.o tb.o tprot.o \
+instr_icpt-objs := main.o sck.o tb.o tprot.o \
 	stsi.o ssch.o stcrw.o stsch.o tsch.o qbs.o
