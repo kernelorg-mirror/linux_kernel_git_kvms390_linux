@@ -15,7 +15,6 @@ static struct {
 	{ "tb", test_tb },
 	{ "tprot", test_tprot },
 	{ "stsi", test_stsi },
-	{ "msch", test_msch },
 	{ "ssch", test_ssch },
 	{ "stcrw", test_stcrw },
 	{ "stsch", test_stsch },

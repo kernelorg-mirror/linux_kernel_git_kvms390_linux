@@ -7,7 +7,6 @@ int test_tb(void);
 int test_tprot(void);
 int test_sigp(void);
 int test_stsi(void);
-int test_msch(void);
 int test_ssch(void);
 int test_stcrw(void);
 int test_stsch(void);
