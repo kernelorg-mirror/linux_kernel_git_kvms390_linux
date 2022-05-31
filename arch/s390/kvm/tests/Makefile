@@ -7,5 +7,4 @@ obj-m		+= skeymigration.o
 obj-m		+= intloop.o
 obj-m		+= sigptest.o
 obj-m		+= exittime.o
-obj-m		+= cmmamigration.o
 obj-m		+= cmmatorture.o
