@@ -10,7 +10,6 @@ static struct {
 	const char *name;
 	int (*func)(void);
 } tests[] = {
-	{ "sck", test_sck },
 	{ "tb", test_tb },
 	{ "tprot", test_tprot },
 	{ "stsi", test_stsi },
