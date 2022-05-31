@@ -11,7 +11,6 @@ static struct {
 	int (*func)(void);
 } tests[] = {
 	{ "tb", test_tb },
-	{ "tsch", test_tsch },
 	{ "*qbs", test_qbs },
 	{ NULL, NULL }
 };
