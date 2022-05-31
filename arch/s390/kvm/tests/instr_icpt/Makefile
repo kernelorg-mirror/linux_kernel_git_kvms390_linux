@@ -7,4 +7,4 @@
 obj-m	+= instr_icpt.o
 
 instr_icpt-objs := main.o tb.o tprot.o \
-	stsi.o stsch.o tsch.o qbs.o
+	stsi.o tsch.o qbs.o
