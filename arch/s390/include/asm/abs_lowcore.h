@@ -43,7 +43,7 @@ static inline struct lowcore *get_abs_lowcore(unsigned long *flags)
 	}
 }
 
-static inline void put_abs_lowcore(struct lowcore *lc, unsigned long flags)
+static inline void put_abs_lowcore(struct lowcore *, unsigned long flags)
 {
 	if (abs_lowcore_mapped()) {
 		if (flags)
