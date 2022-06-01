@@ -152,7 +152,6 @@ static void setup_kernel_memory_layout(void)
 	unsigned long vmemmap_start;
 	unsigned long rte_size;
 	unsigned long pages;
-	unsigned long vmax;
 
 	pages = ident_map_size / PAGE_SIZE;
 	/* vmemmap contains a multiple of PAGES_PER_SECTION struct pages */
@@ -164,10 +163,10 @@ static void setup_kernel_memory_layout(void)
 	    vmalloc_size > _REGION2_SIZE ||
 	    vmemmap_start + vmemmap_size + vmalloc_size + MODULES_LEN >
 		    _REGION2_SIZE) {
-		vmax = _REGION1_SIZE;
+		MODULES_END = _REGION1_SIZE;
 		rte_size = _REGION2_SIZE;
 	} else {
-		vmax = _REGION2_SIZE;
+		MODULES_END = _REGION2_SIZE;
 		rte_size = _REGION3_SIZE;
 	}
 	/*
@@ -175,12 +174,11 @@ static void setup_kernel_memory_layout(void)
 	 * secure storage limit, so that any vmalloc allocation
 	 * we do could be used to back secure guest storage.
 	 */
-	vmax = adjust_to_uv_max(vmax);
+	adjust_to_uv_max(&MODULES_END);
 #ifdef CONFIG_KASAN
 	/* force vmalloc and modules below kasan shadow */
-	vmax = min(vmax, KASAN_SHADOW_START);
+	MODULES_END = min(MODULES_END, KASAN_SHADOW_START);
 #endif
-	MODULES_END = vmax;
 	MODULES_VADDR = MODULES_END - MODULES_LEN;
 	VMALLOC_END = MODULES_VADDR;
 
