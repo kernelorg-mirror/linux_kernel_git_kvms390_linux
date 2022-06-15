@@ -2744,13 +2744,17 @@ void s390_uv_destroy_pfns(unsigned long count, unsigned long *pfns)
 EXPORT_SYMBOL_GPL(s390_uv_destroy_pfns);
 
 /**
- * __s390_uv_destroy_range - Walk the given range of the given address
- * space, and call the destroy secure page UVC on each page.
- * Optionally exit early if a fatal signal is pending.
- * @mm the mm to operate on
- * @start the start of the range
- * @end the end of the range
- * @interruptible if not 0, stop when a fatal signal is received
+ * __s390_uv_destroy_range - Call the destroy secure page UVC on each page
+ * in the given range of the given address space.
+ * @mm: the mm to operate on
+ * @start: the start of the range
+ * @end: the end of the range
+ * @interruptible: if not 0, stop when a fatal signal is received
+ *
+ * Walk the given range of the given address space and call the destroy
+ * secure page UVC on each page. Optionally exit early if a fatal signal is
+ * pending.
+ *
  * Return: 0 on success, -EINTR if the function stopped before completing
  */
 int __s390_uv_destroy_range(struct mm_struct *mm, unsigned long start,

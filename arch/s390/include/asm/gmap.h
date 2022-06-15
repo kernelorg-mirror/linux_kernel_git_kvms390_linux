@@ -155,9 +155,9 @@ int __s390_uv_destroy_range(struct mm_struct *mm, unsigned long start,
 
 /**
  * s390_uv_destroy_range - Destroy a range of pages in the given mm.
- * @mm the mm on which to operate on
- * @start the start of the range
- * @end the end of the range
+ * @mm: the mm on which to operate on
+ * @start: the start of the range
+ * @end: the end of the range
  *
  * This function will call cond_sched, so it should not generate stalls, but
  * it will otherwise only return when it completed.
@@ -171,9 +171,9 @@ static inline void s390_uv_destroy_range(struct mm_struct *mm, unsigned long sta
 /**
  * s390_uv_destroy_range_interruptible - Destroy a range of pages in the
  * given mm, but stop when a fatal signal is received.
- * @mm the mm on which to operate on
- * @start the start of the range
- * @end the end of the range
+ * @mm: the mm on which to operate on
+ * @start: the start of the range
+ * @end: the end of the range
  *
  * This function will call cond_sched, so it should not generate stalls. If
  * a fatal signal is received, it will return with -EINTR immediately,
