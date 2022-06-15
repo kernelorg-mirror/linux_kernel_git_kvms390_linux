@@ -2776,7 +2776,7 @@ EXPORT_SYMBOL_GPL(__s390_uv_destroy_range);
 /**
  * s390_unlist_old_asce - Remove the topmost level of page tables from the
  * list of page tables of the gmap.
- * @gmap the gmap whose table is to be removed
+ * @gmap: the gmap whose table is to be removed
  *
  * On s390x, KVM keeps a list of all pages containing the page tables of the
  * gmap (the CRST list). This list is used at tear down time to free all
@@ -2818,7 +2818,7 @@ EXPORT_SYMBOL_GPL(s390_unlist_old_asce);
 
 /**
  * s390_replace_asce - Try to replace the current ASCE of a gmap with a copy
- * @gmap the gmap whose ASCE needs to be replaced
+ * @gmap: the gmap whose ASCE needs to be replaced
  *
  * If the allocation of the new top level page table fails, the ASCE is not
  * replaced.
