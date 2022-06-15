@@ -358,8 +358,8 @@ EXPORT_SYMBOL_GPL(gmap_convert_to_secure);
 
 /**
  * gmap_destroy_page - Destroy a guest page.
- * @gmap the gmap of the guest
- * @gaddr the guest address to destroy
+ * @gmap: the gmap of the guest
+ * @gaddr: the guest address to destroy
  *
  * An attempt will be made to destroy the given guest page. If the attempt
  * fails, an attempt is made to export the page. If both attempts fail, an
