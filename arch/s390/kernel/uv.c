@@ -237,8 +237,8 @@ static int make_secure_pte(pte_t *ptep, unsigned long addr,
 /**
  * should_export_before_import - Determine whether an export is needed
  * before an import-like operation
- * @uvcb the Ultravisor control block of the UVC to be performed
- * @mm the mm of the process
+ * @uvcb: the Ultravisor control block of the UVC to be performed
+ * @mm: the mm of the process
  *
  * Although considered as one, the Unpin Page UVC is not an actual import,
  * so it is not affected.
