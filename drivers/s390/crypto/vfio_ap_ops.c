@@ -165,18 +165,16 @@ static struct ap_matrix_mdev *get_update_locks_by_apqn(int apqn)
  *			       KVM guest to which the matrix mdev linked to a
  *			       vfio_ap_queue object is attached.
  *
- * @q: a pointer to a vfio_ap_queue object.
- *
  * The proper locking order is:
  * 1. q->matrix_dev->guests_lock: required to use the KVM pointer to update a
  *				  KVM guest's APCB.
  * 2. q->matrix_mdev->kvm->lock:  required to update a guest's APCB
  * 3. matrix_dev->mdevs_lock:	  required to access data stored in matrix_mdev
  *
- * Note: if @queue is not linked to an ap_matrix_mdev object, the KVM lock
- *	  will not be taken.
+ * Note: if the vfio_ap_queue object is not linked to an ap_matrix_mdev object,
+ *	 the KVM lock will not be taken.
  */
-#define get_update_locks_for_queue(q) ({			\
+#define get_update_locks_for_queue() ({			\
 	mutex_lock(&matrix_dev->guests_lock);			\
 	if (q->matrix_mdev && q->matrix_mdev->kvm)		\
 		mutex_lock(&q->matrix_mdev->kvm->lock);		\
@@ -1915,7 +1913,7 @@ void vfio_ap_mdev_remove_queue(struct ap_device *apdev)
 
 	sysfs_remove_group(&apdev->device.kobj, &vfio_queue_attr_group);
 	q = dev_get_drvdata(&apdev->device);
-	get_update_locks_for_queue(q);
+	get_update_locks_for_queue();
 	matrix_mdev = q->matrix_mdev;
 
 	if (matrix_mdev) {
