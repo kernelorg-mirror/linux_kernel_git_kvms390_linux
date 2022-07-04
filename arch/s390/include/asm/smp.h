@@ -37,6 +37,7 @@ extern int smp_cpu_get_polarization(int cpu);
 extern int smp_cpu_get_cpu_address(int cpu);
 extern void smp_fill_possible_mask(void);
 extern void smp_detect_cpus(void);
+extern void smp_verify_image(const char *);
 
 static inline void smp_stop_cpu(void)
 {
@@ -64,5 +65,6 @@ extern void __cpu_die(unsigned int cpu);
 extern int __cpu_disable(void);
 extern void schedule_mcck_handler(void);
 void notrace smp_yield_cpu(int cpu);
+void smp_verify_cpus_not_running(void);
 
 #endif /* __ASM_SMP_H */

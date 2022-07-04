@@ -55,6 +55,7 @@
 #include <asm/stacktrace.h>
 #include <asm/topology.h>
 #include <asm/vdso.h>
+#include <asm/checksum.h>
 #include "entry.h"
 
 enum {
@@ -317,12 +318,17 @@ static void pcpu_delegate(struct pcpu *pcpu,
 {
 	struct lowcore *lc = lowcore_ptr[pcpu - pcpu_devices];
 	unsigned int source_cpu = stap();
+	psw_t psw;
 
 	__load_psw_mask(PSW_KERNEL_BITS | PSW_MASK_DAT);
 	if (pcpu->address == source_cpu) {
 		call_on_stack(2, stack, void, __pcpu_delegate,
 			      pcpu_delegate_fn *, func, void *, data);
 	}
+	/* Verify called function didn't enable anything */
+	psw.mask = __extract_psw();
+	if (psw_bits(psw).mcheck || psw_bits(psw).io || psw_bits(psw).ext)
+		disabled_wait();
 	/* Stop target cpu (if func returns this stops the current cpu). */
 	pcpu_sigp_retry(pcpu, SIGP_STOP, 0);
 	/* Restart func on the target cpu and stop the current cpu. */
@@ -824,6 +830,46 @@ static int __smp_rescan_cpus(struct sclp_core_info *info, bool early)
 	return nr;
 }
 
+void smp_verify_image(const char *str)
+{
+	static unsigned int csum;
+	unsigned int new, len;
+
+	len = _etext - _stext;
+	new = csum_partial(_stext, len, 0);
+	printk("csum old: %08x - new: %08x (%s)\n", csum, new, str);
+	csum = new;
+}
+
+extern struct lowcore *earlylc;
+
+void smp_verify_cpus(void)
+{
+	struct lowcore *lc, *lc_other;
+	unsigned int this_cpu, address;
+	unsigned long pa;
+
+	lc = earlylc;
+	if (!lc)
+		panic("no mem\n");
+	pa = __pa(&lc->floating_pt_save_area);
+	this_cpu = stap();
+	for (address = 0; address < 128; address++) {
+		if (address == this_cpu)
+			continue;
+		if (__pcpu_sigp_relax(address, SIGP_STORE_STATUS_AT_ADDRESS,
+				      pa) != SIGP_CC_ORDER_CODE_ACCEPTED)
+			continue;
+		lc_other = (struct lowcore *)(unsigned long)lc->prefixreg_save_area;
+		if (!memory_contains(_stext, _etext, lc_other, sizeof(*lc_other)))
+			continue;
+		printk("cpu %d: prefix: %016lx ext old mask: %016lx\n",
+		       address,
+		       (unsigned long)lc_other,
+		       lc_other->external_old_psw.mask);
+	}
+}
+
 void __init smp_detect_cpus(void)
 {
 	unsigned int cpu, mtid, c_cpus, s_cpus;
@@ -852,7 +898,11 @@ void __init smp_detect_cpus(void)
 	/* Set multi-threading state for the current system */
 	mtid = boot_core_type ? sclp.mtid : sclp.mtid_cp;
 	mtid = (mtid < smp_max_threads) ? mtid : smp_max_threads - 1;
+	smp_verify_cpus();
+	smp_verify_image("before smt");
 	pcpu_set_smt(mtid);
+	smp_verify_image("after smt");
+	smp_verify_cpus();
 
 	/* Print number of CPUs */
 	c_cpus = s_cpus = 0;

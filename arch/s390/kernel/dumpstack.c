@@ -22,6 +22,7 @@
 #include <asm/dis.h>
 #include <asm/ipl.h>
 #include <asm/unwind.h>
+#include <asm/setup.h>
 
 const char *stack_type_name(enum stack_type type)
 {
