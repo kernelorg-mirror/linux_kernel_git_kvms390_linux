@@ -317,12 +317,17 @@ static void pcpu_delegate(struct pcpu *pcpu,
 {
 	struct lowcore *lc = lowcore_ptr[pcpu - pcpu_devices];
 	unsigned int source_cpu = stap();
+	psw_t psw;
 
 	__load_psw_mask(PSW_KERNEL_BITS | PSW_MASK_DAT);
 	if (pcpu->address == source_cpu) {
 		call_on_stack(2, stack, void, __pcpu_delegate,
 			      pcpu_delegate_fn *, func, void *, data);
 	}
+	/* Verify called function didn't enable anything */
+	psw.mask = __extract_psw();
+	if (psw_bits(psw).mcheck || psw_bits(psw).io || psw_bits(psw).ext)
+		disabled_wait();
 	/* Stop target cpu (if func returns this stops the current cpu). */
 	pcpu_sigp_retry(pcpu, SIGP_STOP, 0);
 	/* Restart func on the target cpu and stop the current cpu. */
@@ -824,6 +829,35 @@ static int __smp_rescan_cpus(struct sclp_core_info *info, bool early)
 	return nr;
 }
 
+static noinline bool cpu_stopped(int address)
+{
+	u32 status;
+	int cc;
+
+	cc = __pcpu_sigp(address, SIGP_SENSE, 0, &status);
+	if (cc == SIGP_CC_STATUS_STORED)
+		return status & (SIGP_STATUS_CHECK_STOP | SIGP_STATUS_STOPPED);
+	if (cc == SIGP_CC_ORDER_CODE_ACCEPTED)
+		return false;
+	if (cc == SIGP_CC_BUSY)
+		return false;
+	return true;
+}
+
+void smp_verify_cpus_not_running(void)
+{
+	int address, this_cpu;
+
+	this_cpu = stap();
+	for (address = 0; address < 128; address++) {
+		if (address == this_cpu)
+			continue;
+		if (cpu_stopped(address))
+			continue;
+		panic("non-ipl cpu %d running - this cpu: %d\n", address, this_cpu);
+	}
+}
+
 void __init smp_detect_cpus(void)
 {
 	unsigned int cpu, mtid, c_cpus, s_cpus;
@@ -1021,6 +1055,7 @@ void __init smp_setup_processor_id(void)
 	S390_lowcore.cpu_nr = 0;
 	S390_lowcore.spinlock_lockval = arch_spin_lockval(0);
 	S390_lowcore.spinlock_index = 0;
+	smp_verify_cpus_not_running();
 }
 
 /*

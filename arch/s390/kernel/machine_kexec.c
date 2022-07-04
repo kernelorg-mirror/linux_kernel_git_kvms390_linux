@@ -50,6 +50,7 @@ static void __do_machine_kdump(void *image)
 
 	/* Now do the reset  */
 	s390_reset_system();
+	smp_verify_cpus_not_running();
 
 	/*
 	 * Copy dump CPU store status info to absolute zero.
@@ -250,6 +251,7 @@ static void __do_machine_kexec(void *data)
 	struct kimage *image = data;
 
 	s390_reset_system();
+	smp_verify_cpus_not_running();
 	data_mover = (relocate_kernel_t) page_to_phys(image->control_code_page);
 
 	__arch_local_irq_stnsm(0xfb); /* disable DAT - avoid no-execute */
@@ -288,5 +290,6 @@ void machine_kexec(struct kimage *image)
 		return;
 	tracer_disable();
 	smp_send_stop();
+	smp_verify_cpus_not_running();
 	smp_call_ipl_cpu(__machine_kexec, image);
 }
