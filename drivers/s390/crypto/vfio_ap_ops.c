@@ -1121,7 +1121,7 @@ done:
 static DEVICE_ATTR_WO(unassign_adapter);
 
 static void vfio_ap_mdev_link_domain(struct ap_matrix_mdev *matrix_mdev,
-				      unsigned long apqi)
+				     unsigned long apqi)
 {
 	unsigned long apid;
 
