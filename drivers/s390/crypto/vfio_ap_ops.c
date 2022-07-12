@@ -39,15 +39,17 @@ static int vfio_ap_mdev_reset_queue(struct vfio_ap_queue *q, unsigned int retry)
  * get_update_locks_for_kvm: Acquire the locks required to dynamically update a
  *			     KVM guest's APCB in the proper order.
  *
+ * @kvm: a pointer to a struct kvm object containing the KVM guest's APCB.
+ *
  * The proper locking order is:
  * 1. matrix_dev->guests_lock: required to use the KVM pointer to update a KVM
  *			       guest's APCB.
  * 2. kvm->lock:	       required to update a guest's APCB
  * 3. matrix_dev->mdevs_lock:  required to access data stored in a matrix_mdev
  *
- * Note: If the KVM pointer is NULL, the KVM lock will not be taken.
+ * Note: If @kvm is NULL, the KVM lock will not be taken.
  */
-#define get_update_locks_for_kvm() ({	\
+#define get_update_locks_for_kvm(kvm) ({	\
 	mutex_lock(&matrix_dev->guests_lock);	\
 	if (kvm)				\
 		mutex_lock(&kvm->lock);		\
@@ -58,15 +60,16 @@ static int vfio_ap_mdev_reset_queue(struct vfio_ap_queue *q, unsigned int retry)
  * release_update_locks_for_kvm: Release the locks used to dynamically update a
  *				 KVM guest's APCB in the proper order.
  *
+ * @kvm: a pointer to a struct kvm object containing the KVM guest's APCB.
  *
  * The proper unlocking order is:
  * 1. matrix_dev->mdevs_lock
  * 2. kvm->lock
  * 3. matrix_dev->guests_lock
  *
- * Note: If the KVM pointer is NULL, the KVM lock will not be released.
+ * Note: If @kvm is NULL, the KVM lock will not be released.
  */
-#define release_update_locks_for_kvm() ({	\
+#define release_update_locks_for_kvm(kvm) ({	\
 	mutex_unlock(&matrix_dev->mdevs_lock);	\
 	if (kvm)				\
 		mutex_unlock(&kvm->lock);		\
@@ -1524,11 +1527,11 @@ static int vfio_ap_mdev_set_kvm(struct ap_matrix_mdev *matrix_mdev,
 		kvm->arch.crypto.pqap_hook = &matrix_mdev->pqap_hook;
 		up_write(&kvm->arch.crypto.pqap_hook_rwsem);
 
-		get_update_locks_for_kvm();
+		get_update_locks_for_kvm(kvm);
 
 		list_for_each_entry(m, &matrix_dev->mdev_list, node) {
 			if (m != matrix_mdev && m->kvm == kvm) {
-				release_update_locks_for_kvm();
+				release_update_locks_for_kvm(kvm);
 				return -EPERM;
 			}
 		}
@@ -1537,7 +1540,7 @@ static int vfio_ap_mdev_set_kvm(struct ap_matrix_mdev *matrix_mdev,
 		matrix_mdev->kvm = kvm;
 		vfio_ap_mdev_update_guest_apcb(matrix_mdev);
 
-		release_update_locks_for_kvm();
+		release_update_locks_for_kvm(kvm);
 	}
 
 	return 0;
@@ -1588,14 +1591,14 @@ static void vfio_ap_mdev_unset_kvm(struct ap_matrix_mdev *matrix_mdev)
 		kvm->arch.crypto.pqap_hook = NULL;
 		up_write(&kvm->arch.crypto.pqap_hook_rwsem);
 
-		get_update_locks_for_kvm();
+		get_update_locks_for_kvm(kvm);
 
 		kvm_arch_crypto_clear_masks(kvm);
 		vfio_ap_mdev_reset_queues(&matrix_mdev->qtable);
 		kvm_put_kvm(kvm);
 		matrix_mdev->kvm = NULL;
 
-		release_update_locks_for_kvm();
+		release_update_locks_for_kvm(kvm);
 	}
 }
 
