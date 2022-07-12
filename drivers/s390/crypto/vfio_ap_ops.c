@@ -181,12 +181,13 @@ static struct ap_matrix_mdev *get_update_locks_by_apqn(int apqn)
  * Note: if @queue is not linked to an ap_matrix_mdev object, the KVM lock
  *	  will not be taken.
  */
-#define get_update_locks_for_queue(q) ({			\
-	mutex_lock(&matrix_dev->guests_lock);			\
-	if (q->matrix_mdev && q->matrix_mdev->kvm)		\
-		mutex_lock(&q->matrix_mdev->kvm->lock);		\
-	mutex_lock(&matrix_dev->mdevs_lock);			\
-})
+static inline void get_update_locks_for_queue(struct vfio_ap_queue *q)
+{
+	mutex_lock(&matrix_dev->guests_lock);
+	if (q->matrix_mdev && q->matrix_mdev->kvm)
+		mutex_lock(&q->matrix_mdev->kvm->lock);
+	mutex_lock(&matrix_dev->mdevs_lock);
+}
 
 /**
  * vfio_ap_mdev_get_queue - retrieve a queue with a specific APQN from a
