@@ -49,12 +49,13 @@ static int vfio_ap_mdev_reset_queue(struct vfio_ap_queue *q, unsigned int retry)
  *
  * Note: If @kvm is NULL, the KVM lock will not be taken.
  */
-#define get_update_locks_for_kvm(kvm) ({	\
-	mutex_lock(&matrix_dev->guests_lock);	\
-	if (kvm)				\
-		mutex_lock(&kvm->lock);		\
-	mutex_lock(&matrix_dev->mdevs_lock);	\
-})
+static inline void get_update_locks_for_kvm(struct kvm *kvm)
+{
+	mutex_lock(&matrix_dev->guests_lock);
+	if (kvm)
+		mutex_lock(&kvm->lock);
+	mutex_lock(&matrix_dev->mdevs_lock);
+}
 
 /**
  * release_update_locks_for_kvm: Release the locks used to dynamically update a
@@ -69,12 +70,13 @@ static int vfio_ap_mdev_reset_queue(struct vfio_ap_queue *q, unsigned int retry)
  *
  * Note: If @kvm is NULL, the KVM lock will not be released.
  */
-#define release_update_locks_for_kvm(kvm) ({	\
-	mutex_unlock(&matrix_dev->mdevs_lock);	\
-	if (kvm)				\
-		mutex_unlock(&kvm->lock);		\
-	mutex_unlock(&matrix_dev->guests_lock);	\
-})
+static inline void release_update_locks_for_kvm(struct kvm *kvm)
+{
+	mutex_unlock(&matrix_dev->mdevs_lock);
+	if (kvm)
+		mutex_unlock(&kvm->lock);
+	mutex_unlock(&matrix_dev->guests_lock);
+}
 
 /**
  * get_update_locks_for_mdev: Acquire the locks required to dynamically update a
