@@ -94,12 +94,13 @@ static inline void release_update_locks_for_kvm(struct kvm *kvm)
  * Note: If @matrix_mdev is NULL or is not attached to a KVM guest, the KVM
  *	 lock will not be taken.
  */
-#define get_update_locks_for_mdev(matrix_mdev) ({	\
-	mutex_lock(&matrix_dev->guests_lock);		\
-	if (matrix_mdev && matrix_mdev->kvm)		\
-		mutex_lock(&matrix_mdev->kvm->lock);	\
-	mutex_lock(&matrix_dev->mdevs_lock);		\
-})
+static inline void get_update_locks_for_mdev(struct ap_matrix_mdev *matrix_mdev)
+{
+	mutex_lock(&matrix_dev->guests_lock);
+	if (matrix_mdev && matrix_mdev->kvm)
+		mutex_lock(&matrix_mdev->kvm->lock);
+	mutex_lock(&matrix_dev->mdevs_lock);
+}
 
 /**
  * release_update_locks_for_mdev: Release the locks used to dynamically update a
@@ -116,12 +117,13 @@ static inline void release_update_locks_for_kvm(struct kvm *kvm)
  * Note: If @matrix_mdev is NULL or is not attached to a KVM guest, the KVM
  *	 lock will not be released.
  */
-#define release_update_locks_for_mdev(matrix_mdev) ({	\
-	mutex_unlock(&matrix_dev->mdevs_lock);		\
-	if (matrix_mdev && matrix_mdev->kvm)		\
-		mutex_unlock(&matrix_mdev->kvm->lock);		\
-	mutex_unlock(&matrix_dev->guests_lock);		\
-})
+static inline void release_update_locks_for_mdev(struct ap_matrix_mdev *matrix_mdev)
+{
+	mutex_unlock(&matrix_dev->mdevs_lock);
+	if (matrix_mdev && matrix_mdev->kvm)
+		mutex_unlock(&matrix_mdev->kvm->lock);
+	mutex_unlock(&matrix_dev->guests_lock);
+}
 
 /**
  * get_update_locks_by_apqn: Find the mdev to which an APQN is assigned and
