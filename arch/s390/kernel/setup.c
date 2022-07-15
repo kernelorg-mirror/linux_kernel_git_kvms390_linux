@@ -408,15 +408,6 @@ void __init arch_call_rest_init(void)
 	call_on_stack_noreturn(rest_init, stack);
 }
 
-struct lowcore *earlylc;
-
-static void __init moep(void)
-{
-	earlylc = memblock_alloc_low(sizeof(*earlylc), sizeof(*earlylc));
-	if (!earlylc)
-		panic("no early lc\n");
-}
-
 static void __init setup_lowcore_dat_off(void)
 {
 	unsigned long int_psw_mask = PSW_KERNEL_BITS;
@@ -964,7 +955,6 @@ static void __init log_component_list(void)
 
 void __init setup_arch(char **cmdline_p)
 {
-	smp_verify_image("setup arch start");
         /*
          * print what head.S has found out about the machine
          */
@@ -991,9 +981,7 @@ void __init setup_arch(char **cmdline_p)
 	if (IS_ENABLED(CONFIG_EXPOLINE_AUTO))
 		nospec_auto_detect();
 
-	smp_verify_image("before jump label init");
 	jump_label_init();
-	smp_verify_image("after jump label init");
 	parse_early_param();
 #ifdef CONFIG_CRASH_DUMP
 	/* Deactivate elfcorehdr= kernel parameter */
@@ -1020,7 +1008,6 @@ void __init setup_arch(char **cmdline_p)
 	setup_memory_end();
 	memblock_dump_all();
 	setup_memory();
-	moep();
 
 	relocate_amode31_section();
 	setup_cr();
@@ -1049,10 +1036,8 @@ void __init setup_arch(char **cmdline_p)
 	smp_detect_cpus();
 	topology_init_early();
 
-	smp_verify_image("before bear static branch");
 	if (test_facility(193))
 		static_branch_enable(&cpu_has_bear);
-	smp_verify_image("after bear static branch");
 
 	/*
 	 * Create kernel page tables and switch to virtual addressing.
@@ -1069,11 +1054,10 @@ void __init setup_arch(char **cmdline_p)
 	conmode_default();
 	set_preferred_console();
 
-	smp_verify_image("before alternatives");
 	apply_alternative_instructions();
 	if (IS_ENABLED(CONFIG_EXPOLINE))
 		nospec_init_branches();
-	smp_verify_image("after alternatives");
+
 	/* Setup zfcp/nvme dump support */
 	setup_zfcpdump();
 
