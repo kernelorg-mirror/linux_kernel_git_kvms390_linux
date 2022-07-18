@@ -763,6 +763,49 @@ static void qeth_issue_ipa_msg(struct qeth_ipa_cmd *cmd, int rc,
 				 ipa_name, com, CARD_DEVID(card));
 }
 
+static void qeth_default_link_info(struct qeth_card *card)
+{
+	struct qeth_link_info *link_info = &card->info.link_info;
+
+	QETH_CARD_TEXT(card, 2, "dftlinfo");
+	link_info->duplex = DUPLEX_FULL;
+
+	if (IS_IQD(card) || IS_VM_NIC(card)) {
+		link_info->speed = SPEED_10000;
+		link_info->port = PORT_FIBRE;
+		link_info->link_mode = QETH_LINK_MODE_FIBRE_SHORT;
+	} else {
+		switch (card->info.link_type) {
+		case QETH_LINK_TYPE_FAST_ETH:
+		case QETH_LINK_TYPE_LANE_ETH100:
+			link_info->speed = SPEED_100;
+			link_info->port = PORT_TP;
+			break;
+		case QETH_LINK_TYPE_GBIT_ETH:
+		case QETH_LINK_TYPE_LANE_ETH1000:
+			link_info->speed = SPEED_1000;
+			link_info->port = PORT_FIBRE;
+			break;
+		case QETH_LINK_TYPE_10GBIT_ETH:
+			link_info->speed = SPEED_10000;
+			link_info->port = PORT_FIBRE;
+			break;
+		case QETH_LINK_TYPE_25GBIT_ETH:
+			link_info->speed = SPEED_25000;
+			link_info->port = PORT_FIBRE;
+			break;
+		default:
+			dev_info(&card->gdev->dev,
+				 "Unknown link type %x\n",
+				 card->info.link_type);
+			link_info->speed = SPEED_UNKNOWN;
+			link_info->port = PORT_OTHER;
+		}
+
+		link_info->link_mode = QETH_LINK_MODE_UNKNOWN;
+	}
+}
+
 static struct qeth_ipa_cmd *qeth_check_ipa_data(struct qeth_card *card,
 						struct qeth_ipa_cmd *cmd)
 {
@@ -790,6 +833,7 @@ static struct qeth_ipa_cmd *qeth_check_ipa_data(struct qeth_card *card,
 				 netdev_name(card->dev), card->info.chpid);
 			qeth_issue_ipa_msg(cmd, cmd->hdr.return_code, card);
 			netif_carrier_off(card->dev);
+			qeth_default_link_info(card);
 		}
 		return NULL;
 	case IPA_CMD_STARTLAN:
@@ -4839,6 +4883,7 @@ static int qeth_init_link_info_oat_cb(struct qeth_card *card,
 	struct qeth_query_oat_physical_if *phys_if;
 	struct qeth_query_oat_reply *reply;
 
+	QETH_CARD_TEXT(card, 2, "qoatincb");
 	if (qeth_setadpparms_inspect_rc(cmd))
 		return -EIO;
 
@@ -4918,41 +4963,7 @@ static int qeth_init_link_info_oat_cb(struct qeth_card *card,
 
 static void qeth_init_link_info(struct qeth_card *card)
 {
-	card->info.link_info.duplex = DUPLEX_FULL;
-
-	if (IS_IQD(card) || IS_VM_NIC(card)) {
-		card->info.link_info.speed = SPEED_10000;
-		card->info.link_info.port = PORT_FIBRE;
-		card->info.link_info.link_mode = QETH_LINK_MODE_FIBRE_SHORT;
-	} else {
-		switch (card->info.link_type) {
-		case QETH_LINK_TYPE_FAST_ETH:
-		case QETH_LINK_TYPE_LANE_ETH100:
-			card->info.link_info.speed = SPEED_100;
-			card->info.link_info.port = PORT_TP;
-			break;
-		case QETH_LINK_TYPE_GBIT_ETH:
-		case QETH_LINK_TYPE_LANE_ETH1000:
-			card->info.link_info.speed = SPEED_1000;
-			card->info.link_info.port = PORT_FIBRE;
-			break;
-		case QETH_LINK_TYPE_10GBIT_ETH:
-			card->info.link_info.speed = SPEED_10000;
-			card->info.link_info.port = PORT_FIBRE;
-			break;
-		case QETH_LINK_TYPE_25GBIT_ETH:
-			card->info.link_info.speed = SPEED_25000;
-			card->info.link_info.port = PORT_FIBRE;
-			break;
-		default:
-			dev_info(&card->gdev->dev, "Unknown link type %x\n",
-				 card->info.link_type);
-			card->info.link_info.speed = SPEED_UNKNOWN;
-			card->info.link_info.port = PORT_OTHER;
-		}
-
-		card->info.link_info.link_mode = QETH_LINK_MODE_UNKNOWN;
-	}
+	qeth_default_link_info(card);
 
 	/* Get more accurate data via QUERY OAT: */
 	if (qeth_adp_supported(card, IPA_SETADP_QUERY_OAT)) {
@@ -5444,6 +5455,8 @@ int qeth_set_offline(struct qeth_card *card, const struct qeth_discipline *disc,
 
 	/* cancel any stalled cmd that might block the rtnl: */
 	qeth_clear_ipacmd_list(card);
+
+	qeth_default_link_info(card);
 
 	rtnl_lock();
 	card->info.open_when_online = card->dev->flags & IFF_UP;
