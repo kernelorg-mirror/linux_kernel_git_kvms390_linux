@@ -12,6 +12,7 @@
 asmlinkage void sae(phys_addr_t sae_block_phys);
 
 #include <linux/io.h>
+#include <asm/extable.h>
 #include <asm/kvm_host_arm64_types.h>
 #include <asm/insn-common-asm-emit.h>
 
@@ -110,6 +111,31 @@ static __always_inline void lasrm(struct kvm_sae_save_area *save_area)
 		:
 		: "m" (*save_area), [r1] "a" (save_area)
 	);
+}
+
+/**
+ * qaaf() - Query Available Arm Features
+ * @gr0: QAAF function code
+ * @qaaf_block: Pointer to the page for the output
+ *
+ * Perform QAAF. The result is written to qaaf_block.
+ */
+static __always_inline int qaaf(u64 gr0, union qaaf_block *qaaf_block)
+{
+	int exception = 1;
+
+	asm_inline volatile(
+		"	lgr	0,%[r0]\n"
+		"0:	.insn	rre,0xb9ad0000,%[r1],0\n"
+		"	lhi	%[exc],0\n"
+		"1:\n"
+		EX_TABLE_INSN(0b, 1b)
+		: "=m" (*qaaf_block), [exc] "+d" (exception)
+		: [r1] "a" (qaaf_block), [r0] "d" (gr0)
+		: "0"
+	);
+
+	return exception;
 }
 
 #endif /* !__ASSEMBLER__ */

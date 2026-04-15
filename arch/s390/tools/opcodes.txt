@@ -600,6 +600,7 @@ b9a7	stiasrm	RRE_R0
 b9aa	lptea	RRF_RURR2
 b9ab	essa	RRF_U0RR
 b9ac	irbm	RRE_RR
+b9ad	qaaf	RRE_R0
 b9ae	rrbm	RRE_RR
 b9af	pfmf	RRE_RR
 b9b0	cu14	RRF_U0RR

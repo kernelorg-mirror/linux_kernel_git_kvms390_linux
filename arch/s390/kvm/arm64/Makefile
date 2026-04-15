@@ -16,6 +16,7 @@ kvm-arm64-local := \
 	inject_fault.o \
 	mmio.o \
 	mmu.o \
+	qaaf.o \
 	reset.o
 
 kvm-arm64-obj := $(kvm-arm64-local)

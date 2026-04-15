@@ -11,6 +11,7 @@
 #include <linux/bitfield.h>
 
 #include <asm/access-regs.h>
+#include <asm/aef.h>
 
 #include <arm64/kvm_emulate.h>
 #include <arm64/sysreg.h>
@@ -20,6 +21,7 @@
 
 #include "arm.h"
 #include "handle_exit.h"
+#include "qaaf.h"
 
 #define CREATE_TRACE_POINTS
 #include "trace.h"
@@ -741,8 +743,10 @@ long kvm_arch_vcpu_unlocked_ioctl(struct file *filp, unsigned int ioctl,
 
 static int __init kvm_s390_arm64_init(void)
 {
-	if (!sclp.has_aef)
+	if (!sclp.has_aef || !aef_usable())
 		return -ENODEV;
+
+	kvm_init_qaaf();
 
 	return kvm_init(sizeof(struct kvm_vcpu), 0, THIS_MODULE);
 }
