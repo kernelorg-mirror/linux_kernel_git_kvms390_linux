@@ -12,6 +12,7 @@
 #include <linux/bitfield.h>
 
 #include <asm/access-regs.h>
+#include <asm/aef.h>
 
 #include <arm64/kvm_emulate.h>
 #include <arm64/sysreg.h>
@@ -744,7 +745,7 @@ long kvm_arch_vcpu_unlocked_ioctl(struct file *filp, unsigned int ioctl,
 
 static int __init kvm_s390_arm64_init(void)
 {
-	if (!sclp.has_aef)
+	if (!aef_info()->arm_guest_supp)
 		return -ENXIO;
 
 	return kvm_init_with_dev(sizeof(struct kvm_vcpu), 0, THIS_MODULE,

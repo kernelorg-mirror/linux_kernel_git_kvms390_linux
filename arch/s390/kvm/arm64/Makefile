@@ -14,6 +14,7 @@ kvm-arm64-obj := \
 	inject_fault.o \
 	mmio.o \
 	mmu.o \
+	qaaf.o \
 	reset.o \
 
 kvm-arm64-obj += $(patsubst %.o,%-arm64.o,$(kvm-y))

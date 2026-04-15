@@ -115,4 +115,115 @@ struct kvm_sae_save_area {
 } __packed __aligned(PAGE_SIZE);
 static_assert(sizeof(struct kvm_sae_save_area) == PAGE_SIZE);
 
+#define QAAF_FC_QMC	1
+#define QAAF_FC_GISRSA	2
+
+union qaaf_gr0_gisrsa {
+	struct {
+		u8 _0000[6];
+		u8 saf;
+		u8 : 2;
+		u8 fc : 6;
+	};
+	u64 val;
+};
+
+static_assert(sizeof(union qaaf_gr0_gisrsa) == sizeof(u64));
+
+/* QAAF Query Model Capabilities */
+struct qaaf_qmc_block {
+	u64	_0000;			/* 0x0000 */
+	u8	ssdf;			/* 0x0008 */
+	u8	_0009;			/* 0x0009 */
+	u8	ssaf;			/* 0x000a */
+	u8	_000b[3];		/* 0x000b */
+	u16	maxncpu;		/* 0x000e */
+	u64	regs[0x1fe];		/* 0x0010 */
+} __aligned(PAGE_SIZE);
+static_assert(sizeof(struct qaaf_qmc_block) == PAGE_SIZE);
+
+union qaaf_block {
+	struct qaaf_qmc_block qmc;
+	struct kvm_sae_save_area save_area;
+} __aligned(PAGE_SIZE);
+static_assert(sizeof(union qaaf_block) == PAGE_SIZE);
+
+/*
+ * Keep in sync with mapping from SYS_* to QAAF_* in feature.c!
+ */
+enum {
+	QAAF_REG_MIDR_EL1		= 0x02,
+	/* 0x03 -0x06 reserved */
+	QAAF_REG_MPIDR_EL1		= 0x07,
+	QAAF_REG_REVIDR_EL1		= 0x08,
+	/* 0x09 reserved */
+	QAAF_REG_ID_PFR0_EL1		= 0x0a,
+	QAAF_REG_ID_PFR1_EL1		= 0x0b,
+	QAAF_REG_ID_DFR0_EL1		= 0x0c,
+	QAAF_REG_ID_AFR0_EL1		= 0x0d,
+	QAAF_REG_ID_MMFR0_EL1		= 0x0e,
+	QAAF_REG_ID_MMFR1_EL1		= 0x0f,
+	QAAF_REG_ID_MMFR2_EL1		= 0x10,
+	QAAF_REG_ID_MMFR3_EL1		= 0x11,
+	QAAF_REG_ID_ISAR0_EL1		= 0x12,
+	QAAF_REG_ID_ISAR1_EL1		= 0x13,
+	QAAF_REG_ID_ISAR2_EL1		= 0x14,
+	QAAF_REG_ID_ISAR3_EL1		= 0x15,
+	QAAF_REG_ID_ISAR4_EL1		= 0x16,
+	QAAF_REG_ID_ISAR5_EL1		= 0x17,
+	QAAF_REG_ID_MMFR4_EL1		= 0x18,
+	QAAF_REG_ID_ISAR6_EL1		= 0x19,
+	QAAF_REG_MVFR0_EL1		= 0x1a,
+	QAAF_REG_MVFR1_EL1		= 0x1b,
+	QAAF_REG_MVFR2_EL1		= 0x1c,
+	/* 0x1d reserved */
+	QAAF_REG_ID_PFR2_EL1		= 0x1e,
+	QAAF_REG_ID_DFR1_EL1		= 0x1f,
+	QAAF_REG_ID_MMFR5_EL1		= 0x20,
+	/* 0x21 reserved */
+	QAAF_REG_ID_AA64PFR0_EL1	= 0x22,
+	QAAF_REG_ID_AA64PFR1_EL1	= 0x23,
+	QAAF_REG_ID_AA64PFR2_EL1	= 0x24,
+	/* 0x25 reserved */
+	QAAF_REG_ID_AA64ZFR0_EL1	= 0x26,
+	QAAF_REG_ID_AA64SMFR0_EL1	= 0x27,
+	/* 0x28 reserved */
+	QAAF_REG_ID_AA64FPFR0_EL1	= 0x29,
+	QAAF_REG_ID_AA64DFR0_EL1	= 0x2a,
+	QAAF_REG_ID_AA64DFR1_EL1	= 0x2b,
+	QAAF_REG_ID_AA64DFR2_EL1	= 0x2c,
+	/* 0x2d reserved */
+	QAAF_REG_ID_AA64AFR0_EL1	= 0x2e,
+	QAAF_REG_ID_AA64AFR1_EL1	= 0x2f,
+	/* 0x30,0x31 reserved */
+	QAAF_REG_ID_AA64ISAR0_EL1	= 0x32,
+	QAAF_REG_ID_AA64ISAR1_EL1	= 0x33,
+	QAAF_REG_ID_AA64ISAR2_EL1	= 0x34,
+	QAAF_REG_ID_AA64ISAR3_EL1	= 0x35,
+	/* 0x36-0x39 reserved */
+	QAAF_REG_ID_AA64MMFR0_EL1	= 0x3a,
+	QAAF_REG_ID_AA64MMFR1_EL1	= 0x3b,
+	QAAF_REG_ID_AA64MMFR2_EL1	= 0x3c,
+	QAAF_REG_ID_AA64MMFR3_EL1	= 0x3d,
+	QAAF_REG_ID_AA64MMFR4_EL1	= 0x3e,
+	/* 0x3f-0x41 reserved */
+	QAAF_REG_CNTFRQ_EL0		= 0x42,
+	QAAF_REG_CTR_EL0		= 0x43,
+	QAAF_REG_AIDR_EL1		= 0x44,
+	/* 0x43-0x49 reserved */
+	QAAF_IRPTC			= 0x4a,
+	/* 0x4b reserved */
+	QAAF_REG_ICH_VTR_EL2		= 0x4c,
+	QAAF_GIC_ATTR			= 0x4d,
+	/* 0x4E-0x51 reserved */
+	QAAF_REG_PMMIR_EL1		= 0x52,
+	QAAF_REG_PMCR_EL0		= 0x53,
+	QAAF_REG_PMCEID0_EL0		= 0x54,
+	QAAF_REG_PMCEID1_EL0		= 0x55,
+	/* 0x56-0x1ff reserved */
+	_QAAF_MAX
+};
+
+static_assert(sizeof(struct qaaf_qmc_block) / 8 + 1 >= _QAAF_MAX);
+
 #endif /* ASM_KVM_HOST_ARM64_TYPES_H */
