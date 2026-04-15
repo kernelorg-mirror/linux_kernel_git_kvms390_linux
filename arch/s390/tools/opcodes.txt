@@ -1255,6 +1255,8 @@ ed64	ley	RXY_FRRD
 ed65	ldy	RXY_FRRD
 ed66	stey	RXY_FRRD
 ed67	stdy	RXY_FRRD
+ed99	sasr	RIE_R0RIU
+ed9b	easr	RIE_R0RIU
 eda8	czdt	RSL_LRDFU
 eda9	czxt	RSL_LRDFU
 edaa	cdzt	RSL_LRDFU

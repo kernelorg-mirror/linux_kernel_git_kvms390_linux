@@ -208,6 +208,7 @@ static const unsigned char formats[][6] = {
 	[INSTR_RIE_RUI0]     = { R_8, I16_16, U4_12, 0, 0, 0 },
 	[INSTR_RIE_RUPI]     = { R_8, I8_32, U4_12, J16_16, 0, 0 },
 	[INSTR_RIE_RUPU]     = { R_8, U8_32, U4_12, J16_16, 0, 0 },
+	[INSTR_RIE_R0RIU]    = { R_8, R_16, U16_20, U4_36, 0, 0 },
 	[INSTR_RIL_RI]	     = { R_8, I32_16, 0, 0, 0, 0 },
 	[INSTR_RIL_RP]	     = { R_8, J32_16, 0, 0, 0, 0 },
 	[INSTR_RIL_RU]	     = { R_8, U32_16, 0, 0, 0, 0 },
