@@ -2543,7 +2543,7 @@ static int set_id_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *rd,
 
 void kvm_set_vm_id_reg(struct kvm *kvm, u32 reg, u64 val)
 {
-	u64 *p = __vm_id_reg(&kvm->arch, reg);
+	u64 *p = __vm_id_reg(&kvm->arch.id_regs, reg);
 
 	lockdep_assert_held(&kvm->arch.config_lock);
 

@@ -1467,11 +1467,11 @@ static bool idreg_apply_deps(struct kvm *kvm, const struct reg_feat_map_desc *r)
 			resx.res0 |= reg_feat_map_bits(&r->bit_feat_map[i]);
 	}
 
-	val = kvm->arch.id_regs[r->idreg_idx];
-	kvm->arch.id_regs[r->idreg_idx] &= ~resx.res0;
-	kvm->arch.id_regs[r->idreg_idx] |= resx.res1;
+	val = kvm->arch.id_regs.ftr_reg[r->idreg_idx];
+	kvm->arch.id_regs.ftr_reg[r->idreg_idx] &= ~resx.res0;
+	kvm->arch.id_regs.ftr_reg[r->idreg_idx] |= resx.res1;
 
-	return val != kvm->arch.id_regs[r->idreg_idx];
+	return val != kvm->arch.id_regs.ftr_reg[r->idreg_idx];
 }
 
 void kvm_idregs_enforce_dependencies(struct kvm *kvm)
@@ -1488,7 +1488,7 @@ void kvm_idregs_enforce_dependencies(struct kvm *kvm)
 
 static bool idreg_feat_match(struct kvm *kvm, const struct reg_bits_to_feat_map *map)
 {
-	u64 regval = kvm->arch.id_regs[map->regidx];
+	u64 regval = kvm->arch.id_regs.ftr_reg[map->regidx];
 	u64 regfld = (regval >> map->shift) & GENMASK(map->width - 1, 0);
 
 	if (map->sign) {
