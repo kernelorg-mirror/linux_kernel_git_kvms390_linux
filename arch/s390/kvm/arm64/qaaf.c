@@ -3,6 +3,7 @@
 #include <linux/kvm_host.h>
 #include <asm/aef.h>
 #include "qaaf.h"
+#include "feature.h"
 
 static struct qaaf_qmc_block qmc_sanitized;
 
@@ -17,6 +18,7 @@ struct qaaf_qmc_block *kvm_qaaf_qmc(void)
 void __init kvm_init_qaaf(void)
 {
 	qmc_sanitized = *aef_qmc();
+	kvm_arm_host_sanitize_features(&qmc_sanitized);
 }
 
 #define _qaaf_reg_case(id) case SYS_##id: return qmc_sanitized.regs[QAAF_REG_##id]

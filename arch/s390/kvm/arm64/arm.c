@@ -20,6 +20,7 @@
 #include <kvm_mmu.h>
 
 #include "arm.h"
+#include "feature.h"
 #include "handle_exit.h"
 #include "qaaf.h"
 
@@ -27,7 +28,6 @@
 #include "trace.h"
 
 static unsigned long system_supported_vcpu_features(struct kvm_vcpu *vcpu);
-#define read_sanitised_ftr_reg(_id) 0
 
 #define __INCL_GEN_ARM_FILE
 #include "generated/arm.inc"
