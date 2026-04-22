@@ -14,6 +14,19 @@
 
 #include <asm/sae.h>
 
+enum {
+	ARM64_HAS_WFXT,
+	ARM64_HAS_RASV1P1_EXTN,
+	ARM64_HAS_STAGE2_FWB,
+	ARM64_HAS_RAS_EXTN,
+	ARM64_HAS_EVT,
+	ARM64_HAS_HCR_NV1,
+	ARM64_MISMATCHED_CACHE_TYPE,
+	ARM64_HAS_ECV_CNTPOFF,
+};
+
+bool cpus_have_final_cap(unsigned int num);
+
 #define KVM_HAVE_MMU_RWLOCK
 #define KVM_MAX_VCPUS 1
 #define KVM_S390_ARM64_IMPL_FEATURES \

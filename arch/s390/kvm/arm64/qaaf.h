@@ -5,6 +5,7 @@
 
 #include <asm/aef.h>
 
+__init void kvm_init_qaaf(void);
 u64 kvm_qaaf_read_ftr_reg(u32 id);
 
 #endif

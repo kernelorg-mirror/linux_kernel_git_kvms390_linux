@@ -3,9 +3,14 @@
 #include <linux/kvm_host.h>
 #include <asm/aef.h>
 #include "qaaf.h"
+#include "feature.h"
+
+void __init kvm_init_qaaf(void)
+{
+	kvm_arm_host_sanitize_features(aef_qmc());
+}
 
 #define _qaaf_reg_case(id) case SYS_##id: return aef_qmc()->regs[QAAF_REG_##id]
-
 u64 kvm_qaaf_read_ftr_reg(u32 id)
 {
 	switch (id) {

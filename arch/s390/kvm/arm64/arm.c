@@ -22,12 +22,13 @@
 
 #include "arm.h"
 #include "handle_exit.h"
+#include "qaaf.h"
+#include "feature.h"
 
 #define CREATE_TRACE_POINTS
 #include "trace.h"
 
 static unsigned long system_supported_vcpu_features(void);
-#define read_sanitised_ftr_reg(_id) 0
 
 #define __INCL_GEN_ARM_FILE
 #include "generated/arm.inc"
@@ -747,6 +748,8 @@ static int __init kvm_s390_arm64_init(void)
 {
 	if (!aef_info()->arm_guest_supp)
 		return -ENXIO;
+
+	kvm_init_qaaf();
 
 	return kvm_init_with_dev(sizeof(struct kvm_vcpu), 0, THIS_MODULE,
 				 KVM_DEV_NAME, MISC_DYNAMIC_MINOR);
