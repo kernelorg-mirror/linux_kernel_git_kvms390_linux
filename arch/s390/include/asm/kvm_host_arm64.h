@@ -425,4 +425,6 @@ static inline bool vgic_host_has_gicv5(void)
 	return false;
 }
 
+void kvm_adjust_pc(struct kvm_vcpu *vcpu);
+
 #endif /* ASM_KVM_HOST_ARM64_H */
