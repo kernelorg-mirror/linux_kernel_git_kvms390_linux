@@ -426,4 +426,6 @@ static inline bool has_broken_cntvoff(void)
 	return false;
 }
 
+void kvm_adjust_pc(struct kvm_vcpu *vcpu);
+
 #endif /* ASM_KVM_HOST_ARM64_H */
