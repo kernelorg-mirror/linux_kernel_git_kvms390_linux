@@ -62,9 +62,15 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
 
 static u64 kvm_max_guest_address(void)
 {
+	u64 mmfr0 = read_sanitised_ftr_reg(SYS_ID_AA64MMFR0_EL1);
+	u64 id_pa_addr;
 	u64 max_addr;
 
+	id_pa_addr = kvm_parange_to_address_sanitized(
+		SYS_FIELD_GET(ID_AA64MMFR0_EL1, PARANGE, mmfr0));
+
 	max_addr = min_t(u64, TASK_SIZE_MAX, sclp.hamax);
+	max_addr = min_t(u64, max_addr, id_pa_addr);
 	max_addr = max_t(u64, max_addr, SZ_1G - 1);
 	return ALIGN_DOWN(max_addr + 1, SZ_1G) - 1;
 }

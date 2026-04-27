@@ -30,12 +30,14 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, gpa_t fault_ipa,
 	ret = kvm_s390_faultin_gfn(vcpu, NULL, &f);
 	if (ret <= 0)
 		return ret;
-	if (ret == PGM_ADDRESSING)
+	if (ret == PGM_ADDRESSING) {
 		/*
-		 * Without the relevant sysregs we cannot do anything for now.
-		 * Go back to userspace with an error. TODO sysreg handling
+		 * There is no page with the requested address. Inject size fault
+		 * which is the closest arm match to PGM-addressing
 		 */
-		return -ENOEXEC;
+		kvm_inject_size_fault(vcpu);
+		return 1;
+	}
 	KVM_BUG_ON(ret, vcpu->kvm);
 	return -EINVAL;
 }
@@ -68,6 +70,33 @@ static int kvm_handle_pic(struct kvm_vcpu *vcpu, bool *translation)
 	return 0;
 }
 
+size_t kvm_parange_to_address_sanitized(u32 id_parange)
+{
+	static u32 ranges_map[6] = {
+		[ID_AA64MMFR0_EL1_PARANGE_32] = 32,
+		[ID_AA64MMFR0_EL1_PARANGE_36] = 36,
+		[ID_AA64MMFR0_EL1_PARANGE_40] = 40,
+		[ID_AA64MMFR0_EL1_PARANGE_42] = 42,
+		[ID_AA64MMFR0_EL1_PARANGE_44] = 44,
+		[ID_AA64MMFR0_EL1_PARANGE_48] = 48,
+	};
+	u32 parange;
+
+	/*
+	 * Future values must be higher than we know already.
+	 * See ARM DDI 0487C.a. Return a safe limit.
+	 */
+	parange = ranges_map[min(id_parange, ID_AA64MMFR0_EL1_PARANGE_48)];
+	return BIT_ULL(parange);
+}
+
+static size_t kvm_get_pa_address(struct kvm *kvm)
+{
+	u32 id_parange = get_idreg_field_enum(kvm, ID_AA64MMFR0_EL1, PARANGE);
+
+	return kvm_parange_to_address_sanitized(id_parange);
+}
+
 int kvm_handle_guest_abort(struct kvm_vcpu *vcpu)
 {
 	struct kvm_memory_slot *memslot;
@@ -97,16 +126,17 @@ int kvm_handle_guest_abort(struct kvm_vcpu *vcpu)
 	}
 
 	if (translation) {
-		/*
-		 * For both cases:
-		 * Without the relevant sysregs we cannot do anything for now.
-		 * Go back to userspace with an error. TODO sysreg handling
-		 */
-		if (fault_ipa >= BIT_ULL(get_kvm_ipa_limit()))
-			return -ENOEXEC;
+		/* Beyond sanitised PA range (which is the IPA limit) */
+		if (fault_ipa >= kvm_get_pa_address(vcpu->kvm)) {
+			kvm_inject_size_fault(vcpu);
+			return 1;
+		}
 
-		if (fault_ipa >= vcpu->kvm->arch.guest_phys_size)
-			return -ENOEXEC;
+		/* Falls between the IPA range and the PA range? */
+		if (fault_ipa >= vcpu->kvm->arch.guest_phys_size) {
+			fault_ipa |= kvm_vcpu_get_hfar(vcpu) & GENMASK(11, 0);
+			return kvm_inject_sea(vcpu, is_iabt, fault_ipa);
+		}
 	}
 
 	idx = srcu_read_lock(&vcpu->kvm->srcu);
@@ -122,18 +152,14 @@ int kvm_handle_guest_abort(struct kvm_vcpu *vcpu)
 		 * The guest has put either its instructions or its page-tables
 		 * somewhere it shouldn't have. Userspace won't be able to do
 		 * anything about this (there's no syndrome for a start).
-		 *
-		 * Without the relevant sysregs we cannot do anything for now.
-		 * Go back to userspace with an error. TODO sysreg handling
 		 */
-		if (is_iabt)
+		if (is_iabt) {
+			ret = kvm_inject_sea_iabt(vcpu, kvm_vcpu_get_hfar(vcpu));
 			goto out_unlock;
+		}
 
 		if (kvm_vcpu_abt_iss1tw(vcpu)) {
-			/*
-			 * Without the relevant sysregs we cannot do anything for now.
-			 * Go back to userspace with an error. TODO sysreg handling
-			 */
+			ret = kvm_inject_sea_dabt(vcpu, kvm_vcpu_get_hfar(vcpu));
 			goto out_unlock;
 		}
 
