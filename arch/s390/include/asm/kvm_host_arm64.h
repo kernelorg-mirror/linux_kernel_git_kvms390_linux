@@ -426,5 +426,6 @@ static inline bool vgic_host_has_gicv5(void)
 }
 
 void kvm_adjust_pc(struct kvm_vcpu *vcpu);
+size_t kvm_parange_to_address_sanitized(u32 id_parange);
 
 #endif /* ASM_KVM_HOST_ARM64_H */

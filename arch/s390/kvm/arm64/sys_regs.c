@@ -317,6 +317,10 @@ static int arm64_check_features(struct kvm_vcpu *vcpu,
 		if (SYS_FIELD_GET(ID_AA64MMFR0_EL1, PARANGE, val) >
 		    SYS_FIELD_GET(ID_AA64MMFR0_EL1, PARANGE, host_val))
 			return -E2BIG;
+		if (kvm_parange_to_address_sanitized(
+			    SYS_FIELD_GET(ID_AA64MMFR0_EL1, PARANGE, val)) <
+		    vcpu->kvm->arch.guest_phys_size)
+			return -E2BIG;
 		break;
 	case SYS_CTR_EL0:
 		/* forbid upgrading from VIPT to PIPT */
