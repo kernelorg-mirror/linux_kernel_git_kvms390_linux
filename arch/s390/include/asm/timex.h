@@ -81,6 +81,8 @@ extern unsigned char ptff_function_mask[16];
 #define PTFF_QSI	0x02	/* query steering information */
 #define PTFF_QPT	0x03	/* query physical clock */
 #define PTFF_QUI	0x04	/* query UTC information */
+#define PTFF_QAGTO	0x10	/* query arm guest time offset */
+#define PTFF_QAGPT	0x11	/* query arm guest physical time offset */
 #define PTFF_ATO	0x40	/* adjust tod offset */
 #define PTFF_STO	0x41	/* set tod offset */
 #define PTFF_SFS	0x42	/* set fine steering rate */
@@ -117,6 +119,17 @@ struct ptff_qui {
 	unsigned int skew;
 	unsigned int pad_0x5c[41];
 } __packed;
+
+/*
+ * Query Arm Guest Time
+ * used for:
+ *	- Query Arm Guest Time Offset
+ *	- Query Arm Guest Physical Time
+ */
+struct ptff_qagt {
+	u64 in;
+	u64 out;
+};
 
 /*
  * ptff - Perform timing facility function
@@ -264,6 +277,42 @@ static inline int tod_after_eq(unsigned long a, unsigned long b)
 	if (machine_has_scc())
 		return (long) a >= (long) b;
 	return a >= b;
+}
+
+/*
+ * ptff_qagto() -  Query Arm Guest Time Offset
+ *
+ * @physical_time: Arm guest physical time in MSb 0
+ *
+ * Converts Arm guest physical time in MSb 0 bit ordering
+ * into the Arm guest offset in LSb 0 bit ordering.
+ *
+ * Return: Arm guest time offset in LSb 0
+ */
+static inline u64 ptff_qagto(u64 physical_time)
+{
+	struct ptff_qagt qagto = { .in = physical_time };
+
+	ptff(&qagto, sizeof(qagto), PTFF_QAGTO);
+	return qagto.out;
+}
+
+/*
+ * ptff_qagpt() - Query Arm Guest Physical Time
+ *
+ * @guest_time_offset: Arm guest time offset in MSb 0
+ *
+ * Converts Arm guest offset in MSb 0 bit ordering
+ * into the Arm guest physical time in LSb 0 bit ordering.
+ *
+ * Return: Arm guest physical time in LSb 0
+ */
+static inline u64 ptff_qagpt(u64 guest_time_offset)
+{
+	struct ptff_qagt qagpt = { .in = guest_time_offset };
+
+	ptff(&qagpt, sizeof(qagpt), PTFF_QAGPT);
+	return qagpt.out;
 }
 
 #endif
