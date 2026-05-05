@@ -3,6 +3,7 @@
 #define ASM_KVM_HOST_ARM64_H
 
 #include <linux/bug.h>
+#include <linux/bitfield.h>
 
 #include <asm/kvm_host_types.h>
 #include <asm/debug.h>
@@ -10,6 +11,7 @@
 #define vcpu_gp_regs(v)		((v)->arch.sae_block.gpr)
 enum vcpu_sysreg;
 
+#include <arm64/cputype.h>
 #include <arm64/kvm_host.h>
 #include <arm64/ptrace.h>
 
@@ -41,7 +43,12 @@ bool cpus_have_final_cap(unsigned int num);
 #define KVM_IRQCHIP_NUM_PINS 1
 #define irqchip_in_kernel(_k) false
 
-#define __ctxt_sys_reg(ctx, reg) NULL
+#define __ctxt_sys_reg(ctx, reg)					\
+	({								\
+		BUILD_BUG_ON(!__builtin_constant_p(reg));		\
+		___ctxt_sys_reg(ctx, reg);				\
+	})
+
 struct kvm_cpu_context {
 	/*
 	 * These are just for 32 bit, which we don't have, making them RES0.
@@ -53,6 +60,10 @@ struct kvm_cpu_context {
 	u64	spsr_fiq;
 
 	__vector128 __aligned(16) vregs[32];
+
+	/* shadowed sysregs to comply with arm64 infrastructure */
+	u64 elr_el1;
+	u64 spsr_el1;
 };
 
 struct kvm_vcpu_arch {
@@ -60,10 +71,19 @@ struct kvm_vcpu_arch {
 	struct kvm_sae_save_area save_area;
 	struct kvm_cpu_context ctxt;
 
+	/* Guest system registers not part of save area or ID registers */
+	u64 sys_reg_clidr_el1;
+	u64 sys_reg_csselr_el1;
+	/* Per-vcpu CCSIDR override or NULL */
+	u32 *ccsidr;
+
 	u32 host_acrs[NUM_ACRS];
 
 	/* Hypervisor Configuration Register */
 	u64 hcr_el2;
+	u64 hcrx_el2;
+
+	u64 mpidr;
 
 	/* Configuration flags, set once and for all before the vcpu can run */
 	u8 cflags;
@@ -113,6 +133,9 @@ struct kvm_vcpu_stat {
 #define vcpu_has_sve(_vcpu) false
 #define vcpu_has_ptrauth(_vcpu) false
 
+#define kvm_has_fpmr(kvm) \
+	 kvm_has_feat((kvm), ID_AA64PFR2_EL1, FPMR, IMP)
+
 struct kvm_arch_memory_slot {
 };
 
@@ -131,6 +154,9 @@ struct kvm_arch {
 	DECLARE_BITMAP(vcpu_features, KVM_VCPU_MAX_FEATURES);
 
 	unsigned long mem_limit;
+
+	/* Per-VM ID register storage */
+	struct kvm_vm_id_regs id_regs;
 };
 
 static inline bool __vcpu_has_feature(const struct kvm_arch *ka, int feature)
@@ -218,5 +244,182 @@ static inline void kvm_arch_async_page_present_queued(struct kvm_vcpu *vcpu)
 };
 
 #define kvm_supports_32bit_el0() false
+
+#define __vcpu_sys_reg(__vcpu, __reg) \
+	vcpu_read_sys_reg(__vcpu, __reg)
+
+#define __vcpu_assign_sys_reg(__vcpu, __reg, __val) \
+	vcpu_write_sys_reg(__vcpu, __val, __reg)
+
+#define __vcpu_rmw_sys_reg(v, r, op, val)				\
+	do {								\
+		u64 __v = vcpu_read_sys_reg(v, r);			\
+		__v op (val);						\
+		vcpu_write_sys_reg(v, __v, r);				\
+	} while (0)
+
+/**
+ * _vcpu_read_sys_reg() - read a guest sysreg with easr
+ * @C: vcpu to read from; if loaded, may only be called from its own thread
+ * @R: sysreg id; must be readable by easr; must be compile time constant
+ *
+ *   if SYSREGS_ON_CPU: proceed with flags = 0
+ *   otherwise:         proceed with flags = EASR_FLAG_SA
+ *
+ */
+#define _vcpu_read_sys_reg(C, R) \
+	({	BUILD_BUG_ON(!__builtin_constant_p((R))); \
+		KVM_BUG_ON(vcpu_is_loaded(C) && smp_processor_id() != (C)->cpu, (C)->kvm); \
+		(vcpu_is_loaded(C)) \
+			? __vcpu_read_sr((C), (R), 0) \
+			: __vcpu_read_sr((C), (R), EASR_FLAG_SA); })
+
+/**
+ * _vcpu_write_sys_reg() - write a guest sysreg with sasr
+ *
+ * @C: vcpu to write to; if loaded, may only be called from its own thread
+ * @V: value to write
+ * @R: sysreg id; must be writable by sasr; must be compile time constant
+
+ *   if SYSREGS_ON_CPU: proceed with flags = 0
+ *   otherwise:         proceed with flags = SASR_FLAG_INITIALIZED
+ */
+#define _vcpu_write_sys_reg(C, V, R) \
+	({	BUILD_BUG_ON(!__builtin_constant_p((R))); \
+		KVM_BUG_ON(vcpu_is_loaded(C) && smp_processor_id() != (C)->cpu, (C)->kvm); \
+		(vcpu_is_loaded(C)) \
+			? __vcpu_write_sr((C), (V), (R), 0) \
+			: __vcpu_write_sr((C), (V), (R), SASR_FLAG_INITIALIZED); })
+
+#define __vcpu_read_sr(C, R, F) \
+	({	BUILD_BUG_ON(!__builtin_constant_p((R))); \
+		BUILD_BUG_ON(!__builtin_constant_p((F))); \
+		easr((R), &(C)->arch.save_area, (F)); })
+
+#define __vcpu_write_sr(C, V, R, F) \
+	({	BUILD_BUG_ON(!__builtin_constant_p((R))); \
+		BUILD_BUG_ON(!__builtin_constant_p((F))); \
+		sasr((R), (V), &(C)->arch.save_area, (F)); })
+
+#define SR_GROUP(NAME, ...)	\
+	__##NAME##_BEGIN__, __after_##NAME##_BEGIN__ = __##NAME##_BEGIN__ - 1,	\
+	__VA_ARGS__								\
+	__##NAME##_END__, __after_##NAME##_END__ = __##NAME##_END__ - 1
+
+/** enum vcpu_sysreg - available guest sysregs
+ *
+ * Contains all arm64 guest-system register supported by s390.
+ */
+enum vcpu_sysreg {
+	__INVALID_SYSREG__, /* 0 is reserved as an invalid value */
+
+	/* EL 0,1 Register from state description in order of appearance */
+	SR_GROUP(STATE_DESC,
+	CNTP_CTL_EL0,
+	CNTV_CTL_EL0,
+	CONTEXTIDR_EL1,
+	SP_EL1,
+	),
+
+	/* EL 0,1 Register requiring special handling. */
+	SR_GROUP(SPECIAL,
+	CSSELR_EL1,
+	CLIDR_EL1,
+	MPIDR_EL1,
+	ELR_EL1,
+	SPSR_EL1,
+	),
+
+	/* EL 0,1 register from save area in order of appearance */
+	SR_GROUP(SAVE_AREA,
+	ACTLR_EL1,
+	AFSR0_EL1,
+	AFSR1_EL1,
+	CNTFRQ_EL0,
+	CNTP_CVAL_EL0,
+	CNTV_CVAL_EL0,
+	DISR_EL1,
+	MIDR_EL1,
+	OSLSR_EL1,
+	PAR_EL1,
+	OSLAR_EL1,
+	SCTLR_EL1,
+	CPACR_EL1,
+	VBAR_EL1,
+	ESR_EL1,
+	TCR_EL1,
+	MAIR_EL1,
+	TTBR0_EL1,
+	TTBR1_EL1,
+	FAR_EL1,
+	TPIDR_EL0,
+	TPIDR_EL1,
+	TPIDRRO_EL0,
+	CNTKCTL_EL1,
+	ZCR_EL1,
+	SCXTNUM_EL0,
+	SCXTNUM_EL1,
+	APIBKEYLO_EL1,
+	APIBKEYHI_EL1,
+	APIAKEYLO_EL1,
+	APIAKEYHI_EL1,
+	APGAKEYLO_EL1,
+	APGAKEYHI_EL1,
+	APDBKEYLO_EL1,
+	APDBKEYHI_EL1,
+	APDAKEYLO_EL1,
+	APDAKEYHI_EL1,
+	MDSCR_EL1,
+	),
+
+	NR_SYS_REGS /* Nothing after this line! */
+};
+
+static __always_inline u64 *___ctxt_sys_reg(struct kvm_cpu_context *ctxt,
+					    const enum vcpu_sysreg reg)
+{
+	switch (reg) {
+	case ELR_EL1:
+		return &ctxt->elr_el1;
+	case SPSR_EL1:
+		return &ctxt->spsr_el1;
+	default:
+		BUG();
+		break;
+	}
+}
+
+void vcpu_write_host_sys_reg(struct kvm_vcpu *vcpu, u64 val, int reg);
+u64 vcpu_read_host_sys_reg(const struct kvm_vcpu *vcpu, int reg);
+
+#define kvm_debug_handle_oslar(_v, _val) /* debug not implemented yet*/
+
+#define kvm_vm_has_ran_once(kvm)					\
+	(test_bit(KVM_ARCH_FLAG_HAS_RAN_ONCE, &(kvm)->arch.flags))
+
+#define kvm_id_regs_final(kvm)						\
+	test_bit(KVM_ARCH_FLAG_ID_REGS_FINAL, &(kvm)->arch.flags)
+
+static inline u8 kvm_arm_pmu_get_pmuver_limit(void)
+{
+	return 0;
+}
+
+int __init kvm_sys_reg_table_init(void);
+
+static inline bool system_supports_poe(void)
+{
+	return false;
+}
+
+static inline bool vgic_host_has_gicv3(void)
+{
+	return false;
+}
+
+static inline bool vgic_host_has_gicv5(void)
+{
+	return false;
+}
 
 #endif /* ASM_KVM_HOST_ARM64_H */

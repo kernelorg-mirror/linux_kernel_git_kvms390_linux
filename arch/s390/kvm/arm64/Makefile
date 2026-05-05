@@ -18,7 +18,9 @@ kvm-arm64-local := \
 	mmio.o \
 	mmu.o \
 	qaaf.o \
-	reset.o
+	reset.o \
+	spectre.o \
+	sys_regs.o
 
 kvm-arm64-obj := $(kvm-arm64-local)
 kvm-arm64-obj += $(patsubst %.o,%-arm64.o,$(kvm-y))

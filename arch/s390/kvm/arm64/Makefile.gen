@@ -7,7 +7,8 @@
 ARM64_CFILES := \
 	arm.c \
 	guest.c \
-	mmio.c
+	mmio.c \
+	sys_regs.c
 
 quiet_cmd_extract_inc = GEN     $@
       cmd_extract_inc = mkdir -p $(dir $@); \
