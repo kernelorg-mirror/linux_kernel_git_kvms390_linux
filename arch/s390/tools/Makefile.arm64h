@@ -17,12 +17,16 @@ arm64uapi := $(objtree)/arch/$(ARCH)/include/generated/uapi/arm64
 # If the file does not contain any markers the whole file will be copied.
 ARM64_SHARED_HEADERS := \
 	brk-imm.h \
+	cache.h \
+	cputype.h \
 	esr.h \
 	kvm_arm.h \
 	kvm_emulate-gen.h \
 	kvm_host.h \
 	ptrace-gen.h \
 	sysreg-gen.h \
+	spectre.h \
+	kvm:sys_regs-gen.h \
 	uapi:hwcap.h \
 	uapi:kvm.h \
 	uapi:ptrace.h \

@@ -8,6 +8,7 @@ ARM64_CFILES := \
 	arm.c \
 	guest.c \
 	handle_exit.c \
+	sys_regs.c \
 	mmio.c \
 
 quiet_cmd_extract_inc = GEN     $@

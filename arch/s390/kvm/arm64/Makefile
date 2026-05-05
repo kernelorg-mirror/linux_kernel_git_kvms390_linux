@@ -17,6 +17,8 @@ kvm-arm64-obj := \
 	mmu.o \
 	qaaf.o \
 	reset.o \
+	spectre.o \
+	sys_regs.o \
 
 kvm-arm64-obj += $(patsubst %.o,%-arm64.o,$(kvm-y))
 kvm-arm64-obj += $(patsubst %.o,%-arm64.o,$(gmap-y))
