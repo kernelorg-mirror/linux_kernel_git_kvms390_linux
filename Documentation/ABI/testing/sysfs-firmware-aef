@@ -1,0 +1,70 @@
+What:		/sys/firmware/aef/
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Various interfaces to query information about the ARM
+		Execution Facility (AEF).
+
+		The directory is present only on machines that provide
+		the AEF (SCLP facility bit).
+
+What:		/sys/firmware/aef/arm_guest_supp
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only, decimal boolean. Reports 1 if all requirements
+		for running arm64 KVM guests (KVM module kvm_arm64) are
+		satisfied by the machine, 0 otherwise. This is equivalent to the
+		logical AND of sae_avail, ptff_avail and edat2_avail below.
+
+What:		/sys/firmware/aef/query/
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Raw machine characteristics as reported by the QAAF
+		instruction.
+
+What:		/sys/firmware/aef/query/sae_avail
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only, decimal boolean. Reports 1 if the machine
+		provides the SAE instruction.
+
+What:		/sys/firmware/aef/query/ptff_avail
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only, decimal boolean. Reports 1 if the PTFF
+		instruction supports the QAGTO and QAGPT subfunctions.
+
+What:		/sys/firmware/aef/query/edat2_avail
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only, decimal boolean. Reports 1 if the EDAT-2
+		facility is available.
+
+What:		/sys/firmware/aef/query/supp_state_desc_formats
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only, 0x-prefixed hexadecimal bitmask. Bitmask of
+		the SAE state description formats supported by the machine.
+
+What:		/sys/firmware/aef/query/supp_save_area_formats
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only, 0x-prefixed hexadecimal bitmask. Bitmask of
+		the SAE save area formats supported by the machine.
+
+What:		/sys/firmware/aef/query/max_num_vcpu
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only, decimal number. Maximum number of guest CPUs
+		per VM.
+
+What:		/sys/firmware/aef/query/qmc
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only binary attribute, 4096 bytes. Contains the
+		unmodified, machine specific QMC response block.
+
+What:		/sys/firmware/aef/query/save_area
+KernelVersion:	7.5
+Contact:	linux-s390@vger.kernel.org
+Description:	Read-only binary attribute, 4096 bytes. Contains the
+		unmodified, machine specific GISRSA block.
