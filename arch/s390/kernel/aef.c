@@ -40,6 +40,66 @@ const struct aef_info *aef_info(void)
 }
 EXPORT_SYMBOL(aef_info);
 
+static struct kset *aef_query_kset;
+static struct kobject *aef_kobj;
+
+#define aef_sysfs_qval_def(_name)					\
+	static ssize_t _name##_show(struct kobject *kobj,		\
+				    struct kobj_attribute *attr,	\
+				    char *buf)				\
+	{								\
+		return sysfs_emit(buf, "%lx\n", info._name);		\
+	}								\
+	static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
+
+#define aef_sysfs_qval_attr(_name) &_name##_attr.attr
+
+aef_sysfs_qval_def(arm_guest_supp);
+aef_sysfs_qval_def(sae_avail);
+aef_sysfs_qval_def(ptff_avail);
+aef_sysfs_qval_def(supp_state_desc_formats);
+aef_sysfs_qval_def(supp_save_area_formats);
+aef_sysfs_qval_def(max_num_vcpu);
+
+static ssize_t qmc_read(struct file *filp, struct kobject *kobj,
+			const struct bin_attribute *attr, char *buf, loff_t off,
+			size_t count)
+{
+	return memory_read_from_buffer(buf, count, &off, &qmc, sizeof(qmc));
+}
+
+BIN_ATTR_RO(qmc, sizeof(qmc));
+
+static ssize_t save_area_read(struct file *filp, struct kobject *kobj,
+			      const struct bin_attribute *attr, char *buf,
+			      loff_t off, size_t count)
+{
+	return memory_read_from_buffer(buf, count, &off, &save_area,
+				       sizeof(save_area));
+}
+
+BIN_ATTR_RO(save_area, sizeof(save_area));
+
+static struct attribute *aef_query_attrs[] = {
+	aef_sysfs_qval_attr(sae_avail),
+	aef_sysfs_qval_attr(ptff_avail),
+	aef_sysfs_qval_attr(supp_state_desc_formats),
+	aef_sysfs_qval_attr(supp_save_area_formats),
+	aef_sysfs_qval_attr(max_num_vcpu),
+	NULL,
+};
+
+static const struct bin_attribute *aef_query_bin_attrs[] = {
+	&bin_attr_qmc,
+	&bin_attr_save_area,
+	NULL,
+};
+
+static struct attribute_group aef_query_attr_group = {
+	.attrs = aef_query_attrs,
+	.bin_attrs = aef_query_bin_attrs,
+};
+
 static int __init aef_init_save_area(void)
 {
 	int ret;
@@ -95,7 +155,33 @@ static int __init aef_sysfs_init(void)
 	if (rc)
 		return rc;
 
+	aef_kobj = kobject_create_and_add("aef", firmware_kobj);
+	if (!aef_kobj)
+		return -ENOMEM;
+
+	rc = sysfs_create_file(aef_kobj, aef_sysfs_qval_attr(arm_guest_supp));
+	if (rc)
+		goto out_kobj;
+
+	aef_query_kset = kset_create_and_add("query", NULL, aef_kobj);
+	if (!aef_query_kset)
+		goto out_arm_guest_supp;
+
+	rc = sysfs_create_group(&aef_query_kset->kobj, &aef_query_attr_group);
+	if (rc)
+		goto out_kset;
+
 	return 0;
+
+out_kset:
+	kset_unregister(aef_query_kset);
+out_arm_guest_supp:
+	sysfs_remove_file(aef_kobj, &arm_guest_supp_attr.attr);
+out_kobj:
+	kobject_del(aef_kobj);
+	kobject_put(aef_kobj);
+
+	return rc;
 }
 
 arch_initcall(aef_sysfs_init);
