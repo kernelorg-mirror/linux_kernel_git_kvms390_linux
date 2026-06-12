@@ -3,6 +3,8 @@
 #include <linux/kvm_host.h>
 #include <linux/fpu.h>
 
+#include "asm/cpufeature.h"
+
 #include <arm64/kvm_emulate.h>
 #include <arm64/kvm_nested.h>
 #include <arm64/sys_regs.h>
@@ -11,9 +13,13 @@
 #include <clocksource/arm_arch_timer.h>
 
 #include "qaaf.h"
+#include "feature.h"
 
 bool kvm_arm_vcpu_is_finalized(struct kvm_vcpu *vcpu)
 {
+	if (vcpu_has_sve(vcpu) && !kvm_arm_vcpu_sve_finalized(vcpu))
+		return false;
+
 	return true;
 }
 
@@ -76,6 +82,10 @@ void kvm_reset_vcpu(struct kvm_vcpu *vcpu)
 	 */
 	preempt_disable();
 
+	if (!vcpu_get_flag(vcpu, VCPU_SVE_FINALIZED) &&
+	    vcpu_has_feature(vcpu, KVM_ARM_VCPU_SVE))
+		set_bit(KVM_ARCH_FLAG_GUEST_HAS_SVE, &vcpu->kvm->arch.flags);
+
 	/* The reset must run with an unloaded save area */
 	loaded = vcpu_is_loaded(vcpu);
 	if (loaded)
@@ -114,5 +124,15 @@ void kvm_reset_vcpu(struct kvm_vcpu *vcpu)
 
 int kvm_arm_vcpu_finalize(struct kvm_vcpu *vcpu, int feature)
 {
-	return 0;
+	switch (feature) {
+	case KVM_ARM_VCPU_SVE:
+		if (!cpu_has_vx())
+			return -EINVAL;
+		if (vcpu_get_flag(vcpu, VCPU_SVE_FINALIZED))
+			return -EPERM;
+		vcpu_set_flag(vcpu, VCPU_SVE_FINALIZED);
+		return 0;
+	}
+
+	return -EINVAL;
 }

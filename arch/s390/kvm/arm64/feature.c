@@ -56,7 +56,6 @@ int __init kvm_arm_host_sanitize_features(struct qaaf_qmc_block *qaaf_qmc)
 	MASK_RESERVED(qaaf_qmc, ID_AA64MMFR4_EL1);
 
 	MODIFY(qaaf_qmc, ID_AA64PFR0_EL1, SEL2, NI);
-	MODIFY(qaaf_qmc, ID_AA64PFR0_EL1, SVE, NI);
 	MASK_RESERVED(qaaf_qmc, ID_AA64PFR0_EL1);
 	MASK_RESERVED(qaaf_qmc, ID_AA64PFR1_EL1);
 	MASK_RESERVED(qaaf_qmc, ID_AA64PFR2_EL1);
@@ -162,4 +161,12 @@ bool cpus_have_final_cap(unsigned int num)
 	default:
 		return false;
 	}
+}
+
+bool system_supports_sve(void)
+{
+	return cpu_has_vx() &&
+	       SYS_FIELD_GET(ID_AA64PFR0_EL1, SVE,
+			     read_sanitised_ftr_reg(SYS_ID_AA64PFR0_EL1)) ==
+		       ID_AA64PFR0_EL1_SVE_IMP;
 }

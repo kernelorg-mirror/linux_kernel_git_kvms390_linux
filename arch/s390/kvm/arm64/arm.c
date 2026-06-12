@@ -22,6 +22,7 @@
 #include <kvm_mmu.h>
 
 #include "arm.h"
+#include "feature.h"
 #include "handle_exit.h"
 #include "qaaf.h"
 #include "feature.h"
@@ -52,6 +53,9 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
 		break;
 	case KVM_CAP_IOEVENTFD:
 		ret = 1;
+		break;
+	case KVM_CAP_ARM_SVE:
+		ret = system_supports_sve();
 		break;
 	default:
 		ret = 0;
@@ -257,6 +261,9 @@ int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
 static unsigned long system_supported_vcpu_features(void)
 {
 	unsigned long features = KVM_S390_ARM64_IMPL_FEATURES;
+
+	if (!system_supports_sve())
+		clear_bit(KVM_ARM_VCPU_SVE, &features);
 
 	return features;
 }

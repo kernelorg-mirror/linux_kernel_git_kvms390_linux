@@ -5,8 +5,12 @@
 
 #include <linux/types.h>
 #include <linux/bitfield.h>
+#include <linux/cpufeature.h>
 
 #include <asm/sae.h>
+
+#include <arm64/sysreg.h>
+#include <arm64/sys_regs.h>
 
 #include "qaaf.h"
 
@@ -83,5 +87,11 @@ static inline u64 kvm_sae_irptc(void)
 }
 
 #define kvm_vcpu_has_pmu(_v) false
+
+#define vcpu_has_sve(_vcpu)							\
+	(system_supports_sve() &&						\
+	 test_bit(KVM_ARCH_FLAG_GUEST_HAS_SVE, &((_vcpu)->kvm)->arch.flags))
+
+bool system_supports_sve(void);
 
 #endif /* ARCH_S390_KVM_FEATURE_H */
