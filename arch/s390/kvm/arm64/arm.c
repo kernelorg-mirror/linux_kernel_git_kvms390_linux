@@ -54,6 +54,9 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
 	case KVM_CAP_ONE_REG:
 		ret = 1;
 		break;
+	case KVM_CAP_ARM_SVE:
+		ret = system_supports_sve();
+		break;
 	default:
 		ret = 0;
 	}
@@ -263,6 +266,9 @@ int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
 static unsigned long system_supported_vcpu_features(struct kvm_vcpu *vcpu)
 {
 	unsigned long features = KVM_S390_ARM64_IMPL_FEATURES;
+
+	if (!system_supports_sve())
+		clear_bit(KVM_ARM_VCPU_SVE, &features);
 
 	return features;
 }

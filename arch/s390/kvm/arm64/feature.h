@@ -83,4 +83,10 @@ static inline u64 kvm_sae_irptc(void)
 
 #define kvm_vcpu_has_pmu(_v) false
 
+#define vcpu_has_sve(_vcpu)							\
+	(system_supports_sve() &&						\
+	 test_bit(KVM_ARCH_FLAG_GUEST_HAS_SVE, &((_vcpu)->kvm)->arch.flags))
+
+bool system_supports_sve(void);
+
 #endif /* ARCH_S390_KVM_FEATURE_H */

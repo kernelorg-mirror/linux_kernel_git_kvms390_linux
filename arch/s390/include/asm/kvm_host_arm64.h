@@ -34,7 +34,9 @@ bool cpus_have_final_cap(unsigned int num);
 #define KVM_MAX_VCPUS 1
 #define __KVM_HAVE_VCPU_RUN_PID_CHANGE
 
-#define KVM_S390_ARM64_IMPL_FEATURES 0
+#define KVM_S390_ARM64_IMPL_FEATURES (		\
+	 BIT(KVM_ARM_VCPU_SVE)			\
+)
 #define KVM_HALT_POLL_NS_DEFAULT 50000
 
 #define KVM_S390_MANAGES_S390_GUEST 0
@@ -130,7 +132,6 @@ struct kvm_vcpu_stat {
 };
 
 #define kvm_has_mte(_kvm) false
-#define vcpu_has_sve(_vcpu) false
 #define vcpu_has_ptrauth(_vcpu) false
 
 #define kvm_has_fpmr(kvm) \
