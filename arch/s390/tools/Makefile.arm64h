@@ -7,10 +7,11 @@ arm64api := $(objtree)/arch/$(ARCH)/include/generated/arm64
 arm64uapi := $(objtree)/arch/$(ARCH)/include/generated/uapi/arm64
 
 # List of ARM64 headers to share with s390 KVM
-# Format: [uapi:]header.h or header-gen.h
+# Format: [uapi:|kvm:]header.h or header-gen.h
 #
 # * header.h - from arch/arm64/include/asm/ to arm64/
 # * uapi:header.h - from arch/arm64/include/uapi/asm/ to uapi/arm64/
+# * kvm:header.h - from arch/arm64/kvm/ to arm64/
 # * header-gen.h - generated as header-gen.h from ARM64 header header.h
 # If a header contains partial markers (#ifdef ARM64_S390_COMMON) only this part will be copied.
 # If the file does not contain any markers the whole file will be copied.
@@ -37,7 +38,9 @@ arm64-type = $(firstword $(subst :, ,$(1)))
 arm64-base = $(or $(word 2,$(subst :, ,$(1))),$(1))
 arm64-src-base = $(patsubst %-gen.h,%.h,$(call arm64-base,$(1)))
 
-arm64-src = $(srctree)/arch/arm64/include/$(if $(filter uapi,$(call arm64-type,$(1))),uapi/)asm/$(call arm64-src-base,$(1))
+arm64-src = $(if $(filter kvm,$(call arm64-type,$(1))),\
+		$(srctree)/arch/arm64/kvm/$(call arm64-src-base,$(1)),\
+		$(srctree)/arch/arm64/include/$(if $(filter uapi,$(call arm64-type,$(1))),uapi/)asm/$(call arm64-src-base,$(1)))
 arm64-dst = $(if $(filter uapi,$(call arm64-type,$(1))),$(arm64uapi),$(arm64api))/$(call arm64-base,$(1))
 
 $(foreach hdr,$(ARM64_SHARED_HEADERS),\
