@@ -19,12 +19,15 @@
 #include <asm/cpufeature.h>
 #include <asm/virt.h>
 
+#ifdef ARM64_S390_COMMON
 /* Watch out, ordering is important here. */
 enum mitigation_state {
 	SPECTRE_UNAFFECTED,
 	SPECTRE_MITIGATED,
 	SPECTRE_VULNERABLE,
 };
+
+#endif /* ARM64_S390_COMMON */
 
 struct pt_regs;
 struct task_struct;
@@ -81,7 +84,9 @@ static __always_inline void arm64_apply_bp_hardening(void)
 		d->fn();
 }
 
+#ifdef ARM64_S390_COMMON
 enum mitigation_state arm64_get_spectre_v2_state(void);
+#endif /* ARM64_S390_COMMON */
 bool has_spectre_v2(const struct arm64_cpu_capabilities *cap, int scope);
 void spectre_v2_enable_mitigation(const struct arm64_cpu_capabilities *__unused);
 
@@ -93,7 +98,9 @@ bool has_spectre_v4(const struct arm64_cpu_capabilities *cap, int scope);
 void spectre_v4_enable_mitigation(const struct arm64_cpu_capabilities *__unused);
 void spectre_v4_enable_task_mitigation(struct task_struct *tsk);
 
+#ifdef ARM64_S390_COMMON
 enum mitigation_state arm64_get_meltdown_state(void);
+#endif /* ARM64_S390_COMMON */
 
 enum mitigation_state arm64_get_spectre_bhb_state(void);
 bool is_spectre_bhb_affected(const struct arm64_cpu_capabilities *entry, int scope);
