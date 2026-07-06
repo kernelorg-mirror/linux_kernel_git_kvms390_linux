@@ -19,6 +19,7 @@
 #include <asm/cpufeature.h>
 #include <asm/virt.h>
 
+#if ARM64_S390_COMMON == 1
 /* Watch out, ordering is important here. */
 enum mitigation_state {
 	SPECTRE_UNAFFECTED,
@@ -30,6 +31,8 @@ enum mitigation_state arm64_get_spectre_v2_state(void);
 enum mitigation_state arm64_get_spectre_v4_state(void);
 enum mitigation_state arm64_get_meltdown_state(void);
 enum mitigation_state arm64_get_spectre_bhb_state(void);
+
+#endif /* ARM64_S390_COMMON == 1 */
 
 struct pt_regs;
 struct task_struct;

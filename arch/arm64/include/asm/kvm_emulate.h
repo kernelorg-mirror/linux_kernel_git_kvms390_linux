@@ -23,6 +23,7 @@
 #include <asm/cputype.h>
 #include <asm/virt.h>
 
+#if ARM64_S390_COMMON == 1
 #define CURRENT_EL_SP_EL0_VECTOR	0x0
 #define CURRENT_EL_SP_ELx_VECTOR	0x200
 #define LOWER_EL_AArch64_VECTOR		0x400
@@ -34,6 +35,8 @@ enum exception_type {
 	except_type_fiq		= 0x100,
 	except_type_serror	= 0x180,
 };
+
+#endif /* ARM64_S390_COMMON == 1 */
 
 #define kvm_exception_type_names		\
 	{ except_type_sync,	"SYNC"   },	\
@@ -507,13 +510,13 @@ static __always_inline bool kvm_vcpu_abt_issea(const struct kvm_vcpu *vcpu)
 	return esr_abt_is_sea(kvm_vcpu_get_esr(vcpu));
 }
 
+#if ARM64_S390_COMMON == 1
 static __always_inline int kvm_vcpu_sys_get_rt(struct kvm_vcpu *vcpu)
 {
 	u64 esr = kvm_vcpu_get_esr(vcpu);
 	return ESR_ELx_SYS64_ISS_RT(esr);
 }
 
-#if ARM64_S390_COMMON == 1
 static inline bool esr_abt_is_write_fault(unsigned long esr)
 {
 	if (esr_abt_is_s1ptw(esr)) {
