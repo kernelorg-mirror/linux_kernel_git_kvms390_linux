@@ -200,6 +200,7 @@
 #define OSLSR_EL1_OSLM_NI		0
 #define OSLSR_EL1_OSLM_IMPLEMENTED	BIT(3)
 #define OSLSR_EL1_OSLK			BIT(1)
+#define OSLSR_EL1_OSLK_MASK		BIT(1)
 
 #define SYS_OSDLR_EL1			sys_reg(2, 0, 1, 3, 4)
 #define SYS_DBGPRCR_EL1			sys_reg(2, 0, 1, 4, 4)
