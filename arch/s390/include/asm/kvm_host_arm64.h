@@ -156,6 +156,9 @@ struct kvm_arch {
 
 	/* Per-VM ID register storage */
 	struct kvm_vm_id_regs id_regs;
+
+	/* The EPD as it should be on all VCPUs. */
+	u64 epd;
 };
 
 static inline bool __vcpu_has_feature(const struct kvm_arch *ka, int feature)

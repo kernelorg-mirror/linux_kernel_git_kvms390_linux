@@ -16,6 +16,7 @@
 
 #include <arm64/kvm_emulate.h>
 #include <arm64/sysreg.h>
+#include <arm64/sys_regs.h>
 
 #include <gmap.h>
 #include <kvm_mmu.h>
@@ -136,6 +137,8 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
 		goto out_err;
 	kvm->arch.mem_limit = kvm->arch.guest_phys_size;
 
+	kvm->arch.epd = ptff_qagto(0);
+
 	VM_EVENT(kvm, 3, "vm created with type %lu", type);
 	return 0;
 
@@ -191,6 +194,7 @@ int kvm_arch_vcpu_create(struct kvm_vcpu *vcpu)
 	sae_block->mso = 0L;
 	sae_block->msl = vcpu->kvm->arch.mem_limit;
 	sae_block->save_area = virt_to_phys(save_area);
+	sae_block->gpto = vcpu->kvm->arch.epd;
 
 	VM_EVENT(vcpu->kvm, 3,
 		 "create cpu %d at 0x%p, sae block at 0x%p, satellite at 0x%p",
@@ -259,6 +263,7 @@ bool kvm_arch_vcpu_in_kernel(struct kvm_vcpu *vcpu)
 int kvm_arch_vcpu_run_pid_change(struct kvm_vcpu *vcpu)
 {
 	struct kvm *kvm = vcpu->kvm;
+	int ret;
 
 	if (!kvm_vcpu_initialized(vcpu))
 		return -ENOEXEC;
@@ -271,6 +276,10 @@ int kvm_arch_vcpu_run_pid_change(struct kvm_vcpu *vcpu)
 
 	scoped_guard(mutex, &kvm->arch.config_lock)
 		set_bit(KVM_ARCH_FLAG_HAS_RAN_ONCE, &kvm->arch.flags);
+
+	ret = kvm_finalize_sys_regs(vcpu);
+	if (ret)
+		return ret;
 
 	return 0;
 }
@@ -390,9 +399,19 @@ static void arm_vcpu_run(struct kvm_vcpu *vcpu)
 	guest_state_enter_irqoff();
 	local_irq_enable();
 
+	vcpu_write_host_sys_reg(vcpu, vcpu->arch.hcr_elz, SYS_HCR_EL2);
+	vcpu_write_host_sys_reg(vcpu, vcpu->arch.hcrx_elz, SYS_HCRX_EL2);
+	vcpu_write_host_sys_reg(vcpu, vcpu->arch.mpidr, SYS_VMPIDR_EL2);
+
+	_vcpu_write_sys_reg(vcpu, vcpu->arch.ctxt.elr_el1, SYS_ELR_EL1);
+	_vcpu_write_sys_reg(vcpu, vcpu->arch.ctxt.spsr_el1, SYS_SPSR_EL1);
+
 	sae_block->icptr = 0;
 
 	sae64a(sae_block);
+
+	vcpu->arch.ctxt.elr_el1 = _vcpu_read_sys_reg(vcpu, SYS_ELR_EL1);
+	vcpu->arch.ctxt.spsr_el1 = _vcpu_read_sys_reg(vcpu, SYS_SPSR_EL1);
 
 	local_irq_disable();
 	guest_state_exit_irqoff();
@@ -746,10 +765,18 @@ long kvm_arch_vcpu_unlocked_ioctl(struct file *filp, unsigned int ioctl,
 
 static int __init kvm_s390_arm64_init(void)
 {
+	int ret;
+
 	if (!aef_info()->arm_guest_supp)
 		return -ENXIO;
 
 	kvm_init_qaaf();
+
+	ret = kvm_sys_reg_table_init();
+	if (ret) {
+		kvm_info("Error initializing system register tables");
+		return ret;
+	}
 
 	return kvm_init_with_dev(sizeof(struct kvm_vcpu), 0, THIS_MODULE,
 				 KVM_DEV_NAME, MISC_DYNAMIC_MINOR);
