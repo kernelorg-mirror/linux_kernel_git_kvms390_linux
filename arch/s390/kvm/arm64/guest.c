@@ -4,6 +4,7 @@
 
 #include <arm64/kvm_emulate.h>
 #include <arm64/kvm_nested.h>
+#include <arm64/sys_regs.h>
 
 #define SVE_VQ_MIN	__SVE_VQ_MIN
 #define SVE_NUM_ZREGS	KVM_ARM64_SVE_NUM_ZREGS
@@ -60,12 +61,15 @@ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
 		return ret;
 	uindices += ret;
 
-	return 0;
+	return kvm_arm_copy_sys_reg_indices(vcpu, uindices);
 }
 
 unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu)
 {
-	return num_core_regs(vcpu);
+	unsigned long num = num_core_regs(vcpu);
+
+	num += kvm_arm_num_sys_reg_descs(vcpu);
+	return num;
 }
 
 int kvm_arm_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
@@ -78,7 +82,7 @@ int kvm_arm_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
 	case KVM_REG_ARM_CORE:
 		return get_core_reg(vcpu, reg);
 	default:
-		return -EINVAL;
+		return kvm_arm_sys_reg_get_reg(vcpu, reg);
 	}
 }
 
@@ -92,7 +96,7 @@ int kvm_arm_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
 	case KVM_REG_ARM_CORE:
 		return set_core_reg(vcpu, reg);
 	default:
-		return -EINVAL;
+		return kvm_arm_sys_reg_set_reg(vcpu, reg);
 	}
 }
 

@@ -15,6 +15,7 @@
 
 #include <arm64/kvm_emulate.h>
 #include <arm64/sysreg.h>
+#include <arm64/sys_regs.h>
 
 #include <gmap.h>
 #include <kvm_mmu.h>
@@ -50,6 +51,7 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
 		break;
 	case KVM_CAP_IOEVENTFD:
 	case KVM_CAP_PRE_FAULT_MEMORY:
+	case KVM_CAP_ONE_REG:
 		ret = 1;
 		break;
 	default:
@@ -136,6 +138,8 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
 		goto out_err;
 	kvm->arch.mem_limit = kvm->arch.guest_phys_size;
 
+	kvm->arch.epd = ptff_qagto(0);
+
 	VM_EVENT(kvm, 3, "vm created with type %lu", type);
 	return 0;
 
@@ -193,6 +197,7 @@ int kvm_arch_vcpu_create(struct kvm_vcpu *vcpu)
 	sae_block->mso = 0L;
 	sae_block->msl = vcpu->kvm->arch.mem_limit - 1;
 	sae_block->save_area = virt_to_phys(save_area);
+	sae_block->gpto = vcpu->kvm->arch.epd;
 
 	VM_EVENT(vcpu->kvm, 3,
 		 "create cpu %d at 0x%p, sae block at 0x%p, satellite at 0x%p",
@@ -207,6 +212,7 @@ void kvm_arch_vcpu_postcreate(struct kvm_vcpu *vcpu)
 
 void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 {
+	kfree(vcpu->arch.ccsidr);
 	kvm_s390_free_mmu_cache(vcpu->arch.mc);
 
 	VCPU_EVENT(vcpu, 3, "%s", "free cpu");
@@ -218,6 +224,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
 	vcpu->cpu = cpu;
 
 	lasrm(&vcpu->arch.save_area);
+
+	vcpu->arch.sae_block.gpto = vcpu->kvm->arch.epd;
 }
 
 void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
@@ -261,6 +269,7 @@ bool kvm_arch_vcpu_in_kernel(struct kvm_vcpu *vcpu)
 int kvm_arch_vcpu_run_pid_change(struct kvm_vcpu *vcpu)
 {
 	struct kvm *kvm = vcpu->kvm;
+	int ret;
 
 	if (!kvm_vcpu_initialized(vcpu))
 		return -ENOEXEC;
@@ -270,6 +279,10 @@ int kvm_arch_vcpu_run_pid_change(struct kvm_vcpu *vcpu)
 
 	if (likely(READ_ONCE(vcpu->pid)))
 		return 0;
+
+	ret = kvm_vcpu_finalize_sys_regs(vcpu);
+	if (ret)
+		return ret;
 
 	scoped_guard(mutex, &kvm->arch.config_lock)
 		set_bit(KVM_ARCH_FLAG_HAS_RAN_ONCE, &kvm->arch.flags);
@@ -477,8 +490,16 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
 		trace_kvm_entry(*vcpu_pc(vcpu));
 
 		adjust_pc(vcpu);
+		vcpu_write_host_sys_reg(vcpu, vcpu->arch.hcr_el2, SYS_HCR_EL2);
+		vcpu_write_host_sys_reg(vcpu, vcpu->arch.hcrx_el2, SYS_HCRX_EL2);
+		vcpu_write_host_sys_reg(vcpu, vcpu->arch.mpidr, SYS_VMPIDR_EL2);
+		_vcpu_write_sys_reg(vcpu, vcpu->arch.ctxt.elr_el1, SYS_ELR_EL1);
+		_vcpu_write_sys_reg(vcpu, vcpu->arch.ctxt.spsr_el1, SYS_SPSR_EL1);
 
 		arm_vcpu_enter_exit(virt_to_phys(&vcpu->arch.sae_block));
+
+		vcpu->arch.ctxt.elr_el1 = _vcpu_read_sys_reg(vcpu, SYS_ELR_EL1);
+		vcpu->arch.ctxt.spsr_el1 = _vcpu_read_sys_reg(vcpu, SYS_SPSR_EL1);
 
 		vcpu->mode = OUTSIDE_GUEST_MODE;
 		vcpu->stat.exits++;
@@ -762,10 +783,18 @@ static bool __init machine_supports_arm64_kvm(void)
 
 static int __init kvm_s390_arm64_init(void)
 {
+	int ret;
+
 	if (!machine_supports_arm64_kvm())
 		return -ENODEV;
 
 	kvm_init_qaaf();
+
+	ret = kvm_sys_reg_table_init();
+	if (ret) {
+		kvm_info("Error initializing system register tables\n");
+		return ret;
+	}
 
 	return kvm_init(sizeof(struct kvm_vcpu), 0, THIS_MODULE);
 }

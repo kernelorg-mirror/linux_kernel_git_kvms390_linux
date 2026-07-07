@@ -441,6 +441,7 @@ static int arch_timer_set_user(struct kvm_vcpu *vcpu,
 	case SYS_CNTPCT_EL0:
 		gpto = ptff_qagto(val);
 		vcpu->arch.sae_block.gpto = gpto;
+		vcpu->kvm->arch.epd = gpto;
 		return 0;
 	}
 
