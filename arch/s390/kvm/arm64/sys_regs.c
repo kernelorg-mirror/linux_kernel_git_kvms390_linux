@@ -32,7 +32,6 @@ static u64 __ro_after_init boot_cpu_aidr_val;
 #undef __INCL_GEN_ARM_FILE
 
 DEFINE_STATIC_KEY_FALSE(broken_cntvoff_key);
-
 #define SR_INVALID 0x8badf00d8badf00d
 
 enum sr_loc_attr {
@@ -634,6 +633,14 @@ static const struct sys_reg_desc sys_reg_descs[] = {
 	{ SYS_DESC(SYS_TTBR1_EL1), access_rw, reset_val, TTBR1_EL1, 0 },
 	{ SYS_DESC(SYS_TCR_EL1), access_rw, reset_val, TCR_EL1, 0 },
 
+	/* CRm = 1 */
+	PTRAUTH_KEY(APIA),
+	PTRAUTH_KEY(APIB),
+	/* CRm = 2 */
+	PTRAUTH_KEY(APDA),
+	PTRAUTH_KEY(APDB),
+	/* CRm = 3 */
+	PTRAUTH_KEY(APGA),
 	/* CRn = 5 */
 	{ SYS_DESC(SYS_AFSR0_EL1), access_rw, reset_unknown, AFSR0_EL1 },
 	{ SYS_DESC(SYS_AFSR1_EL1), access_rw, reset_unknown, AFSR1_EL1 },
@@ -642,7 +649,6 @@ static const struct sys_reg_desc sys_reg_descs[] = {
 	{ SYS_DESC(SYS_FAR_EL1), access_rw, reset_unknown, FAR_EL1 },
 	/* CRn = 7 */
 	{ SYS_DESC(SYS_PAR_EL1), access_rw, reset_unknown, PAR_EL1 },
-
 	{ SYS_DESC(SYS_PMMIR_EL1), trap_raz_wi },
 	/* CRn = 10 */
 	{ SYS_DESC(SYS_MAIR_EL1), NULL, reset_unknown, MAIR_EL1 },

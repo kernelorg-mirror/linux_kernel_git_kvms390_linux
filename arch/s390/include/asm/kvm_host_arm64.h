@@ -34,8 +34,10 @@ bool cpus_have_final_cap(unsigned int num);
 #define KVM_MAX_VCPUS 1
 #define __KVM_HAVE_VCPU_RUN_PID_CHANGE
 
-#define KVM_S390_ARM64_IMPL_FEATURES (		\
-	 BIT(KVM_ARM_VCPU_SVE)			\
+#define KVM_S390_ARM64_IMPL_FEATURES (			\
+	 BIT(KVM_ARM_VCPU_PTRAUTH_ADDRESS)	|	\
+	 BIT(KVM_ARM_VCPU_PTRAUTH_GENERIC)	|	\
+	 BIT(KVM_ARM_VCPU_SVE)				\
 )
 #define KVM_HALT_POLL_NS_DEFAULT 50000
 
@@ -132,7 +134,6 @@ struct kvm_vcpu_stat {
 };
 
 #define kvm_has_mte(_kvm) false
-#define vcpu_has_ptrauth(_vcpu) false
 
 #define kvm_has_fpmr(kvm) \
 	 kvm_has_feat((kvm), ID_AA64PFR2_EL1, FPMR, IMP)
@@ -171,11 +172,6 @@ static inline bool __vcpu_has_feature(const struct kvm_arch *ka, int feature)
 struct kvm_vm_stat {
 	struct kvm_vm_stat_generic generic;
 };
-
-static inline bool system_has_full_ptr_auth(void)
-{
-	return true;
-}
 
 #define kvm_vm_is_protected(_kvm) false
 #define vcpu_is_protected(_vcpu) false
