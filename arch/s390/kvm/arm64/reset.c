@@ -10,6 +10,8 @@
 
 #include <clocksource/arm_arch_timer.h>
 
+#include "qaaf.h"
+
 bool kvm_arm_vcpu_is_finalized(struct kvm_vcpu *vcpu)
 {
 	return true;
@@ -78,6 +80,9 @@ void kvm_reset_vcpu(struct kvm_vcpu *vcpu)
 	loaded = vcpu_is_loaded(vcpu);
 	if (loaded)
 		vcpu_put(vcpu);
+
+	kvm_vcpu_init_save_area(&vcpu->arch.save_area);
+	vcpu->arch.save_area.sdo = virt_to_phys(&vcpu->arch.sae_block);
 
 	kvm_reset_vcpu_core(vcpu);
 	kvm_reset_sys_regs(vcpu);
