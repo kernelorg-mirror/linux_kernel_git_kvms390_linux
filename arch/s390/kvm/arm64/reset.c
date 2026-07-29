@@ -3,6 +3,8 @@
 #include <linux/kvm_host.h>
 #include <linux/fpu.h>
 
+#include <asm/aef.h>
+
 #include <arm64/kvm_emulate.h>
 #include <arm64/kvm_nested.h>
 #include <arm64/sys_regs.h>
@@ -78,6 +80,9 @@ void kvm_reset_vcpu(struct kvm_vcpu *vcpu)
 	loaded = vcpu_is_loaded(vcpu);
 	if (loaded)
 		vcpu_put(vcpu);
+
+	memcpy(&vcpu->arch.save_area, aef_gisrsa(), sizeof(vcpu->arch.save_area));
+	vcpu->arch.save_area.sdo = virt_to_phys(&vcpu->arch.sae_block);
 
 	kvm_reset_vcpu_core(vcpu);
 	kvm_reset_sys_regs(vcpu);
