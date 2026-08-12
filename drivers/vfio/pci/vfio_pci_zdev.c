@@ -184,6 +184,7 @@ int vfio_pci_zdev_feature_err(struct vfio_device *device, u32 flags,
 int vfio_pci_zdev_open_device(struct vfio_pci_core_device *vdev)
 {
 	struct zpci_dev *zdev = to_zpci(vdev->pdev);
+	struct kvm *kvm;
 	int ret;
 
 	if (!zdev)
@@ -195,8 +196,13 @@ int vfio_pci_zdev_open_device(struct vfio_pci_core_device *vdev)
 		return 0;
 
 	ret = -ENOENT;
+
+	kvm = vdev->vdev.kvm->private_data;
+	if (!kvm)
+		return ret;
+
 	if (zpci_kvm_hook.kvm_register)
-		ret = zpci_kvm_hook.kvm_register(zdev, vdev->vdev.kvm);
+		ret = zpci_kvm_hook.kvm_register(zdev, kvm);
 
 	if (ret)
 		zpci_stop_mediated_recovery(zdev);
