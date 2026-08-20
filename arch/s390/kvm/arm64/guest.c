@@ -5,6 +5,12 @@
 #include <arm64/kvm_emulate.h>
 #include <arm64/kvm_nested.h>
 
+#define SVE_VQ_MIN	__SVE_VQ_MIN
+#define SVE_NUM_ZREGS	KVM_ARM64_SVE_NUM_ZREGS
+#define SVE_NUM_PREGS	KVM_ARM64_SVE_NUM_PREGS
+
+#define vcpu_sve_slices(_vcpu) 1
+
 #define __INCL_GEN_ARM_FILE
 #include "generated/guest.inc"
 #undef __INCL_GEN_ARM_FILE
