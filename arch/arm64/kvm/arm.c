@@ -340,6 +340,7 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
 	kvm_arm_teardown_hypercalls(kvm);
 }
 
+#ifdef ARM64_S390_COMMON
 static bool kvm_has_full_ptr_auth(void)
 {
 	bool apa, gpa, api, gpi, apa3, gpa3;
@@ -373,6 +374,8 @@ static bool kvm_has_full_ptr_auth(void)
 	return (apa == gpa && api == gpi && apa3 == gpa3 &&
 		(apa + api + apa3) == 1);
 }
+
+#endif /* ARM64_S390_COMMON */
 
 int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
 {

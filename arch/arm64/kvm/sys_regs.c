@@ -45,6 +45,7 @@
  * 64bit interface.
  */
 
+#ifdef ARM64_S390_COMMON
 static u64 sys_reg_to_index(const struct sys_reg_desc *reg);
 static int set_id_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *rd,
 		      u64 val);
@@ -81,6 +82,8 @@ static bool write_to_read_only(struct kvm_vcpu *vcpu,
 	return bad_trap(vcpu, params, r,
 			"sys_reg write to read-only register");
 }
+
+#endif /* ARM64_S390_COMMON */
 
 enum sr_loc_attr {
 	SR_LOC_MEMORY	= 0,	  /* Register definitely in memory */
@@ -428,6 +431,7 @@ void vcpu_write_sys_reg(struct kvm_vcpu *vcpu, u64 val, enum vcpu_sysreg reg)
 	__vcpu_assign_sys_reg(vcpu, reg, val);
 }
 
+#ifdef ARM64_S390_COMMON
 /* CSSELR values; used to index KVM_REG_ARM_DEMUX_ID_CCSIDR */
 #define CSSELR_MAX 14
 
@@ -532,6 +536,8 @@ static bool access_rw(struct kvm_vcpu *vcpu,
 
 	return true;
 }
+
+#endif /* ARM64_S390_COMMON */
 
 /*
  * See note at ARMv7 ARM B1.14.4 (TL;DR: S/W ops are not easily virtualized).
@@ -800,6 +806,7 @@ static bool access_gicv5_ppi_enabler(struct kvm_vcpu *vcpu,
 	return true;
 }
 
+#ifdef ARM64_S390_COMMON
 static bool trap_raz_wi(struct kvm_vcpu *vcpu,
 			struct sys_reg_params *p,
 			const struct sys_reg_desc *r)
@@ -852,6 +859,8 @@ static bool trap_oslsr_el1(struct kvm_vcpu *vcpu,
 	p->regval = __vcpu_sys_reg(vcpu, r->reg);
 	return true;
 }
+
+#endif /* ARM64_S390_COMMON */
 
 static int set_oslsr_el1(struct kvm_vcpu *vcpu, const struct sys_reg_desc *rd,
 			 u64 val)
@@ -1011,6 +1020,7 @@ static u64 reset_actlr(struct kvm_vcpu *vcpu, const struct sys_reg_desc *r)
 	return actlr;
 }
 
+#ifdef ARM64_S390_COMMON
 static u64 reset_mpidr(struct kvm_vcpu *vcpu, const struct sys_reg_desc *r)
 {
 	u64 mpidr = kvm_calculate_mpidr(vcpu);
@@ -1018,6 +1028,8 @@ static u64 reset_mpidr(struct kvm_vcpu *vcpu, const struct sys_reg_desc *r)
 	vcpu_write_sys_reg(vcpu, mpidr, MPIDR_EL1);
 	return mpidr;
 }
+
+#endif /* ARM64_S390_COMMON */
 
 static unsigned int hidden_visibility(const struct kvm_vcpu *vcpu,
 				      const struct sys_reg_desc *r)
@@ -1922,6 +1934,7 @@ static u8 pmuver_to_perfmon(u8 pmuver)
 	}
 }
 
+#ifdef ARM64_S390_COMMON
 static u64 sanitise_id_aa64pfr0_el1(const struct kvm_vcpu *vcpu, u64 val);
 static u64 sanitise_id_aa64pfr1_el1(const struct kvm_vcpu *vcpu, u64 val);
 static u64 sanitise_id_aa64pfr2_el1(const struct kvm_vcpu *vcpu, u64 val);
@@ -2078,6 +2091,8 @@ static bool access_id_reg(struct kvm_vcpu *vcpu,
 	return true;
 }
 
+#endif /* ARM64_S390_COMMON */
+
 static unsigned int aa32_id_visibility(const struct kvm_vcpu *vcpu,
 				       const struct sys_reg_desc *r)
 {
@@ -2127,6 +2142,7 @@ static unsigned int fp8_visibility(const struct kvm_vcpu *vcpu,
 	return REG_HIDDEN;
 }
 
+#ifdef ARM64_S390_COMMON
 static u64 sanitise_id_aa64pfr0_el1(const struct kvm_vcpu *vcpu, u64 val)
 {
 	if (!vcpu_has_sve(vcpu))
@@ -2288,6 +2304,8 @@ static int set_id_aa64dfr0_el1(struct kvm_vcpu *vcpu,
 	return set_id_reg(vcpu, rd, val);
 }
 
+#endif /* ARM64_S390_COMMON */
+
 static u64 read_sanitised_id_dfr0_el1(struct kvm_vcpu *vcpu,
 				      const struct sys_reg_desc *rd)
 {
@@ -2332,6 +2350,7 @@ static int set_id_dfr0_el1(struct kvm_vcpu *vcpu,
 	return set_id_reg(vcpu, rd, val);
 }
 
+#ifdef ARM64_S390_COMMON
 static int set_id_aa64pfr0_el1(struct kvm_vcpu *vcpu,
 			       const struct sys_reg_desc *rd, u64 user_val)
 {
@@ -2661,6 +2680,8 @@ static bool access_ccsidr(struct kvm_vcpu *vcpu, struct sys_reg_params *p,
 	return true;
 }
 
+#endif /* ARM64_S390_COMMON */
+
 static int get_raz_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *rd,
 		       u64 *val)
 {
@@ -2764,6 +2785,7 @@ static bool bad_redir_trap(struct kvm_vcpu *vcpu,
 	SYS_REG_USER_FILTER(name, access_arch_timer, reset_val, 0, \
 			    arch_timer_get_user, arch_timer_set_user, vis)
 
+#ifdef ARM64_S390_COMMON
 /*
  * Since reset() callback and field val are not used for idregs, they will be
  * used for specific purposes for idregs.
@@ -2839,6 +2861,8 @@ static bool bad_redir_trap(struct kvm_vcpu *vcpu,
 	.visibility = raz_visibility,		\
 	.val = 0,				\
 }
+
+#endif /* ARM64_S390_COMMON */
 
 static bool access_sp_el1(struct kvm_vcpu *vcpu,
 			  struct sys_reg_params *p,
@@ -3212,6 +3236,7 @@ static void init_imp_id_regs(void)
 	boot_cpu_aidr_val = read_sysreg(aidr_el1);
 }
 
+#ifdef ARM64_S390_COMMON
 static u64 reset_imp_id_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *r)
 {
 	switch (reg_to_encoding(r)) {
@@ -3268,6 +3293,8 @@ static int set_imp_id_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *r,
 	.reset = reset_imp_id_reg,			\
 	.val = mask,					\
 	}
+
+#endif /* ARM64_S390_COMMON */
 
 static u64 reset_mdcr(struct kvm_vcpu *vcpu, const struct sys_reg_desc *r)
 {
@@ -4833,6 +4860,7 @@ static const struct sys_reg_desc cp15_64_regs[] = {
 	{ SYS_DESC(SYS_AARCH32_CNTVCTSS),     access_arch_timer },
 };
 
+#ifdef ARM64_S390_COMMON
 static bool check_sysreg_table(const struct sys_reg_desc *table, unsigned int n,
 			       bool reset_check)
 {
@@ -4881,6 +4909,8 @@ static void perform_access(struct kvm_vcpu *vcpu,
 	if (likely(r->access(vcpu, params, r)))
 		kvm_incr_pc(vcpu);
 }
+
+#endif /* ARM64_S390_COMMON */
 
 /*
  * emulate_cp --  tries to match a sys_reg access in a handling table, and
@@ -5340,6 +5370,7 @@ void kvm_sys_regs_create_debugfs(struct kvm *kvm)
 			    &sr_resx_fops);
 }
 
+#ifdef ARM64_S390_COMMON
 static void reset_vm_ftr_id_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *reg)
 {
 	u32 id = reg_to_encoding(reg);
@@ -5359,6 +5390,8 @@ static void reset_vcpu_ftr_id_reg(struct kvm_vcpu *vcpu,
 
 	reg->reset(vcpu, reg);
 }
+
+#endif /* ARM64_S390_COMMON */
 
 /**
  * kvm_reset_sys_regs - sets system registers to reset value
@@ -5432,6 +5465,7 @@ int kvm_handle_sys_reg(struct kvm_vcpu *vcpu)
 	return 1;
 }
 
+#ifdef ARM64_S390_COMMON
 /******************************************************************************
  * Userspace API
  *****************************************************************************/
@@ -5752,6 +5786,8 @@ int kvm_arm_copy_sys_reg_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
 
 	return write_demux_regids(uindices);
 }
+
+#endif /* ARM64_S390_COMMON */
 
 #define KVM_ARM_FEATURE_ID_RANGE_INDEX(r)			\
 	KVM_ARM_FEATURE_ID_RANGE_IDX(sys_reg_Op0(r),		\
