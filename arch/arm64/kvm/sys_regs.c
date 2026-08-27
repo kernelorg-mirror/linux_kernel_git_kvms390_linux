@@ -4855,12 +4855,6 @@ static bool check_sysreg_table(const struct sys_reg_desc *table, unsigned int n,
 	return true;
 }
 
-int kvm_handle_cp14_load_store(struct kvm_vcpu *vcpu)
-{
-	kvm_inject_undefined(vcpu);
-	return 1;
-}
-
 static void perform_access(struct kvm_vcpu *vcpu,
 			   struct sys_reg_params *params,
 			   const struct sys_reg_desc *r)
@@ -4886,6 +4880,12 @@ static void perform_access(struct kvm_vcpu *vcpu,
 	/* Skip instruction if instructed so */
 	if (likely(r->access(vcpu, params, r)))
 		kvm_incr_pc(vcpu);
+}
+
+int kvm_handle_cp14_load_store(struct kvm_vcpu *vcpu)
+{
+	kvm_inject_undefined(vcpu);
+	return 1;
 }
 
 /*
@@ -5340,25 +5340,9 @@ void kvm_sys_regs_create_debugfs(struct kvm *kvm)
 			    &sr_resx_fops);
 }
 
-static void reset_vm_ftr_id_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *reg)
-{
-	u32 id = reg_to_encoding(reg);
-	struct kvm *kvm = vcpu->kvm;
-
-	if (test_bit(KVM_ARCH_FLAG_ID_REGS_INITIALIZED, &kvm->arch.flags))
-		return;
-
-	kvm_set_vm_id_reg(kvm, id, reg->reset(vcpu, reg));
-}
-
+static void reset_vm_ftr_id_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *reg);
 static void reset_vcpu_ftr_id_reg(struct kvm_vcpu *vcpu,
-				  const struct sys_reg_desc *reg)
-{
-	if (kvm_vcpu_initialized(vcpu))
-		return;
-
-	reg->reset(vcpu, reg);
-}
+				  const struct sys_reg_desc *reg);
 
 /**
  * kvm_reset_sys_regs - sets system registers to reset value
@@ -5430,6 +5414,26 @@ int kvm_handle_sys_reg(struct kvm_vcpu *vcpu)
 		vcpu_set_reg(vcpu, Rt, params.regval);
 
 	return 1;
+}
+
+static void reset_vm_ftr_id_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *reg)
+{
+	u32 id = reg_to_encoding(reg);
+	struct kvm *kvm = vcpu->kvm;
+
+	if (test_bit(KVM_ARCH_FLAG_ID_REGS_INITIALIZED, &kvm->arch.flags))
+		return;
+
+	kvm_set_vm_id_reg(kvm, id, reg->reset(vcpu, reg));
+}
+
+static void reset_vcpu_ftr_id_reg(struct kvm_vcpu *vcpu,
+				  const struct sys_reg_desc *reg)
+{
+	if (kvm_vcpu_initialized(vcpu))
+		return;
+
+	reg->reset(vcpu, reg);
 }
 
 /******************************************************************************
