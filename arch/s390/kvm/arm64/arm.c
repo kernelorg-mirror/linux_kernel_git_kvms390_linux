@@ -9,6 +9,7 @@
 #include <linux/kvm_host.h>
 #include <linux/cleanup.h>
 #include <linux/fpu.h>
+#include <linux/bitfield.h>
 
 #include <asm/access-regs.h>
 
@@ -25,6 +26,7 @@
 #include "trace.h"
 
 static unsigned long system_supported_vcpu_features(void);
+#define read_sanitised_ftr_reg(_id) 0
 
 #define __INCL_GEN_ARM_FILE
 #include "generated/arm.inc"

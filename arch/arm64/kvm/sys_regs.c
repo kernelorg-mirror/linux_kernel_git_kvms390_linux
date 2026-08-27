@@ -2043,13 +2043,6 @@ static inline bool is_vcpu_ftr_id_reg(u32 id)
 	return is_feature_id_reg(id) && !is_vm_ftr_id_reg(id);
 }
 
-static inline bool is_aa32_id_reg(u32 id)
-{
-	return (sys_reg_Op0(id) == 3 && sys_reg_Op1(id) == 0 &&
-		sys_reg_CRn(id) == 0 && sys_reg_CRm(id) >= 1 &&
-		sys_reg_CRm(id) <= 3);
-}
-
 static unsigned int id_visibility(const struct kvm_vcpu *vcpu,
 				  const struct sys_reg_desc *r)
 {
@@ -2063,20 +2056,6 @@ static unsigned int id_visibility(const struct kvm_vcpu *vcpu,
 	}
 
 	return 0;
-}
-
-static unsigned int aa32_id_visibility(const struct kvm_vcpu *vcpu,
-				       const struct sys_reg_desc *r)
-{
-	/*
-	 * AArch32 ID registers are UNKNOWN if AArch32 isn't implemented at any
-	 * EL. Promote to RAZ/WI in order to guarantee consistency between
-	 * systems.
-	 */
-	if (!kvm_supports_32bit_el0())
-		return REG_RAZ | REG_USER_WI;
-
-	return id_visibility(vcpu, r);
 }
 
 static unsigned int raz_visibility(const struct kvm_vcpu *vcpu,
@@ -2097,6 +2076,27 @@ static bool access_id_reg(struct kvm_vcpu *vcpu,
 	p->regval = read_id_reg(vcpu, r);
 
 	return true;
+}
+
+static unsigned int aa32_id_visibility(const struct kvm_vcpu *vcpu,
+				       const struct sys_reg_desc *r)
+{
+	/*
+	 * AArch32 ID registers are UNKNOWN if AArch32 isn't implemented at any
+	 * EL. Promote to RAZ/WI in order to guarantee consistency between
+	 * systems.
+	 */
+	if (!kvm_supports_32bit_el0())
+		return REG_RAZ | REG_USER_WI;
+
+	return id_visibility(vcpu, r);
+}
+
+static inline bool is_aa32_id_reg(u32 id)
+{
+	return (sys_reg_Op0(id) == 3 && sys_reg_Op1(id) == 0 &&
+		sys_reg_CRn(id) == 0 && sys_reg_CRm(id) >= 1 &&
+		sys_reg_CRm(id) <= 3);
 }
 
 /* Visibility overrides for SVE-specific control registers */
@@ -2553,29 +2553,6 @@ void kvm_set_vm_id_reg(struct kvm *kvm, u32 reg, u64 val)
 	*p = val;
 }
 
-static int get_raz_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *rd,
-		       u64 *val)
-{
-	*val = 0;
-	return 0;
-}
-
-static int set_wi_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *rd,
-		      u64 val)
-{
-	return 0;
-}
-
-static bool access_ctr(struct kvm_vcpu *vcpu, struct sys_reg_params *p,
-		       const struct sys_reg_desc *r)
-{
-	if (p->is_write)
-		return write_to_read_only(vcpu, p, r);
-
-	p->regval = kvm_read_vm_id_reg(vcpu->kvm, SYS_CTR_EL0);
-	return true;
-}
-
 static bool access_clidr(struct kvm_vcpu *vcpu, struct sys_reg_params *p,
 			 const struct sys_reg_desc *r)
 {
@@ -2681,6 +2658,29 @@ static bool access_ccsidr(struct kvm_vcpu *vcpu, struct sys_reg_params *p,
 	if (csselr < CSSELR_MAX)
 		p->regval = get_ccsidr(vcpu, csselr);
 
+	return true;
+}
+
+static int get_raz_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *rd,
+		       u64 *val)
+{
+	*val = 0;
+	return 0;
+}
+
+static int set_wi_reg(struct kvm_vcpu *vcpu, const struct sys_reg_desc *rd,
+		      u64 val)
+{
+	return 0;
+}
+
+static bool access_ctr(struct kvm_vcpu *vcpu, struct sys_reg_params *p,
+		       const struct sys_reg_desc *r)
+{
+	if (p->is_write)
+		return write_to_read_only(vcpu, p, r);
+
+	p->regval = kvm_read_vm_id_reg(vcpu->kvm, SYS_CTR_EL0);
 	return true;
 }
 
@@ -4855,12 +4855,6 @@ static bool check_sysreg_table(const struct sys_reg_desc *table, unsigned int n,
 	return true;
 }
 
-int kvm_handle_cp14_load_store(struct kvm_vcpu *vcpu)
-{
-	kvm_inject_undefined(vcpu);
-	return 1;
-}
-
 static void perform_access(struct kvm_vcpu *vcpu,
 			   struct sys_reg_params *params,
 			   const struct sys_reg_desc *r)
@@ -4942,6 +4936,12 @@ static void unhandled_cp_access(struct kvm_vcpu *vcpu,
 			  "Unsupported guest CP%d access at: %08lx [%08lx]\n",
 			  cp, *vcpu_pc(vcpu), *vcpu_cpsr(vcpu));
 	kvm_inject_undefined(vcpu);
+}
+
+int kvm_handle_cp14_load_store(struct kvm_vcpu *vcpu)
+{
+	kvm_inject_undefined(vcpu);
+	return 1;
 }
 
 /**
