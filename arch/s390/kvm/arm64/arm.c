@@ -741,9 +741,28 @@ long kvm_arch_vcpu_unlocked_ioctl(struct file *filp, unsigned int ioctl,
 	return -ENOIOCTLCMD;
 }
 
+static bool __init machine_supports_arm64_kvm(void)
+{
+	if (!sclp.has_aef || !aef_usable()) {
+		pr_info("ARM Execution Facility not available\n");
+		return false;
+	}
+
+	if (!ptff_query(PTFF_QAGTO) || !ptff_query(PTFF_QAGPT)) {
+		pr_err("No ARM time conversion functions available (unexpected machine feature set)\n");
+		return false;
+	}
+	if (!cpu_has_edat2()) {
+		pr_err("No EDAT2 facility available (unexpected machine feature set)\n");
+		return false;
+	}
+
+	return true;
+}
+
 static int __init kvm_s390_arm64_init(void)
 {
-	if (!sclp.has_aef || !aef_usable())
+	if (!machine_supports_arm64_kvm())
 		return -ENODEV;
 
 	kvm_init_qaaf();
