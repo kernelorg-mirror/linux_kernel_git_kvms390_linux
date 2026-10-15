@@ -10,7 +10,10 @@
 #include <linux/clocksource.h>
 #include <linux/hrtimer.h>
 
+/* no GICv5 for s390 */
+#ifndef __s390__
 #include <linux/irqchip/arm-gic-v5.h>
+#endif /* !__s390__ */
 
 enum kvm_arch_timers {
 	TIMER_PTIMER,
