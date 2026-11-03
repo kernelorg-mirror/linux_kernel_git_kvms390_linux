@@ -9,6 +9,32 @@
 
 #ifdef __ASSEMBLER__
 
+.macro	RANGECHECK	min max val
+	.if (\val < \min) || (\val > \max)
+	.error "operand out of range (\val is not between \min and \max)"
+	.endif
+.endm
+
+.macro	ASSERT_U16	val
+	RANGECHECK 0, 65535, \val
+.endm
+
+.macro	ASSERT_S16	val
+	RANGECHECK -32768, 32767, \val
+.endm
+
+.macro	ASSERT_U8	val
+	RANGECHECK 0, 255, \val
+.endm
+
+.macro	ASSERT_U4	val
+	RANGECHECK 0, 15, \val
+.endm
+
+.macro	ASSERT_U5	val
+	RANGECHECK 0, 31, \val
+.endm
+
 /*
  * GR_NUM - Retrieve general-purpose register number
  *
@@ -24,6 +50,7 @@
 	.endr
 	.if \opd == 255
 		\opd = \gr
+		ASSERT_U4	\opd
 	.endif
 .endm
 
@@ -46,6 +73,7 @@
 	.endr
 	.if \opd == 255
 		\opd = \vxr
+		ASSERT_U5	\opd
 	.endif
 .endm
 
